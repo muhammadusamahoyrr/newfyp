@@ -327,9 +327,17 @@ async def test_the_tree_kill_actually_reaches_a_grandchild():
     try:
         R._kill_descendants(proc.pid)
 
+        # On POSIX a killed grandchild stays a ZOMBIE until its (still living)
+        # parent reaps it: it holds no CPU or memory, so it counts as dead.
+        def _running(pid):
+            try:
+                return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+            except psutil.Error:
+                return False
+
         alive = grandchildren
         for _ in range(60):
-            alive = [pid for pid in grandchildren if psutil.pid_exists(pid)]
+            alive = [pid for pid in grandchildren if _running(pid)]
             if not alive:
                 break
             await asyncio.sleep(0.1)

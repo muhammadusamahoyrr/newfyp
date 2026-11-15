@@ -81,6 +81,10 @@ const ok = (body) => ({ data: body, error: null, status: 200 });
  * against directly. */
 let fetchedDraft = null;
 
+// Every mounted composer, so afterEach can let its pending sends land and
+// unmount it -- otherwise a slow runner counts one test's send in the next.
+const mountedRoots = [];
+
 async function mount(props) {
     __respond("getAgreement", () => ({
         data: fetchedDraft ?? props.draft, error: null, status: 200,
@@ -89,6 +93,7 @@ async function mount(props) {
     const host = dom.window.document.createElement("div");
     dom.window.document.body.appendChild(host);
     const root = createRoot(host);
+    mountedRoots.push({ root, host });
     await act(async () => { root.render(h(DraftComposer, props)); });
     // A second flush: the case list and the draft are both fetched in effects,
     // and their state updates land a microtask after the first render settles.
@@ -138,6 +143,13 @@ async function mount(props) {
 }
 
 test.beforeEach(() => { __reset(); fetchedDraft = null; });
+test.afterEach(async () => {
+    await settle(() => false, 10);
+    for (const { root, host } of mountedRoots.splice(0)) {
+        await act(async () => { root.unmount(); });
+        host.remove();
+    }
+});
 
 const argsOf = (name) => __calls(name).map(c => c.args);
 // Let pending effects and fetch callbacks land (a slow CI runner needs more
@@ -257,7 +269,11 @@ test("the send carries an idempotency key, and a retry reuses the same one", asy
     await ui.consent();
     await ui.type(NAME_FIELD, "Adv Khan");
     await ui.click("Confirm — sign & send");
+    // Retry only once the first attempt has failed and the button is back.
+    await settle(() => argsOf("sendDraft").length === 1
+        && ui.find("Confirm — sign & send") && !ui.find("Confirm — sign & send").disabled);
     await ui.click("Confirm — sign & send");
+    await settle(() => argsOf("sendDraft").length >= 2);
 
     const sends = argsOf("sendDraft");
     assert.equal(sends.length, 2, "expected a retry");
