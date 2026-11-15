@@ -74,8 +74,11 @@ function stat(container, label) {
 }
 
 test("active cases are the server's open + in_progress totals; pending docs come from the review queue", async () => {
+    // A hearing ~30 days out: never "this week", whatever day the suite runs.
+    const later = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() + 30));
+    const laterLabel = later.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
     serve({ submitted: 4, cases: [
-        kase(1, "in_progress", { hearing_dates: [{ date: "2026-11-20T00:00:00Z" }] }),
+        kase(1, "in_progress", { hearing_dates: [{ date: later.toISOString() }] }),
         kase(2, "pending_lawyer"), kase(3, "closed"),
     ], byStatus: { open: 3, in_progress: 5 } });
     const view = await mount();
@@ -83,9 +86,9 @@ test("active cases are the server's open + in_progress totals; pending docs come
     const asked = api.__calls("listCases").map(c => c.args[0]?.status).filter(Boolean).sort();
     assert.deepEqual(asked, ["in_progress", "open"], "active must be counted by the server, per status");
     assert.equal(stat(view.container, "Docs to Review"), "4");
-    // The dashboard (2026-10-10) counts hearings in the next 7 days; 20 Nov is not one.
+    // The dashboard (2026-10-10) counts hearings in the next 7 days; 30 days out is not one.
     assert.equal(stat(view.container, "Hearings This Week"), "0");
-    assert.match(view.container.textContent, /20 Nov 2026/, "the next hearing date is not shown");
+    assert.ok(view.container.textContent.includes(laterLabel), `the next hearing date (${laterLabel}) is not shown`);
     await view.unmount();
 });
 

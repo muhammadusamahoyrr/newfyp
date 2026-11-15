@@ -15,7 +15,7 @@
  * Join itself is VideoJoin: the server still decides whether the room opens. */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { DRAFTING_TOKENS_CSS } from "@/components/lawyer/draftingTheme.js";
+import { PREJOIN_TOKENS_CSS } from "./prejoinTheme.js";
 import VideoJoin from "@/components/shared/VideoJoin.jsx";
 
 const CSS = `[data-prejoin-backdrop]{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;font-family:"Hanken Grotesk",system-ui,sans-serif;background:rgba(6,14,16,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:pjFade .18s ease}
@@ -168,7 +168,7 @@ export function PreJoinModal({ apt, day, span, when, live, dark, onClose, onSave
     // with the lawyer's colour tokens, which the page no longer provides there.
     return createPortal(
         <div data-prejoin-backdrop data-drafting-theme data-mode={dark ? "dark" : "light"} onClick={() => { if (!busy) close(); }}>
-            <style>{DRAFTING_TOKENS_CSS}{CSS}</style>
+            <style>{PREJOIN_TOKENS_CSS}{CSS}</style>
             <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Join the video consultation with ${apt.client}`}
                 data-prejoin onClick={e => e.stopPropagation()}>
                 <section className="pj-left" aria-label="Camera and microphone check">

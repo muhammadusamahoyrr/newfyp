@@ -10,7 +10,7 @@
  * reviewed, not yet allowed (and why), the form, and done. A failed check is
  * never shown as "you can't review". */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ModalPortal, BACKDROP } from "@/components/shared/ui/primitives.jsx";
+import { ModalPortal, BACKDROP } from "@/components/client/documents/ui.jsx";
 import { getReviewEligibility, submitReview } from "@/lib/api.js";
 
 const WORDS = ["", "Poor", "Fair", "Good", "Very good", "Excellent"];

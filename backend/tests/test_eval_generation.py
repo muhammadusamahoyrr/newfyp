@@ -190,6 +190,10 @@ def test_generation_routes_the_items_language(G, monkeypatch, tmp_path, query_la
         async def ainvoke(self, state):
             return {}
     monkeypatch.setattr(svc, "_run_intake_ai", fake_run)
+    # _generate() switches provenance off by plain assignment (right for a CLI
+    # run); registering the attribute here makes monkeypatch restore it, so it
+    # cannot leak into later tests (test_intake_provenance failed in CI).
+    monkeypatch.setattr(svc, "_record_intake_provenance", svc._record_intake_provenance)
     monkeypatch.setattr(supervisor, "intake_graph", G2())
     monkeypatch.setattr("app.db.chroma.connect_chroma", lambda: None)
     out = tmp_path / "g.jsonl"

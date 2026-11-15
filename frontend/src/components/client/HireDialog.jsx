@@ -15,7 +15,7 @@
  * Errors are said inside the dialog. A failed read of the cases is not shown
  * as "no case". */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ModalPortal, BACKDROP } from "@/components/shared/ui/primitives.jsx";
+import { ModalPortal, BACKDROP } from "@/components/client/documents/ui.jsx";
 import {
     listCases, listEngagements, requestEngagement, createCase, confirmCase,
     cancelEngagement, acceptEngagementTerms, declineEngagementTerms,

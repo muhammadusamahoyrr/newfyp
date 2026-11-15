@@ -103,12 +103,16 @@ test("a document under review cannot be deleted from here", async () => {
 });
 
 test("from the Vault: delete moves it to Recently deleted, and Restore brings it back", async () => {
+    // Restorable means "purge date still ahead": keep it ahead of whenever the suite runs.
+    const t = new Date();
+    const purge = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate() + 20, 10));
+    const purgeLabel = purge.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
     api.__respond("myDocumentsV2", { data: { items: [ROW], has_more: false } });
     api.__respond("listReviewRequests", { data: null, status: 404, error: { code: "feature_disabled" } });
     api.__respond("getDocumentDeletionPreview", { data: PREVIEW });
     api.__respond("deleteDocumentV2", { data: { id: "d1" } });
     api.__respond("listDeletedDocumentsV2", { data: { items: [
-        { id: "d1", title: "Shop rent agreement", deleted_at: "2026-10-03T10:00:00Z", purge_after: "2026-11-02T10:00:00Z", restorable: true },
+        { id: "d1", title: "Shop rent agreement", deleted_at: "2026-10-03T10:00:00Z", purge_after: purge.toISOString(), restorable: true },
         { id: "d9", title: "Old notice", deleted_at: "2026-09-01T10:00:00Z", purge_after: "2026-10-01T10:00:00Z", restorable: false },
     ], recoverable_days: 30 } });
     api.__respond("restoreDocumentV2", { data: { id: "d1", restored: true } });
@@ -121,7 +125,7 @@ test("from the Vault: delete moves it to Recently deleted, and Restore brings it
 
     await click([...p.container.querySelectorAll('[role="tab"]')].find(t => t.textContent === "Recently deleted"));
     const restorable = p.container.querySelector('[data-trash-row="d1"]');
-    assert.match(restorable.textContent, /Restorable until 2 Nov 2026/);
+    assert.ok(restorable.textContent.includes(`Restorable until ${purgeLabel}`), restorable.textContent);
     const gone = p.container.querySelector('[data-trash-row="d9"]');
     assert.match(gone.textContent, /can no longer be restored/);
     assert.equal(btn(gone, "Restore"), undefined);

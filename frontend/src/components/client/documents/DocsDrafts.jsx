@@ -1003,7 +1003,10 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
             let latest = await getDraftPlanV2(plan.id);
             // A long AI write can outlast the dev proxy's timeout while the
             // server finishes it (2026-10-19): wait for the plan, then open it.
-            for (let i = 0; i < 45 && latest.data?.status === "generating"; i++) {
+            // Not for a 409 lease held by ANOTHER attempt: that is explained
+            // straight away and the user retries, rather than a 3-minute wait.
+            const leasedElsewhere = r.error?.code === "generation_in_progress";
+            for (let i = 0; !leasedElsewhere && i < 45 && latest.data?.status === "generating"; i++) {
                 await new Promise(res => setTimeout(res, 4000));
                 latest = await getDraftPlanV2(plan.id);
             }

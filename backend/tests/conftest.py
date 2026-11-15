@@ -27,6 +27,14 @@ import pytest
 # Allow `import app...` when pytest is invoked from anywhere.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+# ONE conftest module under both names. pytest loads this file as `conftest`
+# (tests/ has no __init__.py), and some tests `from tests.conftest import ...`.
+# Without this alias that second import ran the whole file again -- a second
+# temp Chroma store, a second guard, a second exception class -- and the
+# live-Chroma guard tests failed whenever both ran in one session.
+for _name in ("conftest", "tests.conftest"):
+    sys.modules.setdefault(_name, sys.modules[__name__])
+
 
 # ── the live Chroma store is out of bounds (installed before ANY test import) ─
 #

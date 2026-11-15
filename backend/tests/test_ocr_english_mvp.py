@@ -118,6 +118,9 @@ def test_production_cannot_enable_unmeasured_ocr():
             encryption_key="unused-by-this-test",
             app_env="production",
             frontend_url="https://attorney.example",
+            # demo-only policies production refuses; off so only OCR is judged
+            lawyer_auto_approve=False,
+            email_verification_required=False,
             english_ocr_enabled=True,
             english_ocr_benchmark_id="",
         )
@@ -132,6 +135,9 @@ def test_production_activation_names_its_reviewed_benchmark():
         encryption_key="unused-by-this-test",
         app_env="production",
         frontend_url="https://attorney.example",
+        # demo-only policies production refuses; off so only OCR is judged
+        lawyer_auto_approve=False,
+        email_verification_required=False,
         english_ocr_enabled=True,
         english_ocr_benchmark_id="english-intake-scans-2026-09-v1",
     )

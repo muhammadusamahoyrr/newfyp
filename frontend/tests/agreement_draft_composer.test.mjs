@@ -140,6 +140,13 @@ async function mount(props) {
 test.beforeEach(() => { __reset(); fetchedDraft = null; });
 
 const argsOf = (name) => __calls(name).map(c => c.args);
+// Let pending effects and fetch callbacks land (a slow CI runner needs more
+// than one flush): wait until `done()` holds, or for a fixed number of turns.
+async function settle(done = () => false, turns = 40) {
+    for (let i = 0; i < turns && !done(); i++) {
+        await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    }
+}
 const BODY_FIELD = "Write the terms of this agreement…";
 const NAME_FIELD = "Type your full legal name";
 
@@ -303,6 +310,8 @@ test("a conflict on send is reported and nothing is resent automatically", async
     await ui.consent();
     await ui.type(NAME_FIELD, "Adv Khan");
     await ui.click("Confirm — sign & send");
+    await settle(() => /changed since you reviewed it/i.test(ui.text()));
+    await settle(); // time enough for any automatic resend to show up
 
     assert.equal(argsOf("sendDraft").length, 1,
         "a conflict must not be retried: the wording really did change");
@@ -314,6 +323,7 @@ test("consent is required before anything is sent", async () => {
     await ui.click("Sign & send…");
     await ui.type(NAME_FIELD, "Adv Khan");
     await ui.click("Confirm — sign & send");
+    await settle(() => argsOf("sendDraft").length > 0, 10);
 
     assert.equal(argsOf("sendDraft").length, 0);
     assert.match(ui.text(), /Confirm you intend to sign/i);

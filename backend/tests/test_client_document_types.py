@@ -116,7 +116,8 @@ def test_the_client_reads_the_catalogue(source):
     # Deleting the hardcoded lists without reading the real one leaves a picker
     # with nothing in it.
     assert "listTemplates()" in source
-    assert "selectedType?.template_type" in source
+    # The chosen catalogue entry (`spec`) supplies the template type it builds.
+    assert "templateType: spec.template_type" in source
 
 
 # ── no fabricated data ────────────────────────────────────────────────────────

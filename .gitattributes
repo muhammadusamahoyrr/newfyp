@@ -3,3 +3,5 @@
 backend/analyzer_eval/hypotheses/** -text
 # Frozen PII detection evaluation inputs are hashed byte-for-byte.
 backend/analyzer_eval/pii/** -text
+# Frozen analyzer benchmark results are hashed byte-for-byte (ai_evaluation_record.yaml).
+backend/analyzer_eval/results/** -text
