@@ -744,7 +744,7 @@ def test_the_index_result_is_not_called_activation_readiness(upload_root, tmp_pa
 
 # ═══ item 7 · controlled, redacted failures ══════════════════════════════════
 
-SECRET_URI = "mongodb://v2_validator:s3cr3t@cluster0.abcde.mongodb.net:27017"
+SECRET_URI = f"mongodb://v2_validator:{_FIXTURE_PASSWORD}@cluster0.abcde.mongodb.net:27017"
 
 
 class _LeakyError(Exception):
@@ -1437,7 +1437,7 @@ def test_main_leaks_neither_credentials_nor_titles(upload_root, tmp_path, capsys
     report_path = tmp_path / "report.json"
     argv = _argv(upload_root, _write_manifest(tmp_path, manifest),
                  report=report_path)
-    argv[argv.index("--mongo-uri") + 1] = "mongodb://v2_validator:s3cr3t@localhost:27017"
+    argv[argv.index("--mongo-uri") + 1] = f"mongodb://v2_validator:{_FIXTURE_PASSWORD}@localhost:27017"
 
     code = validator.main(argv, client_factory=lambda uri: FakeClient(db))
     captured = capsys.readouterr()
