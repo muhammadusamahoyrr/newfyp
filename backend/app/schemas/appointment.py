@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.constants import AppointmentMode, AppointmentStatus
@@ -166,6 +168,22 @@ class RescheduleAppointmentRequest(BaseModel):
         return v
 
 
+class SuggestTimesRequest(BaseModel):
+    """A lawyer offers other times for a pending request (2026-10-19)."""
+    model_config = ConfigDict(extra="forbid")
+
+    options: list[datetime] = Field(min_length=1, max_length=3)
+    note: str | None = Field(default=None, max_length=300)
+
+
+class AcceptSuggestionRequest(BaseModel):
+    """The client picks one of the offered times, at the schedule they saw."""
+    model_config = ConfigDict(extra="forbid")
+
+    scheduled_at: datetime
+    schedule_version: int = Field(ge=0)
+
+
 class ConfirmAppointmentRequest(BaseModel):
     """What the lawyer is agreeing to.
 
@@ -191,6 +209,31 @@ class ConfirmAppointmentRequest(BaseModel):
 
 class CancelAppointmentRequest(BaseModel):
     reason: str | None = Field(default=None, max_length=500)
+    # Why a CONFIRMED appointment that has already started ends cancelled
+    # (2026-10-19, APPOINTMENT_FLOW_PLAN.md): the lawyer could not attend, or it
+    # did not take place. Lawyer only; never blames the client.
+    outcome_code: Literal["lawyer_no_show", "did_not_take_place"] | None = None
+
+
+class RescheduleProposalRequest(BaseModel):
+    """Either party proposes a new time for a confirmed appointment."""
+    model_config = ConfigDict(extra="forbid")
+
+    scheduled_at: datetime
+    note: str | None = Field(default=None, max_length=300)
+
+
+class SharedSummaryRequest(BaseModel):
+    """The summary text the client approved for the lawyer (2026-10-19)."""
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(min_length=1, max_length=3000)
+
+
+class RescheduleProposalAccept(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    proposal_id: str = Field(min_length=4, max_length=64)
 
 
 class CompleteAppointmentRequest(BaseModel):
@@ -260,6 +303,9 @@ class AppointmentOut(BaseModel):
     lawyer_notes: str | None = None
     cancel_reason: str | None = None
     cancelled_by: str | None = None
+    # "pending" (a declined or withdrawn request) or "confirmed"; None on rows
+    # cancelled before this was recorded.
+    cancelled_from: str | None = None
     meeting_link: str | None = None
     client_name: str | None = None
     lawyer_name: str | None = None

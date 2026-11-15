@@ -86,7 +86,7 @@ CHUNKING_STRATEGY_VERSION = "v2"
 # than aged out. The key gained a language component, which changes every hash
 # anyway; the version bump is what makes the invalidation deliberate rather
 # than incidental.
-DECISION_POLICY_VERSION = "v6"
+DECISION_POLICY_VERSION = "v7"
 
 # TTL values (safety net — version mismatch invalidates before TTL in most cases)
 _RESULT_TTL = settings.cache_result_ttl   # default 10 min
@@ -106,16 +106,20 @@ _collection_ingestion_versions: dict[str, str] = {}   # col_name → sha256 hash
 # ── Key construction ──────────────────────────────────────────────────────────
 
 def _make_key(query: str, case_type: str, province: str,
-              language: str = "en") -> str:
+              language: str = "en", variant: str = "legacy") -> str:
     """The identity of a cached answer.
 
-    `language` is part of it because `generation_node` selects a different
-    system prompt for Urdu: the same normalised query produced an English
-    answer for one user and an Urdu one for the next, and whichever ran first
-    won. It is a bucket ("en"/"ur"), not the raw value — see
-    cache_node.effective_language.
+    `language` is part of it because `generation_node` selects different output
+    instructions for English, Urdu script and Roman Urdu. The same normalised
+    query must never receive whichever script happened to populate the cache
+    first; see cache_node.effective_language.
     """
-    raw = f"{query.strip().lower()}|{case_type}:{province}|{language}"
+    # `variant` (2026-10-13): the response mode + policy version
+    # (ai/response_policy.cache_variant). A brief and a detailed answer to the
+    # same question are different artefacts; neither may be served for the
+    # other. Adding it changed every key, so all earlier entries -- written
+    # without a variant -- are never read again (safe invalidation by key).
+    raw = f"{query.strip().lower()}|{case_type}:{province}|{language}|{variant}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
@@ -215,6 +219,7 @@ async def get_result(
     province:         str,
     followup_intent:  Optional[str] = None,
     language:         str = "en",
+    variant:          str = "legacy",
 ) -> Optional[dict]:
     """
     Return cached full-pipeline result or None on miss / invalid / skip.
@@ -227,7 +232,7 @@ async def get_result(
     if followup_intent in ("format", "deepen", "affirm"):
         return None
 
-    key   = _make_key(normalized_query, case_type, province, language)
+    key   = _make_key(normalized_query, case_type, province, language, variant)
     entry = await _load(_RESULT_PREFIX, _result_store, key)
 
     if not entry:
@@ -247,8 +252,9 @@ async def set_result(
     payload:           dict,
     collection_names:  Optional[list[str]] = None,
     language:          str = "en",
+    variant:           str = "legacy",
 ) -> None:
-    key = _make_key(normalized_query, case_type, province, language)
+    key = _make_key(normalized_query, case_type, province, language, variant)
     entry = _build_entry(payload, collection_names, await _current_col_versions())
     await _store(_RESULT_PREFIX, _result_store, key, entry, _RESULT_TTL)
 

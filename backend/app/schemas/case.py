@@ -79,6 +79,15 @@ class HearingReschedule(BaseModel):
     reason: str | None = Field(default=None, max_length=300)
 
 
+class HearingCancel(BaseModel):
+    """Take a hearing that has not happened off the schedule (entered by
+    mistake, or the matter no longer needs it). Only a hearing with no
+    outcome can go; the client is told, and a copy is kept on the case."""
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str | None = Field(default=None, max_length=300)
+
+
 class HearingOutcome(BaseModel):
     outcome: str  # key of case_service.HEARING_OUTCOMES
     note: _text(2000) | None = None

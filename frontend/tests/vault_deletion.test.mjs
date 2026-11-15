@@ -148,3 +148,33 @@ test("Upload File has no backend: disabled and labelled; Create Folder is real (
     assert.ok(create && !create.disabled, "Create Folder is not offered");
     assert.equal(p.container.querySelector('[data-vault-soon="Create Folder"]'), null);
 });
+
+/* Audit 2026-10-15, F1: Restore was offered after the recovery deadline (the row said restorable until the purge job
+   ran), and a failed restore's message was cleared by the reload that followed it. */
+const { RecentlyDeleted } = await import("../src/components/client/documents/VaultTrash.jsx");
+
+test("past its recovery deadline a document offers no Restore, whatever the row says", async () => {
+    api.__respond("listDeletedDocumentsV2", { data: { items: [
+        { id: "d7", title: "Expired", deleted_at: "2026-09-01T10:00:00Z", purge_after: "2026-10-01T10:00:00Z", restorable: true },
+    ], recoverable_days: 30 } });
+    const p = await mount(h(RecentlyDeleted, {}));
+    assert.equal(btn(p.container.querySelector('[data-trash-row="d7"]'), "Restore"), undefined);
+    await p.unmount();
+});
+
+test("a failed restore keeps its message after the list reloads", async () => {
+    const future = new Date(Date.now() + 86400000).toISOString();
+    api.__respond("listDeletedDocumentsV2", { data: { items: [
+        { id: "d8", title: "Lease", deleted_at: "2026-10-10T10:00:00Z", purge_after: future, restorable: true },
+    ], recoverable_days: 30 } });
+    api.__respond("restoreDocumentV2", { data: null, status: 409,
+                                         error: { code: "recovery_expired", message: "This document can no longer be restored." } });
+    const p = await mount(h(RecentlyDeleted, {}));
+    await click(btn(p.container.querySelector('[data-trash-row="d8"]'), "Restore"));
+    await settle(40);
+    const alert = p.container.querySelector("[data-restore-problem]");
+    assert.ok(alert, "the failure vanished");
+    assert.ok(api.__calls("listDeletedDocumentsV2").length >= 2, "the list reloads");
+    assert.ok(p.container.querySelector('[data-trash-row="d8"]'), "the list is still shown under the message");
+    await p.unmount();
+});

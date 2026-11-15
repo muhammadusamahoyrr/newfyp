@@ -1526,3 +1526,43 @@ test("Join Meeting is offered only on a confirmed consultation that has not ende
         await ui.unmount();
     }
 });
+
+/* ── 2026-10-12 QA: the same rules as booking, and an honest Cancel ───────── */
+
+test("a lawyer with no hours, while hours are not enforced, can be ASKED for a new time", async () => {
+    api.__respond("getBookableSlots", { data: { configured: false, enforced: false, days: [] }, error: null, status: 200 });
+    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: "2026-11-20T09:00:00.000Z" })]);
+    const ui = await mountTracking();
+    await ui.openAppointments();
+    await ui.click("Change time");
+    await ui.settle(30);
+    const opts = optionValues(ui.container.querySelector("select"));
+    assert.ok(opts.includes("09:00") && opts.includes("20:30"), `offered: ${opts}`);
+    assert.match(ui.text(), /pick a time that suits you and they will confirm or decline/);
+    assert.doesNotMatch(ui.text(), /contact them/);
+    await ui.unmount();
+});
+
+test("a confirmed appointment inside the cutoff cannot be cancelled, and says why", async () => {
+    const soon = new Date(Date.now() + 60 * 60e3);
+    serveAppointments([appointment({ status: "confirmed", scheduled_at: soon.toISOString(),
+        end_at: new Date(soon.getTime() + 36e5).toISOString() })]);
+    const ui = await mountTracking();
+    await ui.openAppointments();
+    const btn = [...ui.container.querySelectorAll("button")].find(b => b.textContent.trim() === "Cancel appointment");
+    assert.ok(btn, "the cancel control is gone instead of explained");
+    assert.equal(btn.disabled, true);
+    assert.match(ui.text(), /can no longer be cancelled/);
+    await ui.unmount();
+});
+
+test("a PENDING request inside the same window can still be withdrawn", async () => {
+    const soon = new Date(Date.now() + 60 * 60e3);
+    serveAppointments([appointment({ status: "pending", scheduled_at: soon.toISOString(),
+        end_at: new Date(soon.getTime() + 36e5).toISOString() })]);
+    const ui = await mountTracking();
+    await ui.openAppointments();
+    const btn = [...ui.container.querySelectorAll("button")].find(b => b.textContent.trim() === "Cancel appointment");
+    assert.equal(btn.disabled, false);
+    await ui.unmount();
+});

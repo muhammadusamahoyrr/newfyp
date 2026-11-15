@@ -1,0 +1,1009 @@
+{
+ "summary": {
+  "queries": 29,
+  "expected_found_v1": 18,
+  "expected_found_v2": 19,
+  "with_expectation": 25,
+  "lost": [],
+  "gained": [
+   [
+    "Q18",
+    "Order XIV Rule 1"
+   ]
+  ],
+  "mislabelled_blocks_v2": [],
+  "rule_not_shown_blocks_v1": 26,
+  "rule_not_shown_blocks_v2": 0,
+  "pre_registered": {
+   "expected_found_v2_min": 19,
+   "lost_max": 0,
+   "rule_not_shown_v2_max": 0,
+   "mislabelled_max": 0
+  },
+  "gate_passed": true
+ },
+ "queries": [
+  {
+   "id": "Q01",
+   "expect": [
+    "Order VII Rule 11"
+   ],
+   "found_v1": {
+    "Order VII Rule 11": true
+   },
+   "found_v2": {
+    "Order VII Rule 11": true
+   },
+   "labels_v1": [
+    "CPC Order XLVII Rule 7",
+    "CPC Order VII Rule 13",
+    "Succession Section 306",
+    "Limitation Section 14",
+    "CPC Order VII Rule 11",
+    "CPC Section 20",
+    "CPC Order XIII Rule 3",
+    "CPC Order XXII Rule 6"
+   ],
+   "labels_v2": [
+    "CPC Order XLVII Rule 7",
+    "CPC Order VII Rule 13",
+    "Succession Section 306",
+    "Limitation Section 14",
+    "CPC Order VII Rule 11",
+    "CPC Section 20",
+    "CPC Order XIII Rule 3",
+    "CPC Order XXII Rule 6"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q02",
+   "expect": [
+    "Order VII Rule 10"
+   ],
+   "found_v1": {
+    "Order VII Rule 10": true
+   },
+   "found_v2": {
+    "Order VII Rule 10": true
+   },
+   "labels_v1": [
+    "CPC Order VII Rule 10",
+    "CPC Order VII Rule 13",
+    "CPC Section 26",
+    "CPC Order XLVI Rule 6",
+    "CPC Order XLI Rule 9",
+    "CPC Order XLIII Rule 3",
+    "CPC Order XLI Rule 25",
+    "CPC Order XLI (rule not shown)"
+   ],
+   "labels_v2": [
+    "CPC Order VII Rule 10",
+    "CPC Order VII Rule 13",
+    "CPC Section 26",
+    "CPC Order XLVI Rule 6",
+    "CPC Order XLI Rule 9",
+    "CPC Order XLIII Rule 3",
+    "CPC Order XLI Rule 25",
+    "CPC Order XLI Rule 14"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q03",
+   "expect": [
+    "Order I Rule 10"
+   ],
+   "found_v1": {
+    "Order I Rule 10": true
+   },
+   "found_v2": {
+    "Order I Rule 10": true
+   },
+   "labels_v1": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order I Rule 3",
+    "CPC Order XIV Rule 5",
+    "CPC Order I Rule 10",
+    "CPC Order I (rule not shown)",
+    "CPC Order XXXII Rule 13",
+    "CPC Order VIII Rule 12",
+    "CPC Order II Rule 4"
+   ],
+   "labels_v2": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order I Rule 3",
+    "CPC Order XIV Rule 5",
+    "CPC Order I Rule 10",
+    "CPC Order I Rule 10",
+    "CPC Order XXXII Rule 13",
+    "CPC Order VIII Rule 12",
+    "CPC Order II Rule 4"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q04",
+   "expect": [
+    "Order IX Rule 13"
+   ],
+   "found_v1": {
+    "Order IX Rule 13": true
+   },
+   "found_v2": {
+    "Order IX Rule 13": true
+   },
+   "labels_v1": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order IX Rule 12",
+    "CPC Order IX Rule 13",
+    "CPC Order IX (rule not shown)",
+    "CPC Order IX Rule 6",
+    "Limitation First Schedule, Articles 164–165",
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order XXXVII Rule 4",
+    "CPC Order XLI Rule 21"
+   ],
+   "labels_v2": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order IX Rule 12",
+    "CPC Order IX Rule 13",
+    "CPC Order IX Rule 13",
+    "CPC Order IX Rule 6",
+    "Limitation First Schedule, Articles 164–165",
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order XXXVII Rule 4",
+    "CPC Order XLI Rule 21"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q05",
+   "expect": [
+    "Order IX Rule 9"
+   ],
+   "found_v1": {
+    "Order IX Rule 9": false
+   },
+   "found_v2": {
+    "Order IX Rule 9": false
+   },
+   "labels_v1": [
+    "CPC Section 47",
+    "CPC Order XXII (rule not shown)",
+    "CPC Order IX Rule 4",
+    "CPC Order IX Rule 2",
+    "CPC Order XXXIII Rule 11",
+    "CPC Order XXXIII Rule 11A",
+    "CPC Order IX Rule 3",
+    "CPC Order VII Rule 21",
+    "CPC Order XXIV Rule 4"
+   ],
+   "labels_v2": [
+    "CPC Section 47",
+    "CPC Order XXII Rule 8",
+    "CPC Order XXII Rule 9",
+    "CPC Order IX Rule 4",
+    "CPC Order IX Rule 2",
+    "CPC Order XXXIII Rule 11",
+    "CPC Order XXXIII Rule 11A",
+    "CPC Order IX Rule 3",
+    "CPC Order VII Rule 21",
+    "CPC Order XXIV Rule 4"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q06",
+   "expect": [
+    "Order VI Rule 17"
+   ],
+   "found_v1": {
+    "Order VI Rule 17": false
+   },
+   "found_v2": {
+    "Order VI Rule 17": false
+   },
+   "labels_v1": [
+    "Qanun-e-Shahadat Section 4",
+    "CPC Order XLI Rule 23",
+    "Qanun-e-Shahadat Section 54",
+    "Qanun-e-Shahadat Section 2",
+    "CPC Order VI Rule 7",
+    "CPC Order XLI Rule 3",
+    "CPC Order XXI Rule 17",
+    "CPC Order XXVII Rule 8"
+   ],
+   "labels_v2": [
+    "Qanun-e-Shahadat Section 4",
+    "CPC Order XLI Rule 23",
+    "Qanun-e-Shahadat Section 54",
+    "Qanun-e-Shahadat Section 2",
+    "CPC Order VI Rule 7",
+    "CPC Order XLI Rule 3",
+    "CPC Order XXI Rule 17",
+    "CPC Order XXVII Rule 8"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q07",
+   "expect": [
+    "Order XXIII Rule 1"
+   ],
+   "found_v1": {
+    "Order XXIII Rule 1": true
+   },
+   "found_v2": {
+    "Order XXIII Rule 1": true
+   },
+   "labels_v1": [
+    "CPC Order XXIII Rule 2",
+    "CPC Order XXIII Rule 1",
+    "CPC Order VII Rule 13",
+    "CPC Order IX Rule 9",
+    "CPC Order XXII (rule not shown)",
+    "CPC Order II Rule 3",
+    "CPC Order XXXIII Rule 5",
+    "CPC Section 12"
+   ],
+   "labels_v2": [
+    "CPC Order XXIII Rule 2",
+    "CPC Order XXIII Rule 1",
+    "CPC Order VII Rule 13",
+    "CPC Order IX Rule 9",
+    "CPC Order XXII Rule 8",
+    "CPC Order XXII Rule 9",
+    "CPC Order II Rule 3",
+    "CPC Order XXXIII Rule 5",
+    "CPC Section 12"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q08",
+   "expect": [
+    "Order XXXVII Rule 3"
+   ],
+   "found_v1": {
+    "Order XXXVII Rule 3": true
+   },
+   "found_v2": {
+    "Order XXXVII Rule 3": true
+   },
+   "labels_v1": [
+    "CPC Order XXXVII Rule 2",
+    "Limitation First Schedule, Articles 159–161",
+    "CPC Order XXXVII Rule 4",
+    "CPC Order XXXVII Rule 3",
+    "Limitation First Schedule, Articles 3–75",
+    "CPC Section 20",
+    "CPC Order XXVII Rule 8",
+    "CPC Order XLVII Rule 8",
+    "CPC Order XLVII Rule 9"
+   ],
+   "labels_v2": [
+    "CPC Order XXXVII Rule 2",
+    "Limitation First Schedule, Articles 159–161",
+    "CPC Order XXXVII Rule 4",
+    "CPC Order XXXVII Rule 3",
+    "Limitation First Schedule, Articles 3–75",
+    "CPC Section 20",
+    "CPC Order XXVII Rule 8",
+    "CPC Order XLVII Rule 8",
+    "CPC Order XLVII Rule 9"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q09",
+   "expect": [
+    "Order XXII Rule 3"
+   ],
+   "found_v1": {
+    "Order XXII Rule 3": false
+   },
+   "found_v2": {
+    "Order XXII Rule 3": false
+   },
+   "labels_v1": [
+    "CPC Order XXII Rule 5",
+    "CPC Order VII Rule 26",
+    "Limitation First Schedule, Articles 176–178",
+    "CPC Order VIII Rule 13",
+    "Succession Section 94",
+    "CPC Order XXII (rule not shown)",
+    "Limitation Section 17",
+    "CPC Order XXI Rule 15"
+   ],
+   "labels_v2": [
+    "CPC Order XXII Rule 5",
+    "CPC Order VII Rule 26",
+    "Limitation First Schedule, Articles 176–178",
+    "CPC Order VIII Rule 13",
+    "Succession Section 94",
+    "CPC Order XXII Rule 4",
+    "Limitation Section 17",
+    "CPC Order XXI Rule 15"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q10",
+   "expect": [
+    "Order XLVII Rule 1"
+   ],
+   "found_v1": {
+    "Order XLVII Rule 1": true
+   },
+   "found_v2": {
+    "Order XLVII Rule 1": true
+   },
+   "labels_v1": [
+    "CPC Section 113",
+    "CPC Order XLVII Rule 1",
+    "CPC Order XLVII Rule 2",
+    "CPC Order XLVII Rule 4",
+    "CPC Order XLVII (rule not shown)",
+    "CPC Order XLVII Rule 8",
+    "CPC Order XLVII Rule 9",
+    "Limitation First Schedule, Articles 159–161",
+    "CPC Order XXXIII Rule 6"
+   ],
+   "labels_v2": [
+    "CPC Section 113",
+    "CPC Order XLVII Rule 1",
+    "CPC Order XLVII Rule 2",
+    "CPC Order XLVII Rule 4",
+    "CPC Order XLVII Rule 1",
+    "CPC Order XLVII Rule 8",
+    "CPC Order XLVII Rule 9",
+    "Limitation First Schedule, Articles 159–161",
+    "CPC Order XXXIII Rule 6"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q11",
+   "expect": [
+    "Order XXXIII Rule 1"
+   ],
+   "found_v1": {
+    "Order XXXIII Rule 1": true
+   },
+   "found_v2": {
+    "Order XXXIII Rule 1": true
+   },
+   "labels_v1": [
+    "CPC Order XXXIII Rule 1",
+    "CPC Order XXXIII Rule 10",
+    "CPC Order XXXIII (rule not shown)",
+    "CPC Order XXXIII Rule 11",
+    "CPC Order XXXIII Rule 11A",
+    "CPC Order XXXIII Rule 15",
+    "CPC Order XXXIII Rule 5",
+    "CPC Order XLIV Rule 1",
+    "Limitation Section 3"
+   ],
+   "labels_v2": [
+    "CPC Order XXXIII Rule 1",
+    "CPC Order XXXIII Rule 10",
+    "CPC Order XXXIII Rule 11A",
+    "CPC Order XXXIII Rule 11",
+    "CPC Order XXXIII Rule 11A",
+    "CPC Order XXXIII Rule 15",
+    "CPC Order XXXIII Rule 5",
+    "CPC Order XLIV Rule 1",
+    "Limitation Section 3"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q12",
+   "expect": [
+    "Order XL Rule 1"
+   ],
+   "found_v1": {
+    "Order XL Rule 1": false
+   },
+   "found_v2": {
+    "Order XL Rule 1": false
+   },
+   "labels_v1": [
+    "Transfer Section 69",
+    "Transfer Section 69",
+    "Succession Section 69",
+    "CPC Order XLV (rule not shown)",
+    "Transfer Section 69",
+    "Succession Section 204",
+    "CPC Order XXI Rule 12",
+    "CPC Order XXXII Rule 3"
+   ],
+   "labels_v2": [
+    "Transfer Section 69",
+    "Transfer Section 69",
+    "Succession Section 69",
+    "CPC Order XLV Rule 13",
+    "Transfer Section 69",
+    "Succession Section 204",
+    "CPC Order XXI Rule 12",
+    "CPC Order XXXII Rule 3"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q13",
+   "expect": [
+    "Order VIII Rule 10"
+   ],
+   "found_v1": {
+    "Order VIII Rule 10": true
+   },
+   "found_v2": {
+    "Order VIII Rule 10": true
+   },
+   "labels_v1": [
+    "CPC Order XXII (rule not shown)",
+    "CPC Order XX Rule 2",
+    "CPC Order VIII Rule 10",
+    "CPC Order VIII Rule 11",
+    "CPC Order VIII Rule 6",
+    "CPC Order VIII Rule 9",
+    "CPC Order VIII Rule 8",
+    "CPC Order VIII Rule 12",
+    "CPC Order VIII Rule 13"
+   ],
+   "labels_v2": [
+    "CPC Order XXII Rule 4",
+    "CPC Order XX Rule 2",
+    "CPC Order VIII Rule 10",
+    "CPC Order VIII Rule 11",
+    "CPC Order VIII Rule 6",
+    "CPC Order VIII Rule 9",
+    "CPC Order VIII Rule 8",
+    "CPC Order VIII Rule 12",
+    "CPC Order VIII Rule 13"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q14",
+   "expect": [
+    "Section 11"
+   ],
+   "found_v1": {
+    "Section 11": false
+   },
+   "found_v2": {
+    "Section 11": false
+   },
+   "labels_v1": [
+    "CPC Section 9",
+    "CPC Order XXI Rule 103",
+    "Succession Section 266",
+    "Qanun-e-Shahadat Section 60",
+    "Succession Section 161",
+    "CPC Section 128",
+    "CPC Order XXXII Rule 14",
+    "CPC Order VIII Rule 8"
+   ],
+   "labels_v2": [
+    "CPC Section 9",
+    "CPC Order XXI Rule 103",
+    "Succession Section 266",
+    "Qanun-e-Shahadat Section 60",
+    "Succession Section 161",
+    "CPC Section 128",
+    "CPC Order XXXII Rule 14",
+    "CPC Order VIII Rule 8"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q15",
+   "expect": [
+    "Section 151"
+   ],
+   "found_v1": {
+    "Section 151": true
+   },
+   "found_v2": {
+    "Section 151": true
+   },
+   "labels_v1": [
+    "Succession Section 194",
+    "CPC Section 151",
+    "CPC Order XXI (rule not shown)",
+    "CPC Section 94",
+    "Succession Section 266",
+    "Transfer Section 79",
+    "Succession Section 373",
+    "CPC Section 115"
+   ],
+   "labels_v2": [
+    "Succession Section 194",
+    "CPC Section 151",
+    "CPC Order XXI Rule 22",
+    "CPC Section 94",
+    "Succession Section 266",
+    "Transfer Section 79",
+    "Succession Section 373",
+    "CPC Section 115"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q16",
+   "expect": [
+    "Order XI Rule 1"
+   ],
+   "found_v1": {
+    "Order XI Rule 1": true
+   },
+   "found_v2": {
+    "Order XI Rule 1": true
+   },
+   "labels_v1": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order XI Rule 1",
+    "CPC Order XI Rule 5",
+    "CPC Order XI Rule 22",
+    "CPC Order XI Rule 2",
+    "CPC Order IX Rule 14",
+    "CPC Order XLVII (rule not shown)",
+    "CPC Order XXXII (rule not shown)"
+   ],
+   "labels_v2": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order XI Rule 1",
+    "CPC Order XI Rule 5",
+    "CPC Order XI Rule 22",
+    "CPC Order XI Rule 2",
+    "CPC Order IX Rule 14",
+    "CPC Order XLVII Rule 7",
+    "CPC Order XXXII Rule 12"
+   ],
+   "rule_not_shown_v1": 2,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q17",
+   "expect": [
+    "Order XVII Rule 1"
+   ],
+   "found_v1": {
+    "Order XVII Rule 1": true
+   },
+   "found_v2": {
+    "Order XVII Rule 1": true
+   },
+   "labels_v1": [
+    "CPC Order XVII Rule 1",
+    "CPC Order XVII (rule not shown)",
+    "CPC Order XXI Rule 69",
+    "CPC Order IX Rule 7",
+    "CPC Section 118",
+    "CPC Order XLV (rule not shown)",
+    "CPC Order XLVII (rule not shown)",
+    "CPC Order XXXIX (rule not shown)"
+   ],
+   "labels_v2": [
+    "CPC Order XVII Rule 1",
+    "CPC Order XVII Rule 2",
+    "CPC Order XXI Rule 69",
+    "CPC Order IX Rule 7",
+    "CPC Section 118",
+    "CPC Order XLV Rule 7",
+    "CPC Order XLVII Rule 7",
+    "CPC Order XXXIX Rule 2"
+   ],
+   "rule_not_shown_v1": 4,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "Q18",
+   "expect": [
+    "Order XIV Rule 1"
+   ],
+   "found_v1": {
+    "Order XIV Rule 1": false
+   },
+   "found_v2": {
+    "Order XIV Rule 1": true
+   },
+   "labels_v1": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order XIV Rule 3",
+    "CPC Order XLI Rule 25",
+    "CPC Order XIV (rule not shown)",
+    "CPC Order XIV Rule 5",
+    "CPC Order VIII (rule not shown)",
+    "CPC Order XLI Rule 24",
+    "CPC Order VIII Rule 12"
+   ],
+   "labels_v2": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order XIV Rule 3",
+    "CPC Order XLI Rule 25",
+    "CPC Order XIV Rule 1",
+    "CPC Order XIV Rule 5",
+    "CPC Order VIII Rule 2",
+    "CPC Order XLI Rule 24",
+    "CPC Order VIII Rule 12"
+   ],
+   "rule_not_shown_v1": 2,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V01",
+   "expect": [
+    "Order VII Rule 11"
+   ],
+   "found_v1": {
+    "Order VII Rule 11": true
+   },
+   "found_v2": {
+    "Order VII Rule 11": true
+   },
+   "labels_v1": [
+    "CPC Order XLVII Rule 7",
+    "CPC Order VII Rule 13",
+    "Succession Section 306",
+    "Limitation Section 14",
+    "CPC Order VII Rule 11",
+    "CPC Section 20",
+    "CPC Order XIII Rule 3",
+    "CPC Order XLVII Rule 7"
+   ],
+   "labels_v2": [
+    "CPC Order XLVII Rule 7",
+    "CPC Order VII Rule 13",
+    "Succession Section 306",
+    "Limitation Section 14",
+    "CPC Order VII Rule 11",
+    "CPC Section 20",
+    "CPC Order XIII Rule 3",
+    "CPC Order XLVII Rule 7"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V02",
+   "expect": [
+    "Order VII Rule 10"
+   ],
+   "found_v1": {
+    "Order VII Rule 10": true
+   },
+   "found_v2": {
+    "Order VII Rule 10": true
+   },
+   "labels_v1": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Section 135",
+    "CPC Order VII Rule 10",
+    "CPC Section 141",
+    "CPC Order XXVI Rule 21",
+    "Transfer Section 53",
+    "CPC Order XXXIII Rule 11",
+    "CPC Order XXXIII Rule 11A",
+    "CPC Order XXVI Rule 1"
+   ],
+   "labels_v2": [
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Section 135",
+    "CPC Order VII Rule 10",
+    "CPC Section 141",
+    "CPC Order XXVI Rule 21",
+    "Transfer Section 53",
+    "CPC Order XXXIII Rule 11",
+    "CPC Order XXXIII Rule 11A",
+    "CPC Order XXVI Rule 1"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V04",
+   "expect": [
+    "Order I Rule 10"
+   ],
+   "found_v1": {
+    "Order I Rule 10": true
+   },
+   "found_v2": {
+    "Order I Rule 10": true
+   },
+   "labels_v1": [
+    "CPC CPC First Schedule (order not determined)",
+    "Limitation Section 22",
+    "CPC Order XIV Rule 5",
+    "CPC Order I Rule 10",
+    "CPC Order I (rule not shown)",
+    "CPC Order XXXII Rule 13",
+    "CPC Order XXXII Rule 12",
+    "Limitation Section 14"
+   ],
+   "labels_v2": [
+    "CPC CPC First Schedule (order not determined)",
+    "Limitation Section 22",
+    "CPC Order XIV Rule 5",
+    "CPC Order I Rule 10",
+    "CPC Order I Rule 10",
+    "CPC Order XXXII Rule 13",
+    "CPC Order XXXII Rule 12",
+    "Limitation Section 14"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V05",
+   "expect": [
+    "Order IX Rule 13"
+   ],
+   "found_v1": {
+    "Order IX Rule 13": true
+   },
+   "found_v2": {
+    "Order IX Rule 13": true
+   },
+   "labels_v1": [
+    "CPC Order IX Rule 12",
+    "CPC Order IX Rule 13",
+    "Limitation First Schedule, Articles 95–97",
+    "CPC Order XXI Rule 90",
+    "Limitation First Schedule, Articles 164–165",
+    "CPC Order IX (rule not shown)",
+    "CPC Section 96",
+    "CPC Order XXXVII Rule 4",
+    "CPC Order XXXII (rule not shown)"
+   ],
+   "labels_v2": [
+    "CPC Order IX Rule 12",
+    "CPC Order IX Rule 13",
+    "Limitation First Schedule, Articles 95–97",
+    "CPC Order XXI Rule 90",
+    "Limitation First Schedule, Articles 164–165",
+    "CPC Order IX Rule 13",
+    "CPC Section 96",
+    "CPC Order XXXVII Rule 4",
+    "CPC Order XXXII Rule 12"
+   ],
+   "rule_not_shown_v1": 2,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V07",
+   "expect": [
+    "Section 151"
+   ],
+   "found_v1": {
+    "Section 151": true
+   },
+   "found_v2": {
+    "Section 151": true
+   },
+   "labels_v1": [
+    "CPC Section 151",
+    "Succession Section 266",
+    "CPC Order XLI Rule 12",
+    "CPC Order XLV (rule not shown)",
+    "Qanun-e-Shahadat Section 144",
+    "CPC Order XV (rule not shown)",
+    "Succession Section 373",
+    "Limitation First Schedule, Articles 159–161"
+   ],
+   "labels_v2": [
+    "CPC Section 151",
+    "Succession Section 266",
+    "CPC Order XLI Rule 12",
+    "CPC Order XLV Rule 3",
+    "Qanun-e-Shahadat Section 144",
+    "CPC Order XV Rule 3",
+    "Succession Section 373",
+    "Limitation First Schedule, Articles 159–161"
+   ],
+   "rule_not_shown_v1": 2,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V08",
+   "expect": [
+    "Section 5"
+   ],
+   "found_v1": {
+    "Section 5": true
+   },
+   "found_v2": {
+    "Section 5": true
+   },
+   "labels_v1": [
+    "Limitation Section 14",
+    "CPC Order XLVII Rule 7",
+    "CPC Order XIII Rule 8",
+    "Limitation Section 5",
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order IV Rule 2",
+    "Limitation Section 12",
+    "Limitation First Schedule, Articles 159–161"
+   ],
+   "labels_v2": [
+    "Limitation Section 14",
+    "CPC Order XLVII Rule 7",
+    "CPC Order XIII Rule 8",
+    "Limitation Section 5",
+    "CPC CPC First Schedule (order not determined)",
+    "CPC Order IV Rule 2",
+    "Limitation Section 12",
+    "Limitation First Schedule, Articles 159–161"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V17",
+   "expect": [],
+   "found_v1": {},
+   "found_v2": {},
+   "labels_v1": [
+    "Transfer Section 113",
+    "Punjab Section 62",
+    "Punjab Section 67",
+    "Punjab Section 7",
+    "Punjab Section 15",
+    "Punjab Section 96",
+    "Punjab Section 38",
+    "Punjab Section 6"
+   ],
+   "labels_v2": [
+    "Transfer Section 113",
+    "Punjab Section 62",
+    "Punjab Section 67",
+    "Punjab Section 7",
+    "Punjab Section 15",
+    "Punjab Section 96",
+    "Punjab Section 38",
+    "Punjab Section 6"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V19",
+   "expect": [],
+   "found_v1": {},
+   "found_v2": {},
+   "labels_v1": [
+    "Transfer Section 54",
+    "Transfer Section 106",
+    "Punjab Section 30",
+    "Transfer Section 106",
+    "Punjab Section 107",
+    "CPC Order XXXVI Rule 3",
+    "Punjab Section 10",
+    "Punjab Section 98"
+   ],
+   "labels_v2": [
+    "Transfer Section 54",
+    "Transfer Section 106",
+    "Punjab Section 30",
+    "Transfer Section 106",
+    "Punjab Section 107",
+    "CPC Order XXXVI Rule 3",
+    "Punjab Section 10",
+    "Punjab Section 98"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V20",
+   "expect": [],
+   "found_v1": {},
+   "found_v2": {},
+   "labels_v1": [
+    "Succession Section 54",
+    "Succession Section 25",
+    "CPC Order XXIII Rule 3",
+    "Limitation First Schedule, Articles 3–75",
+    "Succession Section 45",
+    "Succession Section 54",
+    "Succession Section 88",
+    "CPC Order XIV Rule 6"
+   ],
+   "labels_v2": [
+    "Succession Section 54",
+    "Succession Section 25",
+    "CPC Order XXIII Rule 3",
+    "Limitation First Schedule, Articles 3–75",
+    "Succession Section 45",
+    "Succession Section 54",
+    "Succession Section 88",
+    "CPC Order XIV Rule 6"
+   ],
+   "rule_not_shown_v1": 0,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V22",
+   "expect": [],
+   "found_v1": {},
+   "found_v2": {},
+   "labels_v1": [
+    "Succession Section 131",
+    "Qanun-e-Shahadat Section 46",
+    "CPC Section 19",
+    "Succession Section 161",
+    "CPC Order XXIV (rule not shown)",
+    "Qanun-e-Shahadat Section 105",
+    "Transfer Section 31",
+    "Qanun-e-Shahadat Section 103"
+   ],
+   "labels_v2": [
+    "Succession Section 131",
+    "Qanun-e-Shahadat Section 46",
+    "CPC Section 19",
+    "Succession Section 161",
+    "CPC Order XXIV Rule 4",
+    "Qanun-e-Shahadat Section 105",
+    "Transfer Section 31",
+    "Qanun-e-Shahadat Section 103"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  },
+  {
+   "id": "V23",
+   "expect": [
+    "Section 80"
+   ],
+   "found_v1": {
+    "Section 80": false
+   },
+   "found_v2": {
+    "Section 80": false
+   },
+   "labels_v1": [
+    "CPC Section 84",
+    "CPC provision not identified",
+    "CPC Order XI Rule 17",
+    "Qanun-e-Shahadat Section 7",
+    "CPC Order XXXIX (rule not shown)",
+    "CPC Order VIII Rule 10",
+    "CPC Order VIII Rule 11",
+    "Qanun-e-Shahadat Section 77",
+    "Transfer Section 113"
+   ],
+   "labels_v2": [
+    "CPC Section 84",
+    "CPC provision not identified",
+    "CPC Order XI Rule 17",
+    "Qanun-e-Shahadat Section 7",
+    "CPC Order XXXIX Rule 3",
+    "CPC Order VIII Rule 10",
+    "CPC Order VIII Rule 11",
+    "Qanun-e-Shahadat Section 77",
+    "Transfer Section 113"
+   ],
+   "rule_not_shown_v1": 1,
+   "rule_not_shown_v2": 0
+  }
+ ]
+}

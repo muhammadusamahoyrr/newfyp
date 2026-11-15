@@ -6,7 +6,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const src = readFileSync(new URL("../src/components/client/ModDocuments.jsx", import.meta.url), "utf8");
+// Sending happens in the drafting workspace: the template guided flow that
+// also sent documents was removed on 2026-10-19.
+const src = readFileSync(new URL("../src/components/client/documents/DocsDrafts.jsx", import.meta.url), "utf8");
 
 test("the review step offers only lawyers of accepted engagements", () => {
     assert.match(src, /listEngagements\(\{ status: "accepted" \}\)/);
@@ -15,6 +17,6 @@ test("the review step offers only lawyers of accepted engagements", () => {
 
 test("with no engaged lawyer the client is told to hire one, not shown a spinner forever", () => {
     assert.match(src, /data-no-engaged-lawyer/);
-    assert.match(src, /hire a lawyer first/);
-    assert.doesNotMatch(src, /Loading verified lawyers/);
+    assert.match(src, /no lawyer engaged yet/);
+    assert.doesNotMatch(src, /Loading (verified )?lawyers/);
 });

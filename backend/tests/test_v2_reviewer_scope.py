@@ -117,12 +117,26 @@ async def _new_doc():
 # 1 — a current reviewer sees the submitted bytes and nothing later
 # ══════════════════════════════════════════════════════════════════════════════
 
+async def _legacy_private_draft(doc_id, demand):
+    """A client draft made WHILE the document is under review. Refused since
+    2026-10-15 (audit B1: v2_service refuses a client generation while
+    submitted), but documents created before that fix can still be in this
+    state -- so the reviewer's scoping is still tested against it. Made the way
+    the old code made it."""
+    from app.services import document_v2_service as v2svc
+    rev = await v2svc.generate_revision(
+        document_id=doc_id, template_type="legal_notice",
+        fields={"sender_name": "A", "recipient_name": "B", "demand": demand},
+        idempotency_key=key(), refuse_when_submitted=False)
+    return {"revision_id": rev["_id"], "version": rev["version"], "pdf_sha256": rev.get("pdf_sha256")}
+
+
 async def _under_review_with_a_private_draft():
-    """v1 submitted to the lawyer; v2 generated and NOT submitted."""
+    """v1 submitted to the lawyer; v2 generated and NOT submitted (legacy state)."""
     doc_id = await _new_doc()
     v1 = await _generate(doc_id, "first demand")
     await _submit(doc_id, v1)
-    v2 = await _generate(doc_id, "a private second draft")
+    v2 = await _legacy_private_draft(doc_id, "a private second draft")
     assert v1["revision_id"] != v2["revision_id"]
     return doc_id, v1, v2
 
@@ -220,10 +234,31 @@ async def test_the_reviewer_can_still_do_their_job(enabled):
         doc_id, v1["revision_id"], expected_pdf_sha256=v1["pdf_sha256"],
         current_user=LAWYER)).status_code == 200
 
+    # An APPROVAL is pinned to the exact reviewed revision: with a newer
+    # private draft current, approving would mark that unseen file "approved"
+    # (audit 2026-10-15, B1) -- refused, and nothing is written.
+    with pytest.raises(HTTPException) as caught:
+        await _decide(doc_id, v1, "approve")
+    assert caught.value.status_code == 409
+    stored = await get_documents_col().find_one({"_id": doc_id})
+    assert stored["review_status"] == "submitted" and not stored.get("approved_revision_id")
+
+    # Returning it -- the decision that does not bless a file -- still works.
+    await _decide(doc_id, v1, "return")
+    stored = await get_documents_col().find_one({"_id": doc_id})
+    assert stored["review_status"] == "returned"
+    assert stored["review_cycles"][-1]["revision_id"] == v1["revision_id"]
+
+
+async def test_a_clean_submission_is_approved_pinned_to_its_revision(enabled):
+    doc_id = await _new_doc()
+    v1 = await _generate(doc_id, "only demand")
+    await _submit(doc_id, v1)
     await _decide(doc_id, v1, "approve")
     stored = await get_documents_col().find_one({"_id": doc_id})
     assert stored["review_status"] == "approved"
-    assert stored["review_cycles"][-1]["revision_id"] == v1["revision_id"]
+    assert stored["approved_revision_id"] == v1["revision_id"] == stored["current_revision_id"]
+    assert stored["approved_pdf_sha256"] == v1["pdf_sha256"]
 
 
 async def test_a_second_submission_widens_the_scope_by_exactly_one(enabled):
@@ -238,7 +273,12 @@ async def test_a_second_submission_widens_the_scope_by_exactly_one(enabled):
             doc_id, rev["revision_id"], expected_pdf_sha256=None,
             current_user=LAWYER)).status_code == 200
 
-    v3 = await _generate(doc_id, "a third, private again")
+    # A client draft during review is refused now (audit B1)...
+    with pytest.raises(HTTPException) as refused:
+        await _generate(doc_id, "a third, private again")
+    assert refused.value.status_code == 409
+    # ...and one left over from before the fix stays invisible to the reviewer.
+    v3 = await _legacy_private_draft(doc_id, "a third, private again")
     with pytest.raises(HTTPException):
         await v2api.preview_revision_v2(
             doc_id, v3["revision_id"], expected_pdf_sha256=None,

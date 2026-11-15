@@ -216,7 +216,17 @@ def intake_hallucination_node(state: AgentState) -> dict:
     if binding["untrustworthy"]:
         return _finish(parsed, "citations_unverified", graded, caution=False)
 
-    if result.is_grounded and veto is None:
+    # A LEGAL action with no bound citation was never checked by the judge (it
+    # only sees matched claims), so it cannot ride on the others' support into a
+    # whole-analysis "grounded" (Batch 6, 2026-10-12). General guidance may be
+    # uncited; it is labelled as such in the analysis.
+    uncited_legal = [c["index"] for c in claims
+                     if c.get("kind") == "action" and c.get("action_kind", "legal") == "legal"
+                     and c.get("citation_status") != "matched"]
+    if uncited_legal:
+        graded = {**graded, "uncited_legal_actions": uncited_legal}
+
+    if result.is_grounded and veto is None and not uncited_legal:
         return {"is_grounded": True, "grounding_status": "grounded", **graded}
 
     return _finish(parsed, "ungrounded" if veto is None else "claims_disagree", graded)

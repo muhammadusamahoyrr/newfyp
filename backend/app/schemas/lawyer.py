@@ -6,6 +6,14 @@ from pydantic import BaseModel
 from app.schemas.user import UserProfileResponse
 
 
+class ReviewEligibility(BaseModel):
+    """May the signed-in client review this lawyer now (2026-10-12)."""
+    can_review: bool
+    already_reviewed: bool = False
+    # "already_reviewed" | "no_completed_relationship" | None when allowed.
+    reason: str | None = None
+
+
 class LawyerReview(BaseModel):
     stars: int  # 1-5
     comment: str | None = None

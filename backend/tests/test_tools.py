@@ -94,9 +94,13 @@ def test_find_offence_sections_never_leaks_a_bail_verdict():
         assert "prohibitory" not in match
 
 
-def test_find_offence_sections_returns_an_error_rather_than_guessing():
+def test_find_offence_sections_reports_a_table_miss_rather_than_guessing():
+    # 2026-10-14 contract (ai/tool_contract.py): a miss in this small table is
+    # `not_in_table`, not an `error` -- an error read as "no such offence" and
+    # overrode retrieved statute text (research eval E1, Section 420 PPC).
     r = find_offence_sections.invoke({"query": "zzz not an offence zzz"})
-    assert "error" in r
+    assert r["outcome"] == "not_in_table"
+    assert "error" not in r
     assert "matches" not in r
 
 

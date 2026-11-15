@@ -143,6 +143,24 @@ class CaseRepository(BaseRepository):
         )
         return result.modified_count > 0
 
+    async def cancel_hearing(self, case_id: str, hearing_id: str, *, expect_date, expect_time,
+                             record: dict) -> bool:
+        """Take a hearing off the schedule only if it is still as the caller saw it.
+
+        Conditioned like `move_hearing` (no outcome, same date and time), so a
+        concurrent move or outcome makes this match nothing. The removal and
+        the kept copy (`cancelled_hearings`) are one write: a hearing is never
+        gone without its record, nor recorded as cancelled while still listed.
+        """
+        result = await self.col.update_one(
+            {"_id": case_id, **_OPEN, "hearing_dates": {"$elemMatch": {
+                "_id": hearing_id, "outcome": None, "date": expect_date, "time": expect_time}}},
+            {"$pull": {"hearing_dates": {"_id": hearing_id}},
+             "$push": {"cancelled_hearings": record},
+             "$set": {"updated_at": datetime.now(timezone.utc)}},
+        )
+        return result.modified_count > 0
+
     async def update_hearing(self, case_id: str, hearing_id: str, fields: dict) -> bool:
         """Set fields on one hearing inside the hearing_dates array."""
         set_fields = {f"hearing_dates.$[h].{k}": v for k, v in fields.items()}

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from typing import Literal
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
 from app.core.rate_limit import limiter
@@ -14,7 +16,8 @@ class TranscriptionResult(BaseModel):
     transcript: str
     language: str
     language_name: str
-    language_probability: float
+    # Detection confidence; null when the client chose the language.
+    language_probability: float | None = None
 
 
 @router.post("/transcribe", response_model=TranscriptionResult)
@@ -22,6 +25,8 @@ class TranscriptionResult(BaseModel):
 async def transcribe_audio(
     request: Request,
     audio: UploadFile = File(...),
+    # "ur" / "en" = the client's choice; "auto" = Urdu vs English detection.
+    language: Literal["ur", "en", "auto"] = Form("auto"),
     current_user: dict = Depends(get_current_user),
 ):
     content = await audio.read()
@@ -32,7 +37,7 @@ async def transcribe_audio(
 
     try:
         # Queued: _alock in the service serialises CPU inference across concurrent requests
-        result = await whisper_service.transcribe_async(content, audio.filename or "audio.wav")
+        result = await whisper_service.transcribe_async(content, audio.filename or "audio.wav", language)
     except Exception:
         raise HTTPException(status_code=500, detail="Transcription failed. Please try again.")
 

@@ -89,7 +89,12 @@ async function openWorkspace(review = "none") {
     return p;
 }
 
-test.beforeEach(() => api.__reset());
+test.beforeEach(() => {
+    api.__reset();
+    // Unsaved edits are kept per tab (unsavedStore, 2026-10-19); one test's
+    // typing must not come back in the next test's document.
+    dom.window.sessionStorage.clear();
+});
 test.after(() => dom.window.close());
 
 /* The placeholders panel opens on request, from the toolbar. */
@@ -113,7 +118,7 @@ test("the workspace: a page header, the History column on the left, panels on th
     assert.equal(side.style.flex, "0 0 206px", "narrower, with the smaller option pills");
     // With a document open, Versions | Saved take the AI Draft button's place.
     assert.equal(side.querySelector("[data-ai-draft]"), null);
-    assert.equal(side.querySelector("[data-side-heading]").textContent.trim(), "Saved");
+    assert.equal(side.querySelector("[data-side-heading]").textContent.trim(), "History");
     assert.ok(side.querySelector('[data-side-tab="versions"]') && side.querySelector('[data-side-tab="saved"]'));
     assert.ok(side.querySelector("[data-history-group]"), "saved documents are grouped by day");
     assert.equal(c.querySelector('[data-doc="d1"]').getAttribute("aria-current"), "true");
@@ -228,7 +233,7 @@ test("placeholders are the document's real empty fields, and editing them saves 
     await type(document.querySelector("#ph_demand"), "Pay Rs 50,000 within 15 days");
     assert.equal(c.querySelector("[data-placeholder-count]").textContent, "0");
     api.__respond("saveDocumentWorkspaceV2", { data: { document_id: "d1" } });
-    await click(buttons(d, "Save all changes")[0]);
+    await click(buttons(d, "Save as version")[0]);
     const [call] = api.__calls("saveDocumentWorkspaceV2");
     assert.equal(call.args[0], "d1");
     assert.equal(call.args[1].fields.demand, "Pay Rs 50,000 within 15 days");
@@ -248,7 +253,11 @@ test("unsaved details cannot be sent as though the PDF already contained them", 
     assert.equal(send.disabled, true);
     assert.equal(p.container.querySelector("[data-save]").disabled, false);
     assert.match(p.container.querySelector("[data-save-state]").textContent, /Unsaved changes/);
-    assert.match(p.container.querySelector('[title="Downloads the last saved version"]').textContent, /PDF/);
+    const pdf = p.container.querySelector("[data-pdf]");
+    assert.match(pdf.title, /^Downloads version \d+, the last saved one$/);
+    assert.match(pdf.textContent, /PDF/);
+    // The Save button names the version it will make (2026-10-19).
+    assert.match(p.container.querySelector("[data-save]").textContent, /Save as v\d+/);
     await p.unmount();
 });
 
@@ -774,5 +783,223 @@ test("the workspace shows the lawyer's decision and note", async () => {
 
     p = await openWithReview("none");
     assert.equal(p.container.querySelector("[data-review-banner]"), null, "a private draft has no banner");
+    await p.unmount();
+});
+
+/* ── versions and unsaved changes (2026-10-19) ──────────────────────────────
+ * Save makes the next version and says which; History is every document;
+ * leaving with unsaved changes asks first; an older version is read only, its
+ * PDF is the one downloaded, and Restore brings it back as the NEXT version. */
+
+const { versionLabel } = await import("../src/components/client/documents/DocsDrafts.jsx");
+
+async function openAtVersion2() {
+    api.__respond("myDocumentsV2", { data: { items: ROWS, has_more: false } });
+    api.__respond("getDocumentWorkspaceV2", { data: { ...WORKSPACE, base_version: 2 } });
+    api.__respond("getDocumentV2", { data: { ...DETAIL(), current_version: 2 } });
+    api.__respond("previewRevisionV2", { data: null, error: { message: "preview unavailable in test" } });
+    api.__respond("listRevisionsV2", { data: { items: [
+        { revision_id: "r1", version: 2, status: "generated", pdf_sha256: "a".repeat(64), template_type: "legal_notice" },
+        { revision_id: "r0", version: 1, status: "generated", pdf_sha256: "c".repeat(64), template_type: "legal_notice" },
+    ] } });
+    const p = await mount({});
+    await click(p.container.querySelector('[data-doc="d1"]'));
+    return p;
+}
+const unsavedDialog = () => document.querySelector('[aria-label="Unsaved changes"]');
+
+test("unsaved changes ask before another document opens: keep editing, or discard", async () => {
+    const p = await openWorkspace();
+    const c = p.container;
+    await openPlaceholders(c);
+    await type(document.querySelector("#ph_demand"), "Pay now");
+    const loads = api.__calls("getDocumentWorkspaceV2").length;
+    await click(c.querySelector('[data-doc="d2"]'));
+    assert.ok(unsavedDialog(), "another document opened over unsaved changes");
+    assert.match(unsavedDialog().textContent, /Save them as version 2/);
+    assert.equal(api.__calls("getDocumentWorkspaceV2").length, loads, "the other document loaded anyway");
+    await click(buttons(unsavedDialog(), "Keep editing")[0]);
+    assert.equal(unsavedDialog(), null);
+    assert.equal(document.querySelector("#ph_demand").value, "Pay now", "the edit was lost");
+    await click(c.querySelector('[data-doc="d2"]'));
+    await click(buttons(unsavedDialog(), "Discard changes")[0]);
+    assert.equal(api.__calls("getDocumentWorkspaceV2").at(-1).args[0], "d2", "Discard did not go on to the other document");
+    await p.unmount();
+});
+
+test("unsaved changes can be saved as the next version on the way out", async () => {
+    const p = await openWorkspace();
+    const c = p.container;
+    await openPlaceholders(c);
+    await type(document.querySelector("#ph_demand"), "Pay now");
+    api.__respond("saveDocumentWorkspaceV2", { data: { revision_id: "r5", version: 2 } });
+    await click(c.querySelector('[aria-label="Back to drafts"]'));
+    assert.ok(unsavedDialog(), "going back dropped the changes without asking");
+    await click(buttons(unsavedDialog(), "Save as version 2")[0]);
+    const [call] = api.__calls("saveDocumentWorkspaceV2");
+    assert.equal(call.args[1].fields.demand, "Pay now");
+    assert.equal(unsavedDialog(), null);
+    assert.equal(c.querySelector("[data-document-workspace]"), null, "it did not go back after saving");
+    await p.unmount();
+});
+
+test("viewing an older version keeps the unsaved changes, and nothing asks", async () => {
+    const p = await openAtVersion2();
+    const c = p.container;
+    await openPlaceholders(c);
+    await type(document.querySelector("#ph_demand"), "Pay now");
+    await click(c.querySelector('[data-side-tab="versions"]'));
+    api.__respond("previewRevisionV2", { data: { url: "blob:v1" } });
+    await click(c.querySelector('[data-version="1"]'));
+    assert.equal(unsavedDialog(), null, "reading an old version is not leaving");
+    assert.match(c.querySelector("[data-viewing-version]").textContent, /unsaved changes are kept/);
+    await click(buttons(c, "Back to current")[0]);
+    await openPlaceholders(c);
+    assert.equal(document.querySelector("#ph_demand").value, "Pay now");
+    await p.unmount();
+});
+
+test("an older version is read only: editing is off, its own PDF downloads, and Restore makes it the next version", async () => {
+    const p = await openAtVersion2();
+    const c = p.container;
+    await click(c.querySelector('[data-side-tab="versions"]'));
+    assert.match(c.querySelector("[data-versions]").textContent, /First version/);
+    api.__respond("previewRevisionV2", { data: { url: "blob:v1" } });
+    await click(c.querySelector('[data-version="1"]'));
+    const banner = c.querySelector("[data-viewing-version]");
+    assert.match(banner.textContent, /reading version 1 \(read only\)/);
+    assert.match(banner.textContent, /current version 2/);
+    // 2026-10-20: tools that do not work on an old version are not shown at all
+    // (a bar of faded, disabled buttons read as a blurred page), not just disabled.
+    for (const sel of ["[data-edit-toggle]", "[data-placeholders-toggle]", "[data-checks-toggle]", "[data-save]"]) {
+        assert.equal(c.querySelector(sel), null, `${sel} is offered on an old version`);
+    }
+    assert.match(c.querySelector("[data-old-version-label]").textContent, /Version 1 · read only/);
+    assert.equal(buttons(c.querySelector('header[aria-label="Document header"]'), "Send to lawyer").length, 0);
+    assert.equal(c.querySelector("[data-ask-ai]"), null, "Ask AI is offered on an old version");
+    const pdf = c.querySelector("[data-pdf]");
+    assert.match(pdf.textContent, /PDF v1/);
+    await click(pdf);
+    const [dl] = api.__calls("downloadDocumentFile").slice(-1);
+    assert.equal(dl.args[2].revisionId, "r0", "the PDF button downloaded the current version, not the one on screen");
+    assert.equal(dl.args[2].expectedPdfSha256, "c".repeat(64));
+
+    api.__respond("restoreRevisionV2", { data: { revision_id: "r9", version: 3 } });
+    await click(c.querySelector("[data-restore-version]"));
+    const [restore] = api.__calls("restoreRevisionV2");
+    assert.deepEqual(restore.args.slice(0, 3), ["d1", "r0",
+        { expectedRevisionId: "r1", expectedVersion: 2, expectedContentEpoch: 3 }]);
+    assert.ok(restore.args[3], "the restore carried no idempotency key");
+    assert.equal(c.querySelector("[data-viewing-version]"), null, "still showing the old version after restoring");
+    await p.unmount();
+});
+
+test("a version says what made it", () => {
+    assert.equal(versionLabel({ version: 1 }), "First version");
+    assert.equal(versionLabel({ version: 2, template_type: "legal_notice" }), "Your changes");
+    assert.equal(versionLabel({ version: 3, template_type: "edited_document" }), "Your text edits");
+    assert.equal(versionLabel({ version: 4, edited_by: { role: "lawyer", name: "Adv. Raza" } }), "Lawyer's edits (Adv. Raza)");
+    assert.equal(versionLabel({ version: 5, restored_from: { version: 1 }, edited_by: { role: "lawyer" } }), "Restored from version 1");
+});
+
+test("Save then Restore: the restore is guarded by the version that save just made", async () => {
+    const p = await openAtVersion2();
+    const c = p.container;
+    await openPlaceholders(c);
+    await type(document.querySelector("#ph_demand"), "Pay now");
+    await click(c.querySelector('[data-side-tab="versions"]'));
+    api.__respond("previewRevisionV2", { data: { url: "blob:v1" } });
+    await click(c.querySelector('[data-version="1"]'));
+    // The save makes version 3; the workspace then reads it back.
+    api.__respond("saveDocumentWorkspaceV2", { data: { revision_id: "r3", version: 3 } });
+    api.__respond("getDocumentWorkspaceV2", { data: { ...WORKSPACE, base_revision_id: "r3", base_version: 3, content_epoch: 4,
+        fields: { ...WORKSPACE.fields, demand: "Pay now" } } });
+    api.__respond("restoreRevisionV2", { data: { revision_id: "r9", version: 4 } });
+    await click(c.querySelector("[data-restore-version]"));
+    assert.ok(unsavedDialog(), "Restore went ahead over unsaved changes");
+    await click(buttons(unsavedDialog(), "Save as version 3")[0]);
+    const [restore] = api.__calls("restoreRevisionV2");
+    assert.ok(restore, "Restore did not run after the save");
+    assert.deepEqual(restore.args[2], { expectedRevisionId: "r3", expectedVersion: 3, expectedContentEpoch: 4 },
+        "Restore used the version from before the save, and would be refused as stale");
+    await p.unmount();
+});
+
+test("unsaved changes survive leaving through the app, and come back on the same version", async () => {
+    let p = await openWorkspace();
+    await openPlaceholders(p.container);
+    await type(document.querySelector("#ph_demand"), "Pay now");
+    await p.unmount();                       // the app's sidebar: no dialog can stop it
+    p = await openWorkspace();
+    const c = p.container;
+    assert.ok(c.querySelector("[data-recovered-note]"), "the unsaved changes were not brought back");
+    assert.match(c.querySelector("[data-save-state]").textContent, /Unsaved changes/);
+    await openPlaceholders(c);
+    assert.equal(document.querySelector("#ph_demand").value, "Pay now");
+    await click(c.querySelector("[data-discard-recovered]"));
+    assert.equal(c.querySelector("[data-recovered-note]"), null);
+    assert.equal(dom.window.sessionStorage.getItem("attorney.unsavedDraft.d1"), null, "discarded edits were kept");
+    await p.unmount();
+});
+
+test("kept changes made on an older version are not put onto a newer one", async () => {
+    dom.window.sessionStorage.setItem("attorney.unsavedDraft.d1",
+        JSON.stringify({ base: "r-old", textEdit: false, content: { fields: { sender_name: "Ayesha", demand: "stale" } } }));
+    const p = await openWorkspace();
+    assert.equal(p.container.querySelector("[data-recovered-note]"), null);
+    assert.equal(dom.window.sessionStorage.getItem("attorney.unsavedDraft.d1"), null);
+    await p.unmount();
+});
+
+test("while Ask AI works, its composer's edge runs and says an answer is coming; it stops when the answer lands", async () => {
+    const p = await openWorkspace();
+    const c = p.container;
+    await click(c.querySelector("[data-ask-ai]"));
+    const composer = () => c.querySelector("[data-ask-composer]");
+    assert.ok(composer().querySelector("[data-ask-ring]"), "the composer has no edge light");
+    assert.equal(composer().hasAttribute("data-asking"), false, "the edge runs before anything was asked");
+    let answer;
+    api.__respond("assistDocumentWorkspaceV2", () => new Promise(r => { answer = r; }));
+    await type(c.querySelector("#drafts-ask"), "Make the wording more formal");
+    await act(async () => {
+        c.querySelector("#drafts-ask").dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    await settle();
+    assert.equal(composer().hasAttribute("data-asking"), true, "the edge does not run while the AI works");
+    assert.equal(composer().getAttribute("aria-busy"), "true");
+    assert.match(composer().querySelector("[data-ask-status]").textContent, /AI is preparing your changes/);
+    assert.ok(composer().querySelector(".ask-spin"), "the send button shows no work in progress");
+    await act(async () => { answer({ data: { summary: "More formal wording.", fields: { ...WORKSPACE.fields, demand: "Kindly pay" } } }); });
+    await settle();
+    assert.equal(c.querySelector("[data-ask-composer][data-asking]"), null, "the edge kept running after the answer");
+    assert.ok(c.querySelector("[data-ai-proposal]"), "the proposal did not appear");
+    await p.unmount();
+});
+
+/* No template fits (2026-10-19): the AI writes it. One button, no questions,
+ * and the document opens labelled as an AI draft for a lawyer to check. */
+test("a description no template fits is written straight away, with no screen in between, and opens as an AI draft", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [], has_more: false } });
+    const base = { id: "pg", title: "Employment contract for a sales manager", prompt: "Employment contract for a sales manager",
+        template_type: "general_document", extraction_status: "not_run", fields: {}, remaining_detail_count: 0, questions: [] };
+    api.__respond("createDraftPlanV2", { data: { ...base, version: 0, status: "ready" } });
+    api.__respond("confirmDraftPlanV2", { data: { ...base, version: 1, status: "confirmed" } });
+    api.__respond("generateDraftPlanV2", { data: { ...base, version: 3, status: "generated", generation: { document_id: "dg", revision_id: "rg", version: 1 } } });
+    api.__respond("getDocumentWorkspaceV2", { data: { document_id: "dg", title: "Employment Contract", source: "freeform_html",
+        template_type: "general_document", fields: null, body_html: "<h1>EMPLOYMENT CONTRACT</h1><p>Between [Employer] and [Employee].</p>",
+        base_revision_id: "rg", base_version: 1, content_epoch: 0, review_status: "none" } });
+    api.__respond("getDocumentV2", { data: { id: "dg", title: "Employment Contract", review_status: "none", current_version: 1,
+        current_revision: { revision_id: "rg", pdf_sha256: "b".repeat(64), created_at: "2026-10-19T09:00:00Z", compliance: { checked: false }, verification: { ran: false } } } });
+    api.__respond("previewRevisionV2", { data: null, error: { message: "no preview in test" } });
+    const p = await mount({});
+    await type(p.container.querySelector("#docs-need"), "Employment contract for a sales manager");
+    await click(buttons(p.container, "Plan my draft")[0]);
+    assert.doesNotMatch(p.container.textContent, /couldn't tell which document/);
+    // No intermediate page: the client already described it (2026-10-19).
+    assert.equal(p.container.querySelector("[data-write-general]"), null, "an extra Write my draft step came back");
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+    assert.equal(api.__calls("confirmDraftPlanV2").length, 1);
+    assert.equal(api.__calls("generateDraftPlanV2").length, 1, "Plan my draft must go straight on to generate");
+    assert.ok(p.container.querySelector("[data-ai-draft-note]"), "the document is not labelled as an AI draft");
     await p.unmount();
 });

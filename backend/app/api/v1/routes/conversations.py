@@ -20,7 +20,7 @@ import logging
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 
-from app.dependencies import get_current_user
+from app.dependencies import require_client, require_lawyer
 from app.schemas.common import StatusResponse
 from app.core.exceptions import ForbiddenError
 from app.services import conversation_service as conversations
@@ -147,7 +147,7 @@ async def list_conversations(
                        le=conversations.MAX_LIST_PAGE),
     after: str | None = Query(None, max_length=512),
     search: str | None = Query(None, max_length=120),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_client),
 ):
     """One page of this user's chat conversations, newest first.
 
@@ -167,7 +167,7 @@ async def list_conversations(
 @client_router.post("")
 async def create_conversation(
     body: NewConversationRequest | None = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_client),
 ):
     """Start a real, persisted conversation.
 
@@ -192,7 +192,7 @@ async def get_conversation(
     before_seq: int | None = Query(
         default=None, description="Cursor: messages BEFORE this sequence."),
     page_size: int = Query(50, ge=1, le=200),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_client),
 ):
     """One conversation and one page of its messages, oldest first.
 
@@ -223,7 +223,7 @@ async def get_conversation(
 async def rename_conversation(
     session_id: str,
     body: RenameRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_client),
 ):
     return await conversations.rename_session(
         conversations.SURFACE_CLIENT, session_id, str(current_user["_id"]),
@@ -233,7 +233,7 @@ async def rename_conversation(
 @client_router.delete("/{session_id}")
 async def delete_conversation(
     session_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_client),
 ):
     """Remove a conversation from this user's chat history.
 
@@ -251,14 +251,9 @@ async def delete_conversation(
 # Lawyer research conversations
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Owner-scoped, NOT role-gated, and that is deliberate.
-#
-# `POST /ai/research` admits any authenticated user, so gating these endpoints
-# on the lawyer role would mean a client's research turns were persisted into
-# rows they could never list, open or delete — data created about someone that
-# they have no way to reach. The property this surface actually needs is "your
-# own conversations and nobody else's", which ownership gives for every role,
-# and which is what stops one lawyer reading another's.
+# Owner-scoped AND lawyer-only. Hiding the research page from clients is not
+# the security boundary: every operation below enforces the same professional
+# role policy as `POST /ai/research`.
 research_router = APIRouter(prefix="/research-conversations", tags=["conversations"])
 
 
@@ -272,7 +267,7 @@ async def list_research(
                        le=conversations.MAX_LIST_PAGE),
     after: str | None = Query(None, max_length=512),
     search: str | None = Query(None, max_length=120),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """One page of this lawyer's research conversations, newest first.
 
@@ -342,7 +337,7 @@ async def list_research(
 @research_router.post("")
 async def create_research(
     body: NewConversationRequest | None = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """Start a research conversation, optionally bound to a case.
 
@@ -365,7 +360,7 @@ async def get_research(
     before_seq: int | None = Query(
         default=None, description="Cursor: messages BEFORE this sequence."),
     page_size: int = Query(50, ge=1, le=200),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """One research conversation, with its messages and any pending question.
 
@@ -389,7 +384,7 @@ async def get_research(
 async def rename_research(
     session_id: str,
     body: RenameRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """Rename. Refused when the case is no longer accessible.
 
@@ -408,7 +403,7 @@ async def rename_research(
 async def archive_research(
     session_id: str,
     body: ArchiveRequest | None = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """Archive or unarchive. Archived conversations keep their messages and drop
     out of the default list — the research equivalent of closing a file rather
@@ -428,7 +423,7 @@ async def archive_research(
 @research_router.delete("/{session_id}")
 async def delete_research(
     session_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """Remove a research conversation from this user's chat history.
 
@@ -464,7 +459,7 @@ async def delete_research(
 async def cancel_client_turn(
     session_id: str,
     body: CancelRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_client),
 ):
     """Abandon a turn that is still running in this user's conversation.
 
@@ -486,7 +481,7 @@ async def cancel_client_turn(
 async def cancel_research_turn(
     session_id: str,
     body: CancelRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """Abandon a running research turn. See `cancel_client_turn`."""
     existing = await conversations.get_raw(
@@ -533,7 +528,7 @@ async def _cancel_turn(surface: str, session_id: str, client_message_id: str,
 async def research_turn_status(
     session_id: str,
     client_message_id: str = Query(..., min_length=1, max_length=128),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """What the pipeline is doing for one running turn.
 
@@ -576,7 +571,7 @@ async def search_conversations(
     q: str = Query(..., min_length=1, max_length=200,
                    description="What to look for in your own messages."),
     limit: int = Query(25, ge=1, le=25),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_client),
 ):
     """Find your conversations by what was said in them.
 
@@ -601,7 +596,7 @@ async def search_conversations(
 async def search_research(
     q: str = Query(..., min_length=1, max_length=200),
     limit: int = Query(25, ge=1, le=25),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """Find your research threads by what was said in them.
 

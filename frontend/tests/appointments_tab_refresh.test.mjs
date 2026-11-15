@@ -59,8 +59,16 @@ function appointment(over = {}) {
     };
 }
 
+// The server's side, stateful: once a no-show is recorded the row reads as
+// one, and Upcoming (`upcoming_only`) no longer lists it.
+let noShowDone = false;
 async function mountAppointments(items) {
-    api.__respond("listAppointments", { data: { items } });
+    noShowDone = false;
+    api.__respond("listAppointments", (args = {}) => {
+        const rows = noShowDone ? items.map(x => ({ ...x, status: "no_show" })) : items;
+        return { data: { items: args.upcoming_only ? rows.filter(r => r.status === "confirmed") : rows } };
+    });
+    api.__respond("markNoShow", () => { noShowDone = true; return { data: { success: true } }; });
     // Named export, not default.
     const { AppointmentsPage } =
         await import("../src/components/lawyer/AppointmentsPage.jsx");
@@ -108,6 +116,18 @@ async function mountAppointments(items) {
             });
             await act(async () => { await new Promise(r => setTimeout(r, 30)); });
         },
+        // ONE outcome interface (2026-10-20): Record outcome -> "The client
+        // didn't attend" -> confirm. There is no standalone No Show button.
+        noShow: async () => {
+            const press = async (el) => {
+                assert.ok(el, "control missing");
+                await act(async () => { el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+                await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+            };
+            await press([...container.querySelectorAll('button:not([role="tab"])')].find(b => b.textContent.trim() === "Record outcome"));
+            await press([...dom.window.document.querySelectorAll('[role="radio"]')].find(b => b.textContent.trim() === "The client didn't attend"));
+            await press(dom.window.document.querySelector("[data-close-confirm]"));
+        },
         tab: async (label) => {
             const tab = [...container.querySelectorAll('[role="tab"]')].find(b => b.textContent.trim().startsWith(label));
             assert.ok(tab, `no ${label} tab`);
@@ -132,34 +152,31 @@ test.after(() => {
 
 
 function started(over = {}) {
-    return { id: "apt-1", scheduled_at: new Date(Date.now() - 10 * 60e3).toISOString(), client_name: "Ayesha Bibi",
+    return { id: "apt-1", scheduled_at: new Date(Date.now() - 20 * 60e3).toISOString(), client_name: "Ayesha Bibi",
         duration_minutes: 30, mode: "video", notes: "Consultation", status: "confirmed", case_id: null, ...over };
 }
 
 test("a row marked No Show leaves the Upcoming tab", async () => {
-    api.__respond("markNoShow", { data: { success: true } });
     const ui = await mountAppointments([started()]);
     await ui.tab("Upcoming");
     assert.deepEqual(ui.badges(), ["Upcoming"]);
-    await ui.click("No Show");
+    await ui.noShow();
     assert.deepEqual(ui.badges(), [], "the no-show is still listed under Upcoming");
     await ui.unmount();
 });
 
 test("on All, the row stays and shows its new status", async () => {
-    api.__respond("markNoShow", { data: { success: true } });
     const ui = await mountAppointments([started()]);
-    await ui.click("No Show");
+    await ui.noShow();
     assert.deepEqual(ui.badges(), ["No Show"]);
     await ui.unmount();
 });
 
 test("the per-status totals are re-read after a change", async () => {
-    api.__respond("markNoShow", { data: { success: true } });
     const ui = await mountAppointments([started()]);
     const totalsReads = () => api.__calls("listAppointments").filter(c => c.args[0]?.page_size === 1).length;
     const before = totalsReads();
-    await ui.click("No Show");
+    await ui.noShow();
     await ui.settle(60);
     assert.ok(totalsReads() > before, "the totals were not re-read");
     await ui.unmount();

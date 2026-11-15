@@ -1,0 +1,34 @@
+// chat_length questions_v1 (2026-10-13). SILVER, engineer-authored, NOT lawyer-reviewed. Client-chat answer-length
+// evaluation. Each turn lists REQUIRED elements as groups of alternatives (any one satisfies a group): `law` = legal
+// authority a complete answer must name; `deadline` = a time limit it must keep; `warning` = a safety step it must keep.
+// These are minimum checks derived from the question, not gold answers. Existing system answers are observations.
+{"id":"c01","lang":"en","category":"definition","turns":[{"q":"What is Section 489-F PPC?","law":[["489-F","489 F","489F"]]}]}
+{"id":"c02","lang":"en","category":"definition","turns":[{"q":"What does Section 302 PPC say?","law":[["302"]]}]}
+{"id":"c03","lang":"ur","category":"definition","turns":[{"q":"تعزیرات پاکستان کی دفعہ 420 کیا ہے؟","law":[["420"]]}]}
+{"id":"c04","lang":"roman_ur","category":"definition","turns":[{"q":"khula kya hota hai?","law":[["khula","خلع"]]}]}
+{"id":"c05","lang":"en","category":"definition","turns":[{"q":"What is anticipatory bail in Pakistan?","law":[["498"]]}]}
+{"id":"c06","lang":"en","category":"procedure","turns":[{"q":"How do I register an FIR in Punjab?","law":[["154"]]}]}
+{"id":"c07","lang":"en","category":"procedure","turns":[{"q":"How can my brother get bail after being arrested for theft?","law":[["497","496"]]}]}
+{"id":"c08","lang":"ur","category":"procedure","turns":[{"q":"شوہر طلاق کا نوٹس کیسے دیتا ہے اور طلاق کب مؤثر ہوتی ہے؟","law":[["7"]],"deadline":[["90","نوے","ninety"]]}]}
+{"id":"c09","lang":"roman_ur","category":"procedure","turns":[{"q":"biwi ko kharcha (maintenance) lene ke liye family court mein case kaise karte hain?","law":[["family court","فیملی کورٹ","Family Courts"]]}]}
+{"id":"c10","lang":"en","category":"procedure","turns":[{"q":"How do I evict a tenant who stopped paying rent for my house in Lahore?","law":[["Rented Premises"]]}]}
+{"id":"c11","lang":"en","category":"case_facts","turns":[{"q":"My business partner gave me a cheque of 5 lakh rupees to repay what he owed me and it bounced last week. He now refuses to pay. What can I do?","law":[["489-F","489 F","489F"]]}]}
+{"id":"c12","lang":"en","category":"multi_issue","turns":[{"q":"My friend gave me a cheque to repay a loan and it bounced. When I asked for the money he threatened to kill me. What can I do?","law":[["489-F","489 F","489F"],["506","criminal intimidation"]],"warning":[["police","FIR","15"]]}]}
+{"id":"c13","lang":"ur","category":"multi_issue","turns":[{"q":"میرے دوست نے قرض واپس کرنے کے لیے چیک دیا جو باؤنس ہو گیا۔ پیسے مانگنے پر اس نے جان سے مارنے کی دھمکی دی۔ میں کیا کروں؟","law":[["489"],["506"]]}]}
+{"id":"c14","lang":"roman_ur","category":"case_facts","turns":[{"q":"mere shohar ne mujhe ghar se nikal diya hai aur 2 bachon ka kharcha bhi nahi deta, main kya karun?","law":[["maintenance","nafqa","kharcha","Family Court","family court"]]}]}
+{"id":"c15","lang":"en","category":"urgent","turns":[{"q":"Police arrested my son three days ago and have not produced him before any magistrate. What can we do?","law":[["61","24 hours","twenty-four hours","habeas"]],"deadline":[["24 hours","twenty-four hours","24"]]}]}
+{"id":"c16","lang":"en","category":"multi_issue","turns":[{"q":"My neighbour built a wall on part of my land and when I objected he beat me and broke my arm. What legal action can I take?","law":[["337","hurt","trespass"]],"warning":[["police","FIR","medical"]]}]}
+{"id":"c17","lang":"en","category":"deadline","turns":[{"q":"How long do I have to file an appeal against a civil court decree?","law":[["Limitation"]],"deadline":[["30","90","thirty","ninety"]]}]}
+{"id":"c18","lang":"en","category":"deadline","turns":[{"q":"What is the time limit for filing a suit to recover money someone owes me?","law":[["Limitation"]],"deadline":[["three years","3 years","3-year","three-year"]]}]}
+{"id":"c19","lang":"en","category":"urgent","turns":[{"q":"My husband beats me every day and threatened to kill me tonight. What should I do?","law":[["Protection of Women","506","protection order"]],"warning":[["15","police","emergency","safe place","shelter"]]}]}
+{"id":"c20","lang":"roman_ur","category":"urgent","turns":[{"q":"koi mujhe abhi jaan se maarne ki dhamki de raha hai, main kya karun?","law":[["506","criminal intimidation"]],"warning":[["15","police","emergency"]]}]}
+{"id":"c21","lang":"en","category":"followup","turns":[{"q":"How can I get bail for my brother who was arrested for theft?","law":[["497","496"]]},{"q":"How long does it usually take?","law":[]}]}
+{"id":"c22","lang":"en","category":"followup","turns":[{"q":"What is khula?","law":[["khula"]]},{"q":"Does the wife have to return the haq mehr?","law":[["mehr","dower","haq mehr"]]}]}
+{"id":"c23","lang":"en","category":"short","turns":[{"q":"My business partner's cheque of 5 lakh bounced and he refuses to pay. What can I do?","law":[["489-F","489 F","489F"]]},{"q":"make it short","law":[["489-F","489 F","489F"]]}]}
+{"id":"c24","lang":"en","category":"short","turns":[{"q":"How do I register an FIR in Punjab?","law":[["154"]]},{"q":"explain briefly","law":[["154"]]}]}
+{"id":"c25","lang":"ur","category":"short","turns":[{"q":"شوہر طلاق کا نوٹس کیسے دیتا ہے؟","law":[["7"]]},{"q":"مختصر بتائیں","law":[["7"]]}]}
+{"id":"c26","lang":"en","category":"detail","turns":[{"q":"What is Section 506 PPC?","law":[["506"]]},{"q":"explain in detail","law":[["506"]]}]}
+{"id":"c27","lang":"roman_ur","category":"detail","turns":[{"q":"chori ke case mein bail kaise milti hai?","law":[["497","496"]]},{"q":"tafseel se batao","law":[["497","496"]]}]}
+{"id":"c28","lang":"ur","category":"procedure","turns":[{"q":"ایف آئی آر کیسے درج کروائیں؟","law":[["154"]]}]}
+{"id":"c29","lang":"roman_ur","category":"definition","turns":[{"q":"489-F kya hai?","law":[["489-F","489 F","489F"]]}]}
+{"id":"c30","lang":"en","category":"ambiguous","turns":[{"q":"Can I sue him?","law":[],"expect_clarification":true}]}

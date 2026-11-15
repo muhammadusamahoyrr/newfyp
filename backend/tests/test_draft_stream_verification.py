@@ -43,7 +43,9 @@ def test_the_done_sentinel_is_emitted_last():
     """A client that stops at [DONE] must still have seen the verification."""
     src = inspect.getsource(ai_routes.ai_draft_stream)
 
-    assert src.index("_verification_record") < src.index("[DONE]")
+    # rindex: the early-refusal stream (identity index unavailable) has its own
+    # [DONE]; the drafting stream's is the last one in the source.
+    assert src.index("_verification_record") < src.rindex("[DONE]")
 
 
 def test_tokens_are_buffered_for_the_check():

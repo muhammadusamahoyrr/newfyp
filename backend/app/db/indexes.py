@@ -37,6 +37,7 @@ from app.db.collections import (
     get_lawyer_reviews_col,
     get_notifications_col,
     get_password_reset_col,
+    get_email_verification_col,
     get_payment_events_col,
     get_payments_col,
     get_refresh_blocklist_col,
@@ -517,6 +518,48 @@ async def create_all_indexes() -> None:
     await _review_request_indexes()
     await _vault_trash_indexes()
     await _document_folder_indexes()
+    await _meeting_proposal_indexes()
+    await _appointment_message_indexes()
+
+
+async def _meeting_proposal_indexes() -> None:
+    """At most one OPEN meeting proposal per case (2026-10-12): the service
+    reads first for a friendly message, and this makes it hold under a race."""
+    from app.db.collections import get_meeting_proposals_col
+    col = get_meeting_proposals_col()
+    await col.create_indexes([
+        IndexModel([("client_id", ASCENDING), ("status", ASCENDING)]),
+        IndexModel([("lawyer_id", ASCENDING), ("case_id", ASCENDING)]),
+    ])
+    await _try_unique_partial(
+        col, [("case_id", ASCENDING)], "uniq_open_meeting_proposal", ["open", "accepting"])
+    # Expired proposals whose one-time lawyer notice is still owed (the sweep's read).
+    await col.create_indexes([
+        IndexModel([("expiry_notice", ASCENDING)], name="meeting_proposal_expiry_notice",
+                   partialFilterExpression={"expiry_notice": "pending"}),
+    ])
+
+
+async def _appointment_message_indexes() -> None:
+    """An appointment's thread, newest first by (created_at, _id), and ONE
+    stored message per (appointment, sender, idempotency key): the guarantee a
+    retried or raced send cannot store two."""
+    from app.db.collections import get_appointment_messages_col
+    col = get_appointment_messages_col()
+    await col.create_indexes([
+        IndexModel([("appointment_id", ASCENDING), ("created_at", DESCENDING), ("_id", DESCENDING)],
+                   name="appointment_message_timeline"),
+    ])
+    await _try_unique_partial(
+        col, [("appointment_id", ASCENDING), ("sender_id", ASCENDING), ("idempotency_key", ASCENDING)],
+        "uniq_appointment_message_key",
+        filter_expression={"idempotency_key": {"$type": "string"}})
+    # Messages whose one notice is still owed (read on each thread read/send).
+    await col.create_indexes([
+        IndexModel([("appointment_id", ASCENDING), ("created_at", ASCENDING)],
+                   name="appointment_message_notify_pending",
+                   partialFilterExpression={"notify": "pending"}),
+    ])
 
 
 async def _document_folder_indexes() -> None:
@@ -1083,6 +1126,12 @@ async def _auth_indexes() -> None:
             partialFilterExpression={"active_slot": True},
         ),
         IndexModel([("created_at", ASCENDING)], expireAfterSeconds=3600),
+    ])
+    # Email confirmation links: one per account (a resend replaces it), 24 h.
+    await get_email_verification_col().create_indexes([
+        IndexModel([("token", ASCENDING)], unique=True),
+        IndexModel([("user_id", ASCENDING)], unique=True),
+        IndexModel([("created_at", ASCENDING)], expireAfterSeconds=24 * 3600),
     ])
     # WebSocket auth tickets — multi-worker-safe one-time-use store.
     # TTL at `expires_at` (expireAfterSeconds=0) sweeps abandoned tickets;

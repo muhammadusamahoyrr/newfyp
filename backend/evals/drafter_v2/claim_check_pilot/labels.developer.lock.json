@@ -1,0 +1,6 @@
+{
+ "sha256": "e91ae8846d5b1b253d82b070c0e2fcc47b92e7ebf0f45892b0089eef97adc8af",
+ "locked": "2026-10-15",
+ "by": "developer (provisional)",
+ "note": "Locked BEFORE any request is sent. Not sent to the provider. Independent labels go in labels.independent.json from blind_sheet.md, by someone who has seen neither these labels nor outputs."
+}

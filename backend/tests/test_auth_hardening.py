@@ -86,12 +86,26 @@ async def test_logout_is_repeat_safe_and_revokes_both_tokens(monkeypatch):
 
 
 class _AtomicResetTokens:
-    def __init__(self, row):
-        self.row = row
+    """One reset row with Mongo's claim / release / delete semantics."""
 
-    async def find_one_and_delete(self, _query):
-        row, self.row = self.row, None
-        return row
+    def __init__(self, row):
+        self.row = {"_id": "r1", **row}
+
+    async def find_one_and_update(self, query, change):
+        # The claim filter only matches an unclaimed row; the update is atomic.
+        if self.row is None or "claimed_at" in self.row:
+            return None
+        before = dict(self.row)
+        self.row.update(change["$set"])
+        return before
+
+    async def update_one(self, _query, change):
+        if self.row is not None:
+            for key in change.get("$unset", {}):
+                self.row.pop(key, None)
+
+    async def delete_one(self, _query):
+        self.row = None
 
 
 @pytest.mark.asyncio
@@ -126,6 +140,48 @@ async def test_concurrent_reset_consumes_the_token_before_password_update(monkey
     assert sum(item is None for item in results) == 1
     assert sum(isinstance(item, AuthError) for item in results) == 1
     assert len(updates) == 1
+    assert col.row is None, "a used link must be gone"
+
+
+@pytest.mark.asyncio
+async def test_failed_password_write_keeps_the_reset_link_usable(monkeypatch):
+    """The link used to be deleted before the password was written, so a
+    database failure burned it and left the old password in place."""
+    from app.services import auth_service as auth
+
+    col = _AtomicResetTokens({
+        "email": "user@example.test",
+        "created_at": datetime.now(timezone.utc),
+    })
+    monkeypatch.setattr(auth, "get_password_reset_col", lambda: col)
+
+    async def by_email(_email):
+        return {"_id": "u1"}
+
+    calls = {"n": 0}
+    stored = []
+
+    async def update(_query, change):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("mongo write failed")
+        stored.append(change["$set"]["password_hash"])
+
+    async def no_revoke(*_a, **_k):
+        return None
+
+    monkeypatch.setattr(auth.user_repo, "find_by_email", by_email)
+    monkeypatch.setattr(auth.user_repo, "update_one", update)
+    monkeypatch.setattr(auth, "hash_password", lambda password: "hash:" + password)
+    monkeypatch.setattr(auth.auth_sessions, "revoke_all_best_effort", no_revoke)
+
+    with pytest.raises(RuntimeError):
+        await auth.reset_password("same", "Password1")
+    assert col.row is not None and "claimed_at" not in col.row, "the failed attempt burned the link"
+
+    await auth.reset_password("same", "Password1")
+    assert stored == ["hash:Password1"]
+    assert col.row is None
 
 
 class _ResetStore:
@@ -334,3 +390,40 @@ def test_unsafe_auth_configuration_fails_at_startup(overrides):
     safe.update(overrides)
     with pytest.raises(ValidationError):
         Settings(_env_file=None, **safe)
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_answers_before_doing_the_account_work(monkeypatch):
+    """Awaiting the lookup + token write + SMTP inside the request made a real
+    account answer measurably slower than an unknown email (timing enumeration).
+    The route now queues the work and answers at once, for every address."""
+    from fastapi import BackgroundTasks
+    from app.api.v1.routes import auth as routes
+    from app.schemas.auth import ForgotPasswordRequest
+
+    ran = []
+
+    async def slow_work(email):
+        ran.append(email)
+
+    monkeypatch.setattr(routes.auth_service, "forgot_password", slow_work)
+    tasks = BackgroundTasks()
+    endpoint = getattr(routes.forgot_password, "__wrapped__", routes.forgot_password)
+    result = await endpoint(None, ForgotPasswordRequest(email="someone@example.com"), tasks)
+
+    assert result.success is True
+    assert ran == [], "the account work ran inside the request"
+    assert len(tasks.tasks) == 1
+    await tasks()
+    assert ran == ["someone@example.com"]
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_background_failure_is_logged_not_raised(monkeypatch):
+    from app.api.v1.routes import auth as routes
+
+    async def boom(_email):
+        raise RuntimeError("mongo down")
+
+    monkeypatch.setattr(routes.auth_service, "forgot_password", boom)
+    assert await routes._forgot_password_quietly("x@example.test") is None

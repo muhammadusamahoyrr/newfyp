@@ -75,6 +75,11 @@ class EngagementOut(BaseModel):
     lawyer_id: str | None = None
     # Optional on the way OUT: engagements created before §17 R5-1 have none.
     appointment_id: str | None = None
+    # The consultation the request followed, from `appointment_id` only
+    # (2026-10-20); None + `consultation_unavailable` when there is no usable
+    # stored link (legacy, or gone). List-only enrichment.
+    consultation: dict | None = None
+    consultation_unavailable: bool | None = None
     status: str | None = None
     message: str | None = None
     fee_amount: float | None = None

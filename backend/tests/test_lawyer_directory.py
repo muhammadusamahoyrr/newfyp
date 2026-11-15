@@ -201,7 +201,7 @@ async def test_a_practice_area_beyond_the_case_types_filters_the_directory(direc
         "_id": "DIR-PROP", "role": "lawyer", "email": "dir-prop@x.test",
         "password_hash": hash_password("Str0ngPass1"), "full_name": "Property Advocate",
         "is_active": True, "province": "punjab",
-        "lawyer_profile": {"specializations": ["civil", "property"], "kyc_verified": True,
+        "lawyer_profile": {"bar_number": "LHC-DIR-PROP", "specializations": ["civil", "property"], "kyc_verified": True,
                            "rating": 4.0, "availability": True},
     })
     found = await _search(specialization="property", page_size=50)

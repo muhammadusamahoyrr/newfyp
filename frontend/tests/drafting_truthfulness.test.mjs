@@ -21,7 +21,9 @@ import {
 } from "../src/lib/lawyerDraftTemplates.js";
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
-const clientPage = read("../src/components/client/ModDocuments.jsx");
+// The client's review and final screens are the drafting workspace's (the
+// template guided flow was removed on 2026-10-19).
+const clientPage = read("../src/components/client/documents/DocsDrafts.jsx");
 const lawyerPage = read("../src/components/lawyer/DocumentsPage.jsx");
 
 /* ── complianceSummary ─────────────────────────────────────────────────── */
@@ -134,9 +136,15 @@ test("the generic scaffold is offered under an honest name", () => {
 
 test("no card claims an instrument the system does not have", () => {
     const names = TEMPLATES.map(t => t.name.toLowerCase()).join(" | ");
-    for (const absent of ["vakalatnama", "wakalatnama", "sale deed", "nda",
-                          "employment", "affidavit", "power of attorney", "rti"]) {
-        assert.ok(!names.includes(absent), `catalogue still lists ${absent}`);
+    // "employment" left this list on 2026-10-14: Employment Contract and the
+    // Employment Offer Letter now open bodies of their own (lawyerTemplateLibrary.js).
+    // "sale deed" and "affidavit" left it on 2026-10-19 for the same reason: the
+    // Sale Deed (Bai Nama) and the Affidavit of Non-Encumbrance have their own
+    // bodies, which the library test checks card by card.
+    for (const absent of ["vakalatnama", "wakalatnama", "nda",
+                          "power of attorney", "rti"]) {
+        // Whole words: "rti" is inside "Articles of Association".
+        assert.ok(!new RegExp(`\\b${absent}\\b`).test(names), `catalogue still lists ${absent}`);
     }
 });
 

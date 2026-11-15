@@ -338,6 +338,15 @@ def _canon_statute(name: str, index: CorpusIndex) -> str | None:
     key = re.sub(r"\s+", " ", (name or "").strip()).upper().rstrip(".")
     if key in _ABBREV:
         return _ABBREV[key]
+    # The SAME normalisation the answer parser and the drafter's guard use
+    # (answer_citations.normalise_statute: year dropped, aliases folded), so
+    # "Pakistan Penal Code, 1860" is PPC 1860 here too. Without it the long
+    # form became a second, UNVERIFIABLE citation beside the short one (eval
+    # base_r1, 2026-10-14).
+    from app.ai.answer_citations import normalise_statute
+    family = normalise_statute(name)
+    if family in _ABBREV:
+        return _ABBREV[family]
     canon = index.canonical(name)
     if canon:
         return canon

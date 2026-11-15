@@ -23,6 +23,7 @@ from app.ai.tools.document_tools import (
     mentions_document as _mentions_document,
 )
 from app.ai.pipelines.answerability import check as check_answerability
+from app.ai.response_policy import cache_variant
 
 
 logger = logging.getLogger(__name__)
@@ -114,11 +115,11 @@ def effective_language(state: AgentState) -> str:
     first won: the second user silently received a language they had not
     chosen.
 
-    Two buckets rather than the raw value, because "ur" and "roman_urdu" both
-    produce an Urdu answer and an entry written under one is correct under the
-    other. A raw value would split the cache for no gain in correctness.
+    Three buckets: Roman Urdu is Latin-script output, while Urdu is Urdu-script
+    output. Combining them let whichever language ran first win for the other.
     """
-    return "ur" if state.get("language") in ("ur", "roman_urdu") else "en"
+    language = state.get("language")
+    return language if language in ("ur", "roman_urdu") else "en"
 
 
 def cache_block_reason(state: AgentState) -> Optional[str]:
@@ -145,6 +146,14 @@ def cache_block_reason(state: AgentState) -> Optional[str]:
     # toggle, so a web turn running fresh every time is the intended cost.
     if state.get("web_search_enabled"):
         return "web_search"
+
+    # A question needing law this matter's province is not held for
+    # (ai/authority_registry.py): never served from, nor written to, the cache
+    # -- an entry written before that rule could be a confident answer from
+    # other law, and the decision node is where such a question is handled.
+    from app.ai import authority_registry
+    if authority_registry.assess_state(state)["unavailable"]:
+        return "authority_unavailable"
 
     return None
 
@@ -178,6 +187,8 @@ async def cache_lookup_node(state: AgentState) -> dict:
         # next — whichever ran first won, and the other silently got a language
         # they had not chosen.
         language=effective_language(state),
+        # The response mode is part of the identity too (see cache._make_key).
+        variant=cache_variant(state),
     )
     if not payload:
         return {"cache_hit": False}

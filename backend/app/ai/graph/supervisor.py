@@ -26,7 +26,24 @@ from app.ai.nodes.tool_node             import tool_node
 from app.ai.nodes.triage_node           import triage_node
 
 
-def build_chat_graph():
+def _authority_gate(state) -> dict | None:
+    """Authority availability (ai/authority_registry.py, batch 10): a question
+    needing law this matter's province is not held for is refused honestly --
+    or, when mixed, has that law's text removed -- before generation sees it."""
+    from app.ai import authority_registry
+    return authority_registry.chat_gate(state)
+
+
+def _decision_node(state) -> dict:
+    gated = _authority_gate(state)
+    if not gated:
+        return run_decision_engine(state)
+    if gated.get("arbitration_output") == "refuse":
+        return gated
+    return {**gated, **run_decision_engine({**state, **gated})}
+
+
+def build_chat_graph(checkpointer=None):
     """
     9-node chat graph with classifier-first routing and interrupt() HITL.
 
@@ -66,7 +83,7 @@ def build_chat_graph():
     # Single routing authority: turns retrieval evidence into answer/defer/refuse.
     # Kept as its own node (not folded into the grader) because import_validator
     # forbids worker nodes from importing the decision engine.
-    builder.add_node("decision_node",         run_decision_engine)
+    builder.add_node("decision_node",         _decision_node)
     builder.add_node("generation_node",       generation_node)
     builder.add_node("hallucination_node",    hallucination_node)
     builder.add_node("finalizer_node",        finalizer_node)
@@ -144,7 +161,9 @@ def build_chat_graph():
     # state MUST outlive the process that created it. MemorySaver kept it in RAM:
     # a restart, or a second uvicorn worker picking up the user's reply, silently
     # lost the pending clarification. Mongo-backed checkpoints survive both.
-    return builder.compile(checkpointer=MongoDBSaver())
+    # `checkpointer` is a test hook only: integration tests run this exact
+    # topology against an in-memory saver.
+    return builder.compile(checkpointer=checkpointer or MongoDBSaver())
 
 
 def build_intake_graph():
@@ -154,8 +173,8 @@ def build_intake_graph():
     Flow:
         retrieval_node
             └── retrieval_grader_node
-                    ├── relevance < 0.4 AND attempts < 2 → retrieval_node (retry once)
-                    └── ok ──► intake_node
+                    └── intake_evidence_gate_node   (Batch 4, 2026-10-12)
+                            └── intake_node (legal analysis, or facts-only when the gate says so)
                                    └── intake_hallucination_node
                                            └── intake_finalizer_node → END
 
@@ -167,23 +186,25 @@ def build_intake_graph():
     Used only by convert_to_case(). Does not use the full chat convergence loop.
     """
     from app.ai.nodes.intake_node import intake_node
+    from app.ai.nodes.intake_evidence_gate_node import intake_evidence_gate_node
     from app.ai.nodes.intake_hallucination_node import intake_hallucination_node
     from app.ai.nodes.intake_finalizer_node import intake_finalizer_node
 
     builder = StateGraph(AgentState)
     builder.add_node("retrieval_node",           retrieval_node)
     builder.add_node("retrieval_grader_node",    retrieval_grader_node)
+    builder.add_node("intake_evidence_gate_node", intake_evidence_gate_node)
     builder.add_node("intake_node",              intake_node)
     builder.add_node("intake_hallucination_node", intake_hallucination_node)
     builder.add_node("intake_finalizer_node",    intake_finalizer_node)
 
     builder.set_entry_point("retrieval_node")
     builder.add_edge("retrieval_node", "retrieval_grader_node")
-    builder.add_conditional_edges(
-        "retrieval_grader_node",
-        route_after_grader_intake,
-        {"retrieval_node": "retrieval_node", "intake_node": "intake_node"},
-    )
+    # No identical retry: the old loop re-ran the SAME query (the log said
+    # "reusing query expansion for identical retry query") and spent a second
+    # retrieval + grader call to get the same chunks. The gate decides instead.
+    builder.add_edge("retrieval_grader_node", "intake_evidence_gate_node")
+    builder.add_edge("intake_evidence_gate_node", "intake_node")
     builder.add_edge("intake_node",              "intake_hallucination_node")
     builder.add_edge("intake_hallucination_node", "intake_finalizer_node")
     builder.add_edge("intake_finalizer_node",     END)

@@ -76,6 +76,10 @@ def get_password_reset_col() -> AsyncIOMotorCollection:
     return get_database()["password_reset_tokens"]
 
 
+def get_email_verification_col() -> AsyncIOMotorCollection:
+    return get_database()["email_verification_tokens"]
+
+
 def get_appointment_disputes_col() -> AsyncIOMotorCollection:
     """A client's report that an appointment's record is wrong.
 
@@ -101,6 +105,14 @@ def get_lawyer_availability_col() -> AsyncIOMotorCollection:
 
 def get_appointments_col() -> AsyncIOMotorCollection:
     return get_database()["appointments"]
+
+
+def get_meeting_proposals_col() -> AsyncIOMotorCollection:
+    return get_database()["meeting_proposals"]
+
+
+def get_appointment_messages_col() -> AsyncIOMotorCollection:
+    return get_database()["appointment_messages"]
 
 
 def get_engagements_col() -> AsyncIOMotorCollection:

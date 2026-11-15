@@ -57,9 +57,11 @@ langchain-huggingface==0.1.2
 langgraph==1.0.1
 nltk==3.9.4
 langchain-ollama==0.3.10   # local Ollama — required by LLM_LOCAL_ONLY runs
-# Optional LLM providers — install only if you point LLM_PROVIDER at them
-# (llm.py imports them lazily and falls back if absent):
-#   langchain-google-genai   # Gemini
+# Gemini, a free fallback after the Groq keys (llm.py `_FALLBACK_ORDER`).
+# 2.1.12 is the last line built on langchain-core 0.3.x; 4.x would pull
+# langchain-core 1.x and pydantic upgrades that break the pins above.
+# llm.py still imports it lazily and skips Gemini when absent.
+langchain-google-genai==2.1.12
 
 # Voice / STT
 faster-whisper

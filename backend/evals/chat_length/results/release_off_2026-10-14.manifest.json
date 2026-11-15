@@ -1,0 +1,228 @@
+{
+ "label": "release-off-2026-10-14",
+ "method": "socket-v1",
+ "started_utc": "2026-10-13T21:38:43.254437+00:00",
+ "dataset": {
+  "path": "evals/chat_length/questions_v1.jsonl",
+  "sha256": "91376b718754f46ca2b741b84cb3ae7ecfd2227ea877eea237b1ebcb1dda2af8",
+  "items": 30,
+  "turns": 37
+ },
+ "code": {
+  "source_fingerprint": "b8e3d9fd25f2deeb110db5ca05dbd8bb50fc5bf69ddaca08fe17ce65e6a7e745",
+  "files_hashed": 362,
+  "key_files": {
+   "app/ai/answer_citations.py": "7a06e9a6bdad034c0ec638f2499c2acdb9f87e9d77de2b27a6d8648fc9122af2",
+   "app/ai/cache.py": "4f6e76872933fffa3fd4e1d1769024758b4b61cfdfb3c1d0e2a55d9f1c4b2d77",
+   "app/ai/graph/edges.py": "c68604953957840597d8cccafb2e658b33d9477467461a65da2acc641c34351f",
+   "app/ai/nodes/classifier_node.py": "43c3761d49463003588af04378af3551d6a96a261ac7a645576710f08190e239",
+   "app/ai/nodes/fact_gap_node.py": "dc6bd0e23d07ff1cc98e9e5fd6fddbe1a913df895777177b018f9bdfcf5d539f",
+   "app/ai/nodes/finalizer_node.py": "4c4338a2d5c59a9eb084ba9202a8a5a2e6dd75798f3b1dfb0202a7c79621c0b6",
+   "app/ai/nodes/generation_node.py": "ccca9f698682eff282ffed0995b64d51427f6c458cd85e56cbe9ee5aa1999934",
+   "app/ai/nodes/hallucination_node.py": "6b0f0a0a020f1fe6e50fdb8c4ba1cba37e4dfda15e1fa28540bfbeed944171d6",
+   "app/ai/nodes/triage_node.py": "b0d4942b2be595d31dd1b2fc8ad2d1a62fdd4896d16a5631f52b133ca8e14a99",
+   "app/ai/period_support.py": "adf7790ed12db011ad334cf340624be0126a44cefb2988ac66d353ed8ed20959",
+   "app/ai/response_policy.py": "aa187d0f0c01e352fef6c6d85fe72ea107edca295c1ae411aab76b4b857c232a",
+   "app/websockets/chat_socket.py": "c65d0279cbafb4c69c4f7908ad6e65a612c61ae9ca99717e803bca7e96c93af8"
+  },
+  "git_head": "af960e32467e552ebdc28270c619f3cbf7b01ed9",
+  "git_dirty": true,
+  "git_diff_sha256": "83d49839b4da4130b7bd9a706e210571c9c6e159664f3f04a6a0d5291046f636"
+ },
+ "corpus": {
+  "collections": {
+   "criminal_collection__ctx_v1": 3306,
+   "criminal_collection": 3306,
+   "family_collection": 989,
+   "civil_collection": 4648,
+   "constitutional_collection": 1736,
+   "lawyers_collection": 1,
+   "criminal_collection__sec_v2": 3305,
+   "judgments_collection": 23978,
+   "criminal_collection__sec_v1": 3306,
+   "statutes_collection": 0
+  },
+  "embedding_model": "intfloat/multilingual-e5-base",
+  "embedding_version": "intfloat/multilingual-e5-base/v1",
+  "chunking_version": "v2",
+  "decision_policy_version": "v6"
+ },
+ "effective_settings": {
+  "analyzer_ai_model": "openai/gpt-oss-120b",
+  "analyzer_ai_model_allowlist": "openai/gpt-oss-120b,openai/gpt-oss-20b,llama-3.3-70b-versatile",
+  "analyzer_ai_provider": "simulated",
+  "chat_adaptive_length_client": false,
+  "embedding_cache_ttl": 3600,
+  "gemini_model_fast": "gemini-3.5-flash-lite",
+  "gemini_model_main": "gemini-3.5-flash-lite",
+  "llm_local_only": false,
+  "llm_provider": "openrouter",
+  "ollama_fast_model": "",
+  "ollama_model": "qwen2.5:7b",
+  "retrieval_index_variant": "base",
+  "retrieval_multi_query": false,
+  "voice_groq_model": "whisper-large-v3",
+  "voice_provider": "groq"
+ },
+ "chat_adaptive_length_client": false,
+ "response_policy_version": "resp-policy-v1",
+ "client_guard_version": "client-guard-v2",
+ "safety_guidance_version": "safety-v1",
+ "exact_provision_version": "exact-provision-v1",
+ "env_overlay": ".env.analyzer-demo.local (values not recorded)",
+ "finished_utc": "2026-10-13T21:51:48.157527+00:00",
+ "duration_s": 784.9,
+ "failures": [
+  {
+   "turn": "c01.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "rate_limit (429)",
+    "rate_limit (429)",
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c04.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c07.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)",
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c11.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c15.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c16.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c19.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c20.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)",
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c23.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)",
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c24.2",
+   "frame": "error",
+   "turn_failed": true,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": [
+    "hallucination_node"
+   ]
+  },
+  {
+   "turn": "c25.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c26.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)",
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c28.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  }
+ ],
+ "turns_failed": 1,
+ "turns_recovered_after_provider_error": 12,
+ "groq_tool_use_failed_log_lines": 0,
+ "groq_output_parse_failed_log_lines": 0,
+ "warning_log_counts": {
+  "attorney.trace": 23,
+  "app.ai.nodes.retrieval_grader_node": 1
+ },
+ "models_seen": [
+  "models/gemini-3.5-flash-lite",
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b"
+ ]
+}

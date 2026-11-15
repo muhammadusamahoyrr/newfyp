@@ -1,0 +1,23 @@
+{
+ "label": "after_r1",
+ "when": "2026-10-14T17:56:34+00:00",
+ "repeat": 2,
+ "split": "all",
+ "cases": 29,
+ "dataset_sha256": "13125d623770a660e1bdd5f7da68b3c84b1cc2d65242645bae6d2d8028330a18",
+ "code": {
+  "app/api/v1/routes/ai.py": "263b8ef004f709b4c388882b506f138fd88a2aba8c42a0ff4903dc6c291980e8",
+  "app/ai/visible_authority.py": "f0226208fb56740761ab6088a8c3a05ce7ad7e71659298f6402f3d057c328a83",
+  "app/ai/draft_jurisdiction.py": "1a7da7846603c0d9ff6840c32fa985f8bcae06622bf89a42d46a569a2a0553af",
+  "app/ai/exact_provision.py": "8feb73ad5c1788e89807870a93910d94c531b6f3ac971c3a4edf095c31854da8",
+  "app/ai/citation_verification.py": "7d0697a8fba9710b586a18d42149ca37ebec287ccc0e634d184e7cc4bce0866a",
+  "app/ai/answer_citations.py": "a4e3ced137068a41bac0ea03b4861a88f3f9f9ac4cf0cbd7cc327c4134909f9f",
+  "app/ai/draft_guard.py": "e58384387baf87f496664c506e9792b4d3bf066bbd4a417dcb14bfb57b825244",
+  "app/ai/llm.py": "8c7a057916447d4557771e807342d5c80e7c03588c737ffed86212d2ae45d4bc"
+ },
+ "stubbed": [
+  "provenance.record_answer",
+  "case-law retrieval"
+ ],
+ "model_purpose": "draft_stream"
+}

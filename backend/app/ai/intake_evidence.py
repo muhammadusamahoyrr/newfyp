@@ -31,6 +31,7 @@ the only kind that can be run often enough to be worth having.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from app.ai.answer_citations import (
@@ -54,8 +55,49 @@ STATUS_UNBOUND = "unbound"
 UNTRUSTWORTHY = frozenset({STATUS_PHANTOM, STATUS_MISMATCHED, STATUS_UNBOUND})
 
 
+_SECTION_PREFIX = re.compile(r"^\s*(?:section|sec\.?|s\.|article|art\.?|dafa)\s*", re.IGNORECASE)
+_SUBSECTION_TAIL = re.compile(r"\s*\(.*$")
+
+
 def _norm_section(value: Any) -> str:
-    return str(value or "").strip().lower().replace(" ", "")
+    """The provision a label names, however it was WRITTEN (2026-10-13).
+
+    Measured on the 34-item generation eval: 12 of 16 non-bound citations
+    named the right provision of the right passage and failed only on form --
+    "Section 7" against a stored "7", "7(2)" / "7(30 days)" (a sub-section of
+    section 7) against "7". The marker word and a sub-section tail are not part
+    of the provision's identity; a hyphen in "489-F" is not either. The
+    instrument check and the passage's own label are untouched, so a wrong
+    section or a wrong instrument still fails.
+    """
+    s = _SECTION_PREFIX.sub("", str(value or ""))
+    s = _SUBSECTION_TAIL.sub("", s)
+    return s.strip().lower().replace(" ", "").replace("-", "")
+
+
+# A lettered section ("489- F. Dishonestly issuing a cheque") whose index
+# metadata lost the letter (stored as "489"; measured on 72 PPC chunks).
+from app.ai.section_repair import LETTERED_HEADING as _LETTERED_HEADER  # noqa: E402 -- one shared rule
+
+
+def canonical_section(source: dict) -> str:
+    """The provision label for an evidence entry, from its metadata -- with a
+    lost letter restored from the passage's own header, never guessed."""
+    sec = str(source.get("section") or "").strip()
+    m = _LETTERED_HEADER.match(source.get("content") or source.get("text") or "")
+    if m and sec and _norm_section(sec) == _norm_section(m.group(1)):
+        return f"{m.group(1)}-{m.group(2)}"
+    return sec
+
+
+def _statute_conflict(model_statute: str, source_statute: str) -> bool:
+    """True when the model names a DIFFERENT instrument than the evidence id it
+    cites ("CrPC" beside a PPC passage). Abbreviations and a missing year or
+    province are not conflicts: they normalise to the same or a contained name."""
+    if not (model_statute or "").strip() or not (source_statute or "").strip():
+        return False
+    a, b = normalise_statute(model_statute), normalise_statute(source_statute)
+    return bool(a and b) and a != b and a not in b and b not in a
 
 
 def _statute_evidence(evidence: list[dict] | None) -> list[dict]:
@@ -97,9 +139,9 @@ def bind_intake_citations(
                 # The model named a source it was never given. There is no
                 # reading of this that is a formatting problem.
                 status = STATUS_PHANTOM
-            elif _norm_section(section) and _norm_section(section) != _norm_section(
-                source.get("section")
-            ):
+            elif _norm_section(section) and _norm_section(section) not in {
+                _norm_section(source.get("section")), _norm_section(canonical_section(source)),
+            } or _statute_conflict(statute, source.get("statute", "")):
                 # Real chunk, wrong section. Distinct from a phantom because the
                 # fix is different: the model misread evidence it did have.
                 status = STATUS_MISMATCHED
@@ -109,9 +151,22 @@ def bind_intake_citations(
             source = None
             status = STATUS_UNBOUND
 
+        # IDENTITY COMES FROM THE EVIDENCE (Batch 6, 2026-10-12). For a bound
+        # citation the statute and section are the evidence entry's, never the
+        # model's retelling: a real id with a different statute name written
+        # beside it used to keep the model's name. The model's words are kept
+        # for audit only.
+        if status == STATUS_BOUND and source is not None:
+            shown_statute, shown_section = source.get("statute", "") or statute, canonical_section(source) or section
+        else:
+            shown_statute = statute or (source or {}).get("statute", "")
+            shown_section = section or str((source or {}).get("section", ""))
         citations.append({
-            "statute": statute or (source or {}).get("statute", ""),
-            "section": section or str((source or {}).get("section", "")),
+            "statute": shown_statute,
+            "section": shown_section,
+            "model_statute": statute,
+            "model_section": section,
+            "identity_source": "evidence" if status == STATUS_BOUND and source is not None else "model",
             "type": "statute",
             "status": status,
             "binding": BIND_ID if evidence_id else BIND_NONE,
@@ -229,6 +284,8 @@ def build_intake_claims(
         claims.append({
             "index": index,
             "kind": "action",
+            # "legal" unless the model labelled it "general" guidance.
+            "action_kind": (action.get("kind") if isinstance(action, dict) else None) or "legal",
             "text": text,
             "source_ids": usable,
             "citation_status": "matched" if usable else "unresolved",
@@ -255,7 +312,9 @@ def render_applicable_laws(citations: list[dict] | None) -> list[str]:
     out: list[str] = []
     for entry in citations or []:
         statute = (entry.get("statute") or "").strip()
-        section = str(entry.get("section") or "").strip()
+        # A section stored as "Section 2" rendered as "Section Section 2".
+        section = re.sub(r"^(?:section|sec\.?|s\.)\s*", "",
+                         str(entry.get("section") or "").strip(), flags=re.IGNORECASE)
         if not statute and not section:
             continue
         label = statute

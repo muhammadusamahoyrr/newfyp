@@ -218,6 +218,22 @@ async def redis_reachable(url: str, *, timeout: float | None = None,
                     pass
 
 
+# A LOCAL DEMO with no Redis runs ONE process (scripts/serve.py), so an
+# in-process lock is exclusive there. Opt-in only (`scheduler_single_process`):
+# with several workers it would grant every one of them, which is exactly what
+# the strict lock exists to prevent.
+_LOCAL_LOCKS: dict[str, float] = {}
+
+
+def _local_period_lock(key: str, ttl_seconds: int) -> bool:
+    import time
+    now = time.monotonic()
+    if _LOCAL_LOCKS.get(key, 0.0) > now:
+        return False
+    _LOCAL_LOCKS[key] = now + ttl_seconds
+    return True
+
+
 async def acquire_period_lock_strict(key: str, ttl_seconds: int,
                                      job: str) -> bool:
     """Claim a recurring-period lock, FAILING CLOSED. Nothing else changes.
@@ -244,6 +260,8 @@ async def acquire_period_lock_strict(key: str, ttl_seconds: int,
     """
     client = get_redis()
     if client is None:
+        if getattr(settings, "scheduler_single_process", False):
+            return _local_period_lock(key, ttl_seconds)
         logger.info(
             "appointment_lock_unavailable job=%s reason=redis_disabled", job)
         return False

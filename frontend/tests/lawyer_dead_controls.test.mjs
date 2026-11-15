@@ -175,18 +175,30 @@ const CLIENT_CASE = { _id: "665f00000000000000000001", case_number: "CIV-2026-00
     client_id: "cl1", client_name: "Ayesha", province: "punjab", case_type: "civil", status: "in_progress",
     hearing_dates: [], created_at: "2026-09-01T00:00:00Z" };
 
-test("3.7 Clients: no fake Add Client; Schedule navigates without a fake notification", async () => {
-    api.__respond("listCases", { data: { items: [CLIENT_CASE], total: 1 }, error: null });
+test("3.7 Clients: no fake Add Client; Suggest a meeting opens a real dialog, no fake notification", async () => {
+    // 2026-10-19 (Marhala 4): the page reads /lawyer-clients; "Schedule" (which
+    // only jumped to Appointments) became "Suggest a meeting" on the case.
+    api.__respond("listMyClients", { data: { items: [{
+        client_id: "cl1", name: "Ayesha", email: null, province: "punjab", stage: "Engaged",
+        counts: { requests: 0, upcoming: 0, consultations: 0, open_cases: 1, closed_cases: 0 },
+        needs_outcome: false, next_appointment: null, latest_appointment_id: null, pending_request_id: null,
+        next_action: { kind: "open_case", target_id: CLIENT_CASE._id }, pending: { hire_requests: 0, outcomes: 0, appointment_requests: 0 },
+        waiting_for_client: 0, targets: { case_id: CLIENT_CASE._id, case_number: CLIENT_CASE.case_number },
+        message: { kind: "case", target_id: CLIENT_CASE._id, case_number: CLIENT_CASE.case_number },
+        cases: [{ id: CLIENT_CASE._id, case_number: CLIENT_CASE.case_number, title: CLIENT_CASE.title, status: "in_progress" }],
+    }], totals: { Engaged: 1 }, total: 1 }, error: null });
     const { ClientsPage } = await import("../src/components/lawyer/ClientsPage.jsx");
     const notifs = [];
     const pages = [];
     const view = await mountPage(ClientsPage, { notif: n => notifs.push(n), caseCtx: { setPage: p => pages.push(p) } });
     assert.ok(!buttonTexts(view.container).some(t => /Add Client/.test(t)));
-    // Each card's buttons are Message and Schedule only — no inert "more".
-    assert.deepEqual(buttonTexts(view.container).filter(Boolean), ["Message", "Schedule"]);
-    const schedule = [...view.container.querySelectorAll("button")].find(b => b.textContent.includes("Schedule"));
-    await act(async () => { schedule.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
-    assert.deepEqual(pages, ["appointments"]);
+    // Filter chips, the case link, the next step and the two card actions — no inert "more".
+    assert.deepEqual(buttonTexts(view.container).filter(Boolean),
+        ["All 1", "Engaged 1", "Rent dispute", "Open case", "Message", "Suggest a meeting"]);
+    const suggest = [...view.container.querySelectorAll("button")].find(b => b.textContent.includes("Suggest a meeting"));
+    await act(async () => { suggest.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    assert.ok(document.querySelector("[data-propose-meeting]"), "Suggest a meeting did nothing");
+    assert.deepEqual(pages, []);
     assert.deepEqual(notifs, [], "a fake notification was raised");
     await view.unmount();
 });
@@ -245,7 +257,7 @@ test("3.8b Onboarding: no fields that are never sent, and no dead support link",
     }
     assert.equal(root.querySelectorAll("select").length, 0, "an unsent select remains");
 
-    await press("Submit for Verification");
+    await press("Finish profile");
     assert.equal(api.__calls("updateLawyerProfile").length, 1);
     assert.ok(!root.textContent.includes("Admin Support"), "the dead support link remains");
     await view.unmount();

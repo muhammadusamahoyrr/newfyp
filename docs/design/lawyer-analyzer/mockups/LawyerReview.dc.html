@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lawyer review</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap">
+<style>
+body{margin:0;background:#0f2228;font-family:Inter,system-ui,sans-serif;color:#e6f1f2}
+a{color:#3fd6c6}a:hover{color:#8ff0e5}
+.nav{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:#a9c3c8;font-size:14px;text-decoration:none}
+.nav:hover{background:#21414a;color:#e6f1f2}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:10px;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;box-sizing:border-box;font-family:inherit}
+.btn-primary{background:#3fd6c6;color:#0b2a2d;border:none}
+.btn-primary:hover{background:#6fe3d6;color:#0b2a2d}
+.btn-ghost{background:transparent;color:#d3e6e8;border:1px solid #3a5e68}
+.btn-ghost:hover{background:#21414a;color:#fff}
+.opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;border-radius:12px;background:#132a31;border:1px solid #2f5059;color:#e6f1f2;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.opt:hover{border-color:#3fd6c6}
+.field{width:100%;background:#0f2429;border:1px solid #33555e;border-radius:10px;color:#e6f1f2;font:inherit;font-size:13.5px;padding:10px 12px;box-sizing:border-box}
+.qitem{display:block;padding:12px 14px;border-radius:12px;text-decoration:none;color:#e6f1f2;border:1px solid transparent}
+.qitem:hover{background:#1b363e}
+p{margin:0 0 10px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; overflow: hidden; background: #0f2228">
+<aside style="width: 220px; flex-shrink: 0; background: #132a31; border-right: 1px solid #22404a; padding: 22px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="font-family: Fraunces, Georgia, serif; font-size: 22px; font-weight: 600; color: #f2f8f8; padding: 0 12px 6px">Attorney<span style="color: #3fd6c6">.AI</span></div>
+<div style="font-size: 11.5px; letter-spacing: .08em; color: #6f9199; padding: 0 12px 16px">LAWYER</div>
+<a class="nav" href="#">Dashboard</a>
+<a class="nav" href="#">Clients &amp; cases</a>
+<a class="nav" href="LawyerReview.dc.html" style="background: #1f4a4f; color: #3fd6c6; font-weight: 600">Review queue</a>
+<a class="nav" href="#">Drafting studio</a>
+<a class="nav" href="#">Appointments</a>
+</aside>
+
+<section style="width: 300px; flex-shrink: 0; border-right: 1px solid #22404a; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0 0 8px 6px; font-size: 16px; font-weight: 600">Review queue <span style="color: #93aeb4; font-weight: 400">· 3</span></h2>
+<a class="qitem" href="#" style="background: #1b363e; border-color: #3fd6c6">
+<div style="font-size: 14px; font-weight: 600">NDA — ABC Pvt Ltd</div>
+<div style="font-size: 12.5px; color: #93aeb4; margin-top: 3px">Test User · v3 · Normal · 10 min ago</div>
+</a>
+<a class="qitem" href="#">
+<div style="font-size: 14px; font-weight: 600">Rent Agreement — DHA flat</div>
+<div style="font-size: 12.5px; color: #f7cf7d; margin-top: 3px">Priority · 1 day ago</div>
+</a>
+<a class="qitem" href="#">
+<div style="font-size: 14px; font-weight: 600">Civil Plaint — recovery suit</div>
+<div style="font-size: 12.5px; color: #f5a3a8; margin-top: 3px">Urgent · 2 days ago</div>
+</a>
+</section>
+
+<div style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; background: #0c1d22">
+<div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid #22404a; background: #132a31; font-size: 13px; color: #cfe3e6">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3fd6c6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+Submitted revision v3 · frozen · PDF hash verified
+<span style="flex-grow: 1"></span>
+<span style="color: #93aeb4">Client-edited clauses: 0 · AI-suggested and accepted: 1 (clause 10)</span>
+</div>
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center; padding: 22px 0">
+<article style="width: 560px; height: 1200px; background: #ffffff; color: #1d2a2e; border-radius: 6px; padding: 44px 50px; box-sizing: border-box; font-family: 'Source Serif 4', Georgia, serif; font-size: 14px; line-height: 1.7">
+<h2 style="margin: 0 0 18px; text-align: center; font-size: 18px; letter-spacing: .12em; font-weight: 600">NON-DISCLOSURE AGREEMENT</h2>
+<p>This Agreement is made on 1 October 2026 between <b>ABC Private Limited</b> (SECP no. 0123456) and <b>[Designer name]</b> (CNIC [13-digit CNIC]), Karachi.</p>
+<p><b>4. Obligations.</b> The Designer shall use the Confidential Information only to perform the design services agreed with the Company.</p>
+<div style="position: relative; padding: 8px 10px; margin: 0 -10px 10px; border-radius: 8px; background: {{c7Bg}}; outline: {{c7Outline}}">
+<p style="margin: 0"><b>7. Work product.</b> All designs created for the Company belong to the Company. <sc-if value="{{c7Suggested}}" hint-placeholder-val="{{false}}"><span style="background: #e2f5e6; color: #1b5e20">The Designer may show the final published work in a personal portfolio after public release.</span></sc-if></p>
+</div>
+<p><b>8. Term.</b> Six (6) months from the Effective Date; clauses 3 to 7 survive for two (2) years.</p>
+<p><b>10. Disputes.</b> The parties shall first negotiate for thirty (30) days, failing which the courts at Karachi shall have exclusive jurisdiction.</p>
+</article>
+</div>
+</div>
+
+<aside style="width: 360px; flex-shrink: 0; border-left: 1px solid #22404a; background: #132a31; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+<div style="padding: 12px 14px; border-radius: 12px; background: #172f36; border: 1px solid #28464f">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #6fcfc3">CLIENT'S NOTE</div>
+<div style="font-size: 13.5px; line-height: 1.55; margin-top: 4px">Please check the IP clause — the designer keeps a portfolio right.</div>
+</div>
+<div style="font-size: 12.5px; color: #93aeb4">Checks at submission: details complete · clauses 14/14 · citations 3/3 verified</div>
+<button class="btn btn-ghost" type="button" onClick="{{toggleC7}}">{{c7Label}}</button>
+
+<div style="font-size: 15px; font-weight: 600; margin-top: 4px">Your decision</div>
+<sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+<button class="opt" type="button" onClick="{{o.pick}}" style="border-color: {{o.border}}; background: {{o.bg}}"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{o.dot}}"></span>{{o.name}}</button>
+</sc-for>
+
+<sc-if value="{{isApprove}}" hint-placeholder-val="{{false}}">
+<label for="an" style="font-size: 13px; color: #a9c3c8">Note to the client (optional)</label>
+<textarea id="an" class="field" rows="3" style="resize: none" placeholder="Approved. Print on Sindh stamp paper."></textarea>
+<div style="font-size: 12.5px; color: #93aeb4">Approving locks v3 as the approved revision. Later edits by the client start a new draft that needs review again.</div>
+</sc-if>
+<sc-if value="{{isChanges}}" hint-placeholder-val="{{true}}">
+<label for="cn" style="font-size: 13px; color: #a9c3c8">What should change?</label>
+<textarea id="cn" class="field" rows="3" style="resize: none">Added a portfolio right in clause 7. Please review and resubmit.</textarea>
+<div style="font-size: 12.5px; color: #93aeb4">{{changesCount}} The client accepts or rejects each one.</div>
+</sc-if>
+<sc-if value="{{isReject}}" hint-placeholder-val="{{false}}">
+<label for="rn" style="font-size: 13px; color: #a9c3c8">Reason (required)</label>
+<textarea id="rn" class="field" rows="3" style="resize: none" placeholder="Why this document cannot be used"></textarea>
+</sc-if>
+
+<a class="btn btn-primary" href="{{sendHref}}" style="margin-top: auto; min-height: 44px">{{sendLabel}}</a>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { choice: 'changes', c7: true }; }
+  renderVals() {
+    var s = this.state;
+    var opts = [
+      { id: 'approve', name: 'Approve', dot: '#4fd18b' },
+      { id: 'changes', name: 'Request changes', dot: '#f2b84b' },
+      { id: 'reject', name: 'Reject', dot: '#f07a7a' }
+    ];
+    return {
+      options: opts.map(o => ({
+        ...o,
+        border: s.choice === o.id ? '#3fd6c6' : '#2f5059',
+        bg: s.choice === o.id ? '#173a3f' : '#132a31',
+        pick: () => this.setState({ choice: o.id })
+      })),
+      isApprove: s.choice === 'approve', isChanges: s.choice === 'changes', isReject: s.choice === 'reject',
+      c7Suggested: s.c7,
+      c7Bg: s.c7 ? '#eef9f0' : 'transparent', c7Outline: s.c7 ? '1px dashed #6bbf7a' : 'none',
+      c7Label: s.c7 ? 'Remove my edit to clause 7' : 'Suggest an edit to clause 7',
+      toggleC7: () => this.setState({ c7: !s.c7 }),
+      changesCount: s.c7 ? '1 suggested edit will be sent.' : 'No clause edits yet — only your note will be sent.',
+      sendLabel: s.choice === 'approve' ? 'Approve v3' : s.choice === 'changes' ? 'Send changes to client' : 'Reject document',
+      sendHref: s.choice === 'changes' ? 'ChangesRequested.dc.html' : 'LawyerReview.dc.html'
+    };
+  }
+}
+</script>
+</body>
+</html>

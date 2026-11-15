@@ -1,0 +1,202 @@
+{
+ "schema": "agentic-eval-v1",
+ "timestamp": "2026-10-13T03:51:43.005895+00:00",
+ "labels": {
+  "n": 4,
+  "gold": 0,
+  "silver_or_unadjudicated": 4,
+  "label_versions": [
+   "v1"
+  ],
+  "status": "silver"
+ },
+ "n": 4,
+ "summary": {
+  "baseline@5": {
+   "issue_coverage": 0.25,
+   "item_recall": 0.25,
+   "passages": 5.0
+  },
+  "baseline@budget": {
+   "issue_coverage": 0.375,
+   "item_recall": 0.375,
+   "passages": 8.75
+  },
+  "agentic": {
+   "issue_coverage": 0.75,
+   "item_recall": 0.75,
+   "passages": 8.75
+  }
+ },
+ "latency_ms": {
+  "baseline_mean": 11127.800000000001,
+  "agentic_mean": 5209.35
+ },
+ "model_calls": {
+  "baseline_mean": 1.0,
+  "agentic_mean": 2.75
+ },
+ "agentic_unsupported_leakage_total": 0,
+ "not_measured": [
+  "generation",
+  "citation correctness",
+  "unsupported legal claims in generated text"
+ ],
+ "rows": [
+  {
+   "query_id": "m001",
+   "language": "en",
+   "baseline_gate": "supported",
+   "agentic_states": [
+    {
+     "text": "My friend gave me a cheque to repay the loan he owed me and it bounced.",
+     "state": "supported",
+     "source": "planner"
+    },
+    {
+     "text": "When I asked him for the money he threatened to kill me.",
+     "state": "supported",
+     "source": "planner"
+    }
+   ],
+   "agentic_model_calls": 3,
+   "agentic_planner_calls_counted_in_budget": true,
+   "baseline_model_calls": 1,
+   "baseline_latency_ms": 34789.9,
+   "agentic_latency_ms": 4405.7,
+   "agentic_timed_out": false,
+   "baseline@5": {
+    "issue_coverage": 0.5,
+    "item_recall": 0.5,
+    "passages": 5
+   },
+   "baseline@budget": {
+    "issue_coverage": 0.5,
+    "item_recall": 0.5,
+    "passages": 10
+   },
+   "agentic": {
+    "issue_coverage": 1.0,
+    "item_recall": 1.0,
+    "passages": 10
+   },
+   "agentic_unsupported_leakage": 0,
+   "unsupported_issues_annotated": 0
+  },
+  {
+   "query_id": "m002",
+   "language": "ur",
+   "baseline_gate": "supported",
+   "agentic_states": [
+    {
+     "text": "میرے دوست نے قرض کی واپسی کے لیے چیک دیا جو باؤنس ہو گیا۔",
+     "state": "supported",
+     "source": "planner"
+    },
+    {
+     "text": "جب میں نے پیسے مانگے تو اس نے مجھے جان سے مارنے کی دھمکی دی۔",
+     "state": "conflicting_authority",
+     "source": "planner"
+    }
+   ],
+   "agentic_model_calls": 3,
+   "agentic_planner_calls_counted_in_budget": true,
+   "baseline_model_calls": 1,
+   "baseline_latency_ms": 2013.0,
+   "agentic_latency_ms": 6128.8,
+   "agentic_timed_out": false,
+   "baseline@5": {
+    "issue_coverage": 0.0,
+    "item_recall": 0.0,
+    "passages": 5
+   },
+   "baseline@budget": {
+    "issue_coverage": 0.5,
+    "item_recall": 0.5,
+    "passages": 10
+   },
+   "agentic": {
+    "issue_coverage": 0.5,
+    "item_recall": 0.5,
+    "passages": 10
+   },
+   "agentic_unsupported_leakage": 0,
+   "unsupported_issues_annotated": 0
+  },
+  {
+   "query_id": "m003",
+   "language": "en",
+   "baseline_gate": "supported",
+   "agentic_states": [
+    {
+     "text": "My husband divorced me by saying talaq three times and never sent any written notice.",
+     "state": "supported",
+     "source": "planner"
+    },
+    {
+     "text": "He is also not paying me any maintenance.",
+     "state": "supported",
+     "source": "planner"
+    }
+   ],
+   "agentic_model_calls": 3,
+   "agentic_planner_calls_counted_in_budget": true,
+   "baseline_model_calls": 1,
+   "baseline_latency_ms": 4990.6,
+   "agentic_latency_ms": 8035.6,
+   "agentic_timed_out": false,
+   "baseline@5": {
+    "issue_coverage": 0.5,
+    "item_recall": 0.5,
+    "passages": 5
+   },
+   "baseline@budget": {
+    "issue_coverage": 0.5,
+    "item_recall": 0.5,
+    "passages": 10
+   },
+   "agentic": {
+    "issue_coverage": 0.5,
+    "item_recall": 0.5,
+    "passages": 10
+   },
+   "agentic_unsupported_leakage": 0,
+   "unsupported_issues_annotated": 0
+  },
+  {
+   "query_id": "m004",
+   "language": "en",
+   "baseline_gate": "partially_supported",
+   "agentic_states": [
+    {
+     "text": "Someone stole my motorcycle from outside my house last night.",
+     "state": "supported",
+     "source": "planner"
+    }
+   ],
+   "agentic_model_calls": 2,
+   "agentic_planner_calls_counted_in_budget": true,
+   "baseline_model_calls": 1,
+   "baseline_latency_ms": 2717.7,
+   "agentic_latency_ms": 2267.3,
+   "agentic_timed_out": false,
+   "baseline@5": {
+    "issue_coverage": 0.0,
+    "item_recall": 0.0,
+    "passages": 5
+   },
+   "baseline@budget": {
+    "issue_coverage": 0.0,
+    "item_recall": 0.0,
+    "passages": 5
+   },
+   "agentic": {
+    "issue_coverage": 1.0,
+    "item_recall": 1.0,
+    "passages": 5
+   },
+   "agentic_unsupported_leakage": 0,
+   "unsupported_issues_annotated": 1
+  }
+ ]
+}

@@ -49,8 +49,11 @@ async def test_browser_and_direct_create_paths_both_work(http, path):
         json={"prompt": "Please prepare a document about my situation"},
     )
     assert response.status_code == 201, response.text
-    assert response.json()["status"] == "needs_template"
-    assert response.json()["questions"][0]["field"] == "template_type"
+    # No named template fits: since 2026-10-19 the AI writes it as a general
+    # document from the description, with nothing to ask first.
+    assert response.json()["status"] == "ready"
+    assert response.json()["template_type"] == "general_document"
+    assert response.json()["questions"] == []
 
 
 async def test_create_requires_an_idempotency_key(http):

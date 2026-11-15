@@ -1,0 +1,1250 @@
+[
+ {
+  "query_id": "d001",
+  "set": "dev_v1",
+  "query": "My friend gave me a cheque to repay a loan and it bounced. What can I do?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d002",
+  "set": "dev_v1",
+  "query": "میرے دوست نے قرض کی واپسی کے لیے چیک دیا جو باؤنس ہو گیا۔ میں کیا کروں؟",
+  "language": "ur",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d003",
+  "set": "dev_v1",
+  "query": "mere dost ne qarz wapis karne ke liye cheque diya jo bounce ho gaya, ab kya karun",
+  "language": "roman_ur",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d004",
+  "set": "dev_v1",
+  "query": "Someone stole my motorcycle from outside my house. What is the offence?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0598"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "379"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d005",
+  "set": "dev_v1",
+  "query": "kisi ne ghar ke bahar se meri motorcycle chori kar li, ye kaun sa jurm hai",
+  "language": "roman_ur",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0598"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "379"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d006",
+  "set": "dev_v1",
+  "query": "My brother has been arrested. How can he apply for bail?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0366",
+   "statutes_crpc_1898_1128",
+   "statutes_crpc_1898_1129",
+   "statutes_crpc_1898_1130",
+   "statutes_crpc_1898_1131"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "497"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d007",
+  "set": "dev_v1",
+  "query": "میرے بھائی کو گرفتار کر لیا گیا ہے۔ اس کی ضمانت کیسے ہوگی؟",
+  "language": "ur",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0366",
+   "statutes_crpc_1898_1128",
+   "statutes_crpc_1898_1129",
+   "statutes_crpc_1898_1130",
+   "statutes_crpc_1898_1131"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "497"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d008",
+  "set": "dev_v1",
+  "query": "I have not been arrested yet but the police are threatening to arrest me in a false case. Can I get bail before arrest?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "negation",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0367",
+   "statutes_crpc_1898_1132",
+   "statutes_crpc_1898_1133"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "498"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d009",
+  "set": "dev_v1",
+  "query": "A man took money from me promising a job abroad and disappeared. Is this cheating?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0661"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "420"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d010",
+  "set": "dev_v1",
+  "query": "The police station is refusing to register my FIR. What can I do?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0145",
+   "statutes_crpc_1898_0707"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "154"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d011",
+  "set": "dev_v1",
+  "query": "mere padosi ne mujhe jaan se marne ki dhamki di hai",
+  "language": "roman_ur",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0794"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "506"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d015",
+  "set": "dev_v1",
+  "query": "My husband says he has divorced me. What is the procedure for talaq to be effective?",
+  "language": "en",
+  "case_type": "family",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_muslim_family_laws_ordinance_1961_0011",
+   "statutes_muslim_family_laws_ordinance_1961_0012",
+   "statutes_muslim_family_laws_ordinance_1961_0013"
+  ],
+  "targets": [
+   {
+    "statute": "Muslim Family Laws Ordinance 1961",
+    "section": "7"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d016",
+  "set": "dev_v1",
+  "query": "میرے شوہر نے کہا ہے کہ اس نے مجھے طلاق دے دی ہے۔ طلاق کے مؤثر ہونے کا طریقہ کار کیا ہے؟",
+  "language": "ur",
+  "case_type": "family",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_muslim_family_laws_ordinance_1961_0011",
+   "statutes_muslim_family_laws_ordinance_1961_0012",
+   "statutes_muslim_family_laws_ordinance_1961_0013"
+  ],
+  "targets": [
+   {
+    "statute": "Muslim Family Laws Ordinance 1961",
+    "section": "7"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d017",
+  "set": "dev_v1",
+  "query": "Can my husband marry a second time without my permission?",
+  "language": "en",
+  "case_type": "family",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_muslim_family_laws_ordinance_1961_0008",
+   "statutes_muslim_family_laws_ordinance_1961_0009",
+   "statutes_muslim_family_laws_ordinance_1961_0010"
+  ],
+  "targets": [
+   {
+    "statute": "Muslim Family Laws Ordinance 1961",
+    "section": "6"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d018",
+  "set": "dev_v1",
+  "query": "mera shohar 8 mahine se kharcha nahi de raha, nafqa kaise milega",
+  "language": "roman_ur",
+  "case_type": "family",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_muslim_family_laws_ordinance_1961_0015",
+   "statutes_muslim_family_laws_ordinance_1961_0016"
+  ],
+  "targets": [
+   {
+    "statute": "Muslim Family Laws Ordinance 1961",
+    "section": "9"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d019",
+  "set": "dev_v1",
+  "query": "I want to end my marriage but my husband will not divorce me. How do I get khula?",
+  "language": "en",
+  "case_type": "family",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_family_courts_act_1964_0056",
+   "statutes_family_courts_act_1964_0057",
+   "statutes_family_courts_act_1964_0058",
+   "statutes_family_courts_act_1964_0104",
+   "statutes_family_courts_act_1964_0105",
+   "statutes_family_courts_act_1964_0106"
+  ],
+  "targets": [
+   {
+    "statute": "Family Courts Act 1964",
+    "section": "10"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d020",
+  "set": "dev_v1",
+  "query": "میں شادی ختم کرنا چاہتی ہوں لیکن شوہر طلاق نہیں دے رہا۔ خلع کیسے لوں؟",
+  "language": "ur",
+  "case_type": "family",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_family_courts_act_1964_0056",
+   "statutes_family_courts_act_1964_0057",
+   "statutes_family_courts_act_1964_0058",
+   "statutes_family_courts_act_1964_0104",
+   "statutes_family_courts_act_1964_0105",
+   "statutes_family_courts_act_1964_0106"
+  ],
+  "targets": [
+   {
+    "statute": "Family Courts Act 1964",
+    "section": "10"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d021",
+  "set": "dev_v1",
+  "query": "After our separation, who gets custody of our 5 year old son?",
+  "language": "en",
+  "case_type": "family",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_guardians_and_wards_act_1890_0035",
+   "statutes_guardians_and_wards_act_1890_0036",
+   "statutes_guardians_and_wards_act_1890_0044"
+  ],
+  "targets": [
+   {
+    "statute": "Guardians and Wards Act 1890",
+    "section": "17"
+   },
+   {
+    "statute": "Guardians and Wards Act 1890",
+    "section": "25"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d025",
+  "set": "dev_v1",
+  "query": "My neighbour sold his land to an outsider without offering it to me first. Can I claim pre-emption?",
+  "language": "en",
+  "case_type": "civil",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_punjab_pre_emption_act_1991_0054",
+   "statutes_punjab_pre_emption_act_1991_0055",
+   "statutes_punjab_pre_emption_act_1991_0056"
+  ],
+  "targets": [
+   {
+    "statute": "Punjab Pre-emption Act 1991",
+    "section": "13"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d027",
+  "set": "dev_v1",
+  "query": "A government department cancelled my licence without a hearing. Can I file a writ petition in the High Court?",
+  "language": "en",
+  "case_type": "constitutional",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_constitution_of_pakistan_1973_0563",
+   "statutes_constitution_of_pakistan_1973_0564"
+  ],
+  "targets": [
+   {
+    "statute": "Constitution of Pakistan 1973",
+    "section": "199"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": true
+ },
+ {
+  "query_id": "d031",
+  "set": "dev_v1",
+  "query": "What does section 379 of the Pakistan Penal Code say?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0598"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "379"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d032",
+  "set": "dev_v1",
+  "query": "Article 199 of the Constitution",
+  "language": "en",
+  "case_type": "constitutional",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_constitution_of_pakistan_1973_0563",
+   "statutes_constitution_of_pakistan_1973_0564"
+  ],
+  "targets": [
+   {
+    "statute": "Constitution of Pakistan 1973",
+    "section": "199"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": true
+ },
+ {
+  "query_id": "d033",
+  "set": "dev_v1",
+  "query": "Section 7 MFLO notice of talaq",
+  "language": "en",
+  "case_type": "family",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_muslim_family_laws_ordinance_1961_0011",
+   "statutes_muslim_family_laws_ordinance_1961_0012",
+   "statutes_muslim_family_laws_ordinance_1961_0013"
+  ],
+  "targets": [
+   {
+    "statute": "Muslim Family Laws Ordinance 1961",
+    "section": "7"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d034",
+  "set": "dev_v1",
+  "query": "Section 489-F PPC dishonestly issuing a cheque",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d047",
+  "set": "dev_v1",
+  "query": "Someone killed my uncle during a land dispute. What is the punishment for murder?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0439"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "302"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "d048",
+  "set": "dev_v1",
+  "query": "زمین کے جھگڑے میں کسی نے میرے چچا کو قتل کر دیا۔ قتل کی سزا کیا ہے؟",
+  "language": "ur",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0439"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "302"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c001",
+  "set": "citation_probe_v1",
+  "query": "Section 302 PPC punishment for qatl-i-amd",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0439"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "302"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c002",
+  "set": "citation_probe_v1",
+  "query": "Section 420 PPC cheating and dishonestly inducing delivery of property",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0661"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "420"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c003",
+  "set": "citation_probe_v1",
+  "query": "Section 154 CrPC information in cognizable cases",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0145",
+   "statutes_crpc_1898_0707"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "154"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c004",
+  "set": "citation_probe_v1",
+  "query": "Section 497 CrPC bail in non-bailable offence",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0366",
+   "statutes_crpc_1898_1128",
+   "statutes_crpc_1898_1129",
+   "statutes_crpc_1898_1130",
+   "statutes_crpc_1898_1131"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "497"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c005",
+  "set": "citation_probe_v1",
+  "query": "Article 25 of the Constitution equality of citizens",
+  "language": "en",
+  "case_type": "constitutional",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_constitution_of_pakistan_1973_0079",
+   "statutes_constitution_of_pakistan_1973_0080"
+  ],
+  "targets": [
+   {
+    "statute": "Constitution of Pakistan 1973",
+    "section": "25"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": true
+ },
+ {
+  "query_id": "c006",
+  "set": "citation_probe_v1",
+  "query": "Section 489-F PPC",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c007",
+  "set": "citation_probe_v1",
+  "query": "Section 22-A CrPC powers of justice of peace",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0019",
+   "statutes_crpc_1898_0464"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "22-A",
+    "index_section": "22"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c008",
+  "set": "citation_probe_v1",
+  "query": "dafa 302 ppc ki saza kya hai",
+  "language": "roman_ur",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0439"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "302"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c009",
+  "set": "citation_probe_v1",
+  "query": "PPC ki section 379 chori ke bare mein kya kehti hai",
+  "language": "roman_ur",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0598"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "379"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c010",
+  "set": "citation_probe_v1",
+  "query": "تعزیرات پاکستان کی دفعہ 302 کی سزا کیا ہے",
+  "language": "ur",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0439"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "302"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c011",
+  "set": "citation_probe_v1",
+  "query": "تعزیرات پاکستان کی دفعہ 489-ایف چیک باؤنس",
+  "language": "ur",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c012",
+  "set": "citation_probe_v1",
+  "query": "section 379",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0598"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "379"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c013",
+  "set": "citation_probe_v1",
+  "query": "what does s. 497 say about bail",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0366",
+   "statutes_crpc_1898_1128",
+   "statutes_crpc_1898_1129",
+   "statutes_crpc_1898_1130",
+   "statutes_crpc_1898_1131"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "497"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c014",
+  "set": "citation_probe_v1",
+  "query": "Section 420 PPC and section 406 PPC",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0643",
+   "statutes_ppc_1860_0661"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "420"
+   },
+   {
+    "statute": "PPC 1860",
+    "section": "406"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c015",
+  "set": "citation_probe_v1",
+  "query": "section PPC 3 79 theft",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0598"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "379"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c016",
+  "set": "citation_probe_v1",
+  "query": "Section 7 Muslim Family Laws Ordinance notice of talaq",
+  "language": "en",
+  "case_type": "family",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_muslim_family_laws_ordinance_1961_0011",
+   "statutes_muslim_family_laws_ordinance_1961_0012",
+   "statutes_muslim_family_laws_ordinance_1961_0013"
+  ],
+  "targets": [
+   {
+    "statute": "Muslim Family Laws Ordinance 1961",
+    "section": "7"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c018",
+  "set": "citation_probe_v1",
+  "query": "section 497 crpc ke tehat bail kaise milti hai",
+  "language": "roman_ur",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0366",
+   "statutes_crpc_1898_1128",
+   "statutes_crpc_1898_1129",
+   "statutes_crpc_1898_1130",
+   "statutes_crpc_1898_1131"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "497"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "c019",
+  "set": "citation_probe_v1",
+  "query": "Article 199 Constitution writ petition high court",
+  "language": "en",
+  "case_type": "constitutional",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_constitution_of_pakistan_1973_0563",
+   "statutes_constitution_of_pakistan_1973_0564"
+  ],
+  "targets": [
+   {
+    "statute": "Constitution of Pakistan 1973",
+    "section": "199"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": true
+ },
+ {
+  "query_id": "c020",
+  "set": "citation_probe_v1",
+  "query": "Section 498 CrPC anticipatory bail",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "exact_citation",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0367",
+   "statutes_crpc_1898_1132",
+   "statutes_crpc_1898_1133"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "498"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "l001",
+  "set": "lettered_probe_v1",
+  "query": "My business partner gave me a cheque for the money he owed and it bounced. Can I file a criminal case?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "factual_scenario",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "l002",
+  "set": "lettered_probe_v1",
+  "query": "mera cheque bounce ho gaya jo usne qarz wapis karne ke liye diya tha, kya criminal case ho sakta hai",
+  "language": "roman_ur",
+  "case_type": "criminal",
+  "question_type": "factual_scenario",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "l003",
+  "set": "lettered_probe_v1",
+  "query": "قرض کی واپسی کے لیے دیا گیا چیک باؤنس ہو گیا، کیا فوجداری مقدمہ ہو سکتا ہے؟",
+  "language": "ur",
+  "case_type": "criminal",
+  "question_type": "factual_scenario",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "l004",
+  "set": "lettered_probe_v1",
+  "query": "Someone removed the property mark from my goods intending to cause me loss.",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "factual_scenario",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0753",
+   "statutes_ppc_1860_0759"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "l005",
+  "set": "lettered_probe_v1",
+  "query": "A man is hiding robbers in his house although he knows they committed dacoity.",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "factual_scenario",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0327"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "216-A",
+    "index_section": "216"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "l007",
+  "set": "lettered_probe_v1",
+  "query": "Use of derogatory remarks in respect of holy personages",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "factual_scenario",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0429"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "298-A",
+    "index_section": "298"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "l009",
+  "set": "lettered_probe_v1",
+  "query": "What powers does a Justice of the Peace have to make an arrest?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "factual_scenario",
+  "relevant_chunks": [
+   "statutes_crpc_1898_0019",
+   "statutes_crpc_1898_0464"
+  ],
+  "targets": [
+   {
+    "statute": "CrPC 1898",
+    "section": "22-A",
+    "index_section": "22"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "v001",
+  "set": "coverage_v1",
+  "query": "What is the punishment for theft in Pakistan?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "simple_lookup",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0598"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "379"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "v002",
+  "set": "coverage_v1",
+  "query": "My neighbour broke into my house at night and stole my wife's jewellery. What can I do?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "factual_scenario",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0599",
+   "statutes_ppc_1860_0705",
+   "statutes_ppc_1860_0707"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "380"
+   },
+   {
+    "statute": "PPC 1860",
+    "section": "457"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "v004",
+  "set": "coverage_v1",
+  "query": "Mera cheque bounce ho gaya hai, kya main 489-F ke under FIR karwa sakta hun?",
+  "language": "code_switched",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "v005",
+  "set": "coverage_v1",
+  "query": "میرا cheque bounce ہو گیا ہے، FIR کیسے درج کرواؤں؟",
+  "language": "code_switched",
+  "case_type": "criminal",
+  "question_type": "ordinary",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "m001",
+  "set": "multi_issue_v1",
+  "query": "My friend gave me a cheque to repay the loan he owed me and it bounced. When I asked him for the money he threatened to kill me.",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "multi_issue",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760",
+   "statutes_ppc_1860_0794"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   },
+   {
+    "statute": "PPC 1860",
+    "section": "506"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "m002",
+  "set": "multi_issue_v1",
+  "query": "میرے دوست نے قرض کی واپسی کے لیے چیک دیا جو باؤنس ہو گیا۔ جب میں نے پیسے مانگے تو اس نے مجھے جان سے مارنے کی دھمکی دی۔",
+  "language": "ur",
+  "case_type": "criminal",
+  "question_type": "multi_issue",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0760",
+   "statutes_ppc_1860_0794"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "489-F",
+    "index_section": "489"
+   },
+   {
+    "statute": "PPC 1860",
+    "section": "506"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "m003",
+  "set": "multi_issue_v1",
+  "query": "My husband divorced me by saying talaq three times and never sent any written notice. He is also not paying me any maintenance.",
+  "language": "en",
+  "case_type": "family",
+  "question_type": "multi_issue",
+  "relevant_chunks": [
+   "statutes_muslim_family_laws_ordinance_1961_0011",
+   "statutes_muslim_family_laws_ordinance_1961_0012",
+   "statutes_muslim_family_laws_ordinance_1961_0013",
+   "statutes_muslim_family_laws_ordinance_1961_0015",
+   "statutes_muslim_family_laws_ordinance_1961_0016"
+  ],
+  "targets": [
+   {
+    "statute": "Muslim Family Laws Ordinance 1961",
+    "section": "7"
+   },
+   {
+    "statute": "Muslim Family Laws Ordinance 1961",
+    "section": "9"
+   }
+  ],
+  "leak_general": true,
+  "leak_constitutional": false
+ },
+ {
+  "query_id": "m004",
+  "set": "multi_issue_v1",
+  "query": "Someone stole my motorcycle from outside my house last night. Also, what is the current gold rate in Lahore today?",
+  "language": "en",
+  "case_type": "criminal",
+  "question_type": "multi_issue",
+  "relevant_chunks": [
+   "statutes_ppc_1860_0598"
+  ],
+  "targets": [
+   {
+    "statute": "PPC 1860",
+    "section": "379"
+   }
+  ],
+  "leak_general": false,
+  "leak_constitutional": false
+ }
+]

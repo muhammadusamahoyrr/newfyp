@@ -1,0 +1,419 @@
+{
+ "route": "POST /api/v1/ai/draft/stream (in-process handler)",
+ "model_purpose": "draft_stream (groq5)",
+ "also_sent_by_the_route": [
+  "system prompt: drafting instructions + mode/jurisdiction riders",
+  "statute text retrieved from the LOCAL corpus for the request",
+  "exact text of any provision the instruction names (local corpus)"
+ ],
+ "never_sent": [
+  "any file from the source collection",
+  "audit records",
+  "labels/checklists"
+ ],
+ "requests": [
+  {
+   "id": "V01",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "court application civil"
+   }
+  },
+  {
+   "id": "V02",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft grounds for returning the plaint because this court lacks territorial jurisdiction. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "court application civil"
+   }
+  },
+  {
+   "id": "V03",
+   "split": "holdout",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft an application paragraph seeking leave to amend the written statement. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "court application civil"
+   }
+  },
+  {
+   "id": "V04",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "court application civil"
+   }
+  },
+  {
+   "id": "V05",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "federal",
+    "mode": "clause",
+    "template": "court application civil"
+   }
+  },
+  {
+   "id": "V06",
+   "split": "holdout",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft an application to withdraw the suit with permission to file a fresh suit on the same cause. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "court application civil"
+   }
+  },
+  {
+   "id": "V07",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft an application asking the court to fix an early hearing date using its inherent powers. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "court application civil"
+   }
+  },
+  {
+   "id": "V08",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "court application civil"
+   }
+  },
+  {
+   "id": "V09",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+    "case_type": "criminal",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "court application criminal"
+   }
+  },
+  {
+   "id": "V10",
+   "split": "holdout",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft a ground for post-arrest bail where the offence is non-bailable and the case calls for further inquiry. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+    "case_type": "criminal",
+    "province": "kpk",
+    "mode": "clause",
+    "template": "court application criminal"
+   }
+  },
+  {
+   "id": "V11",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft a ground for pre-arrest (protective) bail citing mala fide on the part of the complainant. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+    "case_type": "criminal",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "court application criminal"
+   }
+  },
+  {
+   "id": "V12",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision.",
+    "document": "IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+    "case_type": "criminal",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "court application criminal"
+   }
+  },
+  {
+   "id": "V13",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔",
+    "document": "IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+    "case_type": "criminal",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "court application criminal"
+   }
+  },
+  {
+   "id": "V14",
+   "split": "holdout",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "خلع کی بنیاد پر تنسیخِ نکاح کے دعوے کے لیے ایک پیرا اردو میں لکھیں کہ مدعیہ شوہر کے ساتھ حدود اللہ کے مطابق زندگی نہیں گزار سکتی۔",
+    "document": "IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+    "case_type": "family",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "family"
+   }
+  },
+  {
+   "id": "V15",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft a ground in a custody petition that the minor's welfare requires custody with the mother. Cite the law.",
+    "document": "IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+    "case_type": "family",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "family"
+   }
+  },
+  {
+   "id": "V16",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft the jurisdiction paragraph for a suit for maintenance of a wife and minor children before the Family Court.",
+    "document": "IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+    "case_type": "family",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "family"
+   }
+  },
+  {
+   "id": "V17",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft a paragraph calling on a tenant to vacate for non-payment of rent, citing the governing law.",
+    "document": "LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+    "case_type": "civil",
+    "province": "unknown",
+    "mode": "clause",
+    "template": "tenancy"
+   }
+  },
+  {
+   "id": "V18",
+   "split": "holdout",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Add a clause requiring the landlord to submit a copy of this tenancy agreement to the Rent Registrar, citing the law.",
+    "document": "[TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+    "case_type": "civil",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "tenancy"
+   }
+  },
+  {
+   "id": "V19",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Add a clause that the sale deed of the immovable property shall be registered, citing the law.",
+    "document": "[TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+    "case_type": "civil",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "agreement"
+   }
+  },
+  {
+   "id": "V20",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it.",
+    "document": "[TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+    "case_type": "civil",
+    "province": "federal",
+    "mode": "clause",
+    "template": "agreement"
+   }
+  },
+  {
+   "id": "V21",
+   "split": "holdout",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Add a termination clause for an employment contract, citing the governing labour law.",
+    "document": "[TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+    "case_type": "civil",
+    "province": "unknown",
+    "mode": "clause",
+    "template": "agreement"
+   }
+  },
+  {
+   "id": "V22",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Add a clause that disputes go to arbitration in Karachi.",
+    "document": "[TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+    "case_type": "civil",
+    "province": "sindh",
+    "mode": "clause",
+    "template": "agreement"
+   }
+  },
+  {
+   "id": "V23",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft the paragraph stating this is the statutory notice required before suing the Federal Government. Cite the provision.",
+    "document": "LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+    "case_type": "civil",
+    "province": "federal",
+    "mode": "clause",
+    "template": "notice"
+   }
+  },
+  {
+   "id": "V24",
+   "split": "dev",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "Draft a paragraph demanding payment of a dishonoured cheque within fifteen days and warning of criminal proceedings.",
+    "document": "LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+    "case_type": "criminal",
+    "province": "unknown",
+    "mode": "clause",
+    "template": "notice"
+   }
+  },
+  {
+   "id": "V25",
+   "split": "holdout",
+   "track": "free_drafting",
+   "request": {
+    "instruction": "اس حلف نامے کے آخر میں تصدیق کا پیرا اردو میں بہتر بنائیں۔ کوئی شناختی کارڈ نمبر یا نام خود سے نہ لکھیں۔",
+    "document": "حلف نامہ\nمن کہ [نام]، ولد [والد کا نام]، ساکن [پتہ]، حلفاً بیان کرتا ہوں:\n1۔ یہ کہ [بیان]\nتصدیق: آج مورخہ [تاریخ] کو [مقام] پر تصدیق کی گئی۔",
+    "case_type": "civil",
+    "province": "punjab",
+    "mode": "clause",
+    "template": "affidavit"
+   }
+  },
+  {
+   "id": "T01",
+   "split": "dev",
+   "track": "template_fill",
+   "request": {
+    "instruction": "Fill in this affidavit with these details: name Sana Ahmed, father Tariq Ahmed, address Lahore, lost on 2 October 2026 at Liberty Market. Leave every detail I have not given as a blank.",
+    "document": "SWORN STATEMENT -- MISSING IDENTITY CARD\nDeponent: [FULL NAME]\nParent: [FATHER NAME]\nLives at: [ADDRESS]\nIdentity card: [CNIC]\n\nThe deponent solemnly affirms:\n(a) the identity card went missing on [DATE OF LOSS], near [PLACE OF LOSS];\n(b) a report has been lodged with [POLICE STATION].\n\nSigned: deponent\nAffirmed at [PLACE], [DATE].",
+    "case_type": "civil",
+    "province": "punjab",
+    "mode": "full",
+    "template": "affidavit"
+   }
+  },
+  {
+   "id": "T02",
+   "split": "dev",
+   "track": "template_fill",
+   "request": {
+    "instruction": "یہ حلف نامہ ان معلومات سے پُر کریں: نام عمران علی، والد کا نام اکرم علی، پتہ راولپنڈی۔ جو معلومات نہیں دی گئیں انہیں خالی چھوڑ دیں۔",
+    "document": "حلف نامہ\nمن کہ [نام]، ولد [والد کا نام]، ساکن [پتہ]، حلفاً بیان کرتا ہوں:\n1۔ یہ کہ [بیان]\nتصدیق: آج مورخہ [تاریخ] کو [مقام] پر تصدیق کی گئی۔",
+    "case_type": "civil",
+    "province": "punjab",
+    "mode": "full",
+    "template": "affidavit"
+   }
+  },
+  {
+   "id": "T03",
+   "split": "dev",
+   "track": "template_fill",
+   "request": {
+    "instruction": "Fill in this rent agreement: landlord Bilal Hussain, tenant Farah Naz, premises a flat in Johar Town Lahore, rent Rs. 45,000 per month, term 11 months. Leave anything I have not given blank.",
+    "document": "RENT AGREEMENT\nLandlord: [LANDLORD NAME]  Tenant: [TENANT NAME]\nPremises: [PREMISES]\nMonthly rent: [RENT]\nTerm: [TERM]  Security deposit: [SECURITY DEPOSIT]\nSigned: [LANDLORD] [TENANT]",
+    "case_type": "civil",
+    "province": "punjab",
+    "mode": "full",
+    "template": "agreement"
+   }
+  },
+  {
+   "id": "T04",
+   "split": "dev",
+   "track": "template_fill",
+   "request": {
+    "instruction": "Fill in this power of attorney: principal Kamran Shah appoints Nadia Shah to manage his bank accounts and property matters in Karachi. Leave anything I have not given blank.",
+    "document": "GENERAL POWER OF ATTORNEY\nI, [PRINCIPAL NAME], appoint [ATTORNEY NAME] to act for me in [MATTERS].\nWitnesses: [WITNESS 1] [WITNESS 2]\nDate: [DATE]",
+    "case_type": "civil",
+    "province": "sindh",
+    "mode": "full",
+    "template": "power of attorney"
+   }
+  },
+  {
+   "id": "T05",
+   "split": "holdout",
+   "track": "template_fill",
+   "request": {
+    "instruction": "Fill in this recovery notice: debtor Usman Raza, amount Rs. 250,000, payable within 15 days. Leave anything I have not given blank.",
+    "document": "LEGAL NOTICE FOR RECOVERY\nTo: [DEBTOR NAME]\nAmount due: [AMOUNT]\nDue since: [DUE DATE]\nYou are called upon to pay within [DAYS] days.\n[ADVOCATE]",
+    "case_type": "civil",
+    "province": "federal",
+    "mode": "full",
+    "template": "notice"
+   }
+  },
+  {
+   "id": "T06",
+   "split": "holdout",
+   "track": "template_fill",
+   "request": {
+    "instruction": "Fill in this partnership deed: partners Hina Malik and Saad Iqbal, business Iqbal Traders, capital Rs. 1,000,000. Leave anything I have not given blank.",
+    "document": "PARTNERSHIP DEED\nPartners: [PARTNER 1] and [PARTNER 2]\nBusiness: [BUSINESS NAME]\nCapital: [CAPITAL]\nProfit sharing: [PROFIT RATIO]\nDate: [DATE]",
+    "case_type": "civil",
+    "province": "sindh",
+    "mode": "full",
+    "template": "partnership"
+   }
+  }
+ ]
+}

@@ -1415,11 +1415,11 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                             </div>
                             <div style={{ position: "relative", marginBottom: 12 }}>
                                 <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: t.textMuted }}>🔍</span>
-                                <Input placeholder="Search verified lawyers…" value={cpSearch} onChange={e => setCpSearch(e.target.value)} style={{ paddingLeft: 38 }} />
+                                <Input placeholder="Search lawyers…" value={cpSearch} onChange={e => setCpSearch(e.target.value)} style={{ paddingLeft: 38 }} />
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto" }}>
                                 {cpLoading ? (
-                                    <div style={{ padding: "28px 0", textAlign: "center", color: t.textMuted, fontSize: 13 }}>Loading verified lawyers…</div>
+                                    <div style={{ padding: "28px 0", textAlign: "center", color: t.textMuted, fontSize: 13 }}>Loading lawyers…</div>
                                 ) : cpList
                                     .filter(l => l.name.toLowerCase().includes(cpSearch.toLowerCase()))
                                     .filter(l => !signers.some(sg => sg.user_id === l._id))

@@ -7,6 +7,16 @@ from app.repositories.base import BaseRepository
 from app.schemas.common import PaginatedResponse
 
 
+def lawyer_profile_complete(lawyer: dict | None) -> bool:
+    """The completeness half of `UserRepository.lawyer_filter`, for a document
+    already in hand: a non-blank bar number and at least one practice area.
+    With LAWYER_AUTO_APPROVE approval comes before onboarding, so every path
+    that offers a lawyer to a client checks this as well as kyc_verified."""
+    lp = (lawyer or {}).get("lawyer_profile") or {}
+    bar = lp.get("bar_number")
+    return isinstance(bar, str) and bool(bar.strip()) and bool(lp.get("specializations"))
+
+
 class UserRepository(BaseRepository):
     def __init__(self):
         super().__init__(get_users_col)  # pass accessor, not result
@@ -38,6 +48,78 @@ class UserRepository(BaseRepository):
         "name_asc":        [("full_name", ASCENDING), ("_id", ASCENDING)],
         "name_desc":       [("full_name", DESCENDING), ("_id", ASCENDING)],
     }
+
+    @staticmethod
+    def lawyer_filter(
+        province: str | None = None,
+        case_type: str | None = None,
+        min_rating: float = 0.0,
+        availability: bool | None = None,
+        include_federal: bool = False,
+        q: str | None = None,
+        bar_number: str | None = None,
+        specialization: str | None = None,
+    ) -> dict:
+        """The Mongo filter for verified, active lawyers (see find_lawyers).
+
+        Shared by the directory list and its counts so the two can never
+        disagree about who matches a filter."""
+        query: dict = {
+            "role": "lawyer",
+            "lawyer_profile.kyc_verified": True,
+            "is_active": True,
+            # Profile completeness. With LAWYER_AUTO_APPROVE an account is
+            # approved at sign-up, before onboarding, so approval alone no
+            # longer means there is a profile to show. Kept under `$and` so
+            # the bar-number search and the practice-area filter below can
+            # still set their own keys on the same fields.
+            "$and": [
+                {"lawyer_profile.bar_number": {"$type": "string", "$regex": r"\S"}},
+                {"lawyer_profile.specializations.0": {"$exists": True}},
+            ],
+        }
+        if min_rating > 0:
+            # Applied ONLY when it filters something. `{"$gte": 0.0}` looks
+            # inert and is not: in MongoDB a document whose
+            # `lawyer_profile.rating` key is ABSENT does not satisfy `$gte`, so
+            # an unrated lawyer was excluded from search, from the match pool
+            # and from the general listing at once — the client was told no
+            # verified lawyers existed while one sat in the collection.
+            query["lawyer_profile.rating"] = {"$gte": min_rating}
+        if province and not (include_federal and province == "federal"):
+            # The omitted case is a federal matter under the matcher's rules:
+            # every province is eligible, so no province clause is added at all.
+            query["province"] = (
+                {"$in": [province, "federal"]} if include_federal else province
+            )
+        areas = [a for a in (case_type, specialization) if a]
+        if len(areas) == 1:
+            query["lawyer_profile.specializations"] = areas[0]
+        elif areas:
+            query["lawyer_profile.specializations"] = {"$all": areas}
+        if availability is not None:
+            query["lawyer_profile.availability"] = availability
+
+        # ── Text search ──────────────────────────────────────────────────────
+        # Escaped, because the needle is a user's raw keystrokes. Unescaped it
+        # is a regular expression: "a|b" would silently widen the search and a
+        # nested quantifier could hang the query on a large collection.
+        if q and q.strip():
+            needle = re.escape(q.strip())
+            query["$and"] = query.get("$and", []) + [{"$or": [
+                {"full_name": {"$regex": needle, "$options": "i"}},
+                {"province": {"$regex": needle, "$options": "i"}},
+                {"lawyer_profile.specializations": {"$regex": needle, "$options": "i"}},
+            ]}]
+        if bar_number and bar_number.strip():
+            query["lawyer_profile.bar_number"] = {
+                "$regex": re.escape(bar_number.strip()), "$options": "i"}
+
+        return query
+
+    async def count_lawyers(self, **filters) -> int:
+        """How many lawyers match `lawyer_filter(**filters)`."""
+        return await self.count(self.lawyer_filter(**filters))
 
     async def find_lawyers(
         self,
@@ -89,48 +171,11 @@ class UserRepository(BaseRepository):
               nothing more, so it could not affect an ordering, only
               membership".
         """
-        query: dict = {
-            "role": "lawyer",
-            "lawyer_profile.kyc_verified": True,
-            "is_active": True,
-        }
-        if min_rating > 0:
-            # Applied ONLY when it filters something. `{"$gte": 0.0}` looks
-            # inert and is not: in MongoDB a document whose
-            # `lawyer_profile.rating` key is ABSENT does not satisfy `$gte`, so
-            # an unrated lawyer was excluded from search, from the match pool
-            # and from the general listing at once — the client was told no
-            # verified lawyers existed while one sat in the collection.
-            query["lawyer_profile.rating"] = {"$gte": min_rating}
-        if province and not (include_federal and province == "federal"):
-            # The omitted case is a federal matter under the matcher's rules:
-            # every province is eligible, so no province clause is added at all.
-            query["province"] = (
-                {"$in": [province, "federal"]} if include_federal else province
-            )
-        areas = [a for a in (case_type, specialization) if a]
-        if len(areas) == 1:
-            query["lawyer_profile.specializations"] = areas[0]
-        elif areas:
-            query["lawyer_profile.specializations"] = {"$all": areas}
-        if availability is not None:
-            query["lawyer_profile.availability"] = availability
-
-        # ── Text search ──────────────────────────────────────────────────────
-        # Escaped, because the needle is a user's raw keystrokes. Unescaped it
-        # is a regular expression: "a|b" would silently widen the search and a
-        # nested quantifier could hang the query on a large collection.
-        if q and q.strip():
-            needle = re.escape(q.strip())
-            query["$and"] = query.get("$and", []) + [{"$or": [
-                {"full_name": {"$regex": needle, "$options": "i"}},
-                {"province": {"$regex": needle, "$options": "i"}},
-                {"lawyer_profile.specializations": {"$regex": needle, "$options": "i"}},
-            ]}]
-        if bar_number and bar_number.strip():
-            query["lawyer_profile.bar_number"] = {
-                "$regex": re.escape(bar_number.strip()), "$options": "i"}
-
+        query = self.lawyer_filter(
+            province=province, case_type=case_type, min_rating=min_rating,
+            availability=availability, include_federal=include_federal,
+            q=q, bar_number=bar_number, specialization=specialization,
+        )
         return await self.paginate(
             query,
             page=page,

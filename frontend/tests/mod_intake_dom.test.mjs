@@ -36,7 +36,7 @@ function define(name, value) {
 }
 for (const name of ["window", "document", "navigator", "HTMLElement",
                     "Element", "Node", "Event", "CustomEvent",
-                    "MutationObserver", "getComputedStyle", "localStorage",
+                    "MutationObserver", "getComputedStyle", "localStorage", "sessionStorage",
                     "requestAnimationFrame", "cancelAnimationFrame", "Blob",
                     "FileReader", "URL"]) {
     define(name, dom.window[name]);
@@ -108,7 +108,10 @@ function convertedIntake(over = {}) {
     };
 }
 
-async function mountIntake() {
+/* A pending draft is now offered as a choice (2026-10-12). Most tests are
+ * about what happens AFTER resuming it, so the default is to take
+ * "Continue that case"; `{ draftChoice: "leave" }` keeps the card up. */
+async function mountIntake({ draftChoice = "continue" } = {}) {
     const { default: ModIntake } =
         await import("../src/components/client/ModIntake.jsx");
     const { CaseProvider } = await import("../src/components/client/CaseContext.jsx");
@@ -131,6 +134,11 @@ async function mountIntake() {
                   h(CaseProvider, null, h(ModIntake)))))));
     });
     await act(async () => { await new Promise(r => setTimeout(r, 40)); });
+    const choice = container.querySelector("[data-continue-draft]");
+    if (choice && draftChoice === "continue") {
+        await act(async () => { choice.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+        await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+    }
     return {
         container,
         unmount: async () => {
@@ -187,8 +195,8 @@ async function click(el) {
 }
 
 async function confirmFinalCategory(container) {
-    await click(findButton(container, "Continue to Category"));
-    const complete = findButton(container, "Confirm Category & Open Case");
+    await click(findButton(container, "Continue to category"));
+    const complete = findButton(container, "Confirm & open case");
     assert.ok(complete, "the final category confirmation screen did not open");
     await click(complete);
 }
@@ -414,7 +422,7 @@ test("a failed confirmation does not advance or clear the token", async () => {
     assert.equal(storedToken(), TOKEN,
         "the token was cleared even though the case is still a draft");
     // Still on the category screen, so the same final action can be retried.
-    assert.ok(findButton(container, "Confirm Category & Open Case"));
+    assert.ok(findButton(container, "Confirm & open case"));
     await unmount();
 });
 
@@ -489,7 +497,7 @@ test("a resumable draft is adopted instead of starting fresh", async () => {
     assert.equal(api.__calls("intakeStart").length, 0,
         "a fresh intake was minted while a draft was waiting to be confirmed");
     assert.equal(storedToken(), TOKEN, "the resumed token was not stored");
-    assert.ok(findButton(container, "Continue to Category"),
+    assert.ok(findButton(container, "Continue to category"),
         "the resumed draft did not land on the screen that can confirm it");
     await unmount();
 });
@@ -564,7 +572,7 @@ test("confirmCase is never called without a case id", async () => {
     seedToken();
     const { container, unmount } = await mountIntake();
 
-    const confirm = findButton(container, "Continue to Category");
+    const confirm = findButton(container, "Continue to category");
     if (confirm) await click(confirm);
 
     assert.equal(api.__calls("confirmCase").length, 0,
@@ -957,5 +965,634 @@ test("every clarify call carries the app language, so the server can pin it", as
     const calls = api.__calls("intakeClarify");
     assert.ok(calls.length >= 1);
     for (const c of calls) assert.equal(c.args[2], "en", "a clarify call omitted the language");
+    await unmount();
+});
+
+// ── QA fixes (2026-10-12) ──────────────────────────────────────────────────
+
+function onStep2(over = {}) {
+    return convertedIntake({
+        completed: false, case_id: null, case_status: null, ai_structured_case: null,
+        current_step: 2, ...over,
+    });
+}
+
+const tick = (ms = 40) => act(async () => { await new Promise(r => setTimeout(r, ms)); });
+const currentStep = (container) => container.querySelector(".in-rstep[aria-current] .t")?.textContent;
+
+test("before the intake exists, step 1 cannot move on (nothing would be saved)", async () => {
+    reset();
+    api.__respond("intakeStart", { data: null, error: { message: "down" }, status: 503 });
+    const { container, unmount } = await mountIntake();
+    await click(container.querySelector(".in-role"));
+    await click(container.querySelector(".in-prov"));
+    const cont = findButton(container, "Continue");
+    assert.ok(cont.disabled, "Continue was usable with no intake to save into");
+    await click(container.querySelectorAll(".in-rstep")[1]);
+    assert.equal(api.__calls("intakeSaveStep").length, 0);
+    assert.equal(currentStep(container), "About you", "the rail moved past step 1 without an intake");
+    await unmount();
+});
+
+test("going forward on the rail saves what was edited, like Continue does", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: onStep2() });
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Back"));
+    const provs = [...container.querySelectorAll(".in-prov")];
+    await click(provs[1]);
+    await click(container.querySelectorAll(".in-rstep")[1]);
+    const step1 = api.__calls("intakeSaveStep").filter(c => c.args[1] === 1);
+    assert.equal(step1.length, 1, "the rail changed the screen without saving step 1");
+    assert.notEqual(step1[0].args[2].province, "punjab", "the edited province was not saved");
+    await unmount();
+});
+
+test("a failed question fetch is shown as an error with a retry, not as 'no questions needed'", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: onStep2() });
+    api.__respond("intakeClarify", { data: null, error: { message: "Network error." }, status: 0 });
+    const { container, unmount } = await mountIntake();
+    await click(container.querySelector("[data-step2-continue]"));
+    assert.ok(container.querySelector("[data-clarify-error]"), "the failure was not shown");
+    assert.doesNotMatch(container.textContent, /no additional questions needed/);
+    assert.ok(findButton(container, "Complete & Continue").disabled, "analysis was offered past a failed fetch");
+    api.__respond("intakeClarify", { data: { question: "When did it start?", done: false, round: 1 } });
+    await click(container.querySelector("[data-clarify-retry]"));
+    assert.equal(container.querySelector("[data-clarify-error]"), null);
+    assert.match(container.textContent, /When did it start\?/);
+    await unmount();
+});
+
+test("returning to the questions does not restart them", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: onStep2() });
+    api.__respond("intakeClarify", { data: { question: "When did it start?", done: false, round: 1 } });
+    const { container, unmount } = await mountIntake();
+    await click(container.querySelector("[data-step2-continue]"));
+    await click(findButton(container, "Back"));
+    await click(container.querySelector("[data-step2-continue]"));
+    assert.equal(api.__calls("intakeClarify").length, 1, "the questions were fetched again from round 0");
+    await unmount();
+});
+
+test("uploaded files stay visible after a refresh before conversion", async () => {
+    reset();
+    seedToken();
+    const data = onStep2({ evidence_files: [{ file_id: "f1", filename: "fard.pdf", content_type: "application/pdf", size: 2048 }] });
+    delete data.steps[4];
+    api.__respond("intakeGet", { data });
+    const { container, unmount } = await mountIntake();
+    assert.match(container.textContent, /fard\.pdf/, "the uploaded file was hidden");
+    const yes = [...container.querySelectorAll('[role="radio"]')].find(b => /Yes, I have evidence/.test(b.textContent));
+    assert.equal(yes.getAttribute("aria-checked"), "true");
+    await unmount();
+});
+
+test("the analysis language is only ever en or ur", async () => {
+    for (const [story, want] of [["میرے بھائی نے پلاٹ پر قبضہ کر لیا ہے", "ur"], ["My brother took the plot.", "en"]]) {
+        reset();
+        seedToken();
+        const data = answeredOnStep3();
+        data.steps[3] = { incident_description: story };
+        api.__respond("intakeGet", { data });
+        const { container, unmount } = await mountIntake();
+        await click(findButton(container, "Complete & Continue"));
+        const conv = api.__calls("intakeConvert");
+        assert.equal(conv.length, 1);
+        assert.equal(conv[0].args[1].language, want);
+        await unmount();
+    }
+});
+
+test("a converted case's earlier steps cannot be reopened with Back", async () => {
+    reset();
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    assert.equal(currentStep(container), "Review");
+    assert.equal(findButton(container, "Back"), undefined, "Back led into a closed intake");
+    await unmount();
+});
+
+test("a failed analysis says so, hides the placeholder, and can be retried", async () => {
+    reset();
+    seedToken();
+    const failed = convertedIntake({ ai_structured_case: {
+        summary: "AI structuring unavailable — case created successfully.", applicable_laws: [],
+        recommended_actions: ["Consult a qualified Pakistani lawyer for advice."], risk_level: null,
+        grounded: false, grounding_status: "pipeline_failed" } });
+    api.__respond("intakeGet", { data: failed });
+    const { container, unmount } = await mountIntake();
+    assert.ok(container.querySelector("[data-analysis-failed]"), "the failure was not stated");
+    assert.doesNotMatch(container.textContent, /AI structuring unavailable/, "the placeholder was shown as a summary");
+    api.__respond("intakeRetryAnalysis", { data: { analysis_status: "done" } });
+    api.__respond("intakeGet", { data: convertedIntake() });
+    await click(container.querySelector("[data-retry-analysis]"));
+    assert.equal(api.__calls("intakeRetryAnalysis").length, 1);
+    assert.equal(container.querySelector("[data-analysis-failed]"), null);
+    assert.match(container.textContent, /A tenancy arrears claim\./);
+    await unmount();
+});
+
+test("a conversion the proxy gave up on is picked up when the server finishes", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: answeredOnStep3() });
+    let converts = 0;
+    api.__respond("intakeConvert", async () => {
+        converts += 1;
+        return converts === 1
+            ? { data: null, error: { message: "Gateway timeout" }, status: 504 }
+            : { data: { case_id: CASE_ID, completed: true, ai_case_type: "civil" }, error: null, status: 200 };
+    });
+    const { container, unmount } = await mountIntake();
+    api.__respond("intakeGet", { data: convertedIntake() });
+    await click(findButton(container, "Complete & Continue"));
+    await tick(5600);
+    assert.equal(converts, 2, "the finished conversion was not replayed");
+    assert.equal(currentStep(container), "Review");
+    await unmount();
+});
+
+test("text fields carry the server's limits", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: onStep2() });
+    const { container, unmount } = await mountIntake();
+    assert.equal(container.querySelector("#in-story-text").getAttribute("maxlength"), "20000");
+    assert.equal(container.querySelector("#in-outcome").getAttribute("maxlength"), "5000");
+    await unmount();
+});
+
+test("an AI outage at the questions is said plainly, not as 'no questions needed'", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: onStep2() });
+    api.__respond("intakeClarify", { data: { question: null, done: true, round: 0, ai_unavailable: true } });
+    const { container, unmount } = await mountIntake();
+    await click(container.querySelector("[data-step2-continue]"));
+    assert.ok(container.querySelector("[data-clarify-unavailable]"), "the outage was not stated");
+    assert.doesNotMatch(container.textContent, /no additional questions needed|No questions needed/);
+    assert.equal(findButton(container, "Complete & Continue").disabled, false, "the client was trapped by the outage");
+    api.__respond("intakeClarify", { data: { question: "Who holds the plot now?", done: false, round: 1 } });
+    await click(container.querySelector("[data-clarify-unavailable-retry]"));
+    assert.equal(container.querySelector("[data-clarify-unavailable]"), null);
+    assert.match(container.textContent, /Who holds the plot now\?/);
+    await unmount();
+});
+
+// ── a pending draft is a choice, not a trap (2026-10-12) ───────────────────
+
+test("a pending draft is offered as a choice, not forced open on its review screen", async () => {
+    reset();
+    seedToken();
+    const { container, unmount } = await mountIntake({ draftChoice: "leave" });
+    const card = container.querySelector("[data-draft-choice]");
+    assert.ok(card, "the draft was resumed without asking");
+    assert.match(card.textContent, /My landlord seized my shop/);
+    assert.equal(container.querySelector(".in-shell").style.display, "none");
+    await click(container.querySelector("[data-continue-draft]"));
+    assert.equal(container.querySelector("[data-draft-choice]"), null);
+    assert.equal(container.querySelector(".in-rstep[aria-current] .t").textContent, "Review");
+    await unmount();
+});
+
+test("starting a new matter leaves the draft alone and opens a fresh intake", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeStart", { data: { session_token: "tok-new" } });
+    const { container, unmount } = await mountIntake({ draftChoice: "leave" });
+    await click(container.querySelector("[data-start-new]"));
+    assert.equal(api.__calls("intakeStart").length, 1);
+    assert.equal(storedToken(), "tok-new", "the new intake's token was not kept");
+    assert.equal(container.querySelector(".in-rstep[aria-current] .t").textContent, "About you");
+    assert.equal(api.__calls("confirmCase").length, 0, "the draft was touched");
+    await unmount();
+});
+
+test("the server's resumable draft is offered the same way", async () => {
+    reset();
+    api.__respond("getResumableIntake", { data: convertedIntake() });
+    const { container, unmount } = await mountIntake({ draftChoice: "leave" });
+    assert.ok(container.querySelector("[data-draft-choice]"));
+    assert.equal(api.__calls("intakeStart").length, 0, "a new intake was started without asking");
+    await unmount();
+});
+
+test("voice input asks which language will be spoken, Urdu by default", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: onStep2() });
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Voice Input"));
+    const ur = container.querySelector('[data-speak-lang="ur"]');
+    const en = container.querySelector('[data-speak-lang="en"]');
+    assert.ok(ur && en, "no language choice before recording");
+    assert.equal(ur.getAttribute("aria-checked"), "true");
+    await click(en);
+    assert.equal(en.getAttribute("aria-checked"), "true");
+    await unmount();
+});
+
+// ── Urdu rendering of the analysis (2026-10-12) ────────────────────────────
+
+function urduAnalysis(localized) {
+    return convertedIntake({ ai_structured_case: {
+        summary: "A cheque of Rs. 250,000 was dishonoured.",
+        applicable_laws: ["Pakistan Penal Code Section 489-F — Dishonestly issuing a cheque"],
+        law_citations: [{ statute: "Pakistan Penal Code", section: "489-F", description: "Dishonestly issuing a cheque", status: "bound" }],
+        recommended_actions: ["Preserve the original cheque."],
+        risk_level: "high", grounded: false, grounding_status: "ungrounded",
+        output_language: "ur",
+        localized: { ur: localized },
+    } });
+}
+
+test("an Urdu analysis is shown in Urdu, right-to-left, with the English original one click away", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: urduAnalysis({
+        language: "ur", status: "ok", summary: "Rs. 250,000 کا چیک باؤنس ہو گیا۔",
+        recommended_actions: ["اصل چیک محفوظ رکھیں۔"], citation_notes: ["بددیانتی سے چیک جاری کرنا"],
+        cautions: ["partially_unverified"] }) });
+    const { container, unmount } = await mountIntake();
+    const summary = container.querySelector("[data-analysis-summary]");
+    assert.match(summary.textContent, /چیک باؤنس/);
+    assert.equal(summary.getAttribute("dir"), "rtl");
+    assert.match(container.querySelector("[data-analysis-law]").textContent, /Pakistan Penal Code Section 489-Fوضاحت: بددیانتی/);
+    assert.match(container.querySelector("[data-analysis-action]").textContent, /اصل چیک/);
+    assert.match(container.querySelector("[data-grounding-note]").textContent, /پوری طرح نہیں مل سکے/, "the warning was not the fixed Urdu text");
+    // One warning, not two: the fixed Urdu status note stands for the judge's caution.
+    assert.equal(container.querySelectorAll(".in-callout").length, 1, "the same warning was shown twice");
+    await click(container.querySelector('[data-view-lang="en"]'));
+    assert.match(container.querySelector("[data-analysis-summary]").textContent, /A cheque of Rs\. 250,000 was dishonoured\./);
+    await unmount();
+});
+
+test("a failed Urdu rendering shows the English original and says so", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: urduAnalysis({ language: "ur", status: "failed" }) });
+    const { container, unmount } = await mountIntake();
+    assert.ok(container.querySelector("[data-urdu-unavailable]"));
+    assert.match(container.querySelector("[data-analysis-summary]").textContent, /A cheque of Rs\. 250,000/);
+    assert.equal(container.querySelector('[data-view-lang="ur"]'), null);
+    await unmount();
+});
+
+test("a statute shows its fixed Urdu name beside the English one, and evidence notes are in Urdu", async () => {
+    reset();
+    seedToken();
+    const data = urduAnalysis({
+        language: "ur", status: "ok", summary: "خلاصہ", recommended_actions: ["قدم"],
+        citation_notes: ["وضاحت"], statute_names: ["مجموعہ تعزیرات پاکستان"], cautions: [] });
+    data.ai_structured_case.evidence_extraction = [{ file_id: "f1", status: "readable", completeness: "complete", pages_total: 1, pages_with_text: 1 }];
+    api.__respond("intakeGet", { data });
+    const { container, unmount } = await mountIntake();
+    assert.match(container.querySelector("[data-analysis-law]").textContent,
+        /^Pakistan Penal Code \(مجموعہ تعزیرات پاکستان\) Section 489-Fوضاحت: وضاحت/);
+    assert.match(container.textContent, /فائلیں مکمل پڑھی گئیں/);
+    await unmount();
+});
+
+// ── a story with no event is not "classified by the AI" (2026-10-12) ───────
+
+test("a vague story is told what to add, and its category is called a starting guess", async () => {
+    reset();
+    seedToken();
+    const vague = convertedIntake({ case_type: "civil" });
+    vague.steps[3] = { incident_description: "Can you guide me in my legal matter? I need some information." };
+    api.__respond("intakeGet", { data: vague });
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Continue to category"));
+    assert.equal(container.querySelector("[data-category-basis]").getAttribute("data-category-basis"), "guess");
+    assert.doesNotMatch(container.textContent, /The AI placed your case under/);
+    assert.match(container.textContent, /Starting guess/);
+    assert.ok(container.querySelector("[data-next-locked]"), "the locked next steps were not explained");
+    await unmount();
+});
+
+test("a story with a real event keeps the AI's category wording", async () => {
+    reset();
+    seedToken();
+    const real = convertedIntake({ case_type: "civil" });
+    real.steps[3] = { incident_description: "My landlord locked my shop in Lahore last month and refuses to return my security deposit of two lakh rupees despite the rent agreement." };
+    api.__respond("intakeGet", { data: real });
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Continue to category"));
+    assert.equal(container.querySelector("[data-category-basis]").getAttribute("data-category-basis"), "ai");
+    assert.match(container.textContent, /AI suggested/);
+    await unmount();
+});
+
+test("a thin story gets a hint on the story step", async () => {
+    reset();
+    seedToken();
+    const data = onStep2();
+    data.steps[3] = { incident_description: "Can you help me?" };
+    api.__respond("intakeGet", { data });
+    const { container, unmount } = await mountIntake();
+    assert.ok(container.querySelector("[data-story-thin]"));
+    await unmount();
+});
+
+test("when the client picks a different category, the AI's suggestion is not presented as their choice", async () => {
+    reset();
+    seedToken();
+    const real = convertedIntake({ case_type: "civil" });
+    real.steps[3] = { incident_description: "My landlord locked my shop in Lahore last month and refuses to return my security deposit of two lakh rupees despite the rent agreement." };
+    api.__respond("intakeGet", { data: real });
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Continue to category"));
+    await click(container.querySelector('[data-category="family"]'));
+    const sub = container.querySelector("[data-category-basis]").textContent;
+    assert.match(sub, /The AI suggested Civil( Law)?; you chose Family/);
+    assert.doesNotMatch(sub, /The AI placed your case under Family/);
+    assert.ok(container.querySelector('[data-category="civil"] .tag'), "the AI tag moved off the AI's suggestion");
+    await unmount();
+});
+
+test("a vague story's guess and the client's own pick are told apart", async () => {
+    reset();
+    seedToken();
+    const vague = convertedIntake({ case_type: "civil" });
+    vague.steps[3] = { incident_description: "cc" };
+    api.__respond("intakeGet", { data: vague });
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Continue to category"));
+    await click(container.querySelector('[data-category="family"]'));
+    const sub = container.querySelector("[data-category-basis]");
+    assert.equal(sub.getAttribute("data-category-basis"), "chosen");
+    assert.match(sub.textContent, /Our starting guess was Civil( Law)?; you chose Family/);
+    await unmount();
+});
+
+// ── review screen layout (2026-10-12) ──────────────────────────────────────
+
+test("the review reads cleanly: caution apart from the summary, one 'Section', a Not-verified badge, a way out", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: convertedIntake({ ai_structured_case: {
+        summary: "The tenant may sue for recovery. Note: one or more statutes cited here could not be matched to the retrieved law sections and must not be relied on without checking.",
+        law_citations: [{ statute: "Civil Procedure Code 1908", section: "Section 2", description: "Notice must be served.", status: "unbound" }],
+        applicable_laws: ["Civil Procedure Code 1908 Section Section 2 — Notice must be served. [unverified citation]"],
+        recommended_actions: ["Send a legal notice."], risk_level: "medium", grounding_status: "citations_unverified",
+    } }) });
+    const { container, unmount } = await mountIntake();
+    const summary = container.querySelector("[data-analysis-summary]").textContent;
+    assert.equal(summary, "The tenant may sue for recovery.", "the caution was left inside the summary");
+    assert.equal(container.querySelectorAll(".in-callout").length, 1, "the same warning was shown twice");
+    assert.match(container.querySelector("[data-grounding-note]").textContent, /could not be matched/);
+    const law = container.querySelector("[data-analysis-law]").textContent;
+    assert.doesNotMatch(law, /Section Section/);
+    assert.doesNotMatch(law, /\[unverified citation\]/);
+    assert.ok(container.querySelector("[data-unverified]"), "no Not-verified badge");
+    assert.ok(container.querySelector("[data-save-later]"), "no way out once the case exists");
+    assert.doesNotMatch(container.textContent, /📋|⚖️|🎯/, "emoji section icons are back");
+    await click(container.querySelector("[data-export]"));
+    assert.ok(container.querySelector('[role="menu"]'), "the Export menu did not open");
+    assert.match(container.querySelector('[role="menu"]').textContent, /Download as PDF.*Email the summary.*Print/s);
+    await unmount();
+});
+
+test("no language chooser on the story step; the language follows the story and is saved with it", async () => {
+    for (const [story, want] of [["My landlord locked my shop and kept my deposit.", "en"], ["میرے مالک مکان نے دکان بند کر دی اور میری رقم رکھ لی", "ur"]]) {
+        reset();
+        seedToken();
+        const data = onStep2();
+        data.steps[3] = { incident_description: story };
+        api.__respond("intakeGet", { data });
+        api.__respond("intakeClarify", { data: { question: "When?", done: false, round: 1 } });
+        const { container, unmount } = await mountIntake();
+        assert.equal(container.querySelector("[data-answer-lang]"), null, "the confusing chooser is back");
+        await click(container.querySelector("[data-step2-continue]"));
+        const step2 = api.__calls("intakeSaveStep").filter(c => c.args[1] === 2);
+        assert.equal(step2.at(-1).args[2].output_language, want);
+        await unmount();
+    }
+});
+
+test("a language saved with the story survives a refresh", async () => {
+    reset();
+    seedToken();
+    const data = answeredOnStep3();
+    data.steps[2] = { case_type: "civil", urgency: "medium", output_language: "ur" };
+    api.__respond("intakeGet", { data });
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Complete & Continue"));
+    assert.equal(api.__calls("intakeConvert")[0].args[1].language, "ur");
+    await unmount();
+});
+
+test("a story with no event in it cannot move on", async () => {
+    reset();
+    seedToken();
+    const data = onStep2();
+    data.steps[3] = { incident_description: "no" };
+    api.__respond("intakeGet", { data });
+    const { container, unmount } = await mountIntake();
+    assert.ok(container.querySelector("[data-step2-continue]").disabled, "Continue allowed on 'no'");
+    assert.match(container.querySelector("[data-step2-why]").textContent, /Describe what happened/);
+    await unmount();
+});
+
+// ── evidence-gated analysis (2026-10-12) ───────────────────────────────────
+
+function gated(over) {
+    return convertedIntake({ ai_structured_case: {
+        summary: "The client says their landlord kept their deposit.",
+        law_citations: [], applicable_laws: [],
+        recommended_actions: ["Write down what happened and when.", "Consult a lawyer about the deposit."],
+        recommended_action_kinds: ["general", "general"],
+        risk_level: null, grounded: false, ...over,
+    } });
+}
+
+test("a retrieval failure offers Retry, in its own words", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: gated({ grounding_status: "retrieval_error" }) });
+    const { container, unmount } = await mountIntake();
+    const banner = container.querySelector('[data-analysis-failed="retrieval_error"]');
+    assert.ok(banner, "no retry banner for a retrieval failure");
+    assert.match(banner.textContent, /could not search the law library/);
+    assert.ok(container.querySelector("[data-retry-analysis]"));
+    await unmount();
+});
+
+test("no admissible law: a facts-only summary, its fixed note, no laws, general steps labelled", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: gated({ grounding_status: "no_relevant_evidence" }) });
+    const { container, unmount } = await mountIntake();
+    assert.equal(container.querySelector("[data-analysis-failed]"), null, "not a failure — no retry banner");
+    assert.match(container.querySelector("[data-grounding-note]").textContent, /only restates what you told us/);
+    assert.equal(container.querySelector("[data-analysis-law]"), null, "law shown although none was admissible");
+    assert.equal(container.querySelectorAll("[data-general-step]").length, 2);
+    await unmount();
+});
+
+test("a fidelity issue is shown beside the summary", async () => {
+    reset();
+    seedToken();
+    api.__respond("intakeGet", { data: gated({ grounding_status: "grounded",
+        input_fact_fidelity: { status: "issues", issues: [{ type: "unsupported_number", value: "250000" }] } }) });
+    const { container, unmount } = await mountIntake();
+    assert.ok(container.querySelector("[data-fidelity-issue]"));
+    await unmount();
+});
+
+/* The Punjab-only CPC (server, batch 6): a Sindh analysis says why the CPC is not listed. */
+test("a non-Punjab analysis shows the CPC jurisdiction notice and lists no CPC law", async () => {
+    reset();
+    const intake = convertedIntake({
+        steps: {
+            1: { province: "sindh", party_role: "plaintiff" },
+            2: { case_type: "civil", urgency: "medium" },
+            3: { incident_description: "My landlord seized my shop." },
+        },
+    });
+    intake.ai_structured_case = {
+        ...intake.ai_structured_case,
+        summary: "The tenant paid Rs. 50,000 on 3 March. The plaint can be rejected because it discloses no cause of action.",
+        applicable_laws: ["Specific Relief Act 1877 Section 42"],
+        law_citations: [{ statute: "Specific Relief Act 1877", section: "42", status: "bound" }],
+        jurisdiction_notice: {
+            scope: "other", province: "sindh",
+            en: "Note on the Code of Civil Procedure: our law library holds only the Punjab version of the CPC, so CPC provisions are not shown here as the law that applies in Sindh.",
+            ur: "ضابطہ دیوانی کے بارے میں نوٹ: صرف پنجاب کا متن",
+        },
+    };
+    api.__respond("intakeGet", { data: intake });
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    const notice = container.querySelector("[data-jurisdiction-notice]");
+    assert.ok(notice, "the jurisdiction notice is not shown");
+    assert.equal(notice.getAttribute("data-jurisdiction-notice"), "other");
+    assert.match(notice.textContent, /Punjab version of the CPC/);
+    assert.match(container.textContent, /Specific Relief Act/);
+    assert.doesNotMatch(container.textContent, /Order VII Rule 11|Code of Civil Procedure, 1908/);
+    await unmount();
+});
+
+test("a Punjab analysis carries no jurisdiction notice", async () => {
+    reset();
+    api.__respond("intakeGet", { data: convertedIntake() });
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    assert.equal(container.querySelector("[data-jurisdiction-notice]"), null);
+    await unmount();
+});
+
+/* Batch 7: a risk estimate made with the Punjab-only CPC in view is withheld by the server. */
+test("a withheld risk estimate reads 'Not assessed — needs review', never as a rating", async () => {
+    reset();
+    const intake = convertedIntake({ steps: { 1: { province: "sindh", party_role: "plaintiff" },
+                                             2: { case_type: "civil", urgency: "medium" },
+                                             3: { incident_description: "My landlord seized my shop." } } });
+    intake.ai_structured_case = { ...intake.ai_structured_case, risk_level: null,
+                                  risk_level_basis: "not_assessed_cpc_jurisdiction", risk_level_withheld: "high" };
+    api.__respond("intakeGet", { data: intake });
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    const tile = container.querySelector("[data-risk-not-assessed]");
+    assert.ok(tile, "the withheld estimate is not explained");
+    assert.match(tile.textContent, /Not assessed — needs review/);
+    assert.equal(container.querySelector("[data-r]"), null, "a rating badge is still shown");
+    assert.doesNotMatch(container.textContent, /\bHigh\b/);
+    await unmount();
+});
+
+test("an ordinary risk estimate is still shown as before", async () => {
+    reset();
+    api.__respond("intakeGet", { data: convertedIntake() });
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    assert.equal(container.querySelector("[data-r]")?.getAttribute("data-r"), "medium");
+    assert.equal(container.querySelector("[data-risk-not-assessed]"), null);
+    await unmount();
+});
+
+// ── an unfinished intake is OFFERED, not jumped into (2026-10-21) ──────────
+//
+// Opening Legal Intake used to land on step 2 or 3 of an old, half-done
+// matter with no word about it. It is now offered like a draft case.
+
+function unfinishedOnStep3() {
+    return convertedIntake({
+        completed: false, case_id: null, case_status: null, current_step: 3, ai_structured_case: null,
+    });
+}
+
+test("an unfinished intake past step 1 is offered, not opened silently", async () => {
+    reset();
+    api.__respond("intakeGet", { data: unfinishedOnStep3() });
+    seedToken();
+    const { container, unmount } = await mountIntake({ draftChoice: "leave" });
+
+    assert.ok(container.querySelector("[data-unfinished-choice]"), "no choice was offered");
+    assert.ok((container.textContent || "").includes("You stopped at step 3"));
+    assert.ok(findButton(container, "Continue where you left off"));
+    assert.ok((container.textContent || "").includes("My landlord seized my shop"), "the matter is not named");
+    await unmount();
+});
+
+test("continuing an unfinished intake puts the client back where they were", async () => {
+    reset();
+    api.__respond("intakeGet", { data: unfinishedOnStep3() });
+    seedToken();
+    const { container, unmount } = await mountIntake();          // presses Continue
+    assert.equal(!!container.querySelector("[data-unfinished-choice]"), false);
+    assert.equal(!!findButton(container, "I'm taking action"), false, "continuing dropped them on step 1");
+    await unmount();
+});
+
+test("starting a new matter from the offer opens a fresh intake on step 1", async () => {
+    reset();
+    api.__respond("intakeGet", { data: unfinishedOnStep3() });
+    api.__respond("intakeStart", { data: { session_token: "tok-new" } });
+    seedToken();
+    const { container, unmount } = await mountIntake({ draftChoice: "leave" });
+    await click(container.querySelector("[data-start-new]"));
+    assert.equal(api.__calls("intakeStart").length, 1);
+    assert.ok(findButton(container, "I'm taking action"), "the new matter did not open on step 1");
+    await unmount();
+});
+
+test("an intake still on step 1 opens directly (nothing to skip past)", async () => {
+    reset();
+    api.__respond("intakeGet", { data: convertedIntake({
+        completed: false, case_id: null, case_status: null, current_step: 1, ai_structured_case: null }) });
+    seedToken();
+    const { container, unmount } = await mountIntake({ draftChoice: "leave" });
+    assert.equal(!!container.querySelector("[data-draft-choice]"), false);
+    assert.ok(findButton(container, "I'm taking action"));
+    await unmount();
+});
+
+test("the server-found unfinished intake is offered too", async () => {
+    reset();
+    api.__respond("getResumableIntake", { data: unfinishedOnStep3() });
+    const { container, unmount } = await mountIntake({ draftChoice: "leave" });
+    assert.ok(container.querySelector("[data-unfinished-choice]"));
+    assert.equal(api.__calls("intakeStart").length, 0, "a new intake was started over the unfinished one");
+    await unmount();
+});
+
+test("'New matter' starts a fresh intake without offering the old one", async () => {
+    reset();
+    api.__respond("intakeGet", { data: unfinishedOnStep3() });
+    api.__respond("intakeStart", { data: { session_token: "tok-new" } });
+    seedToken();
+    const { requestNewMatter } = await import("../src/components/client/newMatter.js");
+    requestNewMatter();
+    const { container, unmount } = await mountIntake({ draftChoice: "leave" });
+    assert.equal(!!container.querySelector("[data-draft-choice]"), false, "New matter offered the old intake");
+    assert.equal(api.__calls("intakeStart").length, 1);
+    assert.ok(findButton(container, "I'm taking action"));
+    assert.equal(dom.window.sessionStorage.getItem("attorney:intake-new"), null, "the request was not consumed");
     await unmount();
 });

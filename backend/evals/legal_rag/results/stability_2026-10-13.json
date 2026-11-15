@@ -1,0 +1,552 @@
+{
+ "schema": "stability-v1",
+ "labels": "silver",
+ "acceptable_outcomes": [
+  "legally_supported_answer",
+  "incomplete_issue_coverage",
+  "safe_abstention",
+  "unsupported_extra_provision"
+ ],
+ "items": {
+  "d007": {
+   "runs": [
+    {
+     "run": 1,
+     "gate": "supported",
+     "grounding": "grounded",
+     "visible": [
+      "CrPC 1898 s.496",
+      "CrPC 1898 s.497"
+     ],
+     "issue_coverage": null,
+     "legal_outcome": "unsupported_extra_provision",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 0,
+     "latency_ms": 29447.1,
+     "localization": {
+      "ur": "ok"
+     }
+    },
+    {
+     "run": 2,
+     "gate": "no_relevant_evidence",
+     "grounding": "no_relevant_evidence",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 41388.1,
+     "localization": {
+      "ur": "ok"
+     }
+    },
+    {
+     "run": 3,
+     "gate": "no_relevant_evidence",
+     "grounding": "no_relevant_evidence",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 76646.0,
+     "localization": {
+      "ur": "ok"
+     }
+    }
+   ],
+   "n_runs": 3,
+   "pass_rate": 0.3333333333333333,
+   "stable": false,
+   "distinct_gate_status": [
+    "no_relevant_evidence",
+    "supported"
+   ],
+   "distinct_provision_sets": 2,
+   "distinct_outcomes": [
+    "false_abstention",
+    "unsupported_extra_provision"
+   ],
+   "false_abstention_runs": 2,
+   "wrong_provision_runs": 0,
+   "unsafe_runs": 0
+  },
+  "d014": {
+   "runs": [
+    {
+     "run": 1,
+     "gate": "supported",
+     "grounding": "no_supported_legal_content",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "withheld": 1,
+     "removed_actions": 3,
+     "latency_ms": 14140.3,
+     "localization": {}
+    },
+    {
+     "run": 2,
+     "gate": "supported",
+     "grounding": "citations_unverified",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "withheld": 1,
+     "removed_actions": 1,
+     "latency_ms": 16068.4,
+     "localization": {}
+    },
+    {
+     "run": 3,
+     "gate": "supported",
+     "grounding": "citations_unverified",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "withheld": 2,
+     "removed_actions": 1,
+     "latency_ms": 10492.5,
+     "localization": {}
+    }
+   ],
+   "n_runs": 3,
+   "pass_rate": 0.0,
+   "stable": false,
+   "distinct_gate_status": [
+    "supported"
+   ],
+   "distinct_provision_sets": 1,
+   "distinct_outcomes": [
+    "false_abstention"
+   ],
+   "false_abstention_runs": 3,
+   "wrong_provision_runs": 0,
+   "unsafe_runs": 0
+  },
+  "d020": {
+   "runs": [
+    {
+     "run": 1,
+     "gate": "supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "Dissolution of Muslim Marriages Act 1939 s.2",
+      "Family Courts Act 1964 s.10",
+      "West Pakistan Family Courts Act 1964 s.10"
+     ],
+     "issue_coverage": null,
+     "legal_outcome": "legally_supported_answer",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 47455.1,
+     "localization": {
+      "ur": "ok"
+     }
+    },
+    {
+     "run": 2,
+     "gate": "supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "Muslim Family Laws Ordinance 1961 s.7",
+      "Muslim Family Laws Ordinance 1961 s.8",
+      "West Pakistan Family Courts Act 1964 s.10"
+     ],
+     "issue_coverage": null,
+     "legal_outcome": "incomplete_issue_coverage",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 10983.4,
+     "localization": {
+      "ur": "ok"
+     }
+    },
+    {
+     "run": 3,
+     "gate": "supported",
+     "grounding": "ungrounded",
+     "visible": [
+      "Muslim Family Laws Ordinance 1961 s.7",
+      "Muslim Family Laws Ordinance 1961 s.8",
+      "West Pakistan Family Courts Act 1964 s.10"
+     ],
+     "issue_coverage": null,
+     "legal_outcome": "incomplete_issue_coverage",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 0,
+     "latency_ms": 11238.8,
+     "localization": {
+      "ur": "ok"
+     }
+    }
+   ],
+   "n_runs": 3,
+   "pass_rate": 1.0,
+   "stable": true,
+   "distinct_gate_status": [
+    "supported"
+   ],
+   "distinct_provision_sets": 2,
+   "distinct_outcomes": [
+    "incomplete_issue_coverage",
+    "legally_supported_answer"
+   ],
+   "false_abstention_runs": 0,
+   "wrong_provision_runs": 0,
+   "unsafe_runs": 0
+  },
+  "d029": {
+   "runs": [
+    {
+     "run": 1,
+     "gate": "supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "Punjab Protection of Women against Violence Act 2016 s.14",
+      "Punjab Protection of Women against Violence Act 2016 s.4063",
+      "Punjab Protection of Women against Violence Act 2016 s.7",
+      "Punjab Protection of Women against Violence Act 2016 s.8"
+     ],
+     "issue_coverage": null,
+     "legal_outcome": "legally_supported_answer",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 58704.5,
+     "localization": {
+      "ur": "ok"
+     }
+    },
+    {
+     "run": 2,
+     "gate": "supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "Divorce Act 1869 s.27"
+     ],
+     "issue_coverage": null,
+     "legal_outcome": "wrong_provision_answer",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 2,
+     "latency_ms": 35403.2,
+     "localization": {
+      "ur": "ok"
+     }
+    },
+    {
+     "run": 3,
+     "gate": "supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "Divorce Act 1869 s.27"
+     ],
+     "issue_coverage": null,
+     "legal_outcome": "wrong_provision_answer",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 2,
+     "latency_ms": 21999.7,
+     "localization": {
+      "ur": "ok"
+     }
+    }
+   ],
+   "n_runs": 3,
+   "pass_rate": 0.3333333333333333,
+   "stable": false,
+   "distinct_gate_status": [
+    "supported"
+   ],
+   "distinct_provision_sets": 2,
+   "distinct_outcomes": [
+    "legally_supported_answer",
+    "wrong_provision_answer"
+   ],
+   "false_abstention_runs": 0,
+   "wrong_provision_runs": 2,
+   "unsafe_runs": 0
+  },
+  "m001": {
+   "runs": [
+    {
+     "run": 1,
+     "gate": "pipeline_failed",
+     "grounding": "pipeline_failed",
+     "visible": [],
+     "issue_coverage": {
+      "covered": [],
+      "total": 2
+     },
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 0,
+     "latency_ms": 17414.5,
+     "localization": {}
+    },
+    {
+     "run": 2,
+     "gate": "supported",
+     "grounding": "grounded",
+     "visible": [
+      "PPC 1860 s.489-F",
+      "PPC 1860 s.503",
+      "PPC 1860 s.506"
+     ],
+     "issue_coverage": {
+      "covered": [
+       "cheque",
+       "threat"
+      ],
+      "total": 2
+     },
+     "legal_outcome": "unsupported_extra_provision",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 24112.6,
+     "localization": {}
+    },
+    {
+     "run": 3,
+     "gate": "pipeline_failed",
+     "grounding": "pipeline_failed",
+     "visible": [],
+     "issue_coverage": {
+      "covered": [],
+      "total": 2
+     },
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 0,
+     "latency_ms": 595.7,
+     "localization": {}
+    }
+   ],
+   "n_runs": 3,
+   "pass_rate": 0.3333333333333333,
+   "stable": false,
+   "distinct_gate_status": [
+    "pipeline_failed",
+    "supported"
+   ],
+   "distinct_provision_sets": 2,
+   "distinct_outcomes": [
+    "false_abstention",
+    "unsupported_extra_provision"
+   ],
+   "false_abstention_runs": 2,
+   "wrong_provision_runs": 0,
+   "unsafe_runs": 0
+  },
+  "m004": {
+   "runs": [
+    {
+     "run": 1,
+     "gate": "partially_supported",
+     "grounding": "ungrounded",
+     "visible": [
+      "PPC 1860 s.105",
+      "PPC 1860 s.390"
+     ],
+     "issue_coverage": {
+      "covered": [],
+      "total": 1
+     },
+     "legal_outcome": "structurally_unsafe_answer",
+     "unsafe": [
+      "failed_partial"
+     ],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 21118.1,
+     "localization": {}
+    },
+    {
+     "run": 2,
+     "gate": "partially_supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "PPC 1860 s.105",
+      "Qanun-e-Shahadat Order 1984 s.105"
+     ],
+     "issue_coverage": {
+      "covered": [],
+      "total": 1
+     },
+     "legal_outcome": "structurally_unsafe_answer",
+     "unsafe": [
+      "failed_partial"
+     ],
+     "withheld": 0,
+     "removed_actions": 2,
+     "latency_ms": 26401.5,
+     "localization": {}
+    },
+    {
+     "run": 3,
+     "gate": "partially_supported",
+     "grounding": "ungrounded",
+     "visible": [
+      "PPC 1860 s.105"
+     ],
+     "issue_coverage": {
+      "covered": [],
+      "total": 1
+     },
+     "legal_outcome": "wrong_provision_answer",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 2,
+     "latency_ms": 11512.7,
+     "localization": {}
+    }
+   ],
+   "n_runs": 3,
+   "pass_rate": 0.0,
+   "stable": false,
+   "distinct_gate_status": [
+    "partially_supported"
+   ],
+   "distinct_provision_sets": 3,
+   "distinct_outcomes": [
+    "structurally_unsafe_answer",
+    "wrong_provision_answer"
+   ],
+   "false_abstention_runs": 0,
+   "wrong_provision_runs": 1,
+   "unsafe_runs": 2
+  },
+  "d037": {
+   "runs": [
+    {
+     "run": 1,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 14055.7,
+     "localization": {}
+    },
+    {
+     "run": 2,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 1,
+     "latency_ms": 6314.1,
+     "localization": {}
+    },
+    {
+     "run": 3,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 2,
+     "latency_ms": 15769.6,
+     "localization": {}
+    }
+   ],
+   "n_runs": 3,
+   "pass_rate": 1.0,
+   "stable": true,
+   "distinct_gate_status": [
+    "corpus_not_capable"
+   ],
+   "distinct_provision_sets": 1,
+   "distinct_outcomes": [
+    "safe_abstention"
+   ],
+   "false_abstention_runs": 0,
+   "wrong_provision_runs": 0,
+   "unsafe_runs": 0
+  },
+  "d038": {
+   "runs": [
+    {
+     "run": 1,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 2,
+     "latency_ms": 7566.5,
+     "localization": {}
+    },
+    {
+     "run": 2,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 2,
+     "latency_ms": 11695.8,
+     "localization": {}
+    },
+    {
+     "run": 3,
+     "gate": "pipeline_failed",
+     "grounding": "pipeline_failed",
+     "visible": [],
+     "issue_coverage": null,
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "withheld": 0,
+     "removed_actions": 0,
+     "latency_ms": 8274.9,
+     "localization": {}
+    }
+   ],
+   "n_runs": 3,
+   "pass_rate": 1.0,
+   "stable": true,
+   "distinct_gate_status": [
+    "corpus_not_capable",
+    "pipeline_failed"
+   ],
+   "distinct_provision_sets": 1,
+   "distinct_outcomes": [
+    "safe_abstention"
+   ],
+   "false_abstention_runs": 0,
+   "wrong_provision_runs": 0,
+   "unsafe_runs": 0
+  }
+ },
+ "unsafe_runs_total": 2,
+ "latency_ms": {
+  "p50": 15919.0,
+  "p95": 57017.089999999975
+ }
+}

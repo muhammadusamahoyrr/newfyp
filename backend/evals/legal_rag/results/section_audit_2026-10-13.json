@@ -1,0 +1,1650 @@
+{
+  "schema": "section-audit-v1",
+  "repair_version": "section-repair-v1",
+  "timestamp": "2026-10-13T01:51:11.335714+00:00",
+  "collections": {
+    "criminal_collection": {
+      "chunks": 3306,
+      "relabel": 106,
+      "by_statute": {
+        "PPC 1860": 106
+      },
+      "skipped_out_of_sequence": [
+        "statutes_crpc_1898_1250",
+        "statutes_crpc_1898_1251",
+        "statutes_crpc_1898_1252",
+        "statutes_crpc_1898_1253",
+        "statutes_crpc_1898_1261",
+        "statutes_crpc_1898_1262",
+        "statutes_crpc_1898_1265",
+        "statutes_crpc_1898_1267",
+        "statutes_crpc_1898_1268",
+        "statutes_crpc_1898_1269",
+        "statutes_crpc_1898_1270",
+        "statutes_crpc_1898_1291",
+        "statutes_crpc_1898_1297",
+        "statutes_crpc_1898_1298",
+        "statutes_crpc_1898_1310",
+        "statutes_crpc_1898_1318",
+        "statutes_crpc_1898_1319",
+        "statutes_crpc_1898_1337",
+        "statutes_crpc_1898_1340",
+        "statutes_crpc_1898_1341",
+        "statutes_crpc_1898_1342",
+        "statutes_crpc_1898_1343",
+        "statutes_crpc_1898_1347",
+        "statutes_crpc_1898_1375",
+        "statutes_crpc_1898_1379",
+        "statutes_crpc_1898_1380",
+        "statutes_crpc_1898_1381",
+        "statutes_crpc_1898_1382",
+        "statutes_crpc_1898_1383",
+        "statutes_crpc_1898_1384"
+      ],
+      "unresolved_letterless_heading": [
+        "statutes_crpc_1898_0488",
+        "statutes_police_act_1861_0049",
+        "statutes_ppc_1860_0430",
+        "statutes_ppc_1860_0486"
+      ],
+      "fixes": [
+        {
+          "chunk_id": "statutes_ppc_1860_0059",
+          "statute": "PPC 1860",
+          "section_number": "52A",
+          "original": "52",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0063",
+          "statute": "PPC 1860",
+          "section_number": "55A",
+          "original": "55",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0136",
+          "statute": "PPC 1860",
+          "section_number": "108A",
+          "original": "108",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0162",
+          "statute": "PPC 1860",
+          "section_number": "120A",
+          "original": "120",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0163",
+          "statute": "PPC 1860",
+          "section_number": "120B",
+          "original": "120",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0165",
+          "statute": "PPC 1860",
+          "section_number": "121A",
+          "original": "121",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0168",
+          "statute": "PPC 1860",
+          "section_number": "123A",
+          "original": "123",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0169",
+          "statute": "PPC 1860",
+          "section_number": "123A",
+          "original": "123",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0170",
+          "statute": "PPC 1860",
+          "section_number": "123A",
+          "original": "123",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0171",
+          "statute": "PPC 1860",
+          "section_number": "123B",
+          "original": "123",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0173",
+          "statute": "PPC 1860",
+          "section_number": "124A",
+          "original": "124",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0174",
+          "statute": "PPC 1860",
+          "section_number": "124A",
+          "original": "124",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0206",
+          "statute": "PPC 1860",
+          "section_number": "153A",
+          "original": "153",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0207",
+          "statute": "PPC 1860",
+          "section_number": "153A",
+          "original": "153",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0208",
+          "statute": "PPC 1860",
+          "section_number": "153A",
+          "original": "153",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0209",
+          "statute": "PPC 1860",
+          "section_number": "153A",
+          "original": "153",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0210",
+          "statute": "PPC 1860",
+          "section_number": "153B",
+          "original": "153",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0231",
+          "statute": "PPC 1860",
+          "section_number": "165A",
+          "original": "165",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0232",
+          "statute": "PPC 1860",
+          "section_number": "165B",
+          "original": "165",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0239",
+          "statute": "PPC 1860",
+          "section_number": "171A",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0240",
+          "statute": "PPC 1860",
+          "section_number": "171B",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0241",
+          "statute": "PPC 1860",
+          "section_number": "171B",
+          "original": "171",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0242",
+          "statute": "PPC 1860",
+          "section_number": "171C",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0243",
+          "statute": "PPC 1860",
+          "section_number": "171C",
+          "original": "171",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0244",
+          "statute": "PPC 1860",
+          "section_number": "171D",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0245",
+          "statute": "PPC 1860",
+          "section_number": "171E",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0246",
+          "statute": "PPC 1860",
+          "section_number": "171F",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0247",
+          "statute": "PPC 1860",
+          "section_number": "171G",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0248",
+          "statute": "PPC 1860",
+          "section_number": "171H",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0249",
+          "statute": "PPC 1860",
+          "section_number": "171I",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0250",
+          "statute": "PPC 1860",
+          "section_number": "171J",
+          "original": "171",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0327",
+          "statute": "PPC 1860",
+          "section_number": "216A",
+          "original": "216",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0344",
+          "statute": "PPC 1860",
+          "section_number": "225A",
+          "original": "225",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0345",
+          "statute": "PPC 1860",
+          "section_number": "225B",
+          "original": "225",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0384",
+          "statute": "PPC 1860",
+          "section_number": "263A",
+          "original": "263",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0385",
+          "statute": "PPC 1860",
+          "section_number": "263A",
+          "original": "263",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0386",
+          "statute": "PPC 1860",
+          "section_number": "263A",
+          "original": "263",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0420",
+          "statute": "PPC 1860",
+          "section_number": "294A",
+          "original": "294",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0421",
+          "statute": "PPC 1860",
+          "section_number": "294B",
+          "original": "294",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0423",
+          "statute": "PPC 1860",
+          "section_number": "295A",
+          "original": "295",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0424",
+          "statute": "PPC 1860",
+          "section_number": "295B",
+          "original": "295",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0425",
+          "statute": "PPC 1860",
+          "section_number": "295C",
+          "original": "295",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0429",
+          "statute": "PPC 1860",
+          "section_number": "298A",
+          "original": "298",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0433",
+          "statute": "PPC 1860",
+          "section_number": "298C",
+          "original": "298",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0489",
+          "statute": "PPC 1860",
+          "section_number": "337B",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0490",
+          "statute": "PPC 1860",
+          "section_number": "337C",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0491",
+          "statute": "PPC 1860",
+          "section_number": "337D",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0492",
+          "statute": "PPC 1860",
+          "section_number": "337E",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0493",
+          "statute": "PPC 1860",
+          "section_number": "337F",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0494",
+          "statute": "PPC 1860",
+          "section_number": "337F",
+          "original": "337",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0495",
+          "statute": "PPC 1860",
+          "section_number": "337G",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0496",
+          "statute": "PPC 1860",
+          "section_number": "337H",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0497",
+          "statute": "PPC 1860",
+          "section_number": "337I",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0498",
+          "statute": "PPC 1860",
+          "section_number": "337J",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0499",
+          "statute": "PPC 1860",
+          "section_number": "337K",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0500",
+          "statute": "PPC 1860",
+          "section_number": "337K",
+          "original": "337",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0501",
+          "statute": "PPC 1860",
+          "section_number": "337L",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0502",
+          "statute": "PPC 1860",
+          "section_number": "337M",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0503",
+          "statute": "PPC 1860",
+          "section_number": "337M",
+          "original": "337",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0504",
+          "statute": "PPC 1860",
+          "section_number": "337M",
+          "original": "337",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0505",
+          "statute": "PPC 1860",
+          "section_number": "337N",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0506",
+          "statute": "PPC 1860",
+          "section_number": "337N",
+          "original": "337",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0507",
+          "statute": "PPC 1860",
+          "section_number": "337N",
+          "original": "337",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0508",
+          "statute": "PPC 1860",
+          "section_number": "337O",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0509",
+          "statute": "PPC 1860",
+          "section_number": "337P",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0510",
+          "statute": "PPC 1860",
+          "section_number": "337P",
+          "original": "337",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0511",
+          "statute": "PPC 1860",
+          "section_number": "337Q",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0512",
+          "statute": "PPC 1860",
+          "section_number": "337R",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0513",
+          "statute": "PPC 1860",
+          "section_number": "337S",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0514",
+          "statute": "PPC 1860",
+          "section_number": "337T",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0515",
+          "statute": "PPC 1860",
+          "section_number": "337U",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0516",
+          "statute": "PPC 1860",
+          "section_number": "337V",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0517",
+          "statute": "PPC 1860",
+          "section_number": "337W",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0518",
+          "statute": "PPC 1860",
+          "section_number": "337W",
+          "original": "337",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0519",
+          "statute": "PPC 1860",
+          "section_number": "337X",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0520",
+          "statute": "PPC 1860",
+          "section_number": "337Y",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0521",
+          "statute": "PPC 1860",
+          "section_number": "337Z",
+          "original": "337",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0523",
+          "statute": "PPC 1860",
+          "section_number": "338A",
+          "original": "338",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0524",
+          "statute": "PPC 1860",
+          "section_number": "338B",
+          "original": "338",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0525",
+          "statute": "PPC 1860",
+          "section_number": "338C",
+          "original": "338",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0526",
+          "statute": "PPC 1860",
+          "section_number": "338D",
+          "original": "338",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0527",
+          "statute": "PPC 1860",
+          "section_number": "338E",
+          "original": "338",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0528",
+          "statute": "PPC 1860",
+          "section_number": "338E",
+          "original": "338",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0529",
+          "statute": "PPC 1860",
+          "section_number": "338F",
+          "original": "338",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0530",
+          "statute": "PPC 1860",
+          "section_number": "338G",
+          "original": "338",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0531",
+          "statute": "PPC 1860",
+          "section_number": "338H",
+          "original": "338",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0557",
+          "statute": "PPC 1860",
+          "section_number": "354A",
+          "original": "354",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0569",
+          "statute": "PPC 1860",
+          "section_number": "364A",
+          "original": "364",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0571",
+          "statute": "PPC 1860",
+          "section_number": "365A",
+          "original": "365",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0574",
+          "statute": "PPC 1860",
+          "section_number": "366A",
+          "original": "366",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0575",
+          "statute": "PPC 1860",
+          "section_number": "366B",
+          "original": "366",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0577",
+          "statute": "PPC 1860",
+          "section_number": "367A",
+          "original": "367",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0601",
+          "statute": "PPC 1860",
+          "section_number": "381A",
+          "original": "381",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0628",
+          "statute": "PPC 1860",
+          "section_number": "402A",
+          "original": "402",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0629",
+          "statute": "PPC 1860",
+          "section_number": "402B",
+          "original": "402",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0630",
+          "statute": "PPC 1860",
+          "section_number": "402C",
+          "original": "402",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0739",
+          "statute": "PPC 1860",
+          "section_number": "477A",
+          "original": "477",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0740",
+          "statute": "PPC 1860",
+          "section_number": "477A",
+          "original": "477",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0754",
+          "statute": "PPC 1860",
+          "section_number": "489A",
+          "original": "489",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0755",
+          "statute": "PPC 1860",
+          "section_number": "489B",
+          "original": "489",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0756",
+          "statute": "PPC 1860",
+          "section_number": "489C",
+          "original": "489",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0757",
+          "statute": "PPC 1860",
+          "section_number": "489D",
+          "original": "489",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0758",
+          "statute": "PPC 1860",
+          "section_number": "489E",
+          "original": "489",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0759",
+          "statute": "PPC 1860",
+          "section_number": "489E",
+          "original": "489",
+          "how": "continuation"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0760",
+          "statute": "PPC 1860",
+          "section_number": "489F",
+          "original": "489",
+          "how": "heading"
+        },
+        {
+          "chunk_id": "statutes_ppc_1860_0762",
+          "statute": "PPC 1860",
+          "section_number": "493A",
+          "original": "493",
+          "how": "heading"
+        }
+      ],
+      "buried_mid_chunk": [
+        {
+          "chunk_id": "statutes_ppc_1860_0820",
+          "stored": "62",
+          "buried": [
+            "216B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_police_act_1861_0170",
+          "stored": "187",
+          "buried": [
+            "186A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0019",
+          "stored": "22",
+          "buried": [
+            "22A",
+            "22B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0022",
+          "stored": "29",
+          "buried": [
+            "29A",
+            "29B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0027",
+          "stored": "34",
+          "buried": [
+            "34A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0078",
+          "stored": "86",
+          "buried": [
+            "86A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0085",
+          "stored": "93",
+          "buried": [
+            "93A",
+            "93B",
+            "93C"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0091",
+          "stored": "99",
+          "buried": [
+            "99A",
+            "99B",
+            "99C",
+            "99D",
+            "99E",
+            "99F",
+            "99G"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0123",
+          "stored": "132",
+          "buried": [
+            "132A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0130",
+          "stored": "139",
+          "buried": [
+            "139A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0187",
+          "stored": "196",
+          "buried": [
+            "196A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0189",
+          "stored": "198",
+          "buried": [
+            "198A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0190",
+          "stored": "199",
+          "buried": [
+            "199A",
+            "199B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0221",
+          "stored": "245",
+          "buried": [
+            "245A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0225",
+          "stored": "249",
+          "buried": [
+            "249A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0226",
+          "stored": "250",
+          "buried": [
+            "250A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0232",
+          "stored": "265",
+          "buried": [
+            "265A",
+            "265B",
+            "265C",
+            "265D",
+            "265E",
+            "265F",
+            "265G",
+            "265H",
+            "265J",
+            "265K",
+            "265L",
+            "265M"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0233",
+          "stored": "265",
+          "buried": [
+            "265L",
+            "265M",
+            "265N"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0236",
+          "stored": "339",
+          "buried": [
+            "339A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0247",
+          "stored": "350",
+          "buried": [
+            "350A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0280",
+          "stored": "382",
+          "buried": [
+            "382A",
+            "382B",
+            "382C"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0300",
+          "stored": "402",
+          "buried": [
+            "402A",
+            "402B",
+            "402C"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0304",
+          "stored": "406",
+          "buried": [
+            "400A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0309",
+          "stored": "411",
+          "buried": [
+            "411A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0350",
+          "stored": "476",
+          "buried": [
+            "476A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0360",
+          "stored": "491",
+          "buried": [
+            "491A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0367",
+          "stored": "498",
+          "buried": [
+            "498A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0377",
+          "stored": "508",
+          "buried": [
+            "508A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0383",
+          "stored": "514",
+          "buried": [
+            "514A",
+            "514B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0385",
+          "stored": "516",
+          "buried": [
+            "516A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0395",
+          "stored": "526",
+          "buried": [
+            "526A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0397",
+          "stored": "528",
+          "buried": [
+            "528A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0407",
+          "stored": "539",
+          "buried": [
+            "539A",
+            "539B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0408",
+          "stored": "540",
+          "buried": [
+            "540A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0414",
+          "stored": "546",
+          "buried": [
+            "546A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0429",
+          "stored": "561",
+          "buried": [
+            "561A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0464",
+          "stored": "22",
+          "buried": [
+            "22A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0467",
+          "stored": "55",
+          "buried": [
+            "22B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0472",
+          "stored": "29",
+          "buried": [
+            "29B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0481",
+          "stored": "34",
+          "buried": [
+            "34A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0574",
+          "stored": "93",
+          "buried": [
+            "93B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0575",
+          "stored": "93",
+          "buried": [
+            "93C"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0591",
+          "stored": "99",
+          "buried": [
+            "99A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0592",
+          "stored": "99",
+          "buried": [
+            "99A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0596",
+          "stored": "33",
+          "buried": [
+            "99B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0597",
+          "stored": "33",
+          "buried": [
+            "99C",
+            "99D"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0598",
+          "stored": "33",
+          "buried": [
+            "99E",
+            "99F"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0599",
+          "stored": "33",
+          "buried": [
+            "99F",
+            "99G"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0674",
+          "stored": "139",
+          "buried": [
+            "139A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0792",
+          "stored": "196",
+          "buried": [
+            "196A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0794",
+          "stored": "196",
+          "buried": [
+            "196B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0870",
+          "stored": "244",
+          "buried": [
+            "244A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0872",
+          "stored": "245",
+          "buried": [
+            "245A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0877",
+          "stored": "249",
+          "buried": [
+            "249A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0883",
+          "stored": "250",
+          "buried": [
+            "250A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0897",
+          "stored": "265",
+          "buried": [
+            "265A",
+            "265B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0898",
+          "stored": "265",
+          "buried": [
+            "265C"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0900",
+          "stored": "265",
+          "buried": [
+            "265E"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0901",
+          "stored": "265",
+          "buried": [
+            "265E",
+            "265F"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0903",
+          "stored": "265",
+          "buried": [
+            "265G"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0904",
+          "stored": "265",
+          "buried": [
+            "265G",
+            "265H"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0905",
+          "stored": "265",
+          "buried": [
+            "265I"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0906",
+          "stored": "265",
+          "buried": [
+            "265J"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0907",
+          "stored": "265",
+          "buried": [
+            "265K",
+            "265L"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0908",
+          "stored": "265",
+          "buried": [
+            "265M"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0916",
+          "stored": "339",
+          "buried": [
+            "339A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0946",
+          "stored": "350",
+          "buried": [
+            "350A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0990",
+          "stored": "382",
+          "buried": [
+            "382A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0991",
+          "stored": "382",
+          "buried": [
+            "382B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_0992",
+          "stored": "382",
+          "buried": [
+            "382C"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1024",
+          "stored": "402",
+          "buried": [
+            "402A",
+            "402B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1025",
+          "stored": "402",
+          "buried": [
+            "402C"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1034",
+          "stored": "405",
+          "buried": [
+            "406A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1039",
+          "stored": "411",
+          "buried": [
+            "411A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1046",
+          "stored": "415",
+          "buried": [
+            "415A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1078",
+          "stored": "439",
+          "buried": [
+            "439A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1105",
+          "stored": "476",
+          "buried": [
+            "476A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1106",
+          "stored": "476",
+          "buried": [
+            "476B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1120",
+          "stored": "491",
+          "buried": [
+            "491A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1132",
+          "stored": "498",
+          "buried": [
+            "498A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1145",
+          "stored": "508",
+          "buried": [
+            "508A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1157",
+          "stored": "514",
+          "buried": [
+            "514A",
+            "514B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1158",
+          "stored": "514",
+          "buried": [
+            "514B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1159",
+          "stored": "516",
+          "buried": [
+            "516A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1170",
+          "stored": "522",
+          "buried": [
+            "522A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1183",
+          "stored": "526",
+          "buried": [
+            "526A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1201",
+          "stored": "539",
+          "buried": [
+            "539A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1202",
+          "stored": "539",
+          "buried": [
+            "539B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1205",
+          "stored": "540",
+          "buried": [
+            "540A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1211",
+          "stored": "544",
+          "buried": [
+            "544A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_crpc_1898_1237",
+          "stored": "561",
+          "buried": [
+            "561A"
+          ]
+        }
+      ]
+    },
+    "civil_collection": {
+      "chunks": 4648,
+      "relabel": 0,
+      "by_statute": {},
+      "skipped_out_of_sequence": [
+        "statutes_punjab_land_revenue_act_1967_0303"
+      ],
+      "unresolved_letterless_heading": [],
+      "fixes": [],
+      "buried_mid_chunk": [
+        {
+          "chunk_id": "statutes_punjab_consumer_protection_act_2005_0023",
+          "stored": "23",
+          "buried": [
+            "23A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_land_revenue_act_1967_0011",
+          "stored": "11",
+          "buried": [
+            "11A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_land_revenue_act_1967_0041",
+          "stored": "41",
+          "buried": [
+            "41A",
+            "41B",
+            "41C"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_land_revenue_act_1967_0070",
+          "stored": "70",
+          "buried": [
+            "70A",
+            "70B",
+            "70C",
+            "70D",
+            "70E"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_land_revenue_act_1967_0115",
+          "stored": "115",
+          "buried": [
+            "115A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_land_revenue_act_1967_0147",
+          "stored": "147",
+          "buried": [
+            "147A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_land_revenue_act_1967_0164",
+          "stored": "164",
+          "buried": [
+            "164A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_land_revenue_act_1967_0346",
+          "stored": "70",
+          "buried": [
+            "70B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_land_revenue_act_1967_0347",
+          "stored": "70",
+          "buried": [
+            "70B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_tenancy_act_1887_0015",
+          "stored": "15",
+          "buried": [
+            "15A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_tenancy_act_1887_0027",
+          "stored": "27",
+          "buried": [
+            "27A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_tenancy_act_1887_0052",
+          "stored": "52",
+          "buried": [
+            "52A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_tenancy_act_1887_0058",
+          "stored": "58",
+          "buried": [
+            "58A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_punjab_tenancy_act_1887_0060",
+          "stored": "60",
+          "buried": [
+            "60A"
+          ]
+        }
+      ]
+    },
+    "family_collection": {
+      "chunks": 989,
+      "relabel": 0,
+      "by_statute": {},
+      "skipped_out_of_sequence": [],
+      "unresolved_letterless_heading": [
+        "statutes_married_women_s_property_act_1874_0032"
+      ],
+      "fixes": [],
+      "buried_mid_chunk": [
+        {
+          "chunk_id": "statutes_family_courts_act_1964_0012",
+          "stored": "12",
+          "buried": [
+            "12A"
+          ]
+        },
+        {
+          "chunk_id": "statutes_family_courts_act_1964_0017",
+          "stored": "17",
+          "buried": [
+            "17A",
+            "17B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_family_courts_act_1964_0022",
+          "stored": "21A",
+          "buried": [
+            "21B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_family_courts_act_1964_0026",
+          "stored": "25",
+          "buried": [
+            "25A",
+            "25B"
+          ]
+        },
+        {
+          "chunk_id": "statutes_west_pakistan_family_courts_act_1964_0047",
+          "stored": "25",
+          "buried": [
+            "25B"
+          ]
+        }
+      ]
+    },
+    "constitutional_collection": {
+      "chunks": 1736,
+      "relabel": 0,
+      "by_statute": {},
+      "skipped_out_of_sequence": [],
+      "unresolved_letterless_heading": [
+        "statutes_constitution_of_pakistan_1973_0145"
+      ],
+      "fixes": [],
+      "buried_mid_chunk": []
+    }
+  }
+}

@@ -20,8 +20,18 @@ export function getToken() { return accessToken; }
 export function setToken(t) { accessToken = t || null; if (t) _broadcastToken(t); }
 export function clearToken() { accessToken = null; }
 
+// The account a JWT belongs to (`sub`). Read without verifying — it only decides
+// whether a sibling's token is for the same user; the server still verifies it.
+function _tokenSubject(t) {
+  try {
+    const part = String(t).split('.')[1] || '';
+    const json = atob(part.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(part.length / 4) * 4, '='));
+    return JSON.parse(json).sub ?? null;
+  } catch { return null; }
+}
+
 // ─── Cross-tab auth channel (BroadcastChannel) ────────────────────────────────
-let _bc = null;                 // BroadcastChannel | false (unsupported) | null (uninit)
+let _bc = null;                // BroadcastChannel | false (unsupported) | null (uninit)
 const _tokenWaiters = [];       // resolvers awaiting a sibling's token during boot
 
 function _getBC() {
@@ -32,8 +42,16 @@ function _getBC() {
         _bc.onmessage = (e) => {
           const msg = e?.data || {};
           if (msg.type === 'token' && msg.token) {
+            const prev = accessToken;
             accessToken = msg.token;                 // adopt without re-broadcasting
             while (_tokenWaiters.length) _tokenWaiters.shift()(msg.token);
+            // A sibling signed in as a DIFFERENT account. This tab's React
+            // state still shows the old user while its requests would now run
+            // as the new one, so reload and let AuthContext hydrate the new
+            // account. A refreshed token for the same user is adopted quietly.
+            if (prev && _tokenSubject(prev) !== _tokenSubject(msg.token)) {
+              if (typeof window !== 'undefined') { try { window.location.reload(); } catch { } }
+            }
           } else if (msg.type === 'token-request') {
             if (accessToken) { try { _bc.postMessage({ type: 'token', token: accessToken }); } catch { } }
           } else if (msg.type === 'logout') {
@@ -220,6 +238,9 @@ async function apiFetch(path, options = {}) {
 // `verification` record the draft stream emits after the last token. Without it
 // that record (the citation check the backend runs on every lawyer draft) was
 // computed, sent, and silently dropped here.
+// Resolves true when the server's terminal `data: [DONE]` frame arrived, false
+// when the stream simply stopped. Callers that only display text may ignore
+// it; the drafter must not (aiDraftStream).
 async function _consumeSSE(res, onToken, onEvent) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -234,10 +255,10 @@ async function _consumeSSE(res, onToken, onEvent) {
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue;
       const raw = line.slice(6).trim();
-      if (raw === '[DONE]') return;
+      if (raw === '[DONE]') return true;
       try {
         const parsed = JSON.parse(raw);
-        if (parsed.error) throw new Error(parsed.error);
+        if (parsed.error) { const err = new Error(parsed.error); err.sse = true; throw err; }
         if (parsed.content) onToken(parsed.content);
         else if (onEvent) onEvent(parsed);   // verification + any future events
       } catch (e) {
@@ -245,6 +266,7 @@ async function _consumeSSE(res, onToken, onEvent) {
       }
     }
   }
+  return buffer.trim() === 'data: [DONE]';
 }
 
 // Single-flight: concurrent callers (parallel 401s + boot) collapse into ONE
@@ -302,11 +324,24 @@ export async function authLogin(email, password) {
   return { data, error, status };
 }
 
-export async function authRegister({ full_name, email, password, role, phone }) {
+// `accepted_terms` is the sign-up checkbox; the server refuses false and stores
+// the Terms/Privacy versions accepted. A success `message` of "verify_email"
+// means the account must confirm its email before it can sign in.
+export async function authRegister({ full_name, email, password, role, phone, accepted_terms }) {
   return apiFetch('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ full_name, email, password, role, phone: phone || null }),
+    body: JSON.stringify({ full_name, email, password, role, phone: phone || null,
+                           accepted_terms: accepted_terms === true }),
   });
+}
+
+export async function authVerifyEmail(token) {
+  return apiFetch('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) });
+}
+
+// Same answer whether or not the address needs a link (no account disclosure).
+export async function authResendVerification(email) {
+  return apiFetch('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ email }) });
 }
 
 export async function authLogout() {
@@ -357,6 +392,15 @@ export async function intakeConvert(sessionToken, { language = "en", urgency = n
 // case its owner could never confirm.
 export async function getResumableIntake() {
   return apiFetch('/intake/resumable');
+}
+
+// Re-run a FAILED intake analysis for the client's own draft case.
+// -> { analysis_status: "done" | "failed" }
+export async function intakeRetryAnalysis(sessionToken, { language = "en" } = {}) {
+  return apiFetch(`/intake/${sessionToken}/retry-analysis`, {
+    method: 'POST',
+    body: JSON.stringify({ language }),
+  });
 }
 
 export async function intakeGet(sessionToken) {
@@ -436,10 +480,13 @@ async function apiFetchMultipart(path, formData, extraHeaders = {}) {
 }
 
 // ─── Voice / STT ─────────────────────────────────────────────────────────────
-export async function transcribeAudio(audioBlob) {
+// language: "ur" | "en" | "auto" (the server's default). The text comes back
+// in that language: Urdu script or English, never Hindi/Devanagari.
+export async function transcribeAudio(audioBlob, { language } = {}) {
   const formData = new FormData();
   const filename = audioBlob.type === 'audio/wav' ? 'recording.wav' : 'recording.webm';
   formData.append('audio', audioBlob, filename);
+  if (language) formData.append('language', language);
   return apiFetchMultipart('/voice/transcribe', formData);
 }
 
@@ -481,6 +528,98 @@ export async function openCaseFile(caseId, fileId) {
 
 export async function deleteCaseFile(caseId, fileId) {
   return apiFetch(`/case-files/${encodeURIComponent(caseId)}/${encodeURIComponent(fileId)}`, { method: 'DELETE' });
+}
+
+// ── Documents a client attaches to an appointment (2026-10-19) ──
+// The lawyer sees names and notes while pending, and opens files only once
+// they accept (or one the client chose to show early). Never after a decline.
+/** A lawyer offers up to three other times for a pending request (2026-10-19). */
+export async function suggestAppointmentTimes(appointmentId, { options, note = "" }) {
+  return apiFetch(`/appointments/${encodeURIComponent(appointmentId)}/suggest-times`, {
+    method: 'POST', body: JSON.stringify({ options, note: note || null }),
+  });
+}
+
+/** The client picks one: it moves there and is confirmed. */
+export async function acceptAppointmentSuggestion(appointmentId, { scheduledAt, scheduleVersion }) {
+  return apiFetch(`/appointments/${encodeURIComponent(appointmentId)}/accept-suggestion`, {
+    method: 'POST', body: JSON.stringify({ scheduled_at: scheduledAt, schedule_version: scheduleVersion }),
+  });
+}
+
+/* Appointment thread read receipts (2026-10-19): unread counts and the last
+ * message per appointment, kept on the server. */
+export async function getThreadSummary(ids = []) {
+  return apiFetch(`/appointment-threads/summary?ids=${encodeURIComponent(ids.join(','))}`);
+}
+export async function markThreadRead(id) {
+  return apiFetch(`/appointment-threads/${encodeURIComponent(id)}/read`, { method: 'POST' });
+}
+
+/* The lawyer's Clients index (2026-10-19): stages and counts computed on the
+ * server from this lawyer's appointments and cases. */
+export async function listMyClients() {
+  return apiFetch('/lawyer-clients');
+}
+
+/* What is waiting on the lawyer, counted once on the server (2026-10-20):
+ * appointment_requests, outcomes_to_record, hire_requests (the actions, with
+ * `to_do` their sum and `next` the oldest of each), plus upcoming and
+ * waiting_for_client. Every page reads these instead of counting its own. */
+export async function getLawyerActions() {
+  return apiFetch('/lawyer-actions');
+}
+
+/* A case's consultations, for its lawyer (2026-10-20): `originating` (the
+ * meeting the hire followed, from the engagement's stored appointment_id, or
+ * null with `originating_unavailable`), `has_hire`, and `linked` -- only the
+ * meetings booked for THIS case. */
+export async function getCaseConsultations(caseId) {
+  return apiFetch(`/case-consultations/${encodeURIComponent(caseId)}`);
+}
+
+/* In-app video (Daily) for a confirmed video consultation (2026-10-19). The
+ * key stays on the backend; Join returns a short-lived token for one room. */
+export async function getVideoConfig() {
+  return apiFetch('/appointment-video');
+}
+export async function getVideoStatus(appointmentId) {
+  return apiFetch(`/appointment-video/${encodeURIComponent(appointmentId)}`);
+}
+export async function joinVideo(appointmentId) {
+  return apiFetch(`/appointment-video/${encodeURIComponent(appointmentId)}/join`, { method: 'POST' });
+}
+/* Did both really meet in the room? The server asks Daily (2026-10-21);
+ * nothing the browser says is taken as attendance. -> { video_met } */
+export async function checkVideoAttendance(appointmentId) {
+  return apiFetch(`/appointment-video/${encodeURIComponent(appointmentId)}/attendance`, { method: 'POST' });
+}
+
+export async function listAppointmentFiles(appointmentId) {
+  return apiFetch(`/appointment-files/${encodeURIComponent(appointmentId)}`);
+}
+
+export async function uploadAppointmentFile(appointmentId, file, { note = '', shareBeforeAccept = false } = {}) {
+  const fd = new FormData();
+  fd.append('file', file, file.name);
+  if (note) fd.append('note', note);
+  fd.append('share_before_accept', shareBeforeAccept ? 'true' : 'false');
+  return apiFetchMultipart(`/appointment-files/${encodeURIComponent(appointmentId)}`, fd);
+}
+
+/** The file as a blob URL the caller opens and later revokes. */
+export async function openAppointmentFile(appointmentId, fileId) {
+  const { data: res, error } = await apiFetch(
+    `/appointment-files/${encodeURIComponent(appointmentId)}/${encodeURIComponent(fileId)}/download`,
+    { returnResponse: true },
+  );
+  if (!res) return { data: null, error: error?.message || 'Could not open this file.' };
+  const blob = await res.blob();
+  return { data: URL.createObjectURL(blob), error: null };
+}
+
+export async function deleteAppointmentFile(appointmentId, fileId) {
+  return apiFetch(`/appointment-files/${encodeURIComponent(appointmentId)}/${encodeURIComponent(fileId)}`, { method: 'DELETE' });
 }
 
 // ── Quick document review: one document, by a lawyer the client has not hired ──
@@ -597,6 +736,15 @@ export async function rescheduleHearing(caseId, hearingId, { date, time, reason 
   });
 }
 
+/** Take an upcoming hearing (no outcome yet) off the schedule; the client is
+ *  notified and the server keeps a copy on the case (2026-10-19). */
+export async function cancelHearing(caseId, hearingId, { reason } = {}) {
+  return apiFetch(`/cases/${caseId}/hearings/${hearingId}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason || null }),
+  });
+}
+
 export async function listMessages(caseId) {
   return apiFetch(`/cases/${caseId}/messages`);
 }
@@ -646,7 +794,7 @@ export async function closeAccount(password) {
 }
 
 // ─── Lawyers ─────────────────────────────────────────────────────────────────
-export async function searchLawyers({ province, case_type, specialization, min_rating, availability, page = 1, page_size = 10 } = {}) {
+export async function searchLawyers({ province, case_type, specialization, min_rating, availability, q, bar_number, sort, page = 1, page_size = 10 } = {}) {
   const p = new URLSearchParams();
   if (province) p.set('province', province);
   if (case_type) p.set('case_type', case_type);
@@ -654,9 +802,25 @@ export async function searchLawyers({ province, case_type, specialization, min_r
   if (specialization) p.set('specialization', specialization);
   if (min_rating !== undefined) p.set('min_rating', min_rating);
   if (availability !== undefined && availability !== null) p.set('availability', availability);
+  // The search box and the sort menu. Both were sent by the Lawyers page and
+  // dropped here, so typing a name or changing the order did nothing.
+  if (q && String(q).trim()) p.set('q', String(q).trim());
+  if (bar_number && String(bar_number).trim()) p.set('bar_number', String(bar_number).trim());
+  if (sort) p.set('sort', sort);
   p.set('page', page);
   p.set('page_size', page_size);
   return apiFetch(`/lawyers?${p}`);
+}
+
+// Every count the client Lawyers page shows, in one request: per practice area
+// (under the other filters) plus the whole-directory and accepting totals.
+export async function lawyerDirectoryCounts({ province, min_rating, availability, specializations = [] } = {}) {
+  const p = new URLSearchParams();
+  if (province) p.set('province', province);
+  if (min_rating) p.set('min_rating', min_rating);
+  if (availability !== undefined && availability !== null) p.set('availability', availability);
+  specializations.forEach(s => p.append('specialization', s));
+  return apiFetch(`/lawyers/counts?${p}`);
 }
 
 export async function matchLawyers(case_id) {
@@ -668,6 +832,12 @@ export async function submitReview(lawyer_id, stars, comment) {
     method: 'POST',
     body: JSON.stringify({ stars, comment: comment || null }),
   });
+}
+
+// May the signed-in client review this lawyer now (2026-10-12):
+// { can_review, already_reviewed, reason }.
+export async function getReviewEligibility(lawyer_id) {
+  return apiFetch(`/lawyers/${encodeURIComponent(lawyer_id)}/review-eligibility`);
 }
 
 export async function getLawyerReviews(lawyer_id, { page = 1, page_size = 10 } = {}) {
@@ -697,9 +867,12 @@ export async function bookAppointment({ lawyer_id, case_id, scheduled_at, durati
   });
 }
 
-export async function listAppointments({ status, page, page_size, starts_from, starts_before } = {}) {
+export async function listAppointments({ status, page, page_size, starts_from, starts_before, upcoming_only, order } = {}) {
   const p = new URLSearchParams();
   if (status) p.set('status', status);
+  // Lawyer list (2026-10-20): Upcoming = not yet ended; order=action = "All" as it is worked.
+  if (upcoming_only) p.set('upcoming_only', 'true');
+  if (order) p.set('order', order);
   // Optional start-time window, ISO instants with an offset.
   if (starts_from) p.set('starts_from', starts_from);
   if (starts_before) p.set('starts_before', starts_before);
@@ -711,6 +884,58 @@ export async function listAppointments({ status, page, page_size, starts_from, s
 
 export async function getAppointment(id) {
   return apiFetch(`/appointments/${id}`);
+}
+
+// ── Appointment messages (2026-10-12): a thread for ONE appointment, between
+// its client and its lawyer. The server says whether it is open (`can_send`).
+export async function listAppointmentMessages(id, { before_created_at, before_id, page_size } = {}) {
+  const p = new URLSearchParams();
+  if (page_size) p.set('page_size', page_size);
+  if (before_created_at && before_id) { p.set('before_created_at', before_created_at); p.set('before_id', before_id); }
+  const qs = p.toString();
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/messages${qs ? `?${qs}` : ''}`);
+}
+
+export async function sendAppointmentMessage(id, { text, idempotency_key }) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ text, idempotency_key }),
+  });
+}
+
+// ── Meeting proposals (2026-10-12): a lawyer proposes up to three times on a
+// case; the client chooses one and it becomes a confirmed appointment.
+export async function proposeMeeting({ case_id, options, duration_minutes = 60, mode, agenda, meeting_link = null }) {
+  return apiFetch('/meeting-proposals', {
+    method: 'POST',
+    body: JSON.stringify({ case_id, options, duration_minutes, mode, agenda, meeting_link: meeting_link || null }),
+  });
+}
+
+export async function listMeetingProposals({ case_id, status } = {}) {
+  const p = new URLSearchParams();
+  if (case_id) p.set('case_id', case_id);
+  if (status) p.set('status', status);
+  const qs = p.toString();
+  return apiFetch(`/meeting-proposals${qs ? `?${qs}` : ''}`);
+}
+
+export async function acceptMeetingProposal(id, option_index) {
+  return apiFetch(`/meeting-proposals/${encodeURIComponent(id)}/accept`, {
+    method: 'POST',
+    body: JSON.stringify({ option_index }),
+  });
+}
+
+export async function declineMeetingProposal(id, reason = null) {
+  return apiFetch(`/meeting-proposals/${encodeURIComponent(id)}/decline`, {
+    method: 'POST',
+    body: JSON.stringify({ reason: reason || null }),
+  });
+}
+
+export async function withdrawMeetingProposal(id) {
+  return apiFetch(`/meeting-proposals/${encodeURIComponent(id)}/withdraw`, { method: 'POST' });
 }
 
 export async function setMeetingLink(id, meeting_link) {
@@ -1018,10 +1243,44 @@ export async function rescheduleAppointment(id, { scheduled_at, schedule_version
   });
 }
 
-export async function cancelAppointment(id, reason) {
+export async function cancelAppointment(id, reason, outcomeCode = null) {
   return apiFetch(`/appointments/${id}/cancel`, {
     method: 'PATCH',
-    body: JSON.stringify({ reason: reason || null }),
+    body: JSON.stringify(outcomeCode ? { reason: reason || null, outcome_code: outcomeCode } : { reason: reason || null }),
+  });
+}
+
+/* A case summary the client chooses to share with the appointment's lawyer
+ * (2026-10-19). Separate from documents: one never shares or revokes the other. */
+export async function getSummaryDraft(id) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/summary/draft`);
+}
+export async function readSharedSummary(id) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/summary`);
+}
+export async function shareSummary(id, text) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/summary`, { method: 'PUT', body: JSON.stringify({ text }) });
+}
+export async function revokeSummary(id) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/summary`, { method: 'DELETE' });
+}
+
+/* Moving a CONFIRMED appointment by agreement (2026-10-19): one side proposes,
+ * the other accepts or declines, the proposer may withdraw. */
+export async function proposeNewTime(id, { scheduledAt, note = "" }) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/reschedule-proposal`, {
+    method: 'POST', body: JSON.stringify({ scheduled_at: scheduledAt, note: note || null }),
+  });
+}
+export async function withdrawNewTime(id) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/reschedule-proposal/withdraw`, { method: 'POST' });
+}
+export async function declineNewTime(id) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/reschedule-proposal/decline`, { method: 'POST' });
+}
+export async function acceptNewTime(id, proposalId) {
+  return apiFetch(`/appointments/${encodeURIComponent(id)}/reschedule-proposal/accept`, {
+    method: 'POST', body: JSON.stringify({ proposal_id: proposalId }),
   });
 }
 
@@ -1043,9 +1302,12 @@ export async function completeAppointment(id, { lawyer_notes, meeting_link } = {
  * The lawyer is taken from the token; there is deliberately no way to ask for
  * somebody else's queue.
  */
-export async function listPendingOutcomes({ page_size, cursor } = {}) {
+export async function listPendingOutcomes({ page_size, cursor, immediate } = {}) {
   const params = new URLSearchParams();
   if (page_size) params.set('page_size', String(page_size));
+  // The Needs outcome list (2026-10-20): listed the moment a meeting ends; the
+  // server's two-hour grace is for reminders only.
+  if (immediate) params.set('immediate', 'true');
   if (cursor) {
     params.set('after_end_at', cursor.after_end_at);
     params.set('after_id', cursor.after_id);
@@ -1185,68 +1447,89 @@ export async function listHireConsultations(lawyer_id) {
 // `appointment_id` is REQUIRED: a new hire follows a completed consultation
 // with the same lawyer (AGREEMENTS_PRODUCT_PLAN.md §17 R5-1).
 export async function requestEngagement({ case_id, lawyer_id, appointment_id, message }) {
-  return apiFetch('/engagements', {
+  return _changesEngagement(apiFetch('/engagements', {
     method: 'POST',
     body: JSON.stringify({ case_id, lawyer_id, appointment_id, message: message || null }),
-  });
+  }));
 }
 
+// The client shell (sidebar badge), Overview, Lawyers and Tracking all read
+// the engagement list, often in the same moment: opening Overview fetched it
+// twice. A read within ENGAGEMENTS_REUSE_MS of an identical one shares its
+// request. Kept deliberately short, and dropped by every engagement change made
+// here, because the LAWYER can change an engagement too (proposed terms), so a
+// longer cache would show the client a stale state. Each caller gets its own
+// copy of the data, so one screen sorting its list cannot reorder another's.
+const ENGAGEMENTS_REUSE_MS = 2000;
+const _engagementReads = new Map();
+export function invalidateEngagements() { _engagementReads.clear(); }
+const _ownCopy = (res) => (res && res.data && typeof structuredClone === 'function'
+  ? { ...res, data: structuredClone(res.data) } : res);
 export async function listEngagements({ status } = {}) {
   const qs = status ? `?status=${encodeURIComponent(status)}` : '';
-  return apiFetch(`/engagements${qs}`);
+  const hit = _engagementReads.get(qs);
+  if (hit && Date.now() - hit.at < ENGAGEMENTS_REUSE_MS) return hit.request.then(_ownCopy);
+  const request = apiFetch(`/engagements${qs}`).then(res => {
+    if (!res || res.error) _engagementReads.delete(qs);
+    return res;
+  });
+  _engagementReads.set(qs, { at: Date.now(), request });
+  return request.then(_ownCopy);
 }
+// Every engagement change drops the shared reads, so the next list is fresh.
+const _changesEngagement = (request) => { invalidateEngagements(); return request.finally(invalidateEngagements); };
 
 // Lawyer: answer a request with a price. Claims nothing.
 export async function proposeEngagementTerms(engagement_id, { fee_amount, fee_type, scope_note } = {}) {
-  return apiFetch(`/engagements/${engagement_id}/propose-terms`, {
+  return _changesEngagement(apiFetch(`/engagements/${engagement_id}/propose-terms`, {
     method: 'PATCH',
     body: JSON.stringify({
       fee_amount,
       fee_type,
       scope_note: scope_note || null,
     }),
-  });
+  }));
 }
 
 // Client: agree to the proposed terms. THIS assigns the lawyer.
 export async function acceptEngagementTerms(engagement_id) {
-  return apiFetch(`/engagements/${engagement_id}/accept-terms`, { method: 'PATCH' });
+  return _changesEngagement(apiFetch(`/engagements/${engagement_id}/accept-terms`, { method: 'PATCH' }));
 }
 
 // Client: refuse the proposed terms; the case goes back on the market.
 export async function declineEngagementTerms(engagement_id, reason) {
-  return apiFetch(`/engagements/${engagement_id}/decline-terms`, {
+  return _changesEngagement(apiFetch(`/engagements/${engagement_id}/decline-terms`, {
     method: 'PATCH',
     body: JSON.stringify({ reason: reason || null }),
-  });
+  }));
 }
 
 // Either party. Without `one_sided` the first call proposes and the second
 // (from the other party) confirms.
 export async function completeEngagement(engagement_id, { note, one_sided } = {}) {
-  return apiFetch(`/engagements/${engagement_id}/complete`, {
+  return _changesEngagement(apiFetch(`/engagements/${engagement_id}/complete`, {
     method: 'PATCH',
     body: JSON.stringify({ note: note || null, one_sided: !!one_sided }),
-  });
+  }));
 }
 
 // Either party, no confirmation, reason required.
 export async function terminateEngagement(engagement_id, reason) {
-  return apiFetch(`/engagements/${engagement_id}/terminate`, {
+  return _changesEngagement(apiFetch(`/engagements/${engagement_id}/terminate`, {
     method: 'PATCH',
     body: JSON.stringify({ reason }),
-  });
+  }));
 }
 
 export async function declineEngagement(engagement_id, reason) {
-  return apiFetch(`/engagements/${engagement_id}/decline`, {
+  return _changesEngagement(apiFetch(`/engagements/${engagement_id}/decline`, {
     method: 'PATCH',
     body: JSON.stringify({ reason: reason || null }),
-  });
+  }));
 }
 
 export async function cancelEngagement(engagement_id) {
-  return apiFetch(`/engagements/${engagement_id}/cancel`, { method: 'PATCH' });
+  return _changesEngagement(apiFetch(`/engagements/${engagement_id}/cancel`, { method: 'PATCH' }));
 }
 
 // Read back an uploaded evidence file, saving it the way every other download
@@ -1668,10 +1951,10 @@ export async function bailCheck({ law = 'PPC', section, arrested = true }) {
 }
 
 // Thumbs up/down on an AI answer (quality-feedback flywheel).
-export async function rateAnswer({ session_id, rating, answer_preview = '', question_preview = '', comment = null, source = 'chat' }) {
+export async function rateAnswer({ request_id, session_id, rating, comment = null, source = 'chat' }) {
   return apiFetch('/ai/rate', {
     method: 'POST',
-    body: JSON.stringify({ session_id, rating, answer_preview, question_preview, comment, source }),
+    body: JSON.stringify({ request_id, session_id, rating, comment, source }),
   });
 }
 
@@ -1926,17 +2209,35 @@ export async function aiQueryStream(message, { templateId = "chat", context = {}
 }
 
 // RAG-grounded drafting: retrieves real Pakistani law before the LLM drafts.
-export async function aiDraftStream({ instruction, document = '', template = '', case_id = null, case_type = 'civil', province = 'federal', history = [] }, onToken, onEvent) {
+export async function aiDraftStream({ instruction, document = '', template = '', case_id = null, case_type = 'civil', province = '', history = [], mode = 'full', selection = '' }, onToken, onEvent) {
   // case_id (CASE-BOUND mode): the server authorises the case and DERIVES
   // case_type + province from it. case_type/province below are the GENERAL-mode
   // fallback used only when no case_id is sent.
   const { data: res, error, status } = await apiFetch('/ai/draft/stream', {
     method: 'POST',
     returnResponse: true,
-    body: JSON.stringify({ instruction, document, template, case_id, case_type, province, history }),
+    // mode: what the Draft Assistant returns (full | clause | rewrite | answer);
+    // selection: the passage to rewrite. Server: DraftRequest.mode.
+    body: JSON.stringify({ instruction, document, template, case_id, case_type, province, history, mode, selection }),
   });
   if (error) throw new Error(error.message || `HTTP ${status}`);
-  return _consumeSSE(res, onToken, onEvent);
+  // A draft is complete only when the server says so: its legal check runs
+  // after the last token and `[DONE]` follows it. A stream that stops early
+  // (connection drop, proxy timeout) is NOT a shorter draft, so it is an
+  // error here -- never text the lawyer can insert (2026-10-14).
+  let completed = false;
+  try {
+    completed = await _consumeSSE(res, onToken, onEvent);
+  } catch (e) {
+    if (e?.sse) throw e;                       // the server's own reason
+    completed = false;                         // the connection broke mid-stream
+  }
+  if (!completed) {
+    const err = new Error('The reply was cut off before the legal check finished. Nothing was added to the draft — please try again.');
+    err.code = 'stream_incomplete';
+    throw err;
+  }
+  return true;
 }
 
 // ─── Court-Urdu pleading generator ────────────────────────────────────────────
@@ -2450,6 +2751,22 @@ export async function saveDocumentWorkspaceV2(docId, {
   });
 }
 
+/* Bring an older version back as the NEXT version (2026-10-19). Guarded like
+ * a save: the screen's current revision, version and epoch. */
+export async function restoreRevisionV2(docId, revisionId, {
+  expectedRevisionId, expectedVersion, expectedContentEpoch,
+}, key) {
+  return apiFetch(`/documents/v2/${encodeURIComponent(docId)}/revisions/${encodeURIComponent(revisionId)}/restore`, {
+    method: 'POST',
+    headers: v2Headers(key),
+    body: JSON.stringify({
+      expected_revision_id: expectedRevisionId,
+      expected_version: expectedVersion,
+      expected_content_epoch: expectedContentEpoch,
+    }),
+  });
+}
+
 export async function getDocumentV2(docId) {
   return apiFetch(`/documents/v2/${encodeURIComponent(docId)}`);
 }
@@ -2468,6 +2785,12 @@ export async function getDocumentV2(docId) {
  * prose drafts: every item comes back `to_confirm`, never "satisfied". */
 export async function pleadingRequirements(templateType) {
   return apiFetch(`/documents/requirements/${encodeURIComponent(templateType)}`);
+}
+
+/* A template's own wording (its builder's text), every detail as
+ * `[[FIELD_NAME]]`. `text_html` is null for a PDF-only template. */
+export async function templateText(templateType) {
+  return apiFetch(`/documents/templates/${encodeURIComponent(templateType)}/text`);
 }
 
 export async function listTemplates(

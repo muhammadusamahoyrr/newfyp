@@ -1,0 +1,326 @@
+{
+ "provider": "groq3",
+ "model": "openai/gpt-oss-120b",
+ "failover": "none (pinned)",
+ "temperature": 0.1,
+ "calls": 23,
+ "runs": 1,
+ "items": 23,
+ "composition": {
+  "invented": 12,
+  "ok": 11,
+  "urdu": 4
+ },
+ "never_sent": [
+  "labels",
+  "Desktop/error source documents",
+  "any real person's data",
+  "API keys"
+ ],
+ "privacy_check": {
+  "payloads": 23,
+  "source_8word_runs_total": 0,
+  "pii_matches_total": 0
+ },
+ "requests": [
+  {
+   "id": "P01",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the fraud was discovered within three years from the date of the decree, thereby satisfying the limitation period prescribed in Article 95 of the First Schedule of the Limitation Act 1908."
+    }
+   ]
+  },
+  {
+   "id": "P02",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the appellant was unable to file the appeal within the period prescribed under the Code of Civil Procedure, 1908, due to bona‑fide reasons beyond his control."
+    }
+   ]
+  },
+  {
+   "id": "P03",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\nSENTENCE:\n2. That the accused, though not insane, is unable to understand the proceedings, and the trial’s continuation therefore contravenes the provisions of Section 341 CrPC, rendering the proceedings invalid and an abuse of process."
+    }
+   ]
+  },
+  {
+   "id": "P04",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nAdd a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]\n\nSENTENCE:\n2.1 The Consultant covenants that for a period of twelve (12) months following the termination of this Agreement, he/she shall not, within the Federal Capital Territory, directly or indirectly engage in any activity that competes with the business of [PARTY A]."
+    }
+   ]
+  },
+  {
+   "id": "P05",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the delay was caused by __________ and, in accordance with Section 14 Limitation Act 1908, the period during which the plaintiff was prosecuting a bona‑fide civil proceeding on the same cause of action should be excluded from the limitation period."
+    }
+   ]
+  },
+  {
+   "id": "P06",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\nSENTENCE:\nThat the continuation of the present criminal proceedings would result in a miscarriage of justice, as the accused has been denied a fair opportunity to defend himself, thereby violating the fundamental right to a fair trial and invoking the High Court’s power to prevent abuse of process under Section 561-A CrPC."
+    }
+   ]
+  },
+  {
+   "id": "P07",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nAdd a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]\n\nSENTENCE:\n2.1 The Consultant shall not, for a period of twelve (12) months following the termination of this Agreement, directly or indirectly engage in any business or provide services that compete with the business of [PARTY A] within the Federal Capital Territory."
+    }
+   ]
+  },
+  {
+   "id": "P08",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the delay was caused by [brief description of reasonable cause] and the appellant exercised all due diligence to file the appeal within the prescribed period."
+    }
+   ]
+  },
+  {
+   "id": "P09",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nAdd a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]\n\nSENTENCE:\n2. NON-COMPETE. The Consultant agrees that for a period of twelve (12) months following the termination of this Agreement, he/she shall not, directly or indirectly, engage in any business or provide consulting services that are in competition with the business of [PARTY A] within the Federal Capital Territory of Islamabad. The Consultant further agrees not to solicit or induce any client, customer, or employee of [PARTY A] to terminate or alter their relationship with [PARTY A] during such period."
+    }
+   ]
+  },
+  {
+   "id": "P10",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the fraud was discovered by the plaintiff within three years of the decree, thereby falling within the limitation period prescribed in Article 95 of the Limitation Act 1908."
+    }
+   ]
+  },
+  {
+   "id": "P11",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the plaint does not disclose any cause of action, contrary to the requirement of Order VII Rule 11 CPC."
+    }
+   ]
+  },
+  {
+   "id": "P12",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the appellant prays that this Hon’ble Court may condone the 12‑day delay and admit the appeal."
+    }
+   ]
+  },
+  {
+   "id": "P13",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\n2. That, in accordance with Order VII Rule 11 CPC, a plaint shall be rejected where it does not disclose a cause of action."
+    }
+   ]
+  },
+  {
+   "id": "P14",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\nSENTENCE:\nThat the petitioner's request for quashing the proceedings is made bona fide and is necessary to secure the ends of justice, as contemplated by the inherent powers conferred upon the High Court by Section 561-A CrPC."
+    }
+   ]
+  },
+  {
+   "id": "P15",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the applicant’s inclusion as a necessary party will enable the Court to adjudicate the dispute comprehensively and avoid any future litigation on the same cause of action;"
+    }
+   ]
+  },
+  {
+   "id": "P16",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\nSENTENCE:\nThat the applicant hereby applies to the Hon’ble Magistrate for discharge of the bail bond executed under Section 502 CrPC, and alternatively under Section 126 CrPC, and seeks to be released from any further liability as surety."
+    }
+   ]
+  },
+  {
+   "id": "P17",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\nThat the applicant is a person whose legal rights and interests are directly affected by the subject matter of the suit."
+    }
+   ]
+  },
+  {
+   "id": "P18",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]\n\nSENTENCE:\n4. That the appellant undertakes to pay any costs that may be incurred due to the condonation."
+    }
+   ]
+  },
+  {
+   "id": "P19",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nDraft a ground in a custody petition that the minor's welfare requires custody with the mother. Cite the law. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]\n\nSENTENCE:\nThat the welfare of the minor necessitates that she be placed in the custody of her mother, in accordance with Section 24 Guardians and Wards Act 1890 and Section 41 Divorce Act 1869."
+    }
+   ]
+  },
+  {
+   "id": "P20",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nدرخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔\n\nSENTENCE:\nملزم ذہنی مریض ہے اور مقدمے کی کارروائی نہیں سمجھ سکتا۔"
+    }
+   ]
+  },
+  {
+   "id": "P21",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nدرخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔\n\nSENTENCE:\nملزم کو 3 مارچ 2025 کو گرفتار کیا گیا۔"
+    }
+   ]
+  },
+  {
+   "id": "P22",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nدرخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔\n\nSENTENCE:\nملزم کے خلاف مزید انکوائری درکار ہے۔"
+    }
+   ]
+  },
+  {
+   "id": "P23",
+   "messages": [
+    {
+     "role": "system",
+     "content": "You check one sentence of a legal draft against the lawyer's own input.\nList every FACT the sentence states as true that the INPUT does not state: a person's condition or conduct, an event,\na date, period, amount, number, name or place, or a contract term chosen for the parties.\nNOT facts: statements of law, requests to the court, undertakings, and anything in [square brackets] or blanks (____).\nA fact the INPUT states, even in other words, is not new.\nReply with JSON only: {\"new_facts\": [\"<short quote from the sentence>\", ...]} -- an empty list when there are none."
+    },
+    {
+     "role": "user",
+     "content": "INPUT:\nدرخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔\n\nSENTENCE:\nیہ ضمانت کی درخواست گرفتاری کے بعد دائر کی جا رہی ہے۔"
+    }
+   ]
+  }
+ ]
+}

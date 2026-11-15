@@ -200,6 +200,7 @@ def score_retrieval_batch(
     embedding_scores: Optional[list[float]] = None,
     llm_grades:       Optional[list[int]]   = None,
     keep_threshold:   float                 = _DEFAULT_KEEP_THRESHOLD,
+    min_chunks:       int                   = _MIN_CHUNKS_RETURNED,
 ) -> tuple[list[dict], RetrievalSignals]:
     """
     Score all chunks and filter to those above keep_threshold.
@@ -211,7 +212,9 @@ def score_retrieval_batch(
       (kept_chunks, RetrievalSignals)
 
     aggregate = sum(chunk_scores) / max(total_chunks, 1)
-    Guarantees at least _MIN_CHUNKS_RETURNED chunks are returned.
+    Guarantees at least `min_chunks` chunks are returned (default
+    _MIN_CHUNKS_RETURNED, the chat/research contract). Intake passes 0: three
+    weak chunks are not evidence, and must not reach a legal analysis.
     """
     n = len(chunks)
     if n == 0:
@@ -246,9 +249,9 @@ def score_retrieval_batch(
     kept = [ch for s, ch in scored if s >= keep_threshold]
 
     # Guarantee minimum return — fall back to top-N by score
-    if len(kept) < _MIN_CHUNKS_RETURNED:
+    if len(kept) < min_chunks:
         scored.sort(key=lambda x: x[0], reverse=True)
-        kept = [ch for _, ch in scored[:_MIN_CHUNKS_RETURNED]]
+        kept = [ch for _, ch in scored[:min_chunks]]
 
     total_score = sum(s for s, _ in scored)
     aggregate   = round(min(total_score / max(n, 1), 1.0), 4)

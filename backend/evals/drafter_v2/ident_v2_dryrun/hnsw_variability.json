@@ -1,0 +1,4935 @@
+{
+ "query_repeat_source": [
+  4590,
+  4590,
+  4590
+ ],
+ "rebuilds_src": [
+  {
+   "name": "civil_collection__hnswsrc1",
+   "agreement": 4595,
+   "agreement_requery": 4595,
+   "exact_topk_identical": 4648
+  },
+  {
+   "name": "civil_collection__hnswsrc2",
+   "agreement": 4587,
+   "agreement_requery": 4587,
+   "exact_topk_identical": 4648
+  },
+  {
+   "name": "civil_collection__hnswsrc3",
+   "agreement": 4587,
+   "agreement_requery": 4587,
+   "exact_topk_identical": 4648
+  },
+  {
+   "name": "civil_collection__hnswsrc4",
+   "agreement": 4585,
+   "agreement_requery": 4585,
+   "exact_topk_identical": 4648
+  },
+  {
+   "name": "civil_collection__hnswsrc5",
+   "agreement": 4580,
+   "agreement_requery": 4580,
+   "exact_topk_identical": 4648
+  }
+ ],
+ "rebuilds_v2": [
+  {
+   "name": "civil_collection__hnswv21",
+   "agreement": 4587,
+   "agreement_requery": 4587,
+   "exact_topk_identical": 4648
+  },
+  {
+   "name": "civil_collection__hnswv22",
+   "agreement": 4579,
+   "agreement_requery": 4579,
+   "exact_topk_identical": 4648
+  },
+  {
+   "name": "civil_collection__hnswv23",
+   "agreement": 4590,
+   "agreement_requery": 4590,
+   "exact_topk_identical": 4648
+  },
+  {
+   "name": "civil_collection__hnswv24",
+   "agreement": 4581,
+   "agreement_requery": 4581,
+   "exact_topk_identical": 4648
+  },
+  {
+   "name": "civil_collection__hnswv25",
+   "agreement": 4583,
+   "agreement_requery": 4583,
+   "exact_topk_identical": 4648
+  }
+ ],
+ "retrieval": {
+  "queries": [
+   "Q01",
+   "Q02",
+   "Q03",
+   "Q04",
+   "Q05",
+   "Q06",
+   "Q07",
+   "Q08",
+   "Q09",
+   "Q10",
+   "Q11",
+   "Q12",
+   "Q13",
+   "Q14",
+   "Q15",
+   "Q16",
+   "Q17",
+   "Q18",
+   "V01",
+   "V02",
+   "V04",
+   "V05",
+   "V07",
+   "V08",
+   "V17",
+   "V19",
+   "V20",
+   "V22",
+   "V23"
+  ],
+  "with_expectation": 25,
+  "per_variant": {
+   "ident_v1": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI (rule not shown)"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII (rule not shown)",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI (rule not shown)",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII (rule not shown)",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXIX (rule not shown)"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV (rule not shown)",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII (rule not shown)",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": false
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV (rule not shown)",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — Section 84",
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX (rule not shown)",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswsrc1": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI (rule not shown)"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII (rule not shown)",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI (rule not shown)",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII (rule not shown)",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXIX (rule not shown)"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV (rule not shown)",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII (rule not shown)",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": false
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV (rule not shown)",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — Section 84",
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX (rule not shown)",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswsrc2": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI (rule not shown)"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII (rule not shown)",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI (rule not shown)",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII (rule not shown)",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXIX (rule not shown)"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV (rule not shown)",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII (rule not shown)",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": false
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV (rule not shown)",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX (rule not shown)",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 6",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswsrc3": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI (rule not shown)"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII (rule not shown)",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI (rule not shown)",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII (rule not shown)",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXIX (rule not shown)"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV (rule not shown)",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII (rule not shown)",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": false
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV (rule not shown)",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — Section 84",
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX (rule not shown)",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswsrc4": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI (rule not shown)"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII (rule not shown)",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI (rule not shown)",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII (rule not shown)",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXIX (rule not shown)"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV (rule not shown)",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII (rule not shown)",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": false
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV (rule not shown)",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX (rule not shown)",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 6",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswsrc5": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI (rule not shown)"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII (rule not shown)",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII (rule not shown)",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII (rule not shown)",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI (rule not shown)",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII (rule not shown)",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "CPC 1908 — Order XLVII (rule not shown)",
+      "CPC 1908 — Order XXXIX (rule not shown)"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV (rule not shown)",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII (rule not shown)",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": false
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I (rule not shown)",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX (rule not shown)",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII (rule not shown)"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV (rule not shown)",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV (rule not shown)",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — Section 84",
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX (rule not shown)",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswv21": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI Rule 14"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII Rule 4",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV Rule 13",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 4",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI Rule 22",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII Rule 2",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV Rule 7",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXIX Rule 2"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV Rule 1",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII Rule 2",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": true
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV Rule 3",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV Rule 3",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV Rule 4",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — Section 84",
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX Rule 3",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswv22": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI Rule 14"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII Rule 4",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV Rule 13",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 4",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI Rule 22",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII Rule 2",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV Rule 7",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXIX Rule 2"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV Rule 1",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII Rule 2",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": true
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV Rule 3",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV Rule 3",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV Rule 4",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX Rule 3",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 6",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswv23": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI Rule 14"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII Rule 4",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV Rule 13",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 4",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI Rule 22",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII Rule 2",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV Rule 7",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXIX Rule 2"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV Rule 1",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII Rule 2",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": true
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV Rule 3",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV Rule 3",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV Rule 4",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — Section 84",
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX Rule 3",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswv24": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI Rule 14"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII Rule 4",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV Rule 13",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 4",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI Rule 22",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII Rule 2",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV Rule 7",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXIX Rule 2"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV Rule 1",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII Rule 2",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": true
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV Rule 3",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV Rule 3",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV Rule 4",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — Section 84",
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX Rule 3",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   },
+   "hnswv25": {
+    "Q01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XXII Rule 6"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "Q02": {
+     "labels": [
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Section 26",
+      "CPC 1908 — Order XLVI Rule 6",
+      "CPC 1908 — Order XLI Rule 9",
+      "CPC 1908 — Order XLIII Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XLI Rule 14"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "Q03": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order I Rule 3",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order II Rule 4"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "Q04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Order IX Rule 6",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XLI Rule 21"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "Q05": {
+     "labels": [
+      "CPC 1908 — Section 47",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order IX Rule 4",
+      "CPC 1908 — Order IX Rule 2",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order IX Rule 3",
+      "CPC 1908 — Order VII Rule 21",
+      "CPC 1908 — Order XXIV Rule 4"
+     ],
+     "found": {
+      "Order IX Rule 9": false
+     }
+    },
+    "Q06": {
+     "labels": [
+      "Qanun-e-Shahadat Order 1984 — Section 4",
+      "CPC 1908 — Order XLI Rule 23",
+      "Qanun-e-Shahadat Order 1984 — Section 54",
+      "Qanun-e-Shahadat Order 1984 — Section 2",
+      "CPC 1908 — Order VI Rule 7",
+      "CPC 1908 — Order XLI Rule 3",
+      "CPC 1908 — Order XXI Rule 17",
+      "CPC 1908 — Order XXVII Rule 8"
+     ],
+     "found": {
+      "Order VI Rule 17": false
+     }
+    },
+    "Q07": {
+     "labels": [
+      "CPC 1908 — Order XXIII Rule 2",
+      "CPC 1908 — Order XXIII Rule 1",
+      "CPC 1908 — Order VII Rule 13",
+      "CPC 1908 — Order IX Rule 9",
+      "CPC 1908 — Order XXII Rule 8",
+      "CPC 1908 — Order XXII Rule 9",
+      "CPC 1908 — Order II Rule 3",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Section 12"
+     ],
+     "found": {
+      "Order XXIII Rule 1": true
+     }
+    },
+    "Q08": {
+     "labels": [
+      "CPC 1908 — Order XXXVII Rule 2",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXVII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XXVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9"
+     ],
+     "found": {
+      "Order XXXVII Rule 3": true
+     }
+    },
+    "Q09": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 5",
+      "CPC 1908 — Order VII Rule 26",
+      "Limitation Act 1908 — First Schedule, Articles 176–178",
+      "CPC 1908 — Order VIII Rule 13",
+      "Succession Act 1925 — Section 94",
+      "CPC 1908 — Order XXII Rule 4",
+      "Limitation Act 1908 — Section 17",
+      "CPC 1908 — Order XXI Rule 15"
+     ],
+     "found": {
+      "Order XXII Rule 3": false
+     }
+    },
+    "Q10": {
+     "labels": [
+      "CPC 1908 — Section 113",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 2",
+      "CPC 1908 — Order XLVII Rule 4",
+      "CPC 1908 — Order XLVII Rule 1",
+      "CPC 1908 — Order XLVII Rule 8",
+      "CPC 1908 — Order XLVII Rule 9",
+      "Limitation Act 1908 — First Schedule, Articles 159–161",
+      "CPC 1908 — Order XXXIII Rule 6"
+     ],
+     "found": {
+      "Order XLVII Rule 1": true
+     }
+    },
+    "Q11": {
+     "labels": [
+      "CPC 1908 — Order XXXIII Rule 1",
+      "CPC 1908 — Order XXXIII Rule 10",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXXIII Rule 15",
+      "CPC 1908 — Order XXXIII Rule 5",
+      "CPC 1908 — Order XLIV Rule 1",
+      "Limitation Act 1908 — Section 3"
+     ],
+     "found": {
+      "Order XXXIII Rule 1": true
+     }
+    },
+    "Q12": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 69",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 69",
+      "CPC 1908 — Order XLV Rule 13",
+      "Transfer of Property Act 1882 — Section 69",
+      "Succession Act 1925 — Section 204",
+      "CPC 1908 — Order XXI Rule 12",
+      "CPC 1908 — Order XXXII Rule 3"
+     ],
+     "found": {
+      "Order XL Rule 1": false
+     }
+    },
+    "Q13": {
+     "labels": [
+      "CPC 1908 — Order XXII Rule 4",
+      "CPC 1908 — Order XX Rule 2",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "CPC 1908 — Order VIII Rule 6",
+      "CPC 1908 — Order VIII Rule 9",
+      "CPC 1908 — Order VIII Rule 8",
+      "CPC 1908 — Order VIII Rule 12",
+      "CPC 1908 — Order VIII Rule 13"
+     ],
+     "found": {
+      "Order VIII Rule 10": true
+     }
+    },
+    "Q14": {
+     "labels": [
+      "CPC 1908 — Section 9",
+      "CPC 1908 — Order XXI Rule 103",
+      "Succession Act 1925 — Section 266",
+      "Qanun-e-Shahadat Order 1984 — Section 60",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Section 128",
+      "CPC 1908 — Order XXXII Rule 14",
+      "CPC 1908 — Order VIII Rule 8"
+     ],
+     "found": {
+      "Section 11": false
+     }
+    },
+    "Q15": {
+     "labels": [
+      "Succession Act 1925 — Section 194",
+      "CPC 1908 — Section 151",
+      "CPC 1908 — Order XXI Rule 22",
+      "CPC 1908 — Section 94",
+      "Succession Act 1925 — Section 266",
+      "Transfer of Property Act 1882 — Section 79",
+      "Succession Act 1925 — Section 373",
+      "CPC 1908 — Section 115"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "Q16": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XI Rule 1",
+      "CPC 1908 — Order XI Rule 5",
+      "CPC 1908 — Order XI Rule 22",
+      "CPC 1908 — Order XI Rule 2",
+      "CPC 1908 — Order IX Rule 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order XI Rule 1": true
+     }
+    },
+    "Q17": {
+     "labels": [
+      "CPC 1908 — Order XVII Rule 1",
+      "CPC 1908 — Order XVII Rule 2",
+      "CPC 1908 — Order XXI Rule 69",
+      "CPC 1908 — Order IX Rule 7",
+      "CPC 1908 — Section 118",
+      "CPC 1908 — Order XLV Rule 7",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XXXIX Rule 2"
+     ],
+     "found": {
+      "Order XVII Rule 1": true
+     }
+    },
+    "Q18": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order XIV Rule 3",
+      "CPC 1908 — Order XLI Rule 25",
+      "CPC 1908 — Order XIV Rule 1",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order VIII Rule 2",
+      "CPC 1908 — Order XLI Rule 24",
+      "CPC 1908 — Order VIII Rule 12"
+     ],
+     "found": {
+      "Order XIV Rule 1": true
+     }
+    },
+    "V01": {
+     "labels": [
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order VII Rule 13",
+      "Succession Act 1925 — Section 306",
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order VII Rule 11",
+      "CPC 1908 — Section 20",
+      "CPC 1908 — Order XIII Rule 3",
+      "CPC 1908 — Order XLVII Rule 7"
+     ],
+     "found": {
+      "Order VII Rule 11": true
+     }
+    },
+    "V02": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Section 135",
+      "CPC 1908 — Order VII Rule 10",
+      "CPC 1908 — Section 141",
+      "CPC 1908 — Order XXVI Rule 21",
+      "Transfer of Property Act 1882 — Section 53",
+      "CPC 1908 — Order XXXIII Rule 11",
+      "CPC 1908 — Order XXXIII Rule 11A",
+      "CPC 1908 — Order XXVI Rule 1"
+     ],
+     "found": {
+      "Order VII Rule 10": true
+     }
+    },
+    "V04": {
+     "labels": [
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "Limitation Act 1908 — Section 22",
+      "CPC 1908 — Order XIV Rule 5",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order I Rule 10",
+      "CPC 1908 — Order XXXII Rule 13",
+      "CPC 1908 — Order XXXII Rule 12",
+      "Limitation Act 1908 — Section 14"
+     ],
+     "found": {
+      "Order I Rule 10": true
+     }
+    },
+    "V05": {
+     "labels": [
+      "CPC 1908 — Order IX Rule 12",
+      "CPC 1908 — Order IX Rule 13",
+      "Limitation Act 1908 — First Schedule, Articles 95–97",
+      "CPC 1908 — Order XXI Rule 90",
+      "Limitation Act 1908 — First Schedule, Articles 164–165",
+      "CPC 1908 — Order IX Rule 13",
+      "CPC 1908 — Section 96",
+      "CPC 1908 — Order XXXVII Rule 4",
+      "CPC 1908 — Order XXXII Rule 12"
+     ],
+     "found": {
+      "Order IX Rule 13": true
+     }
+    },
+    "V07": {
+     "labels": [
+      "CPC 1908 — Section 151",
+      "Succession Act 1925 — Section 266",
+      "CPC 1908 — Order XLI Rule 12",
+      "CPC 1908 — Order XLV Rule 3",
+      "Qanun-e-Shahadat Order 1984 — Section 144",
+      "CPC 1908 — Order XV Rule 3",
+      "Succession Act 1925 — Section 373",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 151": true
+     }
+    },
+    "V08": {
+     "labels": [
+      "Limitation Act 1908 — Section 14",
+      "CPC 1908 — Order XLVII Rule 7",
+      "CPC 1908 — Order XIII Rule 8",
+      "Limitation Act 1908 — Section 5",
+      "CPC 1908 — CPC First Schedule (order not determined)",
+      "CPC 1908 — Order IV Rule 2",
+      "Limitation Act 1908 — Section 12",
+      "Limitation Act 1908 — First Schedule, Articles 159–161"
+     ],
+     "found": {
+      "Section 5": true
+     }
+    },
+    "V17": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 113",
+      "Punjab Tenancy Act 1887 — Section 62",
+      "Punjab Tenancy Act 1887 — Section 67",
+      "Punjab Rented Premises Act 2009 — Section 7",
+      "Punjab Tenancy Act 1887 — Section 15",
+      "Punjab Tenancy Act 1887 — Section 96",
+      "Punjab Tenancy Act 1887 — Section 38",
+      "Punjab Rented Premises Act 2009 — Section 6"
+     ],
+     "found": {}
+    },
+    "V19": {
+     "labels": [
+      "Transfer of Property Act 1882 — Section 54",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Pre-emption Act 1991 — Section 30",
+      "Transfer of Property Act 1882 — Section 106",
+      "Punjab Land Revenue Act 1967 — Section 107",
+      "CPC 1908 — Order XXXVI Rule 3",
+      "Punjab Partition of Immovable Property Act 2012 — Section 10",
+      "Punjab Land Revenue Act 1967 — Section 98"
+     ],
+     "found": {}
+    },
+    "V20": {
+     "labels": [
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 25",
+      "CPC 1908 — Order XXIII Rule 3",
+      "Limitation Act 1908 — First Schedule, Articles 3–75",
+      "Succession Act 1925 — Section 45",
+      "Succession Act 1925 — Section 54",
+      "Succession Act 1925 — Section 88",
+      "CPC 1908 — Order XIV Rule 6"
+     ],
+     "found": {}
+    },
+    "V22": {
+     "labels": [
+      "Succession Act 1925 — Section 131",
+      "Qanun-e-Shahadat Order 1984 — Section 46",
+      "CPC 1908 — Section 19",
+      "Succession Act 1925 — Section 161",
+      "CPC 1908 — Order XXIV Rule 4",
+      "Qanun-e-Shahadat Order 1984 — Section 105",
+      "Transfer of Property Act 1882 — Section 31",
+      "Qanun-e-Shahadat Order 1984 — Section 103"
+     ],
+     "found": {}
+    },
+    "V23": {
+     "labels": [
+      "CPC 1908 — Section 84",
+      "CPC 1908 — provision not identified",
+      "CPC 1908 — Order XI Rule 17",
+      "Qanun-e-Shahadat Order 1984 — Section 7",
+      "CPC 1908 — Order XXXIX Rule 3",
+      "CPC 1908 — Order VIII Rule 10",
+      "CPC 1908 — Order VIII Rule 11",
+      "Qanun-e-Shahadat Order 1984 — Section 77",
+      "Transfer of Property Act 1882 — Section 113"
+     ],
+     "found": {
+      "Section 80": false
+     }
+    }
+   }
+  }
+ }
+}

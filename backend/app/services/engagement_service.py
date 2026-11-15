@@ -19,7 +19,7 @@ from app.core.exceptions import (
 )
 from app.repositories.case_repo import CaseRepository
 from app.repositories.engagement_repo import EngagementRepository
-from app.repositories.user_repo import UserRepository
+from app.repositories.user_repo import UserRepository, lawyer_profile_complete
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,12 @@ async def _get_verified_lawyer(lawyer_id: str) -> dict:
         raise AppValidationError("This lawyer is no longer active")
     lp = lawyer.get("lawyer_profile") or {}
     if not lp.get("kyc_verified"):
-        raise AppValidationError("Lawyer is not yet KYC-verified")
+        raise AppValidationError("This lawyer's account is not approved yet")
+    # Approved at sign-up (LAWYER_AUTO_APPROVE) is not the same as listed: an
+    # id from anywhere but the directory must not reach a lawyer who has not
+    # finished onboarding. Admin-approved accounts were reviewed already.
+    if lp.get("kyc_auto_approved") and not lawyer_profile_complete(lawyer):
+        raise AppValidationError("This lawyer has not finished their profile yet")
     return lawyer
 
 
@@ -207,11 +212,16 @@ async def list_engagements(user_id: str, role: str, status: str | None = None) -
     cases = await case_repo.find_many({"_id": {"$in": case_ids}}) if case_ids else []
     user_map = {u["_id"]: u for u in users}
     case_map = {c["_id"]: c for c in cases}
+    # The consultation each request followed, by its STORED id only.
+    from app.services.case_consultations import consultations_for
+    consultations = await consultations_for(items)
 
     enriched = []
     for e in items:
         e = dict(e)
         e["id"] = e.pop("_id")
+        e["consultation"] = consultations.get(str(e["id"]))
+        e["consultation_unavailable"] = e["consultation"] is None
         e.pop("review_request_guard", None)     # review_request_service machinery
         e["client_name"] = user_map.get(e["client_id"], {}).get("full_name", "")
         e["lawyer_name"] = user_map.get(e["lawyer_id"], {}).get("full_name", "")

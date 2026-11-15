@@ -130,7 +130,7 @@ async def _apply(
     *, document_id: str, actor_id: str, actor_role: str, action: str,
     idempotency_key: str, request_body: dict, guard: dict, set_fields: dict,
     new_status: str, intent_core: dict, notif: dict,
-    appends_cycle: bool = False,
+    appends_cycle: bool = False, extra_conditions: list | None = None,
 ) -> dict:
     body_hash = canonical_body_hash(request_body)
     fp = fingerprint(document_id, actor_id, action, body_hash, idempotency_key)
@@ -178,12 +178,17 @@ async def _apply(
             {"$lt": [{"$size": {"$ifNull": ["$review_cycles", []]}},
                      MAX_REVIEW_CYCLES]})
 
+    conditions += list(extra_conditions or [])
     full_guard = {**guard, "_id": document_id, "$expr": {"$and": conditions}}
     updated = await get_documents_col().find_one_and_update(
         full_guard, pipeline, return_document=ReturnDocument.AFTER)
     if updated is None:
         await _raise_transition_failure(document_id, appends_cycle=appends_cycle)
     return result_snapshot
+
+
+_NEWER_THAN_REVIEWED = ("The client's current file is not the version submitted to you, so it "
+                        "cannot be approved. Return it, or ask the client to withdraw and resubmit.")
 
 
 async def _raise_transition_failure(document_id: str, *,
@@ -204,6 +209,9 @@ async def _raise_transition_failure(document_id: str, *,
         raise ReviewLimitError(
             f"This document has been reviewed {MAX_REVIEW_CYCLES} times, which "
             "is the limit. Start a new document to continue.")
+    if (doc.get("review_status") == "submitted"
+            and doc.get("current_revision_id") != doc.get("submitted_revision_id")):
+        raise ConflictError(_NEWER_THAN_REVIEWED)
     raise ConflictError("This document changed since you loaded it — reload and try again.")
 
 
@@ -273,6 +281,15 @@ async def submit(
             or doc.get("current_version") != expected_version
             or rev.get("pdf_sha256") != expected_pdf_sha256):
         raise ConflictError("This document changed since you loaded it — reload and try again.")
+    # A new version still rendering would become current AFTER this submit, so
+    # the lawyer would hold a file that is no longer the client's -- one that
+    # cannot be approved (review(), B1). Refused while that render is live; an
+    # abandoned one (lease lapsed) does not lock the document.
+    if await get_document_revisions_col().find_one(
+            {"document_id": document_id, "status": "pending",
+             "lease_expires_at": {"$gt": _now()}}, {"_id": 1}):
+        raise ConflictError("A new version of this document is still being made. "
+                            "Wait for it to finish, then send it.")
 
     # The recipient must be a registered lawyer. NO KYC gate (decision D2,
     # 2026-10-03): no KYC process exists, so a `kyc_verified` flag proves
@@ -531,6 +548,17 @@ async def review(
     if doc.get("review_status") != "submitted":
         raise ConflictError(f"Cannot review a document in '{doc.get('review_status')}' status.")
 
+    # AN APPROVAL IS PINNED TO THE EXACT REVIEWED REVISION (audit 2026-10-15, B1).
+    # If the document's current file is not the one submitted, approving would
+    # mark the client's newer, unreviewed file "approved". Checked here for a
+    # clear message, and again atomically in the write (extra_conditions) so a
+    # generation racing the approval cannot slip between the two.
+    pinned = []
+    if action == "approve":
+        if doc.get("current_revision_id") != doc.get("submitted_revision_id"):
+            raise ConflictError(_NEWER_THAN_REVIEWED)
+        pinned = [{"$eq": ["$current_revision_id", "$submitted_revision_id"]}]
+
     new_status, ntype, verb = _DECISIONS[action]
     now = _now()
     submitted_rev = doc.get("submitted_revision_id")
@@ -586,7 +614,7 @@ async def review(
         set_fields=set_fields, new_status=new_status,
         intent_core={"revision_id": submitted_rev,
                      "pdf_sha256": expected_pdf_sha256, "note": note},
-        notif=notif, appends_cycle=True)
+        notif=notif, appends_cycle=True, extra_conditions=pinned)
 
 
 # ── WITHDRAW ──────────────────────────────────────────────────────────────────

@@ -289,3 +289,23 @@ test("the component sends no owner id", async () => {
     }
     await p.unmount();
 });
+
+/* Audit 2026-10-15, F4: the panel's Download saved the file without ".pdf"
+ * (every other download adds it) and said nothing when it failed. */
+test("Download saves a .pdf and a failure is shown", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [row("a")], has_more: false } });
+    api.__respond("downloadDocumentFile", {});
+    const p = await mount();
+    await p.click("Download");
+    const call = api.__calls("downloadDocumentFile")[0];
+    assert.equal(call.args[1], "Notice a.pdf");
+    assert.equal(call.args[2].revisionId, "rev-a");
+    assert.doesNotMatch(p.text(), /could not be downloaded/i);
+
+    // The real helper returns the reason as a string (lib/api.js downloadDocumentFile).
+    api.__respond("downloadDocumentFile", { error: "This document changed since the list loaded." });
+    await p.click("Download");
+    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+    assert.match(p.text(), /changed since the list loaded/);
+    await p.unmount();
+});

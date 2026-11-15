@@ -1,18 +1,19 @@
 'use client';
 import React, { useState, useEffect, useRef, Fragment } from "react";
-import { useRouter } from "next/navigation";
+import { useClientRouter as useRouter } from "./clientNav.js";
 import { useT } from "./theme.js";
 import { useToast } from "@/components/shared/Toast.jsx";
 import { useCase } from "./CaseContext.jsx";
 import Ic from "./Ic.jsx";
 import { Card, BtnPrimary, BtnOutline, ThemedInput, Badge, Tooltip } from "@/components/shared/shared.jsx";
-import { intakeStart, intakeSaveStep, intakeConvert, intakeGet, intakeClarify, transcribeAudio, uploadIntakeEvidence, confirmCase, deleteIntakeEvidence, downloadIntakeEvidence, getResumableIntake, getIntakeOcrReview, confirmIntakeOcrPage } from "@/lib/api.js";
+import { intakeStart, intakeSaveStep, intakeConvert, intakeGet, intakeRetryAnalysis, intakeClarify, transcribeAudio, uploadIntakeEvidence, confirmCase, deleteIntakeEvidence, downloadIntakeEvidence, getResumableIntake, getIntakeOcrReview, confirmIntakeOcrPage } from "@/lib/api.js";
 import { useLang, useIsMobile } from "@/lib/i18n.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { readIntakeValue, writeIntakeValue, clearIntakeValue } from "@/lib/intakeStorage.js";
 import { escapeHtml } from "@/lib/escapeHtml.js";
 import { DOCS_FONT } from "./documents/ui.jsx";
 import { extractionLabel, incompleteFiles, TONE_OK, TONE_WARN, TONE_BAD, TONE_NEUTRAL } from "@/lib/extractionStatus.js";
+import { NEW_MATTER_EVENT, takeNewMatterRequest } from "./newMatter.js";
 
 /* One colour per tone, so a new state cannot arrive looking like a reassurance
  * simply because nobody added it to a ternary. */
@@ -60,7 +61,7 @@ const CASE_TYPES = [
 
 // Mirrors backend classifier_node._score_query — runs in browser so case type
 // is selected before the backend even receives the description.
-const quickClassify = (text) => {
+export const quickClassify = (text) => {
     if (!text || text.trim().length < 4) return "";
     const t = text;
     const scores = { family: 0, criminal: 0, civil: 0, constitutional: 0 };
@@ -77,11 +78,18 @@ const quickClassify = (text) => {
 
     // Civil
     if (/\b(property|tenant|landlord|rent|kiraya|contract|agreement|debt|loan|mortgage|qarz|possession|eviction|damages|injunction|CPC|decree)\b/i.test(t)) scores.civil += 0.30;
+    // Land and sale (2026-10-19): a pre-emption story ("my right of pre-emption"
+    // over a neighbour's land sale) had no civil word here and was typed
+    // constitutional because of "right".
+    if (/\b(land|plot|kanal|marla|acre|house|zameen|zamin|jaidad|makan|sold|sale|bought|buyer|seller|purchase|mutation|intiqal|registry|fard|pre-?emption|shufa|shuf'?a)\b/i.test(t)) scores.civil += 0.30;
+    if (/(زمین|جائیداد|مکان|پلاٹ|کنال|مرلہ|شفع|انتقال|رجسٹری|فرد|کرایہ|بیع)/.test(t)) scores.civil += 0.30;
     if (/\b(dispute|compensation|nuqsan)\b/i.test(t)) scores.civil += 0.15;
 
     // Constitutional
     if (/\b(fundamental\s*rights?|article\s*\d+|constitution|Supreme\s*Court|High\s*Court|writ|habeas|mandamus|government|parliament)\b/i.test(t)) scores.constitutional += 0.35;
-    if (/\b(rights?|haqooq|azaadi|freedom|liberty|equality|discrimination)\b/i.test(t)) scores.constitutional += 0.15;
+    // Not a bare "right": "right of pre-emption" or "right of way" is not a
+    // constitutional matter. Only rights language that is about the state.
+    if (/\b(haqooq|azaadi|freedom|liberty|equality|discrimination)\b/i.test(t)) scores.constitutional += 0.15;
 
     const best = Object.entries(scores).reduce((a, b) => b[1] > a[1] ? b : a);
     return best[1] >= 0.15 ? best[0] : "";
@@ -94,19 +102,42 @@ const URGENCY_LEVELS = [
     { value: "urgent", label: "Urgent — Immediate action needed" },
 ];
 
+// The server's limits (schemas/intake.py), so a long text is stopped while
+// typing instead of failing as a 422 after Continue.
+const STORY_MAX = 20000;
+const NOTE_MAX = 5000;
+
 const RISK_COLORS = { low: "success", medium: "warn", high: "danger", urgent: "danger" };
 
 // Why the recommended actions were not verified against retrieved law. The
 // backend distinguishes "we checked and it held" from "we could not check";
 // only `grounded` is the former, so every other status gets a visible note.
 // Written in the user's terms — they do not know what a retrieval chunk is.
+// The server's `risk_level_basis` when it withheld the AI risk estimate
+// (ai/source_currency.py, batch 7). `risk_level` is null then.
+const RISK_NOT_ASSESSED = "not_assessed_cpc_jurisdiction";
+
 const GROUNDING_NOTE = {
     no_evidence_retrieved: "No matching law was found for this case, so these steps could not be checked against Pakistani legislation. Confirm them with a qualified lawyer before acting.",
     ungrounded: "Some of these steps could not be fully matched to the law sections found for your case. Please confirm them with a qualified lawyer.",
     judge_failed: "The verification step could not run just now, so these steps have not been checked against the law. Please confirm them with a qualified lawyer.",
     pipeline_failed: "Automated analysis was unavailable for this case. Please have a qualified lawyer review your situation.",
+    // Evidence-gate statuses (2026-10-12): the case is saved, but no law could be
+    // relied on, so the summary repeats only what you told us.
+    no_relevant_evidence: "No law in our library matched your situation closely enough to rely on, so this summary only restates what you told us. A qualified lawyer should advise on the law.",
+    wrong_jurisdiction: "Our library does not hold the law of your province for this matter, so no law is cited. A lawyer practising in your province should advise you.",
+    outdated_or_superseded: "The provisions that matched have been repealed or replaced, so they are not shown as current law. A qualified lawyer should confirm the law in force.",
+    corpus_not_capable: "Part of your request needs information our legal library does not contain (such as a current rate, a court statistic or a personal record). A lawyer or the relevant office can provide it.",
+    needs_clarification: "There is not enough detail yet to identify the law. Add what happened — who, what, when and where — or let a lawyer review it.",
+    retrieval_error: "We could not search the law library just now, so no law was checked. Your case is saved — retry the analysis.",
     unparseable: "The analysis could not be verified. Please confirm these steps with a qualified lawyer.",
     no_actions: "No specific steps were produced for this case.",
+    // Batch 6 (2026-10-16): the only law found was the Punjab-only CPC, and this
+    // case is not a Punjab case, so no law is shown as applicable.
+    cpc_jurisdiction_unverified: "The only law found for this case is the Punjab version of the Code of Civil Procedure, and your case is not in Punjab, so no law is shown as applying to you. A lawyer in your province should advise on the procedure.",
+    // Batch 9: the question turns on civil procedure, and the CPC for this
+    // province is not in the library (only the Punjab version is).
+    source_unavailable_for_jurisdiction: "Your question turns on a law our library does not hold for your province (for example the civil procedure code, pre-emption or tenant-eviction law, which we hold only as they apply in Punjab), so no law is shown for your case. If your province is not recorded, add it. A lawyer in your province should advise you.",
     // A statute was named that does NOT appear in the law found for this case.
     // The generic "not verified" note below would badly undersell that: it
     // reads as a missing check, when what happened is that a citation may be
@@ -118,7 +149,35 @@ const GROUNDING_NOTE = {
     // Nothing in the analysis rested on a law section that could be resolved,
     // so there was nothing to check it against.
     no_bound_citations: "These steps could not be tied to any specific law section, so they have not been checked. Please confirm them with a qualified lawyer.",
-    unverified: "These steps have not been verified against Pakistani law. Please confirm them with a qualified lawyer.",
+    unverified: "This is general information for education only, not legal advice. Please contact a qualified lawyer before you act on it.",
+};
+
+// The same warnings in Urdu, as FIXED text (2026-10-12): a legal caution is
+// shown from its status, never translated by a model.
+const GROUNDING_NOTE_UR = {
+    no_evidence_retrieved: "اس کیس کے لیے کوئی متعلقہ قانون نہیں ملا، اس لیے یہ اقدامات پاکستانی قانون سے جانچے نہیں جا سکے۔ عمل کرنے سے پہلے کسی مستند وکیل سے تصدیق کریں۔",
+    ungrounded: "ان میں سے کچھ اقدامات آپ کے کیس کے لیے ملنے والی قانونی دفعات سے پوری طرح نہیں مل سکے۔ براہ کرم کسی مستند وکیل سے تصدیق کریں۔",
+    judge_failed: "تصدیق کا مرحلہ ابھی نہیں چل سکا، اس لیے یہ اقدامات قانون سے نہیں جانچے گئے۔ براہ کرم کسی مستند وکیل سے تصدیق کریں۔",
+    pipeline_failed: "اس کیس کا خودکار تجزیہ دستیاب نہیں تھا۔ براہ کرم کسی مستند وکیل سے اپنا معاملہ دیکھوائیں۔",
+    no_relevant_evidence: "ہماری لائبریری میں کوئی ایسا قانون نہیں ملا جس پر بھروسہ کیا جا سکے، اس لیے یہ خلاصہ صرف آپ کی بتائی ہوئی باتیں دہراتا ہے۔ قانون کے بارے میں کسی مستند وکیل سے مشورہ کریں۔",
+    wrong_jurisdiction: "ہماری لائبریری میں اس معاملے کے لیے آپ کے صوبے کا قانون موجود نہیں، اس لیے کوئی قانون نہیں دیا گیا۔ اپنے صوبے میں پریکٹس کرنے والے وکیل سے مشورہ کریں۔",
+    outdated_or_superseded: "جو دفعات ملیں وہ منسوخ یا تبدیل ہو چکی ہیں، اس لیے انہیں نافذ قانون کے طور پر نہیں دکھایا گیا۔ نافذ قانون کی تصدیق کسی مستند وکیل سے کریں۔",
+    corpus_not_capable: "آپ کی درخواست کے کچھ حصے کے لیے ایسی معلومات درکار ہیں جو ہماری قانونی لائبریری میں نہیں (جیسے موجودہ شرح، عدالتی اعداد و شمار یا ذاتی ریکارڈ)۔ وکیل یا متعلقہ دفتر یہ معلومات دے سکتا ہے۔",
+    needs_clarification: "قانون پہچاننے کے لیے ابھی کافی تفصیل نہیں۔ بتائیں کیا ہوا — کس نے، کیا، کب اور کہاں — یا کسی وکیل سے دیکھوائیں۔",
+    retrieval_error: "ابھی قانونی لائبریری میں تلاش نہیں ہو سکی، اس لیے کوئی قانون نہیں جانچا گیا۔ آپ کا کیس محفوظ ہے — تجزیہ دوبارہ کریں۔",
+    unparseable: "تجزیے کی تصدیق نہیں ہو سکی۔ براہ کرم ان اقدامات کی کسی مستند وکیل سے تصدیق کریں۔",
+    no_actions: "اس کیس کے لیے کوئی مخصوص اقدامات نہیں بنے۔",
+    cpc_jurisdiction_unverified: "اس کیس کے لیے صرف ضابطہ دیوانی کا پنجاب والا متن ملا، اور آپ کا کیس پنجاب کا نہیں، اس لیے کوئی قانون آپ پر لاگو قرار نہیں دیا گیا۔ اپنے صوبے کے کسی وکیل سے طریقۂ کار کے بارے میں مشورہ کریں۔",
+    source_unavailable_for_jurisdiction: "آپ کا سوال ایسے قانون سے متعلق ہے جو ہماری قانونی لائبریری میں آپ کے صوبے کے لیے موجود نہیں (مثلاً ضابطہ دیوانی، حق شفع یا کرایہ دار کی بے دخلی کا قانون، جو ہمارے پاس صرف پنجاب کے لیے ہے)، اس لیے آپ کے کیس کے لیے کوئی قانون نہیں دکھایا گیا۔ اگر آپ کا صوبہ درج نہیں تو درج کریں۔ اپنے صوبے کے کسی وکیل سے مشورہ کریں۔",
+    citations_unverified: "یہاں دیے گئے ایک یا زیادہ قوانین آپ کے کیس کے لیے ملنے والی قانون سازی سے نہیں مل سکے اور ہو سکتا ہے اس شکل میں موجود نہ ہوں۔ ان حوالوں پر بھروسہ نہ کریں — کسی مستند وکیل سے جانچ کروائیں۔",
+    claims_disagree: "ان اقدامات کی تصدیق میں تضاد تھا، اس لیے انہیں غیر تصدیق شدہ سمجھا جا رہا ہے۔ براہ کرم کسی مستند وکیل سے تصدیق کریں۔",
+    no_bound_citations: "یہ اقدامات کسی مخصوص قانونی دفعہ سے نہیں جوڑے جا سکے، اس لیے جانچے نہیں گئے۔ براہ کرم کسی مستند وکیل سے تصدیق کریں۔",
+    unverified: "یہ معلومات صرف عمومی آگاہی اور تعلیم کے لیے ہیں، قانونی مشورہ نہیں۔ کوئی قدم اٹھانے سے پہلے کسی مستند وکیل سے ضرور رابطہ کریں۔",
+};
+// The judge's summary cautions, keyed by the server (intake_localization.py).
+const SUMMARY_CAUTION_UR = {
+    partially_unverified: "نوٹ: اس تجزیے کے کچھ حصوں کی دستیاب قانونی دفعات سے مکمل تصدیق نہیں ہو سکی — براہ کرم کسی مستند پاکستانی وکیل سے تصدیق کریں۔",
+    citation_unmatched: "نوٹ: یہاں دیے گئے ایک یا زیادہ قوانین دستیاب قانونی دفعات سے نہیں مل سکے، ان پر جانچ کے بغیر بھروسہ نہ کریں۔",
 };
 
 /* The intake's look (2026-10-10), scoped by [data-intake]; client tokens
@@ -161,8 +220,8 @@ const INTAKE_CSS = `[data-intake] .in-head{display:flex;align-items:flex-end;gap
 [data-intake] .in-filebtn[aria-expanded="true"]{border-color:color-mix(in srgb,var(--brand-text) 60%,transparent);background:color-mix(in srgb,var(--brand-text) 12%,var(--surface))}
 [data-intake] .in-filebtn svg{color:var(--brand-text)}
 [data-intake] .in-filebtn .n{min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;display:grid;place-items:center;font-size:11.5px;font-weight:800;color:var(--on-brand);background:var(--brand-solid)}
-[data-intake] .in-file{position:fixed;top:16px;right:16px;bottom:16px;z-index:60;width:340px;max-width:calc(100vw - 32px);box-sizing:border-box;display:flex;flex-direction:column;padding:20px;border-radius:22px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:-24px 0 60px -24px rgba(0,0,0,.8);overflow-y:auto;transform:translateX(calc(100% + 24px));visibility:hidden;transition:transform .35s cubic-bezier(.22,1,.36,1),visibility 0s linear .35s}
-[data-intake] .in-file[data-open]{transform:none;visibility:visible;transition:transform .35s cubic-bezier(.22,1,.36,1),visibility 0s}
+[data-intake] .in-file{position:fixed;top:16px;right:16px;bottom:16px;z-index:60;width:340px;max-width:calc(100vw - 32px);box-sizing:border-box;display:flex;flex-direction:column;padding:20px;border-radius:22px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:-24px 0 60px -24px rgba(0,0,0,.8);overflow-y:auto;transform:translateX(12px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .2s,visibility 0s linear .3s}
+[data-intake] .in-file[data-open]{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .2s,visibility 0s}
 [data-intake] .in-file-x{margin-left:auto;width:34px;height:34px;flex:none;border-radius:10px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:background .2s,color .2s}
 [data-intake] .in-file-x:hover{background:var(--danger-soft);color:var(--danger)}
 [data-intake] .in-file-x svg{transition:transform .25s}
@@ -178,7 +237,10 @@ const INTAKE_CSS = `[data-intake] .in-head{display:flex;align-items:flex-end;gap
 [data-intake] .in-file-note b{color:var(--ink)}
 [data-intake] .in-card{position:relative;padding:26px 28px;border-radius:22px;border:1px solid var(--line);background:radial-gradient(60% 90% at 100% 0%,color-mix(in srgb,var(--brand-text) 8%,transparent) 0%,transparent 60%),var(--surface);box-shadow:var(--shadow-rest);animation:inUp .3s ease}
 [data-intake] .in-card-head{display:flex;align-items:center;gap:14px;margin-bottom:22px}
-[data-intake] .in-card-ic{width:42px;height:42px;flex:none;border-radius:13px;display:grid;place-items:center;color:var(--brand-text);background:color-mix(in srgb,var(--brand-text) 15%,transparent)}
+[data-intake] .in-card-ic{width:26px;height:26px;flex:none;align-self:flex-start;margin-top:2px;display:grid;place-items:center;color:var(--brand-text);background:none;border:0;border-radius:0}
+[data-intake] .in-card-ic svg{width:22px;height:22px}
+[data-intake] .in-card-ic.spark{font-size:0}
+[data-intake] .in-card-ic.spark::before{content:"";display:block;width:22px;height:22px;background:var(--brand-text);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5c.5 4.9 2.6 7.6 7.5 8.4-4.9.8-7 3.5-7.5 8.4-.5-4.9-2.6-7.6-7.5-8.4 4.9-.8 7-3.5 7.5-8.4zM19 15.5c.2 2 1 3 3 3.3-2 .3-2.8 1.3-3 3.2-.2-1.9-1-2.9-3-3.2 2-.3 2.8-1.3 3-3.3z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5c.5 4.9 2.6 7.6 7.5 8.4-4.9.8-7 3.5-7.5 8.4-.5-4.9-2.6-7.6-7.5-8.4 4.9-.8 7-3.5 7.5-8.4zM19 15.5c.2 2 1 3 3 3.3-2 .3-2.8 1.3-3 3.2-.2-1.9-1-2.9-3-3.2 2-.3 2.8-1.3 3-3.3z'/%3E%3C/svg%3E") center/contain no-repeat}
 [data-intake] .in-card-title{margin:0;font-size:19px;font-weight:700;color:var(--ink)}
 [data-intake] .in-card-sub{margin-top:3px;font-size:13.5px;color:var(--muted)}
 [data-intake] .in-label{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
@@ -223,7 +285,7 @@ const INTAKE_CSS = `[data-intake] .in-head{display:flex;align-items:flex-end;gap
 [data-intake] .in-hint{margin-top:10px;font-size:12.5px;color:var(--faint)}
 [data-intake] .in-foot{display:flex;align-items:center;gap:14px;margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}
 [data-intake] .in-foot .why{flex:1;font-size:12.5px;color:var(--muted)}
-[data-intake] .in-next{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border:0;border-radius:999px;background:linear-gradient(135deg,#12897f,#1c9c66);color:#fff;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px -10px rgba(28,156,102,.8);transition:filter .15s,transform .15s,box-shadow .2s}
+[data-intake] .in-next{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border:0;border-radius:999px;background:linear-gradient(135deg,#12897f,#1c9c66);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px -10px rgba(28,156,102,.8);transition:filter .15s,transform .15s,box-shadow .2s}
 [data-intake] .in-next:hover:not(:disabled){filter:brightness(1.06)}
 [data-intake] .in-next:active:not(:disabled){transform:scale(.94);box-shadow:0 3px 10px -6px rgba(28,156,102,.9)}
 [data-intake] .in-next:active:not(:disabled) svg{transform:translateX(6px)}
@@ -270,30 +332,77 @@ const INTAKE_CSS = `[data-intake] .in-head{display:flex;align-items:flex-end;gap
 [data-intake] .in-qbars i{width:26px;height:6px;border-radius:6px;background:var(--line);transition:background .3s}
 [data-intake] .in-qbars i[data-on]{background:var(--brand-text)}
 [data-intake] .in-qbars i[data-now]{background:linear-gradient(90deg,var(--brand-text) 50%,var(--line) 50%)}
-[data-intake] .in-thread{display:flex;flex-direction:column;gap:14px;min-height:180px}
-[data-intake] .in-msg{display:flex;gap:10px;align-items:flex-start;max-width:86%;animation:inUp .3s ease}
-[data-intake] .in-msg.me{align-self:flex-end;max-width:72%}
-[data-intake] .in-ai{width:32px;height:32px;flex:none;border-radius:10px;display:grid;place-items:center;font-size:14px;color:var(--brand-text);background:color-mix(in srgb,var(--brand-text) 16%,transparent)}
-[data-intake] .in-bub{padding:11px 14px;border-radius:4px 16px 16px 16px;background:var(--surface-2);border:1px solid var(--line);font-size:14px;line-height:1.55;color:var(--ink)}
-[data-intake] .in-bub[data-now]{border-color:color-mix(in srgb,var(--brand-text) 45%,transparent)}
-[data-intake] .in-msg.me .in-bub{border-radius:16px 4px 16px 16px;border:0;background:linear-gradient(135deg,#12897f,#1c9c66);color:#fff}
-[data-intake] .in-qn{display:block;margin-bottom:4px;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--brand-text)}
-[data-intake] .in-answer{display:flex;flex-direction:column;gap:8px;margin-left:42px}
-[data-intake] .in-answer textarea{width:100%;box-sizing:border-box;min-height:64px;padding:12px 14px;border-radius:14px;border:1px solid var(--brand-text);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-text) 14%,transparent);background:var(--input);color:var(--ink);font:inherit;font-size:14px;line-height:1.5;resize:vertical;outline:none}
+[data-intake] .in-thread{display:flex;flex-direction:column;gap:20px;min-height:160px}
+[data-intake] .in-msg{display:flex;gap:12px;align-items:flex-start;max-width:100%;animation:inUp .3s ease}
+[data-intake] .in-msg.me{align-self:flex-end;max-width:70%}
+[data-intake] .in-ai{width:20px;height:20px;flex:none;margin-top:2px;font-size:0;color:transparent;background:none;border:0;border-radius:0}
+[data-intake] .in-ai::before{content:"";display:block;width:20px;height:20px;background:var(--brand-text);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5c.5 4.9 2.6 7.6 7.5 8.4-4.9.8-7 3.5-7.5 8.4-.5-4.9-2.6-7.6-7.5-8.4 4.9-.8 7-3.5 7.5-8.4zM19 15.5c.2 2 1 3 3 3.3-2 .3-2.8 1.3-3 3.2-.2-1.9-1-2.9-3-3.2 2-.3 2.8-1.3 3-3.3z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5c.5 4.9 2.6 7.6 7.5 8.4-4.9.8-7 3.5-7.5 8.4-.5-4.9-2.6-7.6-7.5-8.4 4.9-.8 7-3.5 7.5-8.4zM19 15.5c.2 2 1 3 3 3.3-2 .3-2.8 1.3-3 3.2-.2-1.9-1-2.9-3-3.2 2-.3 2.8-1.3 3-3.3z'/%3E%3C/svg%3E") center/contain no-repeat}
+[data-intake] [data-clarify-error] .in-ai::before,[data-intake] [data-clarify-unavailable] .in-ai::before{background:#f2b25c;-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01'/%3E%3C/svg%3E")}
+[data-intake] .in-bub{padding:0;background:none;border:0;font-size:15.5px;line-height:1.65;color:var(--ink)}
+[data-intake] .in-qn{display:block;margin-bottom:2px;font-size:12.5px;font-weight:600;color:var(--muted)}
+[data-intake] .in-msg.me .in-bub{padding:9px 15px;border-radius:18px 18px 6px 18px;background:color-mix(in srgb,var(--brand-text) 16%,var(--surface-2));color:var(--ink);font-size:14.5px}
+[data-intake] .in-answer{display:flex;flex-direction:column;gap:8px;margin-left:32px}
+[data-intake] .in-answer textarea{width:100%;box-sizing:border-box;min-height:64px;padding:12px 14px;border-radius:14px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);font:inherit;font-size:14.5px;line-height:1.5;resize:vertical;outline:none;transition:border-color .15s}
+[data-intake] .in-answer textarea:focus{border-color:color-mix(in srgb,var(--brand-text) 70%,transparent)}
 [data-intake] .in-quick{display:flex;gap:6px;flex-wrap:wrap}
 [data-intake] .in-typing{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}
 [data-intake] .in-typing i{width:6px;height:6px;border-radius:50%;background:var(--brand-text);animation:inDot 1s ease-in-out infinite}
 [data-intake] .in-typing i:nth-child(2){animation-delay:.15s}
 [data-intake] .in-typing i:nth-child(3){animation-delay:.3s}
 @keyframes inDot{0%,100%{opacity:.3;transform:none}50%{opacity:1;transform:translateY(-3px)}}
-[data-intake] .in-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
-[data-intake] .in-facts div{padding:12px 14px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line)}
+[data-intake] .in-facts{display:flex;margin-bottom:22px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+[data-intake] .in-facts div{flex:1;min-width:0;padding:10px 16px;border-left:1px solid var(--line)}
+[data-intake] .in-facts div:first-child{border-left:0}
+[data-intake] .in-facts b[data-r="high"]{color:#ef6b5e}
+[data-intake] .in-facts b[data-r="medium"]{color:var(--gold)}
+[data-intake] .in-facts b[data-r="low"]{color:var(--brand-text)}
+[data-intake] .in-rv{display:flex;flex-direction:column}
+[data-intake] .in-rv-sec{padding:20px 0;border-top:1px solid var(--line)}
+[data-intake] .in-rv-sec:first-child{border-top:0;padding-top:4px}
+[data-intake] .in-rv-h{margin:0 0 12px;font-size:13.5px;font-weight:700;color:var(--muted);letter-spacing:.01em}
+[data-intake] .in-rv-text{margin:0;max-width:80ch;font-size:15.5px;line-height:1.8;color:var(--ink)}
+[data-intake] .in-rv-steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;max-width:80ch}
+[data-intake] .in-rv-steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;font-size:15px;line-height:1.7;color:var(--ink)}
+[data-intake] .in-rv-steps .n{width:26px;height:26px;margin-top:1px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:800;color:var(--brand-text);background:color-mix(in srgb,var(--brand-text) 14%,transparent)}
+[data-intake] .in-rv-laws{display:flex;flex-direction:column;gap:14px;max-width:80ch}
+[data-intake] .in-rv-law b{font-size:15px;font-weight:700;color:var(--ink)}
+[data-intake] .in-rv-law p{margin:3px 0 0;font-size:14px;line-height:1.65;color:var(--muted)}
+[data-intake] .in-pill-general{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:2px;color:var(--muted);background:color-mix(in srgb,var(--muted) 14%,transparent)}
+[data-intake] .in-pill-warn{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;vertical-align:2px;color:#f2b25c;background:color-mix(in srgb,#f2b25c 16%,transparent)}
+[data-intake] .in-callout{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:11px 14px;max-width:80ch;border-radius:12px;font-size:13.5px;line-height:1.6;color:var(--ink);background:color-mix(in srgb,#f2b25c 10%,transparent);border:1px solid color-mix(in srgb,#f2b25c 30%,transparent)}
+[data-intake] .in-callout svg{flex:none;margin-top:2px;color:#f2b25c}
+[data-intake] .in-export{position:relative;align-self:flex-start}
+[data-intake] .in-export-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:190px;padding:6px;border-radius:12px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:0 18px 40px -16px rgba(0,0,0,.6)}
+[data-intake] .in-export-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer}
+[data-intake] .in-export-menu button:hover{background:var(--hover-tint)}
+[data-intake] .in-export-menu svg{color:var(--muted)}
 [data-intake] .in-facts small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
 [data-intake] .in-facts b{display:block;margin-top:4px;font-size:15px;color:var(--ink)}
 [data-intake] .in-facts b[data-u="medium"]{color:var(--gold)}
 [data-intake] .in-facts b[data-u="high"],[data-intake] .in-facts b[data-u="urgent"]{color:#ef6b5e}
 [data-intake] .in-sections{display:flex;flex-direction:column;gap:12px}
-[data-intake] .in-cats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+[data-intake] .in-cats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+[data-intake] .in-cat2{display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:background .15s,border-color .15s}
+[data-intake] .in-cat2:hover:not(:disabled){background:var(--hover-tint);border-color:var(--line-strong)}
+[data-intake] .in-cat2:disabled{cursor:default}
+[data-intake] .in-cat2 .dot{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid var(--line-strong);display:grid;place-items:center}
+[data-intake] .in-cat2[aria-checked="true"]{border-color:color-mix(in srgb,var(--brand-text) 60%,transparent);background:color-mix(in srgb,var(--brand-text) 9%,transparent)}
+[data-intake] .in-cat2[aria-checked="true"] .dot{border-color:var(--brand-text)}
+[data-intake] .in-cat2[aria-checked="true"] .dot::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--brand-text)}
+[data-intake] .in-cat2 .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+[data-intake] .in-cat2 b{font-size:14.5px;font-weight:700}
+[data-intake] .in-cat2 .ds{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-intake] .in-cat2 .tag{flex:none;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--brand-text);background:color-mix(in srgb,var(--brand-text) 14%,transparent)}
+[data-intake] .in-note{display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:12.5px;line-height:1.55;color:var(--muted)}
+[data-intake] .in-note svg{flex:none;margin-top:2px;color:var(--faint)}
+[data-intake] .in-done2{display:flex;align-items:center;gap:14px;margin-top:18px;padding:16px 18px;border-radius:14px;border:1px solid color-mix(in srgb,var(--brand-text) 35%,transparent);background:color-mix(in srgb,var(--brand-text) 8%,transparent)}
+[data-intake] .in-done2 .ok{width:36px;height:36px;flex:none;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#12897f,#1c9c66)}
+[data-intake] .in-done2 h3{margin:0;font-size:16px;font-weight:700;color:var(--ink)}
+[data-intake] .in-done2 p{margin:2px 0 0;font-size:13px;line-height:1.5;color:var(--muted)}
+[data-intake] .in-next-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+[data-intake] .in-exports{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;color:var(--faint)}
+[data-intake] .in-exports button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:12.5px;padding:4px 6px;border-radius:6px;cursor:pointer}
+[data-intake] .in-exports button:hover{color:var(--ink);background:var(--hover-tint)}
 [data-intake] .in-cat{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:16px;border-radius:16px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .2s,background .2s,border-color .2s}
 [data-intake] .in-cat:hover:not(:disabled){transform:translateY(-2px);background:var(--hover-tint)}
 [data-intake] .in-cat:disabled{cursor:default}
@@ -336,7 +445,6 @@ const INTAKE_CSS = `[data-intake] .in-head{display:flex;align-items:flex-end;gap
 [data-intake] .in-vstatus .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
 [data-intake] .in-transcript{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:16px;background:var(--surface-2);border:1px solid var(--line)}
 [data-intake] .in-tr-head{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink)}
-[data-intake] .in-bot{width:30px;height:30px;flex:none;border-radius:10px;display:grid;place-items:center;color:var(--brand-text);background:color-mix(in srgb,var(--brand-text) 15%,transparent)}
 [data-intake] .in-tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--muted);background:var(--surface)}
 [data-intake] .in-tag[data-tone="danger"]{color:var(--danger);background:var(--danger-soft)}
 [data-intake] .in-tag[data-tone="warn"]{color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent)}
@@ -357,6 +465,9 @@ const INTAKE_CSS = `[data-intake] .in-head{display:flex;align-items:flex-end;gap
 [data-intake] .in-role:hover::after,[data-intake] .in-prov:hover::after{animation:inShine .85s ease}
 [data-intake] .in-role:hover,[data-intake] .in-prov:hover{transform:translateY(-3px)}
 [data-intake] .in-role:active,[data-intake] .in-prov:active{transform:translateY(-1px) scale(.99)}
+[data-intake] .in-prov[aria-checked="true"]{border-color:color-mix(in srgb,var(--c) 75%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 26%,#0c1c1f) 0%,color-mix(in srgb,var(--c) 14%,#0c1c1f) 100%)}
+[data-intake] .in-prov::before{content:"";position:absolute;top:9px;right:9px;z-index:1;width:20px;height:20px;border-radius:50%;background:var(--c) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230c1c1f' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/12px no-repeat;opacity:0;transform:scale(.5);transition:opacity .2s,transform .25s cubic-bezier(.3,1.4,.5,1)}
+[data-intake] .in-prov[aria-checked="true"]::before{opacity:1;transform:none}
 @keyframes inShine{from{transform:translateX(-130%) skewX(-20deg)}to{transform:translateX(330%) skewX(-20deg)}}
 @keyframes inUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){[data-intake] *{animation:none!important;transition:none!important}}`;
@@ -467,7 +578,16 @@ const ModIntake = () => {
     const [intakeToken, setIntakeToken] = useState(null);
     const [intakeBootError, setIntakeBootError] = useState("");
     const [intakeBooting, setIntakeBooting] = useState(false);
+    // A converted case still waiting for confirmation, offered as a CHOICE
+    // (2026-10-12). Resuming straight into it meant "New matter" and every
+    // reload landed on its review screen: no new matter could be started
+    // until that draft was confirmed.
+    const [draftChoice, setDraftChoice] = useState(null);
     const intakeBootInFlight = useRef(null);
+    // "New matter" was taken on this mount. The one-shot flag is cleared when
+    // read, so a second run of the mount effect (React re-runs effects in
+    // development) must not fall through to offering the old intake.
+    const newMatterTaken = useRef(false);
     const [intakeSubmitting, setIntakeSubmitting] = useState(false);
     const [converting, setConverting] = useState(false);
     // Whether the draft has been promoted. Drives the final screen, which
@@ -484,6 +604,22 @@ const ModIntake = () => {
 
     // ── P2: Multi-round AI clarification ──────────────────────────
     const [clarifyLoading, setClarifyLoading] = useState(false);
+    // A failed question fetch is an ERROR, never "no questions needed".
+    const [clarifyError, setClarifyError]     = useState("");
+    // Done only because the AI could not ask (the server lets the client
+    // through); never shown as "no questions needed".
+    const [clarifyUnavailable, setClarifyUnavailable] = useState(false);
+    // One step move at a time: Continue / the rail cannot fire twice.
+    const [advancing, setAdvancing]           = useState(false);
+    const advancingRef                        = useRef(false);
+    const [retryingAnalysis, setRetryingAnalysis] = useState(false);
+    // The language the ANALYSIS is shown in, if the client chose one; else
+    // the app language, then the story's script (never voice detection).
+    const [answerLang, setAnswerLang] = useState(null);
+    // An Urdu analysis can be compared with its English original.
+    const [showOriginal, setShowOriginal] = useState(false);
+    // The client chose "Continue without questions" (a question may be open).
+    const clarifySkipped = useRef(false);
     const [clarifyQ1, setClarifyQ1]           = useState("");
     const [clarifyA1, setClarifyA1]           = useState("");
     const [clarifyQ2, setClarifyQ2]           = useState("");
@@ -534,7 +670,7 @@ const ModIntake = () => {
           doneText: [caseTypeName, filesText].filter(Boolean).join(" · ") },
         { title: T("A few questions", "چند سوالات"), text: T("Up to 4, from the AI", "اے آئی سے، زیادہ سے زیادہ 4"),
           nowText: clarifyRound >= 1 && clarifyRound <= 4 ? `${T("Question", "سوال")} ${clarifyRound} ${T("of up to 4", "از 4")}` : "",
-          doneText: answeredCount ? `${answeredCount} ${T("answered", "جواب دیے")}` : clarifyDone ? T("No questions needed", "سوال کی ضرورت نہیں") : "" },
+          doneText: answeredCount ? `${answeredCount} ${T("answered", "جواب دیے")}` : clarifyUnavailable ? T("Skipped — AI unavailable", "چھوڑا گیا — اے آئی دستیاب نہیں") : clarifyDone ? T("No questions needed", "سوال کی ضرورت نہیں") : "" },
         { title: T("Review", "جائزہ"), text: T("Your structured case", "آپ کا منظم کیس"), doneText: T("Summary checked", "خلاصہ دیکھ لیا") },
         { title: T("Confirm", "تصدیق"), text: T("Category, then a lawyer", "زمرہ، پھر وکیل") },
     ];
@@ -719,6 +855,7 @@ const ModIntake = () => {
 
 <h2>Case Summary</h2>
 <div class="summary">${esc(aiStructured?.summary || description || "Not available")}</div>
+${aiStructured?.jurisdiction_notice?.en ? `<p class="disclaimer" data-jurisdiction-notice>⚠️ ${esc(aiStructured.jurisdiction_notice.en)}</p>` : ""}
 
 <h2>Applicable Laws</h2>
 <ul>${laws}</ul>
@@ -730,6 +867,7 @@ ${aiStructured?.grounding_status && aiStructured.grounding_status !== "grounded"
                 : ""}
 
 ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${esc(aiStructured.risk_level)}">${esc(aiStructured.risk_level)} risk</span>` : ""}
+${!aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSESSED ? `<h2>Risk Assessment</h2><p data-risk-not-assessed>Not assessed — needs review (the estimate relied in part on law that is not verified for your province).</p>` : ""}
 
 <div class="disclaimer">
   <strong>Disclaimer:</strong> This case summary is generated by an AI system for general informational purposes only and does not constitute legal advice. Please consult a qualified Pakistani lawyer before taking any legal action.
@@ -756,6 +894,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             ``,
             `SUMMARY`,
             aiStructured?.summary || description || "Not available",
+            aiStructured?.jurisdiction_notice?.en ? `  ! ${aiStructured.jurisdiction_notice.en}` : "",
             ``,
             `APPLICABLE LAWS`,
             `  • ${laws}`,
@@ -766,6 +905,8 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                 ? `  ! ${GROUNDING_NOTE[aiStructured.grounding_status] || GROUNDING_NOTE.unverified}`
                 : "",
             aiStructured?.risk_level ? `\nRISK LEVEL: ${aiStructured.risk_level.toUpperCase()}` : "",
+            !aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSESSED
+                ? `\nRISK LEVEL: NOT ASSESSED — NEEDS REVIEW` : "",
             ``,
             `DISCLAIMER: This summary is AI-generated for informational purposes only and does not constitute legal advice. Consult a qualified Pakistani lawyer before taking any action.`,
         ].join("\n");
@@ -824,22 +965,25 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
 
     const canGoToStep = (target) => stepBlocker(target) === null;
 
-    const tryGoToStep = (target) => {
+    // FORWARD on the rail runs the same saves as Continue. It used to only
+    // change the screen, so an edit made after going Back reached the screen
+    // but never the server, and the analysis ran on the old answers.
+    const tryGoToStep = async (target) => {
         const blocker = stepBlocker(target);
-        if (blocker) toast.show(blocker, "warn", 2500);
-        else setStep(target);
+        if (blocker) { toast.show(blocker, "warn", 2500); return; }
+        if (target <= step) { setStep(target); return; }
+        if (step === 1) {
+            if (!(await handleStep1Continue())) return;
+            if (target >= 3) await handleStep2Continue();
+            return;
+        }
+        if (step === 2) { await handleStep2Continue(); return; }
+        if (step === 4 && target === 5) { handleContinueToCategory(); return; }
+        setStep(target);
     };
 
-    useEffect(() => {
-        if (step > 1) {
-            setAutosave(true);
-            const timer = setTimeout(() => {
-                toast.show("Form auto-saved", "success", 2000);
-                setAutosave(false);
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, [step]);
+    // (A "Form auto-saved" toast fired here on every step change, including a
+    // resume, whether or not anything was saved. Saves report themselves.)
 
     // Put the form back the way the client left it.
     //
@@ -862,6 +1006,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
         if (s1.province) setProvince(p => p || s1.province);
         if (s2.case_type) setCaseTypeInput(c => c || s2.case_type);
         if (s2.urgency) setUrgency(u => (u === "medium" ? s2.urgency : u));
+        if (s2.output_language === "ur" || s2.output_language === "en") setAnswerLang(a => a || s2.output_language);
         if (s3.incident_description) setDescription(d => d || s3.incident_description);
         if (typeof s4.has_evidence === "boolean") setHasEvidence(h => h || s4.has_evidence);
         if (s4.evidence_description) setEvidenceDesc(e => e || s4.evidence_description);
@@ -871,6 +1016,9 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
         // rather than what this page happens to remember having sent.
         if (Array.isArray(data?.evidence_files) && data.evidence_files.length) {
             setEvidenceFiles(prev => (prev.length ? prev : data.evidence_files));
+            // Files on the server mean "Yes": step 4 is only saved at
+            // conversion, so a refresh before it hid real files behind "No".
+            setHasEvidence(true);
         }
 
         // Clarification is an ordered Q&A list; rounds are positions in it.
@@ -958,6 +1106,42 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
     // draft case awaiting confirmation. So signing out between converting and
     // confirming left a real case its owner could never confirm and this screen
     // could never find. The server knows which intakes are unfinished.
+    const isPendingDraft = (d) => Boolean(d?.session_token && d?.completed && d?.case_id && d?.case_status === "draft");
+    // An intake left part-way (2026-10-21). It used to be adopted silently,
+    // so opening Legal Intake jumped straight to step 2 or 3 of an old matter
+    // the client may have forgotten. Now it is OFFERED, like a draft case:
+    // continue where you left off, or start a new matter. Step 1 has nothing
+    // to skip past, so it still opens directly.
+    const isUnfinished = (d) => Boolean(d?.session_token && !d?.completed && (Number(d?.current_step) || 1) > 1);
+
+    /** "Continue that case": put the client back on its review screen. */
+    const continueDraft = () => {
+        const d = draftChoice;
+        if (!d) return;
+        setDraftChoice(null);
+        setIntakeToken(d.session_token);
+        scopedSet("aai-intake-token", d.session_token);
+        adoptIntake(d);
+    };
+
+    /** "Start a new matter": a fresh intake. The draft is untouched and is
+     *  offered again on a later visit, until it is confirmed. */
+    const startNewMatter = async () => {
+        setDraftChoice(null);
+        scopedRemove("aai-intake-token");
+        setIntakeBooting(true);
+        setIntakeBootError("");
+        const { data: started, error } = await intakeStart();
+        setIntakeBooting(false);
+        if (started?.session_token) {
+            setIntakeToken(started.session_token);
+            scopedSet("aai-intake-token", started.session_token);
+            setStep(1);
+        } else if (error) {
+            setIntakeBootError("Could not start an intake. Please try again.");
+        }
+    };
+
     const resumeOrStart = async () => {
         if (intakeBootInFlight.current) return intakeBootInFlight.current;
         const work = (async () => {
@@ -969,6 +1153,10 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                 // intake precisely when the server failed to tell us whether
                 // one already exists.
                 setIntakeBootError("Could not check your saved intake. Try again when your connection is stable.");
+                return;
+            }
+            if (isPendingDraft(resumable) || isUnfinished(resumable)) {
+                setDraftChoice(resumable);
                 return;
             }
             if (resumable?.session_token) {
@@ -994,6 +1182,9 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
 
     useEffect(() => {
         if (!userId) return;
+        // "New matter" was pressed: a fresh intake, no offer to continue.
+        if (newMatterTaken.current) return;
+        if (takeNewMatterRequest()) { newMatterTaken.current = true; startNewMatter(); return; }
         const saved = scopedGet("aai-intake-token");
         if (!saved) {
             resumeOrStart();
@@ -1011,31 +1202,67 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                 resumeOrStart();
                 return;
             }
+            if (isPendingDraft(data) || isUnfinished({ ...data, session_token: data.session_token || saved })) {
+                setIntakeToken(null);
+                setDraftChoice({ ...data, session_token: data.session_token || saved });
+                return;
+            }
             adoptIntake(data);
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
+    // "New matter" pressed while this screen is mounted: its state still holds
+    // the old answers, so load /intake afresh -- the flag stays set and the
+    // mount above starts the new intake from a clean screen.
+    useEffect(() => {
+        const heard = () => { window.location.assign("/intake"); };
+        window.addEventListener(NEW_MATTER_EVENT, heard);
+        return () => window.removeEventListener(NEW_MATTER_EVENT, heard);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // Trigger clarify fetch whenever step 3 is reached via tab navigation
     // (handleStep2Continue sets clarifyLoading=true before its own fetch, so this
     // guard prevents double-firing on the normal Continue → path)
     useEffect(() => {
-        if (step !== 3 || clarifyDone || clarifyRound !== 0 || clarifyLoading || !intakeToken) return;
-        setClarifyLoading(true);
-        intakeClarify(intakeToken, null, lang).then(({ data, error }) => {
-            if (error || !data) { setClarifyDone(true); setClarifyRound(5); }
-            else if (data.done)  { setClarifyDone(true); setClarifyRound(5); }
-            else if (data.question) { setClarifyQ1(data.question); setClarifyRound(1); }
-            setClarifyLoading(false);
-        });
+        if (step !== 3 || clarifyDone || clarifyRound !== 0 || clarifyLoading || clarifyError || !intakeToken) return;
+        void fetchFirstQuestion();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, intakeToken]);
 
     // ── Step 1 → 2: save province ─────────────────────────────────
-    const handleStep1Continue = async () => {
-        if (!role)     { toast.show("Please select your role first", "warn", 2500); return; }
-        if (!province) { toast.show("Please select your province", "warn", 2500); return; }
-        if (intakeToken) {
+    // Not before the intake exists: without a token nothing below is saved,
+    // and the client walked an unsaved form to a step-4 dead end.
+    const notStartedYet = () => {
+        if (intakeToken) return false;
+        toast.show(intakeBootError || "Your intake is still starting — one moment.", "warn", 3000);
+        return true;
+    };
+
+    /** Run one step move at a time; returns what `work` returns, or false. */
+    const oneAtATime = async (work) => {
+        if (advancingRef.current) return false;
+        advancingRef.current = true;
+        setAdvancing(true);
+        try { return await work(); } finally { advancingRef.current = false; setAdvancing(false); }
+    };
+
+    // The language the analysis is written in: only "en" or "ur" exist. The
+    // voice detector's code ("hi", "pa", "ar"…) used to be sent as-is and the
+    // server refused every convert with a 422.
+    const intakeLanguage = () => {
+        if (answerLang === "ur" || answerLang === "en") return answerLang;
+        if (lang === "ur") return "ur";
+        if (/[\u0600-\u06FF]/.test(description)) return "ur";
+        return "en";
+    };
+
+    const handleStep1Continue = () => oneAtATime(async () => {
+        if (!role)     { toast.show("Please select your role first", "warn", 2500); return false; }
+        if (!province) { toast.show("Please select your province", "warn", 2500); return false; }
+        if (notStartedYet()) return false;
+        {
             // party_role goes with it. The Plaintiff/Defendant choice drove the
             // whole first screen and then lived only in React state — it was
             // never sent anywhere, so nothing downstream could tell which side
@@ -1049,26 +1276,78 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             // held none of it — and the loss only surfaced at conversion, as a
             // "steps not completed" error about a step they had filled in.
             if (error) {
-                toast.show("Could not save — check your connection and try again.", "error", 3500);
-                return;
+                toast.show(error.message || "Could not save — check your connection and try again.", "error", 3500);
+                return false;
             }
         }
         setStep(2);
+        return true;
+    });
+
+    /** Ask for the first question; a failure is shown, with a retry. */
+    const fetchFirstQuestion = async () => {
+        setClarifyLoading(true);
+        setClarifyError("");
+        setClarifyRound(0);
+        const { data, error } = await intakeClarify(intakeToken, null, lang);
+        if (error || !data) {
+            setClarifyError(error?.message || "The questions could not be loaded.");
+        } else if (data.done || !data.question) {
+            setClarifyUnavailable(Boolean(data.ai_unavailable));
+            setClarifyDone(true);
+            setClarifyRound(5);
+        } else {
+            placeQuestion(data.question);
+        }
+        setClarifyLoading(false);
+    };
+
+    /** Put a new question in the next empty slot (1-4) and make it current. */
+    const placeQuestion = (q) => {
+        const slots = [[clarifyQ1, setClarifyQ1], [clarifyQ2, setClarifyQ2], [clarifyQ3, setClarifyQ3], [clarifyQ4, setClarifyQ4]];
+        const i = slots.findIndex(([v]) => !v);
+        if (i === -1) { setClarifyDone(true); setClarifyRound(5); return; }
+        slots[i][1](q);
+        setClarifyRound(i + 1);
+    };
+
+    /** "Try again" after the AI was unavailable: ask for the next question. */
+    const retryQuestions = async () => {
+        if (notStartedYet() || clarifyLoading) return;
+        setClarifyLoading(true);
+        const { data, error } = await intakeClarify(intakeToken, null, lang);
+        setClarifyLoading(false);
+        if (error || !data?.question) {
+            toast.show(error?.message || "The AI is still unavailable. You can continue without more questions.", "warn", 4000);
+            return;
+        }
+        setClarifyUnavailable(false);
+        setClarifyDone(false);
+        placeQuestion(data.question);
     };
 
     // ── Step 2 → 3: save case_type + urgency + description, fetch Q1 ──
-    const handleStep2Continue = async () => {
+    const handleStep2Continue = () => oneAtATime(async () => {
         const desc = description.trim() || voiceTranscript.trim();
         if (!desc) {
             toast.show("Please describe your legal issue before continuing.", "warn", 2500);
-            return;
+            return false;
         }
+        if (storyTooShort) {
+            toast.show("Tell us what happened in a few sentences — who did what, when and where.", "warn", 3500);
+            return false;
+        }
+        if (evidenceFiles.some(f => f.uploading)) {
+            toast.show("Wait for your files to finish uploading.", "warn", 3000);
+            return false;
+        }
+        if (notStartedYet()) return false;
         // Ensure case type is set — fall back to quick JS classify then "civil"
         const effectiveCaseType = caseTypeInput || quickClassify(desc) || "civil";
         if (!caseTypeInput && effectiveCaseType) setCaseTypeInput(effectiveCaseType);
 
-        if (intakeToken) {
-            const r2 = await intakeSaveStep(intakeToken, 2, { case_type: effectiveCaseType, urgency });
+        {
+            const r2 = await intakeSaveStep(intakeToken, 2, { case_type: effectiveCaseType, urgency, output_language: intakeLanguage() });
             const r3 = await intakeSaveStep(intakeToken, 3, {
                 incident_description: desc,
                 incident_date: null,
@@ -1078,31 +1357,19 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             // thing the client types, and advancing without it stored means the
             // AI analysis later runs on nothing.
             if (r2.error || r3.error) {
-                toast.show("Could not save — check your connection and try again.", "error", 3500);
+                toast.show((r2.error || r3.error).message || "Could not save — check your connection and try again.", "error", 3500);
                 setClarifyLoading(false);
-                return;
+                return false;
             }
         }
         setStep(3);
-        // P2 — fetch Q1 immediately after entering step 3
-        if (intakeToken) {
-            setClarifyLoading(true);
-            setClarifyRound(0);
-            const { data, error } = await intakeClarify(intakeToken, null, lang);
-            if (error || !data) {
-                // API failure — skip clarification so user can still proceed
-                setClarifyDone(true);
-                setClarifyRound(5);
-            } else if (data.done) {
-                setClarifyDone(true);
-                setClarifyRound(5);
-            } else if (data.question) {
-                setClarifyQ1(data.question);
-                setClarifyRound(1);
-            }
-            setClarifyLoading(false);
-        }
-    };
+        // Questions already under way (the client went Back and returned):
+        // carry on where they were. Restarting at round 0 put the server's
+        // next question into the Q1 slot beside the old answers.
+        if (clarifyQ1 || clarifyDone) return true;
+        await fetchFirstQuestion();
+        return true;
+    });
 
     // ── Step 3: current answer getter ─────────────────────────────
     const getCurrentAnswer = () => {
@@ -1118,10 +1385,15 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             toast.show("Please answer the question before continuing.", "warn", 2000);
             return;
         }
-        if (!intakeToken) { setClarifyRound(5); setClarifyDone(true); return; }
+        if (notStartedYet()) return;
         setClarifyLoading(true);
+        setClarifyError("");
         const { data, error } = await intakeClarify(intakeToken, getCurrentAnswer(), lang);
-        if (error || !data || data.done || !data.question) {
+        if (error || !data) {
+            // The answer stays typed and the round stays put; Try again re-sends it.
+            setClarifyError(error?.message || "Your answer could not be sent.");
+        } else if (data.done || !data.question) {
+            setClarifyUnavailable(Boolean(data.ai_unavailable));
             setClarifyDone(true);
             setClarifyRound(5);
         } else {
@@ -1139,9 +1411,9 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             return;
         }
 
-        if (!intakeToken) {
-            toast.show("Questionnaire complete", "success");
-            setStep(4);
+        if (notStartedYet()) return;
+        if (evidenceFiles.some(f => f.uploading)) {
+            toast.show("Wait for your files to finish uploading.", "warn", 3000);
             return;
         }
 
@@ -1149,7 +1421,15 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
 
         // Save final answer to clarification_qa BEFORE convert.
         // convert_to_case reads clarification_qa and appends Q&A to the description itself.
-        const lastAnswer = clarifyA4.trim() || clarifyA3.trim() || clarifyA2.trim();
+        // The answer still owed: Q4's (Q1-Q3 went with "Next Question"), or,
+        // when the questions are done, the latest answer again -- a no-op on
+        // the server, and its 409 is how a retry learns the intake is already
+        // converting. NOT after "Continue without questions": a question may
+        // still be open there, and an old answer would be bound to it.
+        const answersSoFar = [clarifyA1, clarifyA2, clarifyA3, clarifyA4].map(a => a.trim());
+        const lastAnswer = !clarifyDone
+            ? (clarifyRound === 4 ? answersSoFar[3] : "")
+            : (clarifySkipped.current ? "" : [...answersSoFar].reverse().find(Boolean) || "");
         // 409 = the server has already started or finished converting, i.e. an
         // earlier click got through and only its response was lost (the dev
         // proxy gives up long before a conversion ends). Both writes below are
@@ -1184,7 +1464,10 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                 desired_outcome: desiredOutcome.trim() || "Legal assistance and representation",
                 additional_notes: null,
             });
-            if (r4.error || r5.error) {
+            // 409: the intake is already converting (a lost response); /convert answers.
+            if ((r4.status === 409 || r5.status === 409) && !(r4.error && r4.status !== 409) && !(r5.error && r5.status !== 409)) {
+                alreadyConverting = true;
+            } else if (r4.error || r5.error) {
                 toast.show("Could not save case details — check your connection and try again.", "error", 3000);
                 setConverting(false);
                 return;
@@ -1193,16 +1476,30 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
 
         const savedToken = intakeToken;
         let analysisFailed = false;
-        const { data: converted, error: convErr } = await intakeConvert(savedToken, {
-            language: voiceLang?.code || "en",
-            urgency,
-        });
+        const convertOnce = () => intakeConvert(savedToken, { language: intakeLanguage(), urgency });
+        let { data: converted, error: convErr, status: convStatus } = await convertOnce();
+
+        // A LONG ANALYSIS is not a failure. The proxy can give up (5xx/0) or a
+        // retry can meet the running conversion (409) while the server is still
+        // working. Watch the intake (a cheap read); once it is completed,
+        // /convert replays the finished result.
+        const stillRunning = (s) => s === 409 || s === 0 || s === 502 || s === 503 || s === 504 || s === 500;
+        if (convErr && stillRunning(convStatus)) {
+            toast.show("Still analysing your case — this can take a few minutes.", "info", 5000);
+            for (let i = 0; i < 36; i++) {
+                await new Promise(r => setTimeout(r, 5000));
+                const { data: now } = await intakeGet(savedToken);
+                if (now?.completed) {
+                    ({ data: converted, error: convErr, status: convStatus } = await convertOnce());
+                    break;
+                }
+            }
+        }
 
         if (convErr) {
-            // Print exact server error so mismatches are visible in the console
-            const msg = convErr?.error || convErr?.detail || JSON.stringify(convErr);
+            const msg = convErr?.message || "The analysis did not finish.";
             console.error("Intake /convert error:", msg);
-            toast.show(`Convert failed: ${msg}`, "error", 5000);
+            toast.show(`Could not build your case: ${msg}`, "error", 5000);
             setConverting(false);
             return; // do not advance to step 4 on failure
         }
@@ -1267,6 +1564,23 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             toast.show("✅ Case analysis complete", "success", 3000);
         }
         setStep(4);
+    };
+
+    // ── Step 4: retry a FAILED analysis ────────────────────────────
+    const handleRetryAnalysis = async () => {
+        if (!intakeToken || retryingAnalysis) return;
+        setRetryingAnalysis(true);
+        const { data, error } = await intakeRetryAnalysis(intakeToken, { language: intakeLanguage() });
+        if (error) {
+            toast.show(error.message || "Could not retry the analysis. Please try again.", "error", 4000);
+        } else if (data?.analysis_status === "done") {
+            const { data: intake } = await intakeGet(intakeToken);
+            if (intake?.ai_structured_case?.summary) setAiStructured(intake.ai_structured_case);
+            toast.show("✅ Case analysis complete", "success", 3000);
+        } else {
+            toast.show("The AI analysis is still unavailable. You can try again later, or continue without it.", "warn", 5000);
+        }
+        setRetryingAnalysis(false);
     };
 
     // ── Step 4: confirm the draft ──────────────────────────────────
@@ -1358,13 +1672,24 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
     const [recTime, setRecTime] = useState(0);
     const [voiceTranscript, setVoiceTranscript] = useState("");
     const [voiceLang, setVoiceLang] = useState(null);
+    // The language the client SPEAKS, chosen before recording (2026-10-12):
+    // detection heard Urdu as Hindi or English and wrote it out in English.
+    const [speakLang, setSpeakLang] = useState("ur");
     const mediaRecorderRef = useRef(null);
     const audioChunksRef  = useRef([]);
     const recTimerRef     = useRef(null);
     const MAX_REC_SECS    = 120;
     const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
-    useEffect(() => () => clearInterval(recTimerRef.current), []);
+    useEffect(() => () => {
+        clearInterval(recTimerRef.current);
+        // Leaving mid-recording must release the microphone too.
+        try {
+            const mr = mediaRecorderRef.current;
+            if (mr && mr.state !== "inactive") mr.stop();
+            mr?.stream?.getTracks().forEach(tr => tr.stop());
+        } catch { /* already stopped */ }
+    }, []);
 
     const startRecording = async () => {
         if (!navigator.mediaDevices?.getUserMedia) {
@@ -1424,7 +1749,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             const decoded = await ctx.decodeAudioData(await rawBlob.arrayBuffer());
             sendBlob = _pcmToWav(decoded.getChannelData(0), 16000);
         } catch { /* fallback: send raw blob */ }
-        const { data, error } = await transcribeAudio(sendBlob);
+        const { data, error } = await transcribeAudio(sendBlob, { language: speakLang });
         if (error) {
             setVoiceStatus("error");
             toast.show(error.message || "Transcription failed. Try again.", "error", 3000);
@@ -1434,7 +1759,9 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
         if (data.transcript) {
             setVoiceLang({ name: data.language_name, code: data.language, prob: data.language_probability });
             setVoiceStatus("ready");
-            toast.show(`Transcript ready — detected ${data.language_name} (${Math.round(data.language_probability * 100)}%)`, "success", 3000);
+            toast.show(data.language_probability == null
+                ? `Transcript ready — ${data.language_name}`
+                : `Transcript ready — detected ${data.language_name} (${Math.round(data.language_probability * 100)}%)`, "success", 3000);
         } else {
             setVoiceStatus("error");
         }
@@ -1445,6 +1772,9 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
         setDescription(voiceTranscript);
         const detected = quickClassify(voiceTranscript);
         if (detected) setCaseTypeInput(detected);
+        // Moved into the description; kept, it silently stood in for a
+        // description the client later deleted.
+        setVoiceTranscript("");
         setVoiceStatus("idle");
         setInputType("text");
         toast.show("Voice transcript added to your case.", "success", 2000);
@@ -1459,6 +1789,71 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
         error:        { icon: "❌", text: "Failed — try again",                   color: t.danger,     badgeType: "danger",  badgeLabel: "❌ FAILED" },
     };
     const vui = VOICE_UI[voiceStatus] || VOICE_UI.idle;
+
+    // A story with no event in it ("can you guide me?") gives the AI nothing to
+    // classify: the category is then only the default, and saying "the AI
+    // placed your case under Civil" would be false (2026-10-12).
+    const storyText = description.trim() || voiceTranscript.trim();
+    const storyWords = storyText.split(/\s+/).filter(Boolean).length;
+    const storyThin = storyText.length > 0 && (storyWords < 12 || !quickClassify(storyText));
+    // Below this there is nothing to analyse ("no", "help"): Continue waits.
+    const storyTooShort = storyWords < 5 || storyText.length < 20;
+
+    // One Export menu, the same on the review and the confirm screens.
+    const [exportOpen, setExportOpen] = useState(false);
+    useEffect(() => {
+        if (!exportOpen) return undefined;
+        const close = (e) => { if (!e.target.closest?.(".in-export")) setExportOpen(false); };
+        const esc = (e) => { if (e.key === "Escape") setExportOpen(false); };
+        document.addEventListener("mousedown", close);
+        document.addEventListener("keydown", esc);
+        return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+    }, [exportOpen]);
+    const exportMenu = (
+        <div className="in-export">
+            <button type="button" className="in-back" data-export aria-haspopup="menu" aria-expanded={exportOpen} onClick={() => setExportOpen(o => !o)}>
+                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+                {T("Export", "ایکسپورٹ")}
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+            </button>
+            {exportOpen && (
+                <div className="in-export-menu" role="menu">
+                    {[
+                        [T("Download as PDF", "پی ڈی ایف ڈاؤن لوڈ"), handleDownloadPDF, <path key="p" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />],
+                        [T("Email the summary", "خلاصہ ای میل کریں"), handleEmail, <path key="e" d="M4 6h16v12H4zM4 7l8 6 8-6" />],
+                        [T("Print", "پرنٹ"), handlePrint, <path key="r" d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z" />],
+                    ].map(([label, fn, icon]) => (
+                        <button key={label} type="button" role="menuitem" onClick={() => { setExportOpen(false); fn(); }}>
+                            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{icon}</svg>
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
+    // The judge's English cautions, appended to the summary text by the
+    // server; shown as a warning beside the summary, not inside it.
+    const SUMMARY_CAUTION_EN = [
+        "Note: some parts of this analysis could not be fully verified against the retrieved law sections — please confirm with a qualified Pakistani lawyer.",
+        "Note: one or more statutes cited here could not be matched to the retrieved law sections and must not be relied on without checking.",
+    ];
+    const splitCautions = (text) => {
+        let body = text || "";
+        const found = [];
+        for (const c of SUMMARY_CAUTION_EN) {
+            if (body.includes(c)) { body = body.replace(c, ""); found.push(c); }
+        }
+        return [body.trim(), found];
+    };
+    // "Section 2" stored as the section number used to render "Section Section 2".
+    const sectionLabel = (sec) => {
+        const n = String(sec || "").trim().replace(/^(section|sec\.?|s\.)\s*/i, "");
+        return n ? `Section ${n}` : "";
+    };
+    const UNTRUSTED_CITATION = ["mismatched", "phantom", "unbound"];
+    const alertIcon = <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01" /></svg>;
 
     const selectStyle = {
         width: "100%", padding: "10px 14px", borderRadius: 8,
@@ -1493,7 +1888,46 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
 
             {/* The layout (2026-10-10, approved design): steps on the left, the
                 step's work in the middle, the case file filling in on the right. */}
-            <div className="in-shell">
+            {draftChoice && (
+                <section className="in-card" data-draft-choice style={{ maxWidth: 720, margin: "0 auto" }}>
+                    <header className="in-card-head">
+                        <span className="in-card-ic" aria-hidden="true"><Ic n="file" s={19} c="currentColor" /></span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            {draftChoice.case_id ? <>
+                            <h2 className="in-card-title">{T("You have a case waiting for confirmation", "آپ کا ایک کیس تصدیق کا منتظر ہے")}</h2>
+                            <div className="in-card-sub">{T("It was analysed but not confirmed yet, so no lawyer can see it. Continue it, or start a new matter — it will stay here.", "اس کا تجزیہ ہو چکا ہے مگر تصدیق نہیں ہوئی، اس لیے کوئی وکیل اسے نہیں دیکھ سکتا۔ اسے جاری رکھیں، یا نیا معاملہ شروع کریں — یہ یہیں رہے گا۔")}</div>
+                            </> : <>
+                            <h2 className="in-card-title" data-unfinished-choice>{T("You have an unfinished matter", "آپ کا ایک نامکمل معاملہ ہے")}</h2>
+                            <div className="in-card-sub">{T(`You stopped at step ${Math.min(Number(draftChoice.current_step) || 2, 3)}. Continue where you left off, or start a new matter — your answers stay saved.`, `آپ مرحلہ ${Math.min(Number(draftChoice.current_step) || 2, 3)} پر رکے تھے۔ وہیں سے جاری رکھیں، یا نیا معاملہ شروع کریں — آپ کے جوابات محفوظ رہیں گے۔`)}</div>
+                            </>}
+                        </div>
+                    </header>
+                    <div style={{ padding: "12px 16px", borderRadius: 12, border: "1px solid var(--line)", background: "var(--surface)", fontSize: 13.5, lineHeight: 1.55, color: "var(--ink)" }}>
+                        <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                            {(() => {
+                                const d = String(draftChoice.steps?.["3"]?.incident_description || draftChoice.steps?.[3]?.incident_description || "").trim();
+                                return d ? `“${d.length > 140 ? d.slice(0, 140) + "…" : d}”`
+                                    : draftChoice.case_id ? T("Your draft case", "آپ کا ڈرافٹ کیس") : T("Your unfinished intake", "آپ کی نامکمل درخواست");
+                            })()}
+                        </div>
+                        {draftChoice.case_id && <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                            {T("Case", "کیس")} …{String(draftChoice.case_id).slice(-8)}
+                            {draftChoice.case_type ? ` · ${CASE_TYPES.find(c => c.value === draftChoice.case_type)?.label || draftChoice.case_type}` : ""}
+                        </div>}
+                    </div>
+                    <footer className="in-foot">
+                        <button type="button" className="in-back" data-start-new disabled={intakeBooting} onClick={startNewMatter}>
+                            {T("Start a new matter", "نیا معاملہ شروع کریں")}
+                        </button>
+                        <span className="why" />
+                        <button type="button" className="in-next" data-continue-draft onClick={continueDraft}>
+                            {draftChoice.case_id ? T("Continue that case", "وہ کیس جاری رکھیں") : T("Continue where you left off", "وہیں سے جاری رکھیں")}
+                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                        </button>
+                    </footer>
+                </section>
+            )}
+            <div className="in-shell" style={draftChoice ? { display: "none" } : undefined}>
             <nav className="in-rail" aria-label={T("Intake steps", "مراحل")}>
                 {railSteps.map((r, i) => {
                     const targetStep = i + 1;
@@ -1577,8 +2011,8 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                         <span className="why">{!role || !province
                             ? T("Choose your role and province to continue.", "جاری رکھنے کے لیے کردار اور صوبہ منتخب کریں۔")
                             : T("Next: tell us what happened, in your own words.", "اگلا: اپنے الفاظ میں بتائیں کیا ہوا۔")}</span>
-                        <button type="button" className="in-next" disabled={!role || !province} onClick={handleStep1Continue}>
-                            {T("Continue", "جاری رکھیں")}
+                        <button type="button" className="in-next" disabled={!role || !province || !intakeToken || advancing} onClick={() => handleStep1Continue()}>
+                            {!intakeToken && !intakeBootError ? T("Starting…", "شروع ہو رہا ہے…") : T("Continue", "جاری رکھیں")}
                             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                         </button>
                     </footer>
@@ -1589,7 +2023,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             {step === 2 && (
                 <section className="in-card in-story">
                     <header className="in-card-head" style={{ marginBottom: 16 }}>
-                        <span className="in-card-ic" aria-hidden="true"><Ic n="pen" s={19} c="currentColor" /></span>
+                        <span className="in-card-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z" /><path d="M8.5 10.5h7M8.5 14h4.5" /></svg></span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <h2 className="in-card-title">{T("What happened?", "کیا ہوا؟")}</h2>
                             <div className="in-card-sub">{T("Write it in your own words — English or Roman Urdu. Or speak it.", "اپنے الفاظ میں لکھیں — انگریزی یا رومن اردو۔ یا بول کر بتائیں۔")}</div>
@@ -1631,6 +2065,15 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                     {transcribing ? T("Converting…", "تبدیل ہو رہا ہے…") : T("Convert to Text", "متن میں بدلیں")}
                                 </button>
                             </div>
+                            <div className="in-vlang" role="radiogroup" aria-label={T("Language you will speak", "آپ کس زبان میں بولیں گے")}
+                                style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "10px 0 2px", fontSize: 12.5, color: "var(--muted)" }}>
+                                <span>{T("I will speak in", "میں بولوں گا")}</span>
+                                {[["ur", "اردو · Urdu"], ["en", "English"]].map(([code, label]) => (
+                                    <button key={code} type="button" role="radio" aria-checked={speakLang === code} className="in-chip"
+                                        data-speak-lang={code} disabled={isRecording || transcribing}
+                                        onClick={() => setSpeakLang(code)}>{label}</button>
+                                ))}
+                            </div>
                             <div className="in-vstatus" style={{ color: vui.color }} role="status">
                                 <span className="dot" aria-hidden="true" />
                                 {vui.text}
@@ -1640,18 +2083,16 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                             {/* What the AI heard -- editable before it is used. */}
                             <div className="in-transcript">
                                 <div className="in-tr-head">
-                                    <span className="in-bot" aria-hidden="true">
-                                        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="8" width="16" height="12" rx="4" /><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5" /><circle cx="12" cy="3" r="1" /></svg>
-                                    </span>
+                                    <span className="in-ai" aria-hidden="true" />
                                     <b>{T("AI transcription", "اے آئی ٹرانسکرپشن")}</b>
                                     <span style={{ flex: 1 }} />
                                     {vui.badgeType && <span className="in-tag" data-tone={vui.badgeType}>{vui.badgeLabel.replace(/^[^A-Za-z●]+\s*/, "")}</span>}
-                                    {voiceLang && <span className="in-tag">{voiceLang.name} · {Math.round(voiceLang.prob * 100)}%</span>}
+                                    {voiceLang && <span className="in-tag">{voiceLang.name}{voiceLang.prob == null ? "" : ` · ${Math.round(voiceLang.prob * 100)}%`}</span>}
                                 </div>
                                 {transcribing ? (
                                     <div className="in-tr-empty">{T("Transcribing audio…", "آڈیو متن میں بدل رہی ہے…")}<span className="in-typing"><i /><i /><i /></span></div>
                                 ) : voiceTranscript ? (
-                                    <textarea aria-label={T("Transcript", "متن")} value={voiceTranscript} onChange={e => setVoiceTranscript(e.target.value)} />
+                                    <textarea aria-label={T("Transcript", "متن")} maxLength={STORY_MAX} value={voiceTranscript} onChange={e => setVoiceTranscript(e.target.value)} />
                                 ) : (
                                     <div className="in-tr-empty">{T("Tap the mic, speak, then Convert to Text. You can edit the words before using them.", "مائیک دبائیں، بولیں، پھر متن میں بدلیں۔ استعمال سے پہلے الفاظ درست کر سکتے ہیں۔")}</div>
                                 )}
@@ -1666,7 +2107,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                     ) : (
                         <div className="in-compose">
                             <label htmlFor="in-story-text" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>{T("Describe what happened", "بتائیں کیا ہوا")}</label>
-                            <textarea id="in-story-text" rows={6}
+                            <textarea id="in-story-text" rows={6} maxLength={STORY_MAX}
                                 placeholder={T("Please describe the events leading up to your dispute in detail...", "براہ کرم اپنے تنازعے کے واقعات کی تفصیل لکھیں...")}
                                 value={description}
                                 onChange={e => {
@@ -1676,8 +2117,14 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                     const detected = quickClassify(e.target.value);
                                     if (detected) setCaseTypeInput(detected);
                                 }} />
+                            {storyThin && (
+                                <div data-story-thin role="note" style={{ margin: "8px 0 0", padding: "8px 12px", borderRadius: 10, fontSize: 12.5, lineHeight: 1.55, background: "color-mix(in srgb, var(--gold) 12%, transparent)", color: "var(--ink)" }}>
+                                    {T("Tell us what actually happened — who did what, when and where. A general request like “can you guide me?” is not enough for the AI to analyse your case.",
+                                       "بتائیں اصل میں کیا ہوا — کس نے کیا کیا، کب اور کہاں۔ صرف “کیا آپ رہنمائی کر سکتے ہیں؟” جیسی بات سے اے آئی آپ کے کیس کا تجزیہ نہیں کر سکتا۔")}
+                                </div>
+                            )}
                             <div className="in-compose-foot">
-                                <span>{T("Don't include CNIC or phone numbers", "شناختی کارڈ یا فون نمبر نہ لکھیں")} · {description.length} {T("characters", "حروف")}</span>
+                                <span>{T("Don't include CNIC or phone numbers", "شناختی کارڈ یا فون نمبر نہ لکھیں")} · {description.length} / {STORY_MAX.toLocaleString()} {T("characters", "حروف")}</span>
                                 <span style={{ flex: 1 }} />
                                 <button type="button" className="in-ghost" onClick={() => setInputType("voice")}>
                                     <Ic n="mic" s={14} c="var(--brand-text)" />{T("Speak instead", "بول کر بتائیں")}
@@ -1737,7 +2184,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                                     setEvidenceFiles(prev => prev.map(ef =>
                                                         ef.file_id === tempId
                                                             ? error
-                                                                ? { ...ef, uploading: false, error: error?.detail || "Upload failed" }
+                                                                ? { ...ef, uploading: false, error: error?.message || error?.detail || "Upload failed" }
                                                                 : { ...data, uploading: false, error: null }
                                                             : ef
                                                     ));
@@ -1802,6 +2249,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                     <textarea
                                             placeholder="Optional: add notes about witnesses, context, or additional evidence…"
                                             value={evidenceDesc}
+                                            maxLength={NOTE_MAX}
                                             onChange={e => setEvidenceDesc(e.target.value)}
                                             className="in-input" style={{ marginTop: 4, minHeight: 64, background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 8, padding: "8px 12px", color: t.text, fontSize: 12, resize: "vertical", outline: "none", fontFamily: "inherit" }}
                                         />
@@ -1822,6 +2270,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                 <textarea id="in-outcome" className="in-input" rows={2}
                                     placeholder="e.g. File FIR and seek bail, recover unpaid wages, gain custody of children…"
                                     value={desiredOutcome}
+                                    maxLength={NOTE_MAX}
                                     onChange={e => setDesiredOutcome(e.target.value)} />
                                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                                     {[T("Get my money back", "میری رقم واپس"), T("Stop them", "انہیں روکنا"), T("Just advice", "صرف مشورہ")].map(o => (
@@ -1835,8 +2284,13 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
 
                     <footer className="in-foot">
                         <button type="button" className="in-back" onClick={() => setStep(1)}>← {T("Back", "واپس")}</button>
-                        <span className="why">{T("Next: the AI asks up to 4 short questions.", "اگلا: اے آئی زیادہ سے زیادہ 4 مختصر سوال پوچھے گا۔")}</span>
-                        <button type="button" className="in-next" onClick={handleStep2Continue}>
+                        <span className="why" data-step2-why>{evidenceFiles.some(f => f.uploading)
+                            ? T("Waiting for your files to finish uploading…", "فائلیں اپ لوڈ ہونے کا انتظار…")
+                            : storyTooShort
+                            ? T("Describe what happened (at least a few sentences) to continue.", "جاری رکھنے کے لیے بتائیں کیا ہوا (کم از کم چند جملے)۔")
+                            : T("Next: the AI asks up to 4 short questions.", "اگلا: اے آئی زیادہ سے زیادہ 4 مختصر سوال پوچھے گا۔")}</span>
+                        <button type="button" className="in-next" data-step2-continue
+                            disabled={advancing || !intakeToken || storyTooShort || evidenceFiles.some(f => f.uploading)} onClick={() => handleStep2Continue()}>
                             {T("Continue", "جاری رکھیں")}
                             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                         </button>
@@ -1848,9 +2302,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
             {step === 3 && (
                 <section className="in-card">
                     <header className="in-card-head">
-                        <span className="in-card-ic" aria-hidden="true">
-                            <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" /></svg>
-                        </span>
+                        <span className="in-card-ic spark" aria-hidden="true" />
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <h2 className="in-card-title">{ocrReviewRequired ? T("Review Extracted Text", "نکالا گیا متن دیکھیں") : T("A few questions to strengthen your case", "آپ کے کیس کو مضبوط کرنے کے لیے چند سوال")}</h2>
                             <div className="in-card-sub">{ocrReviewRequired
@@ -1860,7 +2312,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                         {!ocrReviewRequired && (
                             <span className="in-qbars" aria-label={`${answeredCount} ${T("of up to 4 answered", "از 4 جواب دیے")}`}>
                                 {[1, 2, 3, 4].map(n => (
-                                    <i key={n} data-on={n <= answeredCount || clarifyDone ? "" : undefined} data-now={!clarifyDone && n === clarifyRound ? "" : undefined} />
+                                    <i key={n} data-on={n <= answeredCount || (clarifyDone && !clarifyUnavailable) ? "" : undefined} data-now={!clarifyDone && n === clarifyRound ? "" : undefined} />
                                 ))}
                             </span>
                         )}
@@ -1943,7 +2395,39 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                             {clarifyLoading && clarifyRound === 0 && (
                                 <div className="in-msg ai"><span className="in-ai" aria-hidden="true">✦</span><div className="in-bub">{T("Reading your story…", "آپ کی کہانی پڑھی جا رہی ہے…")}<span className="in-typing"><i /><i /><i /></span></div></div>
                             )}
-                            {clarifyDone && !clarifyQ1 && (
+                            {clarifyError && !clarifyLoading && (
+                                <div className="in-msg ai" data-clarify-error role="alert">
+                                    <span className="in-ai" aria-hidden="true">!</span>
+                                    <div className="in-bub">
+                                        {clarifyError} {T("Nothing was skipped.", "کچھ نہیں چھوڑا گیا۔")}
+                                        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                                            <button type="button" className="in-chip" data-clarify-retry
+                                                onClick={() => (clarifyRound === 0 ? fetchFirstQuestion() : handleClarifyNext())}>
+                                                {T("Try again", "دوبارہ کوشش کریں")}
+                                            </button>
+                                            <button type="button" className="in-chip" data-clarify-skip
+                                                onClick={() => { clarifySkipped.current = true; setClarifyError(""); setClarifyDone(true); setClarifyRound(5); }}>
+                                                {T("Continue without questions", "سوالات کے بغیر جاری رکھیں")}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {clarifyUnavailable && !clarifyLoading && (
+                                <div className="in-msg ai" data-clarify-unavailable role="status">
+                                    <span className="in-ai" aria-hidden="true">!</span>
+                                    <div className="in-bub">
+                                        {T("The AI could not prepare more questions right now. You can continue — your story will still be analysed — or try again.",
+                                           "اے آئی ابھی مزید سوال تیار نہیں کر سکا۔ آپ جاری رکھ سکتے ہیں — آپ کی کہانی کا تجزیہ پھر بھی ہوگا — یا دوبارہ کوشش کریں۔")}
+                                        <div style={{ marginTop: 10 }}>
+                                            <button type="button" className="in-chip" data-clarify-unavailable-retry onClick={retryQuestions}>
+                                                {T("Try again", "دوبارہ کوشش کریں")}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {clarifyDone && !clarifyQ1 && !clarifyUnavailable && (
                                 <div className="in-msg ai"><span className="in-ai" aria-hidden="true">✦</span><div className="in-bub">{T("All critical facts are already in your story — no additional questions needed.", "تمام اہم حقائق پہلے سے موجود ہیں — مزید سوال کی ضرورت نہیں۔")}</div></div>
                             )}
                             {[[clarifyQ1, clarifyA1, setClarifyA1], [clarifyQ2, clarifyA2, setClarifyA2], [clarifyQ3, clarifyA3, setClarifyA3], [clarifyQ4, clarifyA4, setClarifyA4]].map(([q, a, setA], i) => {
@@ -1967,7 +2451,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                                         <button key={qa} type="button" className="in-chip" onClick={() => setA(qa)}>{qa}</button>
                                                     ))}
                                                 </div>
-                                                <textarea id={`in-a${n}`} rows={2} placeholder="Your answer…" value={a}
+                                                <textarea id={`in-a${n}`} rows={2} placeholder="Your answer…" value={a} maxLength={NOTE_MAX}
                                                     onChange={e => setA(e.target.value)} />
                                             </div>
                                         ) : a ? (
@@ -1983,38 +2467,95 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                     )}
 
                     <footer className="in-foot">
-                        <button type="button" className="in-back" onClick={() => setStep(2)}>← {T("Back", "واپس")}</button>
+                        {!caseId && <button type="button" className="in-back" onClick={() => setStep(2)}>← {T("Back", "واپس")}</button>}
                         <span className="why">{clarifyDone || ocrReviewRequired
                             ? T("Next: the AI builds your structured case.", "اگلا: اے آئی آپ کا منظم کیس بنائے گا۔")
                             : T("Each answer helps a lawyer understand your case.", "ہر جواب وکیل کو کیس سمجھنے میں مدد دیتا ہے۔")}</span>
                         {!ocrReviewRequired && (clarifyRound >= 1 && clarifyRound <= 3) && !clarifyDone ? (
-                            <BtnPrimary
-                                disabled={clarifyLoading || !getCurrentAnswer().trim()}
-                                onClick={handleClarifyNext}
-                                style={{ fontSize: 14, padding: "12px 24px", borderRadius: 999 }}
-                            >
-                                {clarifyLoading ? "Thinking…" : "Next Question →"}
-                            </BtnPrimary>
+                            <button type="button" className="in-next"
+                                disabled={clarifyLoading || Boolean(clarifyError) || !getCurrentAnswer().trim()}
+                                onClick={handleClarifyNext}>
+                                {clarifyLoading ? T("Thinking…", "سوچ رہا ہے…") : T("Next Question", "اگلا سوال")}
+                                {!clarifyLoading && <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>}
+                            </button>
                         ) : (
-                            <BtnPrimary
-                                disabled={converting || clarifyLoading || ocrReviewLoading
+                            <button type="button" className="in-next"
+                                disabled={converting || clarifyLoading || ocrReviewLoading || (Boolean(clarifyError) && !clarifyDone)
                                     || (ocrReviewRequired && !ocrReviewComplete)
                                     || (!ocrReviewRequired && clarifyRound === 4 && !clarifyA4.trim())}
-                                onClick={handleConvertAndSummarise}
-                                style={{ fontSize: 14, padding: "12px 24px", borderRadius: 999, opacity: converting ? 0.7 : 1 }}
-                            >
-                                {converting ? "Analysing case…"
+                                onClick={handleConvertAndSummarise}>
+                                {converting ? T("Analysing case…", "کیس کا تجزیہ ہو رہا ہے…")
                                     : ocrReviewLoading ? "Loading extracted text…"
                                     : ocrReviewRequired ? "Continue analysis →"
-                                    : clarifyLoading ? "Thinking…" : "Complete & Continue →"}
-                            </BtnPrimary>
+                                    : clarifyLoading ? T("Thinking…", "سوچ رہا ہے…") : T("Complete & Continue", "مکمل کریں اور آگے بڑھیں")}
+                                {!converting && !clarifyLoading && !ocrReviewLoading && <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>}
+                            </button>
                         )}
                     </footer>
                 </section>
             )}
 
             {/* ── STEP 4: Review (2026-10-10, approved design) ─────────── */}
-            {step === 4 && (
+            {step === 4 && (() => {
+                // The Urdu rendering is shown when the analysis was asked for in
+                // Urdu and it passed its checks; the English original is one click
+                // away, and is what is shown when the rendering failed.
+                const urdu = aiStructured?.localized?.ur;
+                const askedUrdu = aiStructured?.output_language === "ur";
+                const urduReady = askedUrdu && urdu?.status === "ok";
+                const viewUrdu = urduReady && !showOriginal;
+                const shown = viewUrdu ? {
+                    summary: urdu.summary,
+                    actions: urdu.recommended_actions || [],
+                    laws: (aiStructured.law_citations || []).map((c, i) => {
+                        const ur = (urdu.statute_names || [])[i];
+                        return {
+                            head: [c.statute ? `${c.statute}${ur ? ` (${ur})` : ""}` : "", sectionLabel(c.section)].filter(Boolean).join(" "),
+                            note: (urdu.citation_notes || [])[i] ? `وضاحت: ${(urdu.citation_notes || [])[i]}` : "",
+                            unverified: UNTRUSTED_CITATION.includes(c.status),
+                        };
+                    }),
+                    cautions: (urdu.cautions || []).map(k => SUMMARY_CAUTION_UR[k]).filter(Boolean),
+                    note: GROUNDING_NOTE_UR[aiStructured.grounding_status] || GROUNDING_NOTE_UR.unverified,
+                } : {
+                    summary: splitCautions(aiStructured?.summary)[0],
+                    actions: aiStructured?.recommended_actions || [],
+                    laws: (aiStructured?.law_citations || []).length
+                        ? aiStructured.law_citations.map(c => ({
+                            head: [c.statute, sectionLabel(c.section)].filter(Boolean).join(" "),
+                            note: c.description || c.note || "",
+                            unverified: UNTRUSTED_CITATION.includes(c.status),
+                        }))
+                        // Older analyses carry only the display strings.
+                        : (aiStructured?.applicable_laws || []).map(line => {
+                            const unverified = /\[unverified citation\]/.test(line);
+                            const clean = line.replace(/\s*\[unverified citation\]/, "").replace(/Section Section/g, "Section");
+                            const [head, ...rest] = clean.split(" — ");
+                            return { head, note: rest.join(" — "), unverified };
+                        }),
+                    cautions: splitCautions(aiStructured?.summary)[1],
+                    note: GROUNDING_NOTE[aiStructured?.grounding_status] || GROUNDING_NOTE.unverified,
+                };
+                const urduText = viewUrdu ? { dir: "rtl", lang: "ur" } : {};
+                // ONE warning: the status note under the steps says what the
+                // judge's summary caution says, so the caution is shown only
+                // when there is no such note.
+                const groundingNoteShown = Boolean(aiStructured?.grounding_status && aiStructured.grounding_status !== "grounded" && shown.actions.length > 0);
+                return (
+                <>
+                {askedUrdu && aiStructured?.grounding_status !== "pipeline_failed" && (
+                    <div data-language-bar style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12, fontSize: 12.5, color: "var(--muted)" }}>
+                        {urduReady ? (
+                            <>
+                                <span>{T("Analysis language:", "تجزیے کی زبان:")}</span>
+                                <button type="button" className="in-chip" role="radio" data-view-lang="ur" aria-checked={!showOriginal} onClick={() => setShowOriginal(false)}>اردو</button>
+                                <button type="button" className="in-chip" role="radio" data-view-lang="en" aria-checked={showOriginal} onClick={() => setShowOriginal(true)}>{T("English (original)", "انگریزی (اصل)")}</button>
+                            </>
+                        ) : (
+                            <span data-urdu-unavailable>{T("The Urdu version could not be produced, so the original English analysis is shown.", "اردو ترجمہ نہیں بن سکا، اس لیے اصل انگریزی تجزیہ دکھایا جا رہا ہے۔")}</span>
+                        )}
+                    </div>
+                )}
                 <section className="in-card">
                     <header className="in-card-head">
                         <span className="in-card-ic" aria-hidden="true"><Ic n="file" s={19} c="currentColor" /></span>
@@ -2022,26 +2563,69 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                             <h2 className="in-card-title">{T("Here is your case, structured", "یہ رہا آپ کا منظم کیس")}</h2>
                             <div className="in-card-sub">{T("Read it like a lawyer would. Fix anything wrong before you confirm.", "اسے وکیل کی طرح پڑھیں۔ تصدیق سے پہلے کوئی غلطی درست کریں۔")}{caseId ? ` · ${T("Case", "کیس")} …${caseId.slice(-8)}` : ""}</div>
                         </div>
-                        <button type="button" className="in-ghost" onClick={handleDownloadPDF}>
-                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
-                            {T("Export", "ایکسپورٹ")}
-                        </button>
+                        {exportMenu}
                     </header>
 
                     <div className="in-facts">
                         {[[T("Role", "کردار"), roleName], [T("Province", "صوبہ"), PROVINCE_SHORT[province] || province], [T("Case type", "کیس کی قسم"), caseTypeName], [T("Urgency", "فوریت"), urgency ? urgency.charAt(0).toUpperCase() + urgency.slice(1) : ""]].map(([k, v]) => (
                             <div key={k}><small>{k}</small><b data-u={k === T("Urgency", "فوریت") ? urgency : undefined}>{v || "—"}</b></div>
                         ))}
+                        {aiStructured?.risk_level && aiStructured.grounding_status !== "pipeline_failed" && (
+                            <div title={T("The AI's own reading — informational only, not legal advice.", "اے آئی کا اندازہ — صرف معلومات کے لیے، قانونی مشورہ نہیں۔")}>
+                                <small>{T("Risk (AI estimate)", "خطرہ (اے آئی اندازہ)")}</small>
+                                <b data-r={aiStructured.risk_level}>{aiStructured.risk_level.charAt(0).toUpperCase() + aiStructured.risk_level.slice(1)}</b>
+                            </div>
+                        )}
+                        {/* Batch 7: the estimate was made with the Punjab-only CPC in view,
+                            so the server withheld it. Said plainly, never shown as a rating. */}
+                        {!aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSESSED && (
+                            <div data-risk-not-assessed title={T("The estimate relied in part on law that is not verified for your province.", "یہ اندازہ جزوی طور پر ایسے قانون پر تھا جو آپ کے صوبے کے لیے تصدیق شدہ نہیں۔")}>
+                                <small>{T("Risk (AI estimate)", "خطرہ (اے آئی اندازہ)")}</small>
+                                <b>{T("Not assessed — needs review", "اندازہ نہیں لگایا گیا — جائزہ ضروری")}</b>
+                            </div>
+                        )}
                     </div>
 
+                    {["pipeline_failed", "retrieval_error"].includes(aiStructured?.grounding_status) && (
+                        <div data-analysis-failed={aiStructured.grounding_status} role="status" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "12px 16px", marginBottom: 14, borderRadius: 12, background: "#fffbeb", border: "1px solid #fcd34d", color: "#78350f", fontSize: 13, lineHeight: 1.55 }}>
+                            <span style={{ flex: 1, minWidth: 220 }}>
+                                <b>{aiStructured.grounding_status === "retrieval_error"
+                                    ? T("We could not search the law library just now.", "ابھی قانونی لائبریری میں تلاش نہیں ہو سکی۔")
+                                    : T("The AI analysis could not run.", "اے آئی تجزیہ نہیں ہو سکا۔")}</b>{" "}
+                                {T("Your case is saved. Retry the analysis, or continue — a lawyer can still review it.", "آپ کا کیس محفوظ ہے۔ تجزیہ دوبارہ کریں، یا جاری رکھیں — وکیل پھر بھی دیکھ سکتا ہے۔")}
+                            </span>
+                            {!caseConfirmed && (
+                                <button type="button" className="in-ghost" data-retry-analysis disabled={retryingAnalysis} onClick={handleRetryAnalysis}>
+                                    {retryingAnalysis ? T("Analysing…", "تجزیہ ہو رہا ہے…") : T("Retry analysis", "دوبارہ تجزیہ کریں")}
+                                </button>
+                            )}
+                        </div>
+                    )}
                     <div className="in-sections">
-        {aiStructured ? (
+        {aiStructured && aiStructured.grounding_status !== "pipeline_failed" ? (
                             <>
-                                {/* AI Summary */}
-                                <div style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px" }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: t.primary, marginBottom: 10 }}>📋 Case Summary</div>
-                                    <div style={{ fontSize: 13, color: t.textDim, lineHeight: 1.7 }}>{aiStructured.summary}</div>
-                                </div>
+                                <div className="in-rv">
+                                <section className="in-rv-sec" aria-label={T("Summary", "خلاصہ")}>
+                                    <h3 className="in-rv-h">{viewUrdu ? "خلاصہ" : T("Summary", "خلاصہ")}</h3>
+                                    <p data-analysis-summary className="in-rv-text" {...urduText}>{shown.summary}</p>
+                                    {aiStructured.input_fact_fidelity?.status === "issues" && (
+                                        <div className="in-callout" data-fidelity-issue {...(viewUrdu ? { dir: "rtl", lang: "ur" } : {})}>{alertIcon}<span>{viewUrdu
+                                            ? "اس خلاصے کی کچھ تفصیلات (جیسے رقم یا کوئی بات جس سے آپ نے انکار کیا تھا) آپ کی بتائی ہوئی باتوں سے نہیں ملتیں۔ اسے احتیاط سے پڑھیں اور غلطی ہو تو وکیل کو بتائیں۔"
+                                            : T("Some details in this summary (such as an amount, or something you said was not the case) do not match what you told us. Read it carefully and tell your lawyer if anything is wrong.",
+                                                "اس خلاصے کی کچھ تفصیلات آپ کی بتائی ہوئی باتوں سے نہیں ملتیں۔")}</span></div>
+                                    )}
+                                    {!groundingNoteShown && shown.cautions.map(c => (
+                                        <div key={c} data-summary-caution className="in-callout" {...(viewUrdu ? { dir: "rtl", lang: "ur" } : {})}>{alertIcon}<span>{c}</span></div>
+                                    ))}
+                                    {/* The Punjab-only CPC (server, batch 6): always shown when present --
+                                        it explains why CPC law is not listed, which no other note says. */}
+                                    {aiStructured.jurisdiction_notice && (
+                                        <div className="in-callout" data-jurisdiction-notice={aiStructured.jurisdiction_notice.scope}
+                                            {...(viewUrdu ? { dir: "rtl", lang: "ur" } : {})}>{alertIcon}<span>{viewUrdu
+                                                ? aiStructured.jurisdiction_notice.ur
+                                                : aiStructured.jurisdiction_notice.en}</span></div>
+                                    )}
+                                </section>
 
                                 {/* WHAT THE ANALYSIS DID NOT SEE.
                                     Shown beside the summary, not on the upload screen, because
@@ -2057,15 +2641,17 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                     const gaps = incompleteFiles(records.map(r => ({ ...r, extraction_status: r.status })));
                                     if (!gaps.length) {
                                         return (
-                                            <div style={{ padding: "10px 14px", borderRadius: 10, background: t.inputBg, border: `1px solid ${t.border}`, fontSize: 12, color: t.textMuted }}>
-                                                ✓ All {records.length} uploaded file(s) were read in full and included in this analysis.
+                                            <div {...urduText} style={{ padding: "10px 14px", borderRadius: 10, background: t.inputBg, border: `1px solid ${t.border}`, fontSize: 12, color: t.textMuted }}>
+                                                {viewUrdu
+                                                    ? `✓ اپ لوڈ کی گئی تمام ${records.length} فائلیں مکمل پڑھی گئیں اور اس تجزیے میں شامل ہیں۔`
+                                                    : `✓ All ${records.length} uploaded file(s) were read in full and included in this analysis.`}
                                             </div>
                                         );
                                     }
                                     return (
                                         <div data-testid="evidence-gaps" style={{ padding: "12px 14px", borderRadius: 10, background: "#fffbeb", border: "1px solid #fcd34d", fontSize: 12, color: "#78350f" }}>
-                                            <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                                                ⚠ This analysis did not see all of your evidence
+                                            <div data-evidence-gap-title {...urduText} style={{ fontWeight: 700, marginBottom: 6 }}>
+                                                {viewUrdu ? "⚠ اس تجزیے میں آپ کے تمام ثبوت شامل نہیں ہو سکے" : "⚠ This analysis did not see all of your evidence"}
                                             </div>
                                             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                                                 {gaps.map(g => {
@@ -2078,70 +2664,46 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                                     );
                                                 })}
                                             </div>
-                                            <div style={{ marginTop: 7, lineHeight: 1.6 }}>
-                                                Anything above was not part of the analysis. Type those details into
-                                                your description, upload a text-based copy, or continue knowing they
-                                                were left out.
+                                            <div {...urduText} style={{ marginTop: 7, lineHeight: 1.6 }}>
+                                                {viewUrdu
+                                                    ? "اوپر دی گئی چیزیں تجزیے کا حصہ نہیں تھیں۔ ان کی تفصیل اپنی کہانی میں لکھیں، ان کی ٹیکسٹ والی کاپی اپ لوڈ کریں، یا یہ جانتے ہوئے جاری رکھیں کہ وہ شامل نہیں ہوئیں۔"
+                                                    : "Anything above was not part of the analysis. Type those details into your description, upload a text-based copy, or continue knowing they were left out."}
                                             </div>
                                         </div>
                                     );
                                 })()}
 
-                                {/* Applicable Laws */}
-                                {aiStructured.applicable_laws?.length > 0 && (
-                                    <div style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px" }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                                            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: t.primary }}>⚖️ Applicable Laws</div>
-                                                                                            </div>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                            {aiStructured.applicable_laws.map((law, i) => (
-                                                <div key={i} style={{ fontSize: 13, color: t.textDim, lineHeight: 1.6 }}>
-                                                    {i + 1}. {law}
-                                                </div>
+                                {shown.actions.length > 0 && (
+                                    <section className="in-rv-sec" aria-label={T("What you should do", "آپ کو کیا کرنا چاہیے")}>
+                                        <h3 className="in-rv-h">{viewUrdu ? "آپ کو کیا کرنا چاہیے" : T("What you should do", "آپ کو کیا کرنا چاہیے")}</h3>
+                                        <ol className="in-rv-steps">
+                                            {shown.actions.map((action, i) => (
+                                                <li key={i} data-analysis-action {...urduText}><span className="n" aria-hidden="true">{i + 1}</span><span>{action}{(aiStructured.recommended_action_kinds || [])[i] === "general" && (
+                                                    <span className="in-pill-general" data-general-step>{viewUrdu ? "عام قدم" : T("General step", "عام قدم")}</span>
+                                                )}</span></li>
                                             ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Recommended Actions */}
-                                {aiStructured.recommended_actions?.length > 0 && (
-                                    <div style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px" }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: t.primary, marginBottom: 10 }}>🎯 Recommended Actions</div>
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                            {aiStructured.recommended_actions.map((action, i) => (
-                                                <div key={i} style={{ fontSize: 13, color: t.textDim, lineHeight: 1.6 }}>
-                                                    {i + 1}. {action}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {/* The backend now says whether these actions were actually
-                                            checked against retrieved law. "grounded" is the only
-                                            status that means they were; everything else means the
-                                            check could not run, and that must be visible here rather
-                                            than buried in the summary paragraph. */}
-                                        {aiStructured.grounding_status && aiStructured.grounding_status !== "grounded" && (
-                                            <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${t.border}`, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                                                <span style={{ fontSize: 13, lineHeight: 1.5 }}>⚠️</span>
-                                                <span style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.55 }}>
-                                                    {GROUNDING_NOTE[aiStructured.grounding_status] || GROUNDING_NOTE.unverified}
-                                                </span>
-                                            </div>
+                                        </ol>
+                                        {groundingNoteShown && (
+                                            <div className="in-callout">{alertIcon}<span data-grounding-note {...urduText}>{shown.note}</span></div>
                                         )}
-                                    </div>
+                                    </section>
                                 )}
 
-                                {/* Risk Level */}
-                                {aiStructured.risk_level && (
-                                    <div style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px" }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase", color: t.primary, marginBottom: 10 }}>⚠️ Risk Assessment</div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                            <Badge type={RISK_COLORS[aiStructured.risk_level] || "warn"} style={{ fontSize: 12, padding: "6px 14px", fontWeight: 700, textTransform: "uppercase" }}>
-                                                {aiStructured.risk_level} risk
-                                            </Badge>
-                                            <span style={{ fontSize: 12, color: t.textMuted }}>Informational only — not legal advice.</span>
+                                {shown.laws.length > 0 && (
+                                    <section className="in-rv-sec" aria-label={T("Laws that may apply", "متعلقہ قوانین")}>
+                                        <h3 className="in-rv-h">{viewUrdu ? "متعلقہ قوانین" : T("Laws that may apply", "متعلقہ قوانین")}</h3>
+                                        <div className="in-rv-laws">
+                                            {shown.laws.map((law, i) => (
+                                                <div key={i} className="in-rv-law" data-analysis-law {...urduText}>
+                                                    <b>{law.head}</b>
+                                                    {law.unverified && <span className="in-pill-warn" data-unverified>{viewUrdu ? "غیر تصدیق شدہ" : T("Not verified", "غیر تصدیق شدہ")}</span>}
+                                                    {law.note && <p>{law.note}</p>}
+                                                </div>
+                                            ))}
                                         </div>
-                                    </div>
+                                    </section>
                                 )}
+                                </div>
                             </>
                         ) : (
                             // Static fallback when AI analysis not available
@@ -2163,7 +2725,7 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                                 },
                                 { icon: "⚖️", title: "Case Type", body: `${CASE_TYPES.find(c => c.value === caseTypeInput)?.label || caseTypeInput} — Urgency: ${urgency}`, c: t.primary },
                                 { icon: "📋", title: "Case Description", body: description || voiceTranscript || "No description provided.", c: t.primary },
-                                { icon: "🎯", title: "Desired Outcome", body: "Legal assistance and representation.", c: t.primary },
+                                { icon: "🎯", title: "Desired Outcome", body: desiredOutcome.trim() || "Legal assistance and representation.", c: t.primary },
                             ].map((s, idx) => (
                                 <div key={idx} style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "16px 20px" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -2176,14 +2738,21 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                     </div>
 
                     <footer className="in-foot">
-                        <button type="button" className="in-back" onClick={() => setStep(3)}>← {T("Back", "واپس")}</button>
+                        {!caseId
+                            ? <button type="button" className="in-back" onClick={() => setStep(3)}>← {T("Back", "واپس")}</button>
+                            // The story steps are closed once the case exists; leaving is
+                            // safe -- the draft is offered again next time.
+                            : <button type="button" className="in-back" data-save-later onClick={() => router.push("/dashboard")}>{T("Save & finish later", "محفوظ کریں، بعد میں مکمل کریں")}</button>}
                         <span className="why">{T("Looks right? Next you confirm the category.", "درست ہے؟ اگلا: زمرے کی تصدیق۔")}</span>
                         <button type="button" className="in-next" onClick={handleContinueToCategory}>
-                            {T("Continue to Category →", "درجہ بندی کی طرف جائیں ←")}
+                            {T("Continue to category", "زمرے کی طرف جائیں")}
+                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                         </button>
                     </footer>
                 </section>
-            )}
+                </>
+                );
+            })()}
 
             {/* ── STEP 5: Confirm (2026-10-10, approved design) ───────── */}
             {step === 5 && (
@@ -2192,12 +2761,18 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                         <span className="in-card-ic" aria-hidden="true"><Ic n="check" s={19} c="currentColor" /></span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <h2 className="in-card-title">{T("Confirm the category", "زمرے کی تصدیق کریں")}</h2>
-                            <div className="in-card-sub">{caseTypeInput
+                            <div className="in-card-sub" data-category-basis={!caseTypeInput ? "none" : convertedCaseType && convertedCaseType !== caseTypeInput ? "chosen" : storyThin ? "guess" : "ai"}>{caseTypeInput && convertedCaseType && convertedCaseType !== caseTypeInput
+                                ? <>{storyThin ? T("Our starting guess was", "ہمارا ابتدائی اندازہ تھا:") : T("The AI suggested", "اے آئی نے تجویز کیا:")} <b>{(CASE_TYPES.find(c => c.value === convertedCaseType)?.label || convertedCaseType).replace(" Law", "")}</b>{T("; you chose", "؛ آپ نے چنا:")} <b style={{ color: "var(--brand-text)" }}>{caseTypeName}</b>. {T("Lawyers are matched on the category you confirm.", "وکیل اسی زمرے پر منتخب ہوں گے جس کی آپ تصدیق کریں۔")}</>
+                                : caseTypeInput && storyThin
+                                ? <>{T("Your story did not say enough to tell the area of law, so", "آپ کی کہانی سے قانون کا شعبہ واضح نہیں ہوا، اس لیے")} <b style={{ color: "var(--brand-text)" }}>{caseTypeName}</b> {T("is only a starting guess. Choose the one that fits — lawyers are matched on it.", "صرف ابتدائی اندازہ ہے۔ جو درست ہو وہ چنیں — وکیل اسی پر منتخب ہوتے ہیں۔")}</>
+                                : caseTypeInput
                                 ? <>{T("The AI placed your case under", "اے آئی نے آپ کا کیس اس میں رکھا:")} <b style={{ color: "var(--brand-text)" }}>{caseTypeName}</b>. {T("Change it if it is wrong — lawyers are matched on it.", "غلط ہو تو بدلیں — وکیل اسی پر منتخب ہوتے ہیں۔")}</>
                                 : T("Select the category that best describes your legal issue.", "وہ زمرہ منتخب کریں جو آپ کے مسئلے کو بہتر بیان کرے۔")}</div>
                         </div>
+                        {exportMenu}
                     </header>
 
+                    <div className="in-label">{T("Area of law", "قانون کا شعبہ")}</div>
                     <div className="in-cats" role="radiogroup" aria-label={T("Category", "زمرہ")}>
                         {[
                             { id: "civil", n: T("Civil", "دیوانی"), d: T("Property, money, contracts", "جائیداد، رقم، معاہدے") },
@@ -2205,61 +2780,54 @@ ${aiStructured?.risk_level ? `<h2>Risk Assessment</h2><span class="risk risk-${e
                             { id: "family", n: T("Family", "عائلی"), d: T("Divorce, khula, custody, maintenance", "طلاق، خلع، حضانت، نان نفقہ") },
                             { id: "constitutional", n: T("Constitutional", "آئینی"), d: T("Fundamental rights, writ petitions", "بنیادی حقوق، رٹ") },
                         ].map(c => (
-                            <button key={c.id} type="button" role="radio" aria-checked={c.id === caseTypeInput} className="in-cat"
-                                disabled={caseConfirmed} onClick={() => setCaseTypeInput(c.id)}>
-                                <small>{c.id === convertedCaseType ? T("AI suggested", "اے آئی کی تجویز") : "\u00a0"}</small>
-                                <b>{c.n}</b>
-                                <span>{c.d}</span>
+                            <button key={c.id} type="button" role="radio" aria-checked={c.id === caseTypeInput} className="in-cat2"
+                                data-category={c.id} disabled={caseConfirmed} onClick={() => setCaseTypeInput(c.id)}>
+                                <span className="dot" aria-hidden="true" />
+                                <span className="txt"><b>{c.n}</b><span className="ds">{c.d}</span></span>
+                                {c.id === convertedCaseType && (
+                                    <span className="tag">{storyThin ? T("Starting guess", "ابتدائی اندازہ") : T("AI suggested", "اے آئی کی تجویز")}</span>
+                                )}
                             </button>
                         ))}
                     </div>
 
                     {!caseConfirmed ? (
-                        <div className="in-open">
-                            <span className="in-open-ic" aria-hidden="true"><Ic n="check" s={22} c="currentColor" /></span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <b>{T("Open my case", "میرا کیس کھولیں")}</b>
-                                <span>{T("Until you confirm, this stays a draft: it cannot be matched or sent. Once open, it is still private — not sent to anyone until you choose a lawyer.", "تصدیق تک یہ مسودہ ہے۔ کھلنے کے بعد بھی نجی ہے — وکیل چننے تک کسی کو نہیں بھیجا جاتا۔")}</span>
-                            </div>
-                            <button type="button" className="in-next" disabled={intakeSubmitting}
-                                onClick={() => { if (!intakeSubmitting) handleSubmit(); }}>
-                                {intakeSubmitting ? "Confirming…" : "Confirm Category & Open Case →"}
-                            </button>
+                        <div className="in-note" data-next-locked>
+                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+                            <span>{T("Until you confirm, your case is a private draft — it cannot be matched or sent. Confirming does not send it to anyone; after that you can find a lawyer, draft a document or track the case.",
+                                     "تصدیق تک آپ کا کیس نجی مسودہ ہے — نہ میچ ہو سکتا ہے نہ بھیجا جا سکتا ہے۔ تصدیق سے یہ کسی کو نہیں جاتا؛ اس کے بعد آپ وکیل تلاش، دستاویز تیار یا کیس ٹریک کر سکتے ہیں۔")}</span>
                         </div>
                     ) : (
-                        <div className="in-done">
-                            <span className="in-done-ic" aria-hidden="true"><Ic n="check" s={28} c="currentColor" /></span>
-                            <h3>{T("Case Intake Complete", "کیس کی درخواست مکمل")}</h3>
-                            <p>{T("Your case is open. Choose a lawyer to send it to — it has not been sent to anyone yet.", "آپ کا کیس کھل چکا ہے۔ اسے بھیجنے کے لیے وکیل منتخب کریں — ابھی کسی کو نہیں بھیجا گیا۔")}{caseId ? ` ${T("Case", "کیس")} …${caseId.slice(-8)}.` : ""}</p>
-                        </div>
+                        <>
+                            <div className="in-done2" data-intake-done>
+                                <span className="ok" aria-hidden="true"><Ic n="check" s={18} c="currentColor" /></span>
+                                <div style={{ minWidth: 0 }}>
+                                    <h3>{T("Case Intake Complete", "کیس کی درخواست مکمل")}</h3>
+                                    <p>{T("Your case is open. Choose a lawyer to send it to — it has not been sent to anyone yet.", "آپ کا کیس کھل چکا ہے۔ اسے بھیجنے کے لیے وکیل منتخب کریں — ابھی کسی کو نہیں بھیجا گیا۔")}{caseId ? ` ${T("Case", "کیس")} …${caseId.slice(-8)}.` : ""}</p>
+                                </div>
+                            </div>
+                            <div className="in-next-row">
+                                <button type="button" className="in-next" data-next="lawyer"
+                                    onClick={() => router.push(caseId ? `/lawyers?case_id=${caseId}` : "/lawyers")}>
+                                    {T("Find a lawyer", "وکیل تلاش کریں")}
+                                    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                                </button>
+                                <button type="button" className="in-back" data-next="document" onClick={() => router.push("/documents")}>{T("Draft a document", "دستاویز تیار کریں")}</button>
+                                <button type="button" className="in-back" data-next="track" onClick={() => router.push("/tracking")}>{T("Track the case", "کیس دیکھیں")}</button>
+                            </div>
+                        </>
                     )}
-
-                    <div className="in-label" style={{ marginTop: 22 }}>{T("What you can do next", "آگے کیا کر سکتے ہیں")}</div>
-                    <div className="in-nexts">
-                        <button type="button" className="in-nx" data-main="" disabled={!caseConfirmed}
-                            onClick={() => { if (!caseConfirmed) return; router.push(caseId ? `/lawyers?case_id=${caseId}` : "/lawyers"); }}>
-                            <span className="ic" aria-hidden="true"><svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg></span>
-                            <b>{T("Find a Lawyer →", "وکیل تلاش کریں ←")}</b>
-                            <span>{T("AI match for this case, then choose who to send it to.", "اس کیس کے لیے اے آئی میچ، پھر خود چنیں۔")}</span>
-                        </button>
-                        <button type="button" className="in-nx" style={{ "--c": "#6aa8ff" }} disabled={!caseConfirmed} onClick={() => router.push("/documents")}>
-                            <span className="ic" aria-hidden="true"><svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg></span>
-                            <b>{T("Draft a document", "دستاویز تیار کریں")}</b>
-                            <span>{T("e.g. a legal notice.", "مثلاً قانونی نوٹس۔")}</span>
-                        </button>
-                        <button type="button" className="in-nx" style={{ "--c": "var(--gold)" }} disabled={!caseConfirmed} onClick={() => router.push("/tracking")}>
-                            <span className="ic" aria-hidden="true"><svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg></span>
-                            <b>{T("Track the case", "کیس دیکھیں")}</b>
-                            <span>{T("See its status and updates.", "حیثیت اور اپ ڈیٹس۔")}</span>
-                        </button>
-                    </div>
 
                     <footer className="in-foot">
                         {!caseConfirmed && <button type="button" className="in-back" onClick={() => setStep(4)}>← {T("Back", "واپس")}</button>}
-                        <span className="why">{T("Export Case", "کیس ایکسپورٹ کریں")}:</span>
-                        <button type="button" className="in-ghost" onClick={handleDownloadPDF}>Download Case PDF</button>
-                        <button type="button" className="in-ghost" onClick={handleEmail}>Email Summary</button>
-                        <button type="button" className="in-ghost" onClick={handlePrint}>Print</button>
+                        <span className="why" />
+                        {!caseConfirmed && (
+                            <button type="button" className="in-next" data-confirm-case disabled={intakeSubmitting || !caseTypeInput}
+                                onClick={() => { if (!intakeSubmitting) handleSubmit(); }}>
+                                {intakeSubmitting ? T("Confirming…", "تصدیق ہو رہی ہے…") : T("Confirm & open case", "تصدیق کریں اور کیس کھولیں")}
+                                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                            </button>
+                        )}
                     </footer>
                 </section>
             )}

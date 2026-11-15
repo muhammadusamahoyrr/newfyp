@@ -1,0 +1,13267 @@
+{
+ "conventions": "query:/passage:, max_seq 224, normalised, top-10, miss beyond 10",
+ "sets": {
+  "citation_1191": 1191,
+  "legaluqa_128": 128,
+  "legaluqa_121": 121
+ },
+ "rows": {
+  "citation_1191": [
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "criminal",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "evidence",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "civil_procedure",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": true,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "family",
+    "urdu": false,
+    "ngold": 1
+   }
+  ],
+  "legaluqa_128": [
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   }
+  ],
+  "legaluqa_121": [
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 6
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 6
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 6
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 6
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 5
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 2
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   },
+   {
+    "domain": "constitutional",
+    "urdu": false,
+    "ngold": 1
+   }
+  ]
+ },
+ "leak_general_121": [
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  false,
+  false,
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  false,
+  false,
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  true,
+  false,
+  false,
+  false,
+  false
+ ],
+ "leak_general_128": [
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false
+ ],
+ "verified": {
+  "base": "intfloat/multilingual-e5-base",
+  "constitutional": "usama1111/e5-pak-legal-constitutional@6aec3e7a sha256 9761c235d497c6c3 OK",
+  "general": "usama1111/e5-pakistani-legal@0efe7b2b sha256 a3e7e4c1b650051b OK"
+ },
+ "ranks": {
+  "base": {
+   "citation_1191": [
+    null,
+    null,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    null,
+    6,
+    null,
+    null,
+    1,
+    1,
+    2,
+    null,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    null,
+    null,
+    4,
+    3,
+    1,
+    1,
+    null,
+    1,
+    3,
+    4,
+    4,
+    9,
+    1,
+    null,
+    2,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    4,
+    7,
+    4,
+    null,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    4,
+    2,
+    3,
+    3,
+    null,
+    1,
+    1,
+    6,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    3,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    2,
+    7,
+    8,
+    2,
+    2,
+    1,
+    4,
+    1,
+    4,
+    1,
+    1,
+    1,
+    4,
+    null,
+    3,
+    null,
+    1,
+    1,
+    null,
+    1,
+    3,
+    8,
+    2,
+    null,
+    2,
+    null,
+    null,
+    9,
+    1,
+    1,
+    null,
+    1,
+    null,
+    1,
+    6,
+    null,
+    3,
+    1,
+    1,
+    1,
+    1,
+    2,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    7,
+    2,
+    1,
+    6,
+    null,
+    1,
+    6,
+    1,
+    1,
+    1,
+    1,
+    3,
+    null,
+    null,
+    2,
+    null,
+    null,
+    2,
+    1,
+    2,
+    4,
+    null,
+    1,
+    null,
+    2,
+    null,
+    3,
+    6,
+    2,
+    null,
+    1,
+    2,
+    7,
+    2,
+    1,
+    null,
+    1,
+    null,
+    7,
+    null,
+    null,
+    3,
+    1,
+    1,
+    1,
+    1,
+    4,
+    null,
+    1,
+    1,
+    1,
+    9,
+    1,
+    null,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    3,
+    null,
+    1,
+    1,
+    null,
+    1,
+    null,
+    1,
+    1,
+    4,
+    9,
+    null,
+    null,
+    9,
+    null,
+    null,
+    7,
+    2,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    3,
+    null,
+    3,
+    null,
+    null,
+    3,
+    1,
+    4,
+    null,
+    null,
+    2,
+    1,
+    2,
+    2,
+    null,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    9,
+    1,
+    null,
+    1,
+    9,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    null,
+    1,
+    1,
+    null,
+    1,
+    null,
+    2,
+    null,
+    1,
+    2,
+    null,
+    null,
+    2,
+    1,
+    2,
+    1,
+    1,
+    2,
+    null,
+    1,
+    2,
+    8,
+    6,
+    null,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    1,
+    null,
+    2,
+    1,
+    3,
+    6,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    5,
+    1,
+    7,
+    6,
+    null,
+    1,
+    8,
+    null,
+    1,
+    null,
+    null,
+    3,
+    null,
+    1,
+    2,
+    null,
+    2,
+    null,
+    1,
+    1,
+    1,
+    10,
+    1,
+    null,
+    1,
+    null,
+    1,
+    4,
+    1,
+    1,
+    null,
+    1,
+    null,
+    3,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    2,
+    6,
+    1,
+    3,
+    1,
+    3,
+    1,
+    1,
+    7,
+    1,
+    null,
+    6,
+    null,
+    2,
+    null,
+    null,
+    1,
+    4,
+    1,
+    2,
+    null,
+    null,
+    1,
+    2,
+    2,
+    1,
+    2,
+    3,
+    1,
+    null,
+    null,
+    1,
+    2,
+    null,
+    1,
+    null,
+    1,
+    1,
+    2,
+    1,
+    null,
+    1,
+    3,
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    5,
+    3,
+    null,
+    null,
+    5,
+    1,
+    4,
+    1,
+    null,
+    1,
+    3,
+    null,
+    3,
+    null,
+    3,
+    1,
+    1,
+    1,
+    1,
+    4,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    7,
+    1,
+    1,
+    1,
+    2,
+    4,
+    2,
+    null,
+    7,
+    null,
+    1,
+    1,
+    null,
+    1,
+    2,
+    1,
+    1,
+    2,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    6,
+    null,
+    1,
+    null,
+    2,
+    1,
+    1,
+    null,
+    3,
+    1,
+    null,
+    2,
+    null,
+    5,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1,
+    8,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    2,
+    1,
+    1,
+    10,
+    null,
+    4,
+    1,
+    3,
+    null,
+    1,
+    2,
+    5,
+    2,
+    5,
+    1,
+    1,
+    1,
+    2,
+    6,
+    1,
+    1,
+    6,
+    1,
+    3,
+    null,
+    null,
+    3,
+    null,
+    null,
+    10,
+    null,
+    7,
+    1,
+    null,
+    null,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    4,
+    null,
+    null,
+    3,
+    null,
+    null,
+    null,
+    1,
+    null,
+    1,
+    null,
+    null,
+    8,
+    1,
+    null,
+    null,
+    2,
+    2,
+    2,
+    2,
+    null,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    null,
+    null,
+    10,
+    2,
+    1,
+    null,
+    8,
+    1,
+    1,
+    null,
+    3,
+    1,
+    null,
+    4,
+    1,
+    1,
+    6,
+    1,
+    null,
+    null,
+    2,
+    null,
+    2,
+    null,
+    1,
+    1,
+    2,
+    null,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    null,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    1,
+    2,
+    1,
+    1,
+    1,
+    null,
+    1,
+    7,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    null,
+    2,
+    6,
+    2,
+    7,
+    null,
+    null,
+    1,
+    6,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    3,
+    2,
+    6,
+    1,
+    2,
+    1,
+    1,
+    4,
+    1,
+    4,
+    1,
+    null,
+    null,
+    null,
+    3,
+    null,
+    1,
+    3,
+    3,
+    1,
+    1,
+    1,
+    3,
+    null,
+    1,
+    9,
+    1,
+    1,
+    null,
+    2,
+    1,
+    null,
+    1,
+    null,
+    null,
+    8,
+    null,
+    4,
+    4,
+    null,
+    2,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    2,
+    null,
+    1,
+    2,
+    3,
+    1,
+    null,
+    1,
+    null,
+    1,
+    2,
+    1,
+    3,
+    5,
+    null,
+    1,
+    null,
+    2,
+    null,
+    1,
+    1,
+    2,
+    1,
+    null,
+    null,
+    null,
+    1,
+    2,
+    1,
+    1,
+    null,
+    3,
+    1,
+    null,
+    null,
+    3,
+    2,
+    1,
+    1,
+    null,
+    9,
+    2,
+    null,
+    5,
+    1,
+    null,
+    1,
+    null,
+    null,
+    2,
+    1,
+    1,
+    9,
+    2,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    null,
+    1,
+    9,
+    1,
+    null,
+    2,
+    1,
+    null,
+    1,
+    1,
+    4,
+    1,
+    null,
+    6,
+    3,
+    null,
+    2,
+    null,
+    1,
+    null,
+    3,
+    3,
+    6,
+    1,
+    1,
+    3,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    3,
+    3,
+    null,
+    null,
+    null,
+    1,
+    null,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    1,
+    4,
+    null,
+    null,
+    2,
+    null,
+    null,
+    2,
+    null,
+    null,
+    1,
+    null,
+    null,
+    7,
+    null,
+    1,
+    2,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    2,
+    null,
+    null,
+    9,
+    1,
+    1,
+    1,
+    null,
+    2,
+    1,
+    null,
+    1,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    8,
+    1,
+    null,
+    4,
+    1,
+    1,
+    1,
+    5,
+    5,
+    1,
+    null,
+    4,
+    1,
+    1,
+    1,
+    10,
+    1,
+    null,
+    null,
+    3,
+    1,
+    1,
+    1,
+    null,
+    null,
+    null,
+    1,
+    1,
+    null,
+    null,
+    2,
+    1,
+    1,
+    1,
+    2,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    2,
+    null,
+    1,
+    1,
+    1,
+    2,
+    4,
+    1,
+    2,
+    null,
+    null,
+    2,
+    6,
+    1,
+    null,
+    null,
+    null,
+    null,
+    1,
+    4,
+    2,
+    1,
+    1,
+    2,
+    1,
+    5,
+    null,
+    2,
+    null,
+    4,
+    null,
+    null,
+    2,
+    null,
+    4,
+    1,
+    3,
+    8,
+    1,
+    2,
+    null,
+    1,
+    1,
+    9,
+    null,
+    2,
+    2,
+    1,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1,
+    null,
+    null,
+    1,
+    1,
+    null,
+    1,
+    null,
+    null,
+    null,
+    1,
+    1,
+    null,
+    null,
+    3,
+    1,
+    1,
+    1,
+    1,
+    9,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    5,
+    1,
+    null,
+    1,
+    1,
+    null,
+    null,
+    1,
+    2,
+    1,
+    2,
+    6,
+    1,
+    null,
+    4,
+    2,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    null,
+    null,
+    null,
+    null,
+    2,
+    2,
+    1,
+    5,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    10,
+    null,
+    2,
+    1,
+    null,
+    2,
+    1,
+    null,
+    null,
+    1,
+    8,
+    9,
+    4,
+    2,
+    5,
+    4,
+    2,
+    2,
+    null,
+    null,
+    1,
+    1,
+    2,
+    2,
+    null,
+    1,
+    2,
+    1,
+    1,
+    3,
+    3,
+    1,
+    null,
+    2,
+    null,
+    2,
+    2,
+    null,
+    2,
+    5,
+    null,
+    4,
+    2,
+    10,
+    null,
+    9,
+    1,
+    1,
+    null,
+    null,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    10,
+    1,
+    1,
+    null,
+    1,
+    null,
+    null,
+    2,
+    4,
+    2,
+    1,
+    1,
+    3,
+    4,
+    7,
+    1,
+    6,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    1,
+    3,
+    1,
+    1,
+    9,
+    null,
+    null,
+    4,
+    5,
+    null,
+    null,
+    1,
+    6,
+    2,
+    null,
+    7,
+    1,
+    null,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    3,
+    null,
+    1,
+    null,
+    2,
+    2,
+    1,
+    3,
+    3,
+    null,
+    1,
+    1,
+    null,
+    null,
+    null,
+    6,
+    1,
+    1,
+    2,
+    1,
+    6,
+    2,
+    1,
+    null,
+    2,
+    null,
+    2,
+    5,
+    null,
+    null,
+    1,
+    null,
+    1,
+    null,
+    null,
+    1,
+    null,
+    null,
+    1,
+    null,
+    null,
+    null,
+    1,
+    null,
+    1,
+    2,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    null,
+    2,
+    2,
+    null,
+    1,
+    null,
+    2,
+    1,
+    4,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    null,
+    1,
+    3,
+    6,
+    3,
+    3,
+    1,
+    1
+   ],
+   "legaluqa_128": [
+    2,
+    1,
+    1,
+    5,
+    1,
+    3,
+    1,
+    6,
+    1,
+    1,
+    2,
+    1,
+    9,
+    1,
+    1,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    null,
+    8,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    7,
+    1,
+    2,
+    1,
+    null,
+    1,
+    null,
+    4,
+    3,
+    1,
+    2,
+    null,
+    1,
+    null,
+    1,
+    1,
+    null,
+    2,
+    1,
+    1,
+    1,
+    null,
+    4,
+    4,
+    null,
+    2,
+    4,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1,
+    3,
+    1,
+    3,
+    1,
+    1,
+    9,
+    7,
+    1,
+    null,
+    1,
+    1,
+    1,
+    null,
+    1,
+    null,
+    null,
+    null,
+    1,
+    1,
+    null,
+    null,
+    1,
+    2,
+    null,
+    1,
+    1,
+    6,
+    1,
+    2,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    3,
+    1,
+    8,
+    null,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    9,
+    5,
+    7,
+    1,
+    1,
+    1,
+    1,
+    2
+   ],
+   "legaluqa_121": [
+    null,
+    null,
+    2,
+    1,
+    1,
+    4,
+    1,
+    3,
+    1,
+    1,
+    2,
+    1,
+    7,
+    null,
+    1,
+    1,
+    5,
+    1,
+    null,
+    3,
+    1,
+    10,
+    5,
+    null,
+    null,
+    null,
+    2,
+    4,
+    1,
+    null,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    null,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    null,
+    9,
+    2,
+    5,
+    null,
+    2,
+    null,
+    null,
+    null,
+    2,
+    3,
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    null,
+    1,
+    2,
+    null,
+    2,
+    6,
+    null,
+    2,
+    2,
+    2,
+    3,
+    1,
+    1,
+    null,
+    4,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    7,
+    3,
+    2,
+    3,
+    2,
+    1,
+    4,
+    7,
+    null,
+    null,
+    null,
+    null,
+    3,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1
+   ]
+  },
+  "constitutional": {
+   "citation_1191": [
+    null,
+    null,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2,
+    null,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    6,
+    1,
+    1,
+    8,
+    2,
+    4,
+    8,
+    7,
+    3,
+    2,
+    5,
+    9,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    3,
+    2,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    8,
+    1,
+    3,
+    10,
+    3,
+    3,
+    1,
+    3,
+    3,
+    1,
+    1,
+    1,
+    2,
+    2,
+    4,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    null,
+    2,
+    null,
+    4,
+    4,
+    2,
+    2,
+    1,
+    1,
+    5,
+    1,
+    1,
+    1,
+    7,
+    null,
+    2,
+    null,
+    2,
+    2,
+    null,
+    3,
+    1,
+    5,
+    2,
+    null,
+    1,
+    null,
+    null,
+    null,
+    1,
+    3,
+    null,
+    1,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    2,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    5,
+    1,
+    1,
+    1,
+    1,
+    null,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    2,
+    null,
+    1,
+    1,
+    5,
+    2,
+    null,
+    1,
+    null,
+    2,
+    null,
+    3,
+    4,
+    2,
+    null,
+    1,
+    1,
+    2,
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    8,
+    1,
+    1,
+    1,
+    null,
+    2,
+    null,
+    1,
+    null,
+    5,
+    2,
+    2,
+    1,
+    1,
+    8,
+    null,
+    1,
+    1,
+    null,
+    3,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    null,
+    10,
+    7,
+    null,
+    5,
+    null,
+    1,
+    1,
+    2,
+    3,
+    null,
+    4,
+    null,
+    1,
+    null,
+    null,
+    3,
+    1,
+    1,
+    null,
+    null,
+    4,
+    2,
+    3,
+    2,
+    6,
+    1,
+    1,
+    1,
+    null,
+    6,
+    1,
+    null,
+    2,
+    null,
+    1,
+    null,
+    1,
+    3,
+    1,
+    1,
+    1,
+    2,
+    1,
+    null,
+    1,
+    1,
+    null,
+    1,
+    9,
+    2,
+    6,
+    1,
+    1,
+    3,
+    4,
+    3,
+    1,
+    2,
+    1,
+    1,
+    3,
+    null,
+    null,
+    2,
+    null,
+    null,
+    9,
+    1,
+    1,
+    1,
+    null,
+    2,
+    1,
+    1,
+    null,
+    1,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    null,
+    2,
+    1,
+    1,
+    1,
+    3,
+    6,
+    2,
+    3,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    2,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    9,
+    1,
+    null,
+    1,
+    null,
+    1,
+    2,
+    1,
+    1,
+    null,
+    2,
+    8,
+    2,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    8,
+    7,
+    1,
+    4,
+    2,
+    2,
+    null,
+    null,
+    9,
+    null,
+    null,
+    2,
+    7,
+    2,
+    null,
+    5,
+    null,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    null,
+    null,
+    1,
+    3,
+    null,
+    1,
+    null,
+    3,
+    2,
+    2,
+    2,
+    1,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    7,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    8,
+    2,
+    null,
+    1,
+    1,
+    1,
+    1,
+    2,
+    null,
+    6,
+    1,
+    null,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    7,
+    1,
+    2,
+    1,
+    3,
+    4,
+    1,
+    2,
+    1,
+    1,
+    1,
+    9,
+    1,
+    null,
+    null,
+    null,
+    null,
+    10,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    1,
+    4,
+    1,
+    null,
+    null,
+    null,
+    null,
+    3,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    3,
+    4,
+    null,
+    1,
+    1,
+    1,
+    9,
+    null,
+    null,
+    1,
+    null,
+    null,
+    null,
+    1,
+    9,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    5,
+    1,
+    1,
+    7,
+    1,
+    null,
+    null,
+    null,
+    2,
+    2,
+    null,
+    null,
+    null,
+    null,
+    1,
+    null,
+    null,
+    null,
+    1,
+    null,
+    1,
+    2,
+    2,
+    1,
+    null,
+    4,
+    null,
+    5,
+    null,
+    null,
+    null,
+    1,
+    null,
+    1,
+    1,
+    null,
+    4,
+    1,
+    null,
+    null,
+    2,
+    3,
+    3,
+    2,
+    null,
+    2,
+    1,
+    null,
+    1,
+    2,
+    null,
+    null,
+    3,
+    9,
+    5,
+    1,
+    null,
+    null,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    null,
+    null,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    null,
+    null,
+    1,
+    6,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    3,
+    4,
+    2,
+    1,
+    1,
+    1,
+    2,
+    null,
+    1,
+    5,
+    1,
+    null,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    3,
+    null,
+    2,
+    1,
+    2,
+    null,
+    null,
+    null,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    6,
+    2,
+    2,
+    null,
+    1,
+    4,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    6,
+    4,
+    2,
+    null,
+    null,
+    1,
+    1,
+    2,
+    1,
+    2,
+    2,
+    2,
+    null,
+    1,
+    null,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    1,
+    10,
+    null,
+    3,
+    1,
+    3,
+    2,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    6,
+    1,
+    1,
+    1,
+    2,
+    1,
+    2,
+    4,
+    5,
+    null,
+    null,
+    2,
+    null,
+    1,
+    1,
+    2,
+    1,
+    3,
+    3,
+    2,
+    1,
+    null,
+    1,
+    1,
+    null,
+    null,
+    1,
+    null,
+    null,
+    3,
+    1,
+    1,
+    1,
+    null,
+    2,
+    1,
+    5,
+    3,
+    1,
+    null,
+    2,
+    5,
+    null,
+    1,
+    5,
+    2,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    5,
+    6,
+    2,
+    5,
+    1,
+    null,
+    1,
+    2,
+    null,
+    8,
+    1,
+    null,
+    1,
+    null,
+    null,
+    3,
+    null,
+    2,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    2,
+    1,
+    null,
+    8,
+    1,
+    null,
+    4,
+    null,
+    7,
+    null,
+    null,
+    1,
+    null,
+    4,
+    1,
+    1,
+    1,
+    null,
+    null,
+    3,
+    1,
+    7,
+    9,
+    2,
+    3,
+    null,
+    2,
+    null,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    null,
+    2,
+    null,
+    1,
+    1,
+    1,
+    null,
+    6,
+    2,
+    null,
+    2,
+    null,
+    7,
+    null,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    3,
+    1,
+    1,
+    3,
+    1,
+    1,
+    5,
+    null,
+    2,
+    1,
+    1,
+    8,
+    1,
+    null,
+    null,
+    4,
+    6,
+    2,
+    3,
+    null,
+    null,
+    null,
+    2,
+    1,
+    null,
+    null,
+    7,
+    null,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    2,
+    1,
+    1,
+    10,
+    null,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    3,
+    null,
+    null,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    null,
+    8,
+    5,
+    null,
+    3,
+    null,
+    3,
+    null,
+    null,
+    2,
+    5,
+    null,
+    6,
+    4,
+    4,
+    2,
+    4,
+    2,
+    1,
+    1,
+    3,
+    null,
+    1,
+    null,
+    1,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    4,
+    4,
+    null,
+    1,
+    2,
+    null,
+    1,
+    7,
+    9,
+    1,
+    1,
+    1,
+    null,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    7,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    7,
+    1,
+    null,
+    1,
+    2,
+    2,
+    null,
+    2,
+    3,
+    1,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1,
+    2,
+    1,
+    null,
+    3,
+    1,
+    3,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    8,
+    1,
+    7,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    2,
+    1,
+    8,
+    null,
+    5,
+    1,
+    null,
+    6,
+    1,
+    null,
+    2,
+    2,
+    2,
+    1,
+    6,
+    3,
+    3,
+    null,
+    7,
+    1,
+    1,
+    2,
+    1,
+    null,
+    1,
+    3,
+    4,
+    1,
+    null,
+    2,
+    1,
+    5,
+    6,
+    null,
+    6,
+    1,
+    null,
+    1,
+    5,
+    9,
+    null,
+    1,
+    1,
+    null,
+    null,
+    1,
+    1,
+    null,
+    null,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    null,
+    1,
+    2,
+    null,
+    2,
+    null,
+    9,
+    1,
+    3,
+    3,
+    1,
+    2,
+    4,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    4,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    5,
+    1,
+    null,
+    1,
+    null,
+    null,
+    10,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1,
+    4,
+    2,
+    null,
+    5,
+    1,
+    9,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    null,
+    7,
+    1,
+    3,
+    null,
+    1,
+    1,
+    9,
+    4,
+    null,
+    1,
+    6,
+    null,
+    7,
+    null,
+    5,
+    1,
+    3,
+    5,
+    1,
+    3,
+    1,
+    1,
+    null,
+    null,
+    null,
+    7,
+    null,
+    null,
+    4,
+    1,
+    null,
+    null,
+    null,
+    null,
+    1,
+    null,
+    null,
+    1,
+    9,
+    null,
+    null,
+    null,
+    null,
+    null,
+    2,
+    1,
+    3,
+    null,
+    2,
+    2,
+    1,
+    null,
+    1,
+    1,
+    null,
+    null,
+    2,
+    null,
+    1,
+    null,
+    1,
+    1,
+    null,
+    3,
+    null,
+    3,
+    2,
+    7,
+    6,
+    null,
+    2,
+    1,
+    null,
+    1,
+    1,
+    3,
+    1,
+    1,
+    2,
+    3,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    3,
+    3,
+    1,
+    null
+   ],
+   "legaluqa_128": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    4,
+    1,
+    null,
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    9,
+    1,
+    3,
+    null,
+    1,
+    1,
+    null,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    null,
+    2,
+    1,
+    2,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    3,
+    1,
+    3,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    null,
+    1,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "legaluqa_121": [
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    2,
+    9,
+    1,
+    4,
+    4,
+    2,
+    3,
+    3,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    5,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    null,
+    null,
+    1,
+    1,
+    null,
+    1,
+    null,
+    4,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    2,
+    1,
+    1,
+    8,
+    null,
+    1,
+    2,
+    null,
+    1,
+    1,
+    null,
+    2,
+    4,
+    3,
+    3,
+    1,
+    1,
+    9,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    5,
+    2,
+    null,
+    3,
+    3,
+    1,
+    1,
+    2,
+    4,
+    null,
+    1,
+    2
+   ]
+  },
+  "general": {
+   "citation_1191": [
+    null,
+    null,
+    null,
+    6,
+    1,
+    5,
+    6,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    9,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    2,
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    8,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    10,
+    1,
+    9,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    6,
+    4,
+    null,
+    1,
+    1,
+    4,
+    1,
+    null,
+    1,
+    1,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    null,
+    1,
+    1,
+    3,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    2,
+    1,
+    2,
+    2,
+    null,
+    1,
+    null,
+    3,
+    1,
+    1,
+    3,
+    1,
+    null,
+    null,
+    1,
+    1,
+    5,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    null,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    3,
+    1,
+    3,
+    2,
+    3,
+    1,
+    1,
+    6,
+    null,
+    1,
+    1,
+    1,
+    1,
+    8,
+    1,
+    1,
+    1,
+    1,
+    3,
+    2,
+    5,
+    1,
+    1,
+    4,
+    4,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    4,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    null,
+    5,
+    1,
+    6,
+    7,
+    7,
+    1,
+    6,
+    4,
+    1,
+    1,
+    1,
+    1,
+    3,
+    2,
+    5,
+    null,
+    3,
+    null,
+    8,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    4,
+    5,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    null,
+    1,
+    null,
+    null,
+    1,
+    4,
+    1,
+    1,
+    1,
+    6,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    1,
+    2,
+    3,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    null,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    2,
+    1,
+    2,
+    6,
+    1,
+    4,
+    null,
+    5,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    2,
+    null,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    3,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    7,
+    1,
+    null,
+    4,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    3,
+    5,
+    2,
+    1,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    4,
+    1,
+    5,
+    1,
+    null,
+    1,
+    2,
+    3,
+    1,
+    1,
+    10,
+    1,
+    null,
+    null,
+    null,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    6,
+    2,
+    null,
+    1,
+    1,
+    null,
+    null,
+    1,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    6,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    2,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    5,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    2,
+    6,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    4,
+    1,
+    4,
+    2,
+    1,
+    1,
+    null,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    6,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    null,
+    null,
+    1,
+    1,
+    null,
+    5,
+    1,
+    1,
+    3,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    2,
+    null,
+    3,
+    1,
+    1,
+    3,
+    9,
+    null,
+    null,
+    null,
+    null,
+    1,
+    1,
+    1,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    6,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    3,
+    4,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    8,
+    3,
+    2,
+    6,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    null,
+    1,
+    null,
+    1,
+    1,
+    10,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    2,
+    10,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    4,
+    2,
+    1,
+    4,
+    null,
+    2,
+    1,
+    6,
+    4,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    6,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    5,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    5,
+    6,
+    1,
+    2,
+    10,
+    1,
+    3,
+    1,
+    1,
+    4,
+    null,
+    null,
+    null,
+    4,
+    2,
+    1,
+    1,
+    1,
+    6,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    4,
+    4,
+    1,
+    1,
+    1,
+    1,
+    6,
+    null,
+    6,
+    1,
+    6,
+    1,
+    null,
+    5,
+    1,
+    7,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    4,
+    null,
+    1,
+    1,
+    1,
+    null,
+    3,
+    null,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    1,
+    2,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    null,
+    2,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    5,
+    4,
+    1,
+    null,
+    null,
+    2,
+    1,
+    1,
+    2,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    2,
+    5,
+    1,
+    3,
+    1,
+    null,
+    null,
+    null,
+    3,
+    null,
+    null,
+    null,
+    8,
+    2,
+    2,
+    1,
+    1,
+    3,
+    null,
+    8,
+    1,
+    null,
+    3,
+    8,
+    4,
+    3,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    3,
+    1,
+    3,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    8,
+    null,
+    6,
+    7,
+    null,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    9,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    9,
+    null,
+    2,
+    3,
+    null,
+    null,
+    1,
+    1,
+    null,
+    null,
+    6,
+    1,
+    3,
+    5,
+    1,
+    1,
+    4,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    1,
+    2,
+    6,
+    1,
+    2,
+    1,
+    1,
+    3,
+    1,
+    null,
+    2,
+    1,
+    2,
+    1,
+    5,
+    1,
+    1,
+    null,
+    4,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    2,
+    1,
+    3,
+    8,
+    5,
+    5,
+    1,
+    4
+   ],
+   "legaluqa_128": [
+    1,
+    1,
+    4,
+    2,
+    1,
+    1,
+    1,
+    10,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    null,
+    5,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    3,
+    2,
+    1,
+    null,
+    1,
+    null,
+    10,
+    null,
+    1,
+    1,
+    null,
+    2,
+    1,
+    1,
+    1,
+    null,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    2,
+    null,
+    9,
+    1,
+    3,
+    1,
+    7,
+    null,
+    null,
+    null,
+    2,
+    null,
+    1,
+    1,
+    2,
+    6,
+    2,
+    1,
+    2,
+    2,
+    null,
+    null,
+    1,
+    1,
+    2,
+    6,
+    null,
+    null,
+    null,
+    1,
+    1,
+    null,
+    null,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    1,
+    1,
+    10,
+    1,
+    1,
+    2,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    null,
+    1,
+    1,
+    null,
+    1,
+    1,
+    7,
+    1,
+    1,
+    1,
+    2,
+    2,
+    3,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    4
+   ],
+   "legaluqa_121": [
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    2,
+    1,
+    1,
+    1,
+    8,
+    1,
+    7,
+    2,
+    null,
+    7,
+    null,
+    1,
+    1,
+    1,
+    3,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    null,
+    1,
+    1,
+    1,
+    1,
+    6,
+    1,
+    3,
+    1,
+    1,
+    1,
+    8,
+    1,
+    null,
+    2,
+    null,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    4,
+    1,
+    1,
+    8,
+    2,
+    4,
+    3,
+    6,
+    1,
+    1,
+    null,
+    2,
+    1,
+    1,
+    1,
+    1,
+    4,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    4,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    null,
+    1,
+    2,
+    3,
+    1,
+    1,
+    2,
+    null,
+    1,
+    1
+   ]
+  }
+ },
+ "nd_citation_test_vs_general_train": [
+  0.882530927658081,
+  0.8855815529823303,
+  0.928497850894928,
+  0.96585613489151,
+  0.9817250370979309,
+  0.9420189261436462,
+  0.9672133326530457,
+  0.9546821713447571,
+  0.9537583589553833,
+  0.8976407051086426,
+  0.885301947593689,
+  0.9278063774108887,
+  0.8589073419570923,
+  0.9210328459739685,
+  0.8760334849357605,
+  0.9273254871368408,
+  0.9231005311012268,
+  0.9064710140228271,
+  0.9330424070358276,
+  0.9276602864265442,
+  0.9040164947509766,
+  0.9365293383598328,
+  0.8952862024307251,
+  0.9273421168327332,
+  0.9241858124732971,
+  0.9421691298484802,
+  0.8985044360160828,
+  0.9272881746292114,
+  0.8680930137634277,
+  0.9321622848510742,
+  0.9012393355369568,
+  0.8494645953178406,
+  0.9213694334030151,
+  0.889324426651001,
+  0.9302791357040405,
+  0.9253677725791931,
+  0.9194341897964478,
+  0.9316970705986023,
+  0.8933939337730408,
+  0.9492812752723694,
+  0.9170594811439514,
+  0.873195469379425,
+  0.8752453327178955,
+  0.9036906361579895,
+  0.8951635360717773,
+  0.9153321981430054,
+  0.8947656750679016,
+  0.92771315574646,
+  0.9330524206161499,
+  0.9003320932388306,
+  0.9308738708496094,
+  0.9027061462402344,
+  0.9371609687805176,
+  0.8994395732879639,
+  0.8948526978492737,
+  0.8874783515930176,
+  0.906786322593689,
+  0.920886218547821,
+  0.920611560344696,
+  0.8944540619850159,
+  0.8892850875854492,
+  0.9165263772010803,
+  0.9284369945526123,
+  0.9367231130599976,
+  0.9110211730003357,
+  0.9410134553909302,
+  0.9188334345817566,
+  0.9131011366844177,
+  0.906822681427002,
+  0.9027460813522339,
+  0.912301242351532,
+  0.9045358300209045,
+  0.8872256875038147,
+  0.9026381373405457,
+  0.8930464386940002,
+  0.8948157429695129,
+  0.8737211227416992,
+  0.9052186012268066,
+  0.8874596953392029,
+  0.8708913326263428,
+  0.8695983290672302,
+  0.8979833126068115,
+  0.8851426243782043,
+  0.8870021104812622,
+  0.9333382248878479,
+  0.9209908246994019,
+  0.916783332824707,
+  0.8939582109451294,
+  0.9170655012130737,
+  0.882861316204071,
+  0.8963267207145691,
+  0.9449122548103333,
+  0.9428517818450928,
+  0.9226222634315491,
+  0.931469202041626,
+  0.9034056663513184,
+  0.9526436924934387,
+  0.8859602212905884,
+  0.922715961933136,
+  0.9376792907714844,
+  0.9170807003974915,
+  0.9283161163330078,
+  0.9278153777122498,
+  0.9069998860359192,
+  0.9164653420448303,
+  0.8867971897125244,
+  0.8678041696548462,
+  0.9264143109321594,
+  0.9065154790878296,
+  0.9391880631446838,
+  0.9267076253890991,
+  0.9205052256584167,
+  0.9455521702766418,
+  0.9338304996490479,
+  0.9497179388999939,
+  0.9097645878791809,
+  0.9388092756271362,
+  0.9106553792953491,
+  0.8822481632232666,
+  0.9185116291046143,
+  0.8943209648132324,
+  0.9291971325874329,
+  0.9134632349014282,
+  0.9360734820365906,
+  0.9100063443183899,
+  0.9111398458480835,
+  0.9196087121963501,
+  0.8822779059410095,
+  0.865829348564148,
+  0.8826354146003723,
+  0.847536027431488,
+  0.9091164469718933,
+  0.8510719537734985,
+  0.8824177384376526,
+  0.8997223973274231,
+  0.9167423248291016,
+  0.8820013403892517,
+  0.872182309627533,
+  0.8974730372428894,
+  0.9323854446411133,
+  0.8612343668937683,
+  0.889725923538208,
+  0.8835659623146057,
+  0.8961792588233948,
+  0.8951972723007202,
+  0.8923944234848022,
+  0.9388722777366638,
+  0.9474891424179077,
+  0.913537859916687,
+  0.9135253429412842,
+  0.8993844985961914,
+  0.8955898284912109,
+  0.8620914220809937,
+  0.8415912985801697,
+  0.9260868430137634,
+  0.9344406723976135,
+  0.8940408229827881,
+  0.9316943287849426,
+  0.8959349989891052,
+  0.9562677145004272,
+  0.8742243051528931,
+  0.9373538494110107,
+  0.9062466621398926,
+  0.9350234270095825,
+  0.8858109712600708,
+  0.9297069907188416,
+  0.9133309125900269,
+  0.9110495448112488,
+  0.9365781545639038,
+  0.8899256587028503,
+  0.890322208404541,
+  0.9469974040985107,
+  0.9307246208190918,
+  0.8713797926902771,
+  0.9086209535598755,
+  0.8900049924850464,
+  0.918765127658844,
+  0.8757752180099487,
+  0.864770770072937,
+  0.8946754932403564,
+  0.8512575626373291,
+  0.9033917784690857,
+  0.8659709095954895,
+  0.8960509896278381,
+  0.8481001853942871,
+  0.9299127459526062,
+  0.9031209945678711,
+  0.8910794854164124,
+  0.8978372812271118,
+  0.9172957539558411,
+  0.9665812849998474,
+  0.9259940385818481,
+  0.9298790097236633,
+  0.945787250995636,
+  0.8826600313186646,
+  0.9515984654426575,
+  0.9629351496696472,
+  0.8937602639198303,
+  0.89365154504776,
+  0.8882994651794434,
+  0.90406733751297,
+  0.90525883436203,
+  0.9006348848342896,
+  0.8754061460494995,
+  0.8969564437866211,
+  0.9074192047119141,
+  0.9121023416519165,
+  0.9000087976455688,
+  0.8920398354530334,
+  0.8851668238639832,
+  0.909045934677124,
+  0.9023539423942566,
+  0.8960538506507874,
+  0.9439196586608887,
+  0.9137083292007446,
+  0.9170856475830078,
+  0.8738327622413635,
+  0.8695269823074341,
+  0.8985673189163208,
+  0.9402706623077393,
+  0.8795309662818909,
+  0.9298408627510071,
+  0.9138991832733154,
+  0.933018147945404,
+  0.9055609703063965,
+  0.8996576070785522,
+  0.9306840896606445,
+  0.9172384738922119,
+  0.9000770449638367,
+  0.9394506812095642,
+  0.8904153108596802,
+  0.9301265478134155,
+  0.9171422719955444,
+  0.9163902997970581,
+  0.8862396478652954,
+  0.934012770652771,
+  0.899146318435669,
+  0.9164807796478271,
+  0.8628167510032654,
+  0.9221600294113159,
+  0.9325359463691711,
+  0.9373317956924438,
+  0.9362562894821167,
+  0.9125245213508606,
+  0.9443543553352356,
+  0.9356693029403687,
+  0.936891496181488,
+  0.8651657700538635,
+  0.9197607636451721,
+  0.8868275880813599,
+  0.9132953882217407,
+  0.9153873324394226,
+  0.8989980816841125,
+  0.8592610955238342,
+  0.886226236820221,
+  0.9220754504203796,
+  0.877422034740448,
+  0.9432322978973389,
+  0.9244012832641602,
+  0.9648330211639404,
+  0.8971492648124695,
+  0.8999060988426208,
+  0.8706374764442444,
+  0.9186173677444458,
+  0.8905447125434875,
+  0.8477453589439392,
+  0.9138153791427612,
+  0.9062199592590332,
+  0.8855490684509277,
+  0.9261266589164734,
+  0.9455142617225647,
+  0.9440385103225708,
+  0.9330061078071594,
+  0.9087757468223572,
+  0.9147090911865234,
+  0.9242745041847229,
+  0.9037963151931763,
+  0.9167777895927429,
+  0.9188168048858643,
+  0.9176362752914429,
+  0.9315370917320251,
+  0.8843308091163635,
+  0.9466623067855835,
+  0.9213148951530457,
+  0.9189937710762024,
+  0.9369462132453918,
+  0.9461342096328735,
+  0.9576879143714905,
+  0.9161615371704102,
+  0.9338135719299316,
+  0.8797581791877747,
+  0.9183765053749084,
+  0.8895571231842041,
+  0.855437695980072,
+  0.8861475586891174,
+  0.9293981194496155,
+  0.8860190510749817,
+  0.8952047228813171,
+  0.8879429697990417,
+  0.8960717916488647,
+  0.8891552090644836,
+  0.9171945452690125,
+  0.8640655875205994,
+  0.9187008738517761,
+  0.8704739809036255,
+  0.9239187240600586,
+  0.9514073133468628,
+  0.9315633773803711,
+  0.9734208583831787,
+  0.934072732925415,
+  0.9126365780830383,
+  0.88038569688797,
+  0.9038822650909424,
+  0.88716721534729,
+  0.8993028998374939,
+  0.9185505509376526,
+  0.8783993124961853,
+  0.9126445055007935,
+  0.9617093801498413,
+  0.8732582330703735,
+  0.9370895624160767,
+  0.9289370179176331,
+  0.9062108397483826,
+  0.8970388770103455,
+  0.9336292147636414,
+  0.8845246434211731,
+  0.8850339651107788,
+  0.8689338564872742,
+  0.8905425071716309,
+  0.9340288639068604,
+  0.8945224285125732,
+  0.9237222671508789,
+  0.893039882183075,
+  0.9383173584938049,
+  0.8514696359634399,
+  0.9176867604255676,
+  0.9020004868507385,
+  0.8618062734603882,
+  0.9259926676750183,
+  0.9000464081764221,
+  0.9019545912742615,
+  0.907110869884491,
+  0.880477249622345,
+  0.9098953604698181,
+  0.862117350101471,
+  0.9095280766487122,
+  0.8554378151893616,
+  0.8719577789306641,
+  0.9134567975997925,
+  0.8991863131523132,
+  0.9045720100402832,
+  0.9252839684486389,
+  0.8889557719230652,
+  0.8846228718757629,
+  0.8556438684463501,
+  0.8770555853843689,
+  0.9196093082427979,
+  0.9196697473526001,
+  0.9172335863113403,
+  0.9406648874282837,
+  0.8834366798400879,
+  0.9318538308143616,
+  0.9341241121292114,
+  0.9038522839546204,
+  0.8996235728263855,
+  0.9224029779434204,
+  0.9129501581192017,
+  0.9373109936714172,
+  0.9390562176704407,
+  0.8811265230178833,
+  0.9455022215843201,
+  0.9001779556274414,
+  0.922122061252594,
+  0.9101526737213135,
+  0.9231653213500977,
+  0.9199867248535156,
+  0.9139654636383057,
+  0.9192931652069092,
+  0.9148613214492798,
+  0.8901050090789795,
+  0.9079059362411499,
+  0.8897692561149597,
+  0.8973351120948792,
+  0.8816390037536621,
+  0.855897068977356,
+  0.8823110461235046,
+  0.8822536468505859,
+  0.9065684676170349,
+  0.9253295660018921,
+  0.9413869380950928,
+  0.9197871088981628,
+  0.9363805055618286,
+  0.9073630571365356,
+  0.9421020150184631,
+  0.91739422082901,
+  0.8951259255409241,
+  0.9022725820541382,
+  0.8907490968704224,
+  0.9338394403457642,
+  0.885683000087738,
+  0.923299252986908,
+  0.9041553735733032,
+  0.9275722503662109,
+  0.9128117561340332,
+  0.8954529166221619,
+  0.8930971026420593,
+  0.9153851866722107,
+  0.9077324867248535,
+  0.9473292827606201,
+  0.9300397038459778,
+  0.905166745185852,
+  0.9147523641586304,
+  0.9077893495559692,
+  0.8782557249069214,
+  0.9124755263328552,
+  0.9379510879516602,
+  0.8731994032859802,
+  0.9121025204658508,
+  0.9116264581680298,
+  0.9296685457229614,
+  0.9147288203239441,
+  0.9340506196022034,
+  0.9164644479751587,
+  0.9224184155464172,
+  0.9561663269996643,
+  0.9068880677223206,
+  0.9312215447425842,
+  0.9123119115829468,
+  0.9375156164169312,
+  0.9108706116676331,
+  0.9014757871627808,
+  0.8334627747535706,
+  0.8874916434288025,
+  0.8503513336181641,
+  0.9132718443870544,
+  0.9001132249832153,
+  0.9021773934364319,
+  0.911965012550354,
+  0.9144999384880066,
+  0.9285998940467834,
+  0.8601624369621277,
+  0.8906967639923096,
+  0.9125022888183594,
+  0.8690357804298401,
+  0.9175993204116821,
+  0.87980717420578,
+  0.8517184257507324,
+  0.8260940313339233,
+  0.9445711970329285,
+  0.8938653469085693,
+  0.883922815322876,
+  0.9183131456375122,
+  0.8943427801132202,
+  0.8587649464607239,
+  0.9015665054321289,
+  0.924576461315155,
+  0.9274666905403137,
+  0.9052364230155945,
+  0.9316805601119995,
+  0.9016295671463013,
+  0.9039621949195862,
+  0.9286119937896729,
+  0.8720138072967529,
+  0.890480101108551,
+  0.8962467908859253,
+  0.9083917140960693,
+  0.9445286393165588,
+  0.9295887351036072,
+  0.9091660976409912,
+  0.9016213417053223,
+  0.870447039604187,
+  0.9166235327720642,
+  0.9285694360733032,
+  0.9388654232025146,
+  0.9290445446968079,
+  0.8971993327140808,
+  0.8763601183891296,
+  0.9249593615531921,
+  0.9026535749435425,
+  0.8835252523422241,
+  0.9225664734840393,
+  0.8677591681480408,
+  0.9233077764511108,
+  0.9080933928489685,
+  0.8623119592666626,
+  0.8896380066871643,
+  0.9144544005393982,
+  0.9377630949020386,
+  0.8885097503662109,
+  0.9055326581001282,
+  0.8719478249549866,
+  0.8570665121078491,
+  0.9314990043640137,
+  0.8772668242454529,
+  0.8777163028717041,
+  0.8449123501777649,
+  0.9449092745780945,
+  0.898095965385437,
+  0.8859908580780029,
+  0.9195193648338318,
+  0.9456863403320312,
+  0.8675419092178345,
+  0.909479022026062,
+  0.8929399847984314,
+  0.9151840806007385,
+  0.8579785227775574,
+  0.9367786645889282,
+  0.9236637353897095,
+  0.9145660400390625,
+  0.9028842449188232,
+  0.9191488027572632,
+  0.9422033429145813,
+  0.9150364398956299,
+  0.9406610727310181,
+  0.9262036681175232,
+  0.9169842004776001,
+  0.9185847640037537,
+  0.9408420324325562,
+  0.8591012358665466,
+  0.901553750038147,
+  0.873381495475769,
+  0.8580734729766846,
+  0.9277501702308655,
+  0.8890435099601746,
+  0.9122962355613708,
+  0.9313385486602783,
+  0.9474520087242126,
+  0.8831518292427063,
+  0.9143009781837463,
+  0.8751863241195679,
+  0.8859484791755676,
+  0.9039613604545593,
+  0.8634689450263977,
+  0.8664104342460632,
+  0.9292211532592773,
+  0.8528170585632324,
+  0.8743569254875183,
+  0.9137039184570312,
+  0.9204033017158508,
+  0.8995949029922485,
+  0.9060901403427124,
+  0.9309171438217163,
+  0.9109524488449097,
+  0.9382301568984985,
+  0.8507161140441895,
+  0.9438409805297852,
+  0.9451704621315002,
+  0.9413115978240967,
+  0.9236400127410889,
+  0.9317055940628052,
+  0.9426105618476868,
+  0.9021113514900208,
+  0.8549445271492004,
+  0.9158154129981995,
+  0.8899902701377869,
+  0.9058186411857605,
+  0.9209840297698975,
+  0.9175751805305481,
+  0.9416854381561279,
+  0.8956799507141113,
+  0.9053886532783508,
+  0.941368818283081,
+  0.9139043688774109,
+  0.9420396089553833,
+  0.9501309990882874,
+  0.9063010215759277,
+  0.8857935070991516,
+  0.9450225830078125,
+  0.9162818193435669,
+  0.9459506273269653,
+  0.9113101959228516,
+  0.9271692633628845,
+  0.9301038980484009,
+  0.9399459958076477,
+  0.9063712954521179,
+  0.9086208343505859,
+  0.9215385913848877,
+  0.8675401210784912,
+  0.9165604114532471,
+  0.9195312261581421,
+  0.8799119591712952,
+  0.9062525033950806,
+  0.9161980152130127,
+  0.9132638573646545,
+  0.928921103477478,
+  0.9183743000030518,
+  0.9164515733718872,
+  0.9200859069824219,
+  0.9029369950294495,
+  0.9185380339622498,
+  0.9194648265838623,
+  0.902669370174408,
+  0.9013973474502563,
+  0.9065752625465393,
+  0.9426661133766174,
+  0.8790410161018372,
+  0.9041866660118103,
+  0.9381295442581177,
+  0.9152072072029114,
+  0.9300253391265869,
+  0.9143222570419312,
+  0.919474720954895,
+  0.89521723985672,
+  0.917795717716217,
+  0.9109406471252441,
+  0.9103829264640808,
+  0.9392427802085876,
+  0.9075042605400085,
+  0.9331222176551819,
+  0.8707289695739746,
+  0.9017993807792664,
+  0.9101706743240356,
+  0.9195392727851868,
+  0.8803600668907166,
+  0.9270880818367004,
+  0.9388557076454163,
+  0.9104832410812378,
+  0.9307372570037842,
+  0.920046329498291,
+  0.9527068138122559,
+  0.9270628094673157,
+  0.9069904685020447,
+  0.8874689340591431,
+  0.9282349348068237,
+  0.920589029788971,
+  0.9452163577079773,
+  0.9411342144012451,
+  0.9692527055740356,
+  0.9620994329452515,
+  0.9502099752426147,
+  0.9174214005470276,
+  0.8905452489852905,
+  0.899385392665863,
+  0.8915174603462219,
+  0.9236391186714172,
+  0.907409131526947,
+  0.905656635761261,
+  0.8878312110900879,
+  0.9041381478309631,
+  0.9245301485061646,
+  0.9533056020736694,
+  0.8990240693092346,
+  0.9325647950172424,
+  0.8660321235656738,
+  0.8676797151565552,
+  0.8943356275558472,
+  0.9040148854255676,
+  0.9083065986633301,
+  0.9136510491371155,
+  0.8826698660850525,
+  0.8551063537597656,
+  0.8790275454521179,
+  0.8829146027565002,
+  0.88276606798172,
+  0.9278991222381592,
+  0.9153457880020142,
+  0.9133417010307312,
+  0.8739506006240845,
+  0.9363856315612793,
+  0.9039109945297241,
+  0.9022715091705322,
+  0.9345239400863647,
+  0.8832124471664429,
+  0.8676699995994568,
+  0.9056167602539062,
+  0.9068475961685181,
+  0.8872238397598267,
+  0.8255015015602112,
+  0.9086016416549683,
+  0.8900565505027771,
+  0.9001242518424988,
+  0.8646949529647827,
+  0.8600943684577942,
+  0.8990700244903564,
+  0.8788929581642151,
+  0.8568991422653198,
+  0.9140596389770508,
+  0.8838966488838196,
+  0.9061501026153564,
+  0.8657132387161255,
+  0.8358798623085022,
+  0.8539859652519226,
+  0.8957036137580872,
+  0.8997982144355774,
+  0.8973472714424133,
+  0.8824820518493652,
+  0.9163669943809509,
+  0.8300263285636902,
+  0.9229515194892883,
+  0.9076122045516968,
+  0.8928115367889404,
+  0.8626270890235901,
+  0.8821976184844971,
+  0.9021797180175781,
+  0.9100131392478943,
+  0.9296042323112488,
+  0.874123752117157,
+  0.9096131920814514,
+  0.8873648047447205,
+  0.9306313395500183,
+  0.9396918416023254,
+  0.8870140910148621,
+  0.918767511844635,
+  0.9040722250938416,
+  0.8951194286346436,
+  0.9396384954452515,
+  0.902346134185791,
+  0.9334605932235718,
+  0.9160352945327759,
+  0.9342638254165649,
+  0.946090817451477,
+  0.9192471504211426,
+  0.9365452527999878,
+  0.9252825379371643,
+  0.8821815252304077,
+  0.9358482360839844,
+  0.9131698608398438,
+  0.949494481086731,
+  0.9716765880584717,
+  0.8770321607589722,
+  0.9413963556289673,
+  0.9448719024658203,
+  0.9295507073402405,
+  0.9362389445304871,
+  0.9330587983131409,
+  0.912964403629303,
+  0.9008378386497498,
+  0.9142236709594727,
+  0.9295735359191895,
+  0.8848793506622314,
+  0.8920455574989319,
+  0.9004140496253967,
+  0.8883841037750244,
+  0.8939831852912903,
+  0.9114102721214294,
+  0.8872004747390747,
+  0.914024293422699,
+  0.9328235387802124,
+  0.891269326210022,
+  0.9049217104911804,
+  0.9175490736961365,
+  0.8898650407791138,
+  0.9355267882347107,
+  0.8838342428207397,
+  0.9509322643280029,
+  0.927600622177124,
+  0.9168511629104614,
+  0.9312141537666321,
+  0.8840218186378479,
+  0.9157621264457703,
+  0.9090331792831421,
+  0.8959890604019165,
+  0.9248101115226746,
+  0.9256370067596436,
+  0.8774473071098328,
+  0.9292817115783691,
+  0.9005295634269714,
+  0.9235237836837769,
+  0.9456037878990173,
+  0.9210288524627686,
+  0.9148469567298889,
+  0.9113650918006897,
+  0.9272768497467041,
+  0.8883481025695801,
+  0.9035248756408691,
+  0.9211601614952087,
+  0.9552705883979797,
+  0.8811251521110535,
+  0.9146876335144043,
+  0.9005528092384338,
+  0.8801741600036621,
+  0.9051414728164673,
+  0.8833008408546448,
+  0.8683869242668152,
+  0.9200509786605835,
+  0.9007673859596252,
+  0.859173595905304,
+  0.875076174736023,
+  0.9207773208618164,
+  0.9145927429199219,
+  0.9372515082359314,
+  0.9558329582214355,
+  0.9304797053337097,
+  0.9287282228469849,
+  0.8793860673904419,
+  0.8903021812438965,
+  0.8652948141098022,
+  0.8470038771629333,
+  0.9061761498451233,
+  0.9349446296691895,
+  0.9158939719200134,
+  0.8917614817619324,
+  0.9164702892303467,
+  0.8867442011833191,
+  0.9351544976234436,
+  0.909640908241272,
+  0.8893446922302246,
+  0.939903736114502,
+  0.8988053202629089,
+  0.8981225490570068,
+  0.8940099477767944,
+  0.9188621044158936,
+  0.9342856407165527,
+  0.9306634664535522,
+  0.8742116689682007,
+  0.9171159267425537,
+  0.9056742191314697,
+  0.9525610208511353,
+  0.9293084144592285,
+  0.9085390567779541,
+  0.9518082737922668,
+  0.9083387851715088,
+  0.9252302646636963,
+  0.9355310201644897,
+  0.8925414681434631,
+  0.8828853964805603,
+  0.8643054962158203,
+  0.9145058989524841,
+  0.9223439693450928,
+  0.8732790946960449,
+  0.9038092494010925,
+  0.8785198926925659,
+  0.8722749352455139,
+  0.9056113362312317,
+  0.9194570183753967,
+  0.9313241243362427,
+  0.9003370404243469,
+  0.8978214859962463,
+  0.9325859546661377,
+  0.9238701462745667,
+  0.901504397392273,
+  0.9390470385551453,
+  0.955450177192688,
+  0.8973884582519531,
+  0.9086692929267883,
+  0.9368097186088562,
+  0.9324639439582825,
+  0.9100385308265686,
+  0.9577561020851135,
+  0.9177864789962769,
+  0.9515746831893921,
+  0.9131438732147217,
+  0.925186276435852,
+  0.9466418623924255,
+  0.9427199959754944,
+  0.9477890729904175,
+  0.9233458042144775,
+  0.8825945854187012,
+  0.8855860829353333,
+  0.9266685843467712,
+  0.9275525212287903,
+  0.8830999135971069,
+  0.8572145700454712,
+  0.9171633124351501,
+  0.8834086060523987,
+  0.8856669068336487,
+  0.9369799494743347,
+  0.9036762714385986,
+  0.8944951891899109,
+  0.9108927249908447,
+  0.8837445378303528,
+  0.8897883296012878,
+  0.8877618908882141,
+  0.9375352263450623,
+  0.917486846446991,
+  0.886929452419281,
+  0.9210975766181946,
+  0.926979660987854,
+  0.9500206112861633,
+  0.9303213953971863,
+  0.9379897117614746,
+  0.9619235992431641,
+  0.9124898910522461,
+  0.8978332281112671,
+  0.8892868161201477,
+  0.8849968314170837,
+  0.9255391359329224,
+  0.9228144288063049,
+  0.8946161866188049,
+  0.8980762958526611,
+  0.8795833587646484,
+  0.8931639790534973,
+  0.8860878944396973,
+  0.9129002094268799,
+  0.8967781066894531,
+  0.8814264535903931,
+  0.8972727656364441,
+  0.972619354724884,
+  0.9104548692703247,
+  0.9649233222007751,
+  0.9689430594444275,
+  0.971892237663269,
+  0.9719098210334778,
+  0.8777562975883484,
+  0.9428558945655823,
+  0.9288692474365234,
+  0.8986077904701233,
+  0.9365096688270569,
+  0.9126269817352295,
+  0.8904184699058533,
+  0.8910630941390991,
+  0.8949254751205444,
+  0.9274047613143921,
+  0.940637469291687,
+  0.9218823909759521,
+  0.9401012659072876,
+  0.8921577334403992,
+  0.9490127563476562,
+  0.9206173419952393,
+  0.897424042224884,
+  0.9255051612854004,
+  0.8904095888137817,
+  0.9331024885177612,
+  0.9226101040840149,
+  0.9303844571113586,
+  0.9036400318145752,
+  0.892284631729126,
+  0.9235039353370667,
+  0.8748691082000732,
+  0.8969358801841736,
+  0.9173093438148499,
+  0.9033524990081787,
+  0.9077963829040527,
+  0.953748345375061,
+  0.9149708151817322,
+  0.9545255303382874,
+  0.9030770063400269,
+  0.9108527898788452,
+  0.9420918822288513,
+  0.9202144145965576,
+  0.9098085761070251,
+  0.8902754783630371,
+  0.9025627970695496,
+  0.9117180109024048,
+  0.8997541069984436,
+  0.8649283051490784,
+  0.9301727414131165,
+  0.9001661539077759,
+  0.9448203444480896,
+  0.9287466406822205,
+  0.9314789175987244,
+  0.9012786746025085,
+  0.931098222732544,
+  0.8997920155525208,
+  0.9125861525535583,
+  0.8904645442962646,
+  0.8802255392074585,
+  0.8924180269241333,
+  0.9160455465316772,
+  0.8961343765258789,
+  0.8989140391349792,
+  0.8963876366615295,
+  0.8867821097373962,
+  0.9058745503425598,
+  0.904840886592865,
+  0.9484295845031738,
+  0.8908370733261108,
+  0.9127796292304993,
+  0.9058968424797058,
+  0.9164032936096191,
+  0.8602704405784607,
+  0.9349390268325806,
+  0.9484220743179321,
+  0.8671537041664124,
+  0.9261329174041748,
+  0.9235937595367432,
+  0.9340991973876953,
+  0.8802922368049622,
+  0.9229010939598083,
+  0.9068441987037659,
+  0.9086832404136658,
+  0.9463910460472107,
+  0.8908979296684265,
+  0.8808151483535767,
+  0.9311325550079346,
+  0.9004453420639038,
+  0.8642424941062927,
+  0.9076335430145264,
+  0.8955097794532776,
+  0.9274722933769226,
+  0.8850706219673157,
+  0.9385828375816345,
+  0.9192579984664917,
+  0.9453588724136353,
+  0.9307413101196289,
+  0.9415528774261475,
+  0.9298526048660278,
+  0.9633976817131042,
+  0.9074329733848572,
+  0.9238646626472473,
+  0.8690095543861389,
+  0.9002728462219238,
+  0.8859049081802368,
+  0.8985455632209778,
+  0.8759311437606812,
+  0.8914778828620911,
+  0.909267008304596,
+  0.9410231709480286,
+  0.9434043765068054,
+  0.9221622347831726,
+  0.9001173377037048,
+  0.8859751224517822,
+  0.8968220353126526,
+  0.8930233716964722,
+  0.8959339261054993,
+  0.873917818069458,
+  0.9103760719299316,
+  0.8643317222595215,
+  0.8582971096038818,
+  0.9442011713981628,
+  0.8895769119262695,
+  0.8250705599784851,
+  0.9023480415344238,
+  0.9043533802032471,
+  0.8963032364845276,
+  0.8769845962524414,
+  0.9106135964393616,
+  0.9244630336761475,
+  0.9231445789337158,
+  0.8690050840377808,
+  0.9259450435638428,
+  0.874700129032135,
+  0.8713906407356262,
+  0.9269745945930481,
+  0.9271470308303833,
+  0.8876757025718689,
+  0.8802750706672668,
+  0.8858555555343628,
+  0.9311618208885193,
+  0.8866012692451477,
+  0.8817723989486694,
+  0.9056062698364258,
+  0.9271422028541565,
+  0.9283446073532104,
+  0.8917746543884277,
+  0.918358325958252,
+  0.8939608335494995,
+  0.8824474811553955,
+  0.9174512028694153,
+  0.9002600312232971,
+  0.9153770208358765,
+  0.8623802661895752,
+  0.9348770380020142,
+  0.9288732409477234,
+  0.9057528376579285,
+  0.9036831855773926,
+  0.9308909773826599,
+  0.8992727994918823,
+  0.9497441649436951,
+  0.8796407580375671,
+  0.9508377909660339,
+  0.903907060623169,
+  0.9267035722732544,
+  0.8879056572914124,
+  0.9229444861412048,
+  0.895138144493103,
+  0.8994198441505432,
+  0.9267515540122986,
+  0.9183580279350281,
+  0.9317570328712463,
+  0.9129518270492554,
+  0.9029989242553711,
+  0.9154433608055115,
+  0.9307835698127747,
+  0.9501985311508179,
+  0.8882476091384888,
+  0.888622522354126,
+  0.8844757676124573,
+  0.8585559725761414,
+  0.8887062668800354,
+  0.8244878053665161,
+  0.8914723992347717,
+  0.8498720526695251,
+  0.8718087673187256,
+  0.890971839427948,
+  0.9716465473175049,
+  0.8884137272834778,
+  0.9035744667053223,
+  0.9616016745567322,
+  0.8931980729103088,
+  0.9203001856803894,
+  0.9266394972801208,
+  0.8896965980529785,
+  0.9056726098060608,
+  0.9107636213302612,
+  0.9263448715209961,
+  0.9311527609825134,
+  0.9244767427444458,
+  0.9122872948646545,
+  0.902340292930603,
+  0.9232233166694641,
+  0.8817875981330872,
+  0.9070871472358704,
+  0.8962839841842651,
+  0.8856173753738403,
+  0.8832041621208191,
+  0.9392995834350586,
+  0.8884372115135193,
+  0.9132309556007385,
+  0.8984946012496948,
+  0.9033374786376953,
+  0.9231604337692261,
+  0.899990439414978,
+  0.9074526429176331,
+  0.9409803152084351,
+  0.916094958782196,
+  0.8624142408370972,
+  0.9216715097427368,
+  0.8895490169525146,
+  0.916103720664978,
+  0.8870307803153992,
+  0.9109740853309631,
+  0.9357566237449646,
+  0.9227128624916077,
+  0.9070323705673218,
+  0.9594671726226807,
+  0.9219812154769897,
+  0.9306455254554749,
+  0.9390848875045776,
+  0.9406859874725342,
+  0.950544536113739,
+  0.9130647778511047,
+  0.903695821762085,
+  0.8725854158401489,
+  0.8883361220359802,
+  0.9257896542549133,
+  0.9042665958404541,
+  0.9261303544044495,
+  0.8864250779151917,
+  0.8605625033378601,
+  0.8588933944702148,
+  0.9174553155899048,
+  0.9128631353378296,
+  0.9059886932373047,
+  0.9340865015983582,
+  0.8761332631111145,
+  0.9032559990882874,
+  0.9317008852958679,
+  0.8644221425056458,
+  0.89883953332901,
+  0.9185033440589905,
+  0.9004883170127869,
+  0.8549515604972839,
+  0.8817441463470459,
+  0.9252253770828247,
+  0.9113361835479736,
+  0.9072462916374207,
+  0.9119938611984253,
+  0.9186648726463318,
+  0.919865071773529,
+  0.9227916598320007,
+  0.9045442938804626,
+  0.9414451122283936,
+  0.8930881023406982,
+  0.920254647731781,
+  0.9325857162475586,
+  0.8727932572364807,
+  0.9386493563652039,
+  0.9345999956130981,
+  0.9092360734939575,
+  0.9059816598892212,
+  0.9033230543136597,
+  0.8997617363929749,
+  0.906166136264801,
+  0.9388880729675293,
+  0.9133569002151489,
+  0.8838387131690979,
+  0.8705525398254395,
+  0.9114670753479004,
+  0.9051436185836792,
+  0.9248550534248352,
+  0.9236306548118591,
+  0.9000091552734375,
+  0.885245680809021,
+  0.903859555721283,
+  0.9234588742256165,
+  0.8838310837745667,
+  0.9187377691268921,
+  0.9242217540740967,
+  0.8976774215698242,
+  0.9430633783340454,
+  0.8902826905250549,
+  0.9207891225814819,
+  0.9214442372322083,
+  0.8838418126106262,
+  0.9034550786018372,
+  0.925458550453186,
+  0.9013609290122986,
+  0.867832362651825,
+  0.8861143589019775,
+  0.8657897710800171
+ ],
+ "nd_121_vs_constitutional_train": [
+  0.8702552914619446,
+  0.8978420495986938,
+  0.9349246025085449,
+  0.9565876722335815,
+  0.8400213718414307,
+  0.8332526087760925,
+  0.8974043130874634,
+  0.873771607875824,
+  0.8888269066810608,
+  0.922248125076294,
+  0.8757848143577576,
+  0.9659746885299683,
+  0.9029985666275024,
+  0.8906199932098389,
+  0.9134719371795654,
+  0.9043520092964172,
+  0.9091224670410156,
+  0.880287766456604,
+  0.8893734216690063,
+  0.9094400405883789,
+  0.8794193863868713,
+  0.9044266939163208,
+  0.861031711101532,
+  0.8552411794662476,
+  0.8705570101737976,
+  0.8858294486999512,
+  0.8862067461013794,
+  0.8638858795166016,
+  0.8848280906677246,
+  0.8600383996963501,
+  0.8210445642471313,
+  0.8110806345939636,
+  0.9106955528259277,
+  0.9180180430412292,
+  0.93716961145401,
+  0.9477244019508362,
+  0.8720802068710327,
+  0.8268722891807556,
+  0.8669517040252686,
+  0.895969033241272,
+  0.9138970375061035,
+  0.8783329725265503,
+  0.9039498567581177,
+  0.9349784851074219,
+  0.8798384666442871,
+  0.949802041053772,
+  0.9413785934448242,
+  0.8778547048568726,
+  0.9039721488952637,
+  0.9083130955696106,
+  0.9118890762329102,
+  0.9301578998565674,
+  0.8953303694725037,
+  0.9120674729347229,
+  0.8906205296516418,
+  0.9321550726890564,
+  0.8698840141296387,
+  0.859553337097168,
+  0.9016358256340027,
+  0.8738865256309509,
+  0.8843291997909546,
+  0.836329996585846,
+  0.8472369313240051,
+  0.8648797273635864,
+  0.8488652110099792,
+  0.8977229595184326,
+  0.8738565444946289,
+  0.9272239208221436,
+  0.8675469160079956,
+  0.9162346720695496,
+  0.8833202123641968,
+  0.8764176964759827,
+  0.8653063774108887,
+  0.8716329336166382,
+  0.8960824012756348,
+  0.8414827585220337,
+  0.9039656519889832,
+  0.8767012357711792,
+  0.9257863163948059,
+  0.8238803148269653,
+  0.8762500286102295,
+  0.8934159278869629,
+  0.9002981185913086,
+  0.9248260259628296,
+  0.8796324133872986,
+  0.8736951351165771,
+  0.8691575527191162,
+  0.8967396020889282,
+  0.8986513614654541,
+  0.8613497614860535,
+  0.8291381597518921,
+  0.9060945510864258,
+  0.84397292137146,
+  0.838397204875946,
+  0.9456585645675659,
+  0.8526952862739563,
+  0.8759011030197144,
+  0.9253412485122681,
+  0.9003057479858398,
+  0.8915307521820068,
+  0.8891579508781433,
+  0.9004091620445251,
+  0.8948063850402832,
+  0.9122621417045593,
+  0.9356377124786377,
+  0.887149453163147,
+  0.8714280724525452,
+  0.8727843761444092,
+  0.8863639831542969,
+  0.8818325400352478,
+  0.8745712041854858,
+  0.8219955563545227,
+  0.9010586738586426,
+  0.8960144519805908,
+  0.8962308764457703,
+  0.8852640390396118,
+  0.930646538734436,
+  0.8263990879058838,
+  0.7784214019775391,
+  0.9218443632125854,
+  0.9174925088882446
+ ],
+ "nd_128_vs_general_train": [
+  0.9331933856010437,
+  0.8399459719657898,
+  0.8951255679130554,
+  0.8712747693061829,
+  0.8388338088989258,
+  0.90236896276474,
+  0.8485355973243713,
+  0.8655864000320435,
+  0.8730063438415527,
+  0.876096785068512,
+  0.8799709677696228,
+  0.8752943277359009,
+  0.8765206933021545,
+  0.8533100485801697,
+  0.8845692276954651,
+  0.8642644286155701,
+  0.8609833717346191,
+  0.8569230437278748,
+  0.846904456615448,
+  0.862011194229126,
+  0.8441392779350281,
+  0.8600572943687439,
+  0.8704059720039368,
+  0.8587177395820618,
+  0.8686403632164001,
+  0.8616872429847717,
+  0.8681126832962036,
+  0.8579275608062744,
+  0.8667576909065247,
+  0.8913398385047913,
+  0.8576708436012268,
+  0.8665159344673157,
+  0.8237324953079224,
+  0.7992591261863708,
+  0.8922322988510132,
+  0.8413345813751221,
+  0.8735817074775696,
+  0.8712288737297058,
+  0.8494436144828796,
+  0.9074546098709106,
+  0.8569679856300354,
+  0.8952998518943787,
+  0.8658164739608765,
+  0.9104641079902649,
+  0.8953344225883484,
+  0.8479740619659424,
+  0.8898816108703613,
+  0.9093745946884155,
+  0.886103630065918,
+  0.8779388666152954,
+  0.8703357577323914,
+  0.8795647025108337,
+  0.8749500513076782,
+  0.8686849474906921,
+  0.8984323740005493,
+  0.9239409565925598,
+  0.8444963693618774,
+  0.8957660794258118,
+  0.9478228688240051,
+  0.8542917370796204,
+  0.8722890615463257,
+  0.9016641974449158,
+  0.9314576387405396,
+  0.912370502948761,
+  0.8653585314750671,
+  0.8026396632194519,
+  0.8831117749214172,
+  0.8904312252998352,
+  0.9035493731498718,
+  0.8605191707611084,
+  0.8881462216377258,
+  0.908683180809021,
+  0.8897480368614197,
+  0.873151421546936,
+  0.8369867205619812,
+  0.8989363312721252,
+  0.8717424869537354,
+  0.85185307264328,
+  0.8941464424133301,
+  0.8825842142105103,
+  0.9360965490341187,
+  0.8451235294342041,
+  0.8198334574699402,
+  0.9075720906257629,
+  0.8408278226852417,
+  0.8720151782035828,
+  0.8583903908729553,
+  0.8899933695793152,
+  0.8709538578987122,
+  0.9441493153572083,
+  0.8763285875320435,
+  0.8989225029945374,
+  0.9038659334182739,
+  0.8623706102371216,
+  0.8744006752967834,
+  0.8465244770050049,
+  0.8697360157966614,
+  0.8968393206596375,
+  0.8990971446037292,
+  0.8747093677520752,
+  0.8720736503601074,
+  0.8961886763572693,
+  0.8912994861602783,
+  0.8448745608329773,
+  0.8686719536781311,
+  0.8607804775238037,
+  0.8846213817596436,
+  0.8957005739212036,
+  0.8512070178985596,
+  0.9302595257759094,
+  0.879151463508606,
+  0.876635730266571,
+  0.8796066641807556,
+  0.829670786857605,
+  0.8595477938652039,
+  0.8642106652259827,
+  0.8737756609916687,
+  0.840757429599762,
+  0.8887451887130737,
+  0.8844090104103088,
+  0.8889673352241516,
+  0.8674044013023376,
+  0.8643150925636292,
+  0.85773104429245,
+  0.8632785677909851,
+  0.869886040687561,
+  0.8574003577232361,
+  0.898746132850647
+ ],
+ "exact_dup_citation_test_in_train": 0
+}

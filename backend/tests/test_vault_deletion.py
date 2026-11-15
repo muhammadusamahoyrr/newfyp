@@ -144,6 +144,18 @@ async def test_restore_ends_with_the_recovery_period(db):
     await refused(vd.restore_document(client_id=CLIENT, document_id=doc_id), 409, "recovery_expired")
 
 
+async def test_the_trash_stops_offering_restore_once_the_recovery_period_ends(db):
+    """Audit 2026-10-15, F1: `restorable` stayed true after `purge_after`
+    until the purge job ran, so Restore was offered and could only fail."""
+    doc_id, _ = await seed()
+    await vd.delete_document(client_id=CLIENT, document_id=doc_id)
+    entry = await get_deleted_documents_col().find_one({"_id": doc_id})
+    assert vd.trash_view(entry)["restorable"] is True
+    await _due(doc_id)
+    entry = await get_deleted_documents_col().find_one({"_id": doc_id})
+    assert vd.trash_view(entry)["restorable"] is False
+
+
 # ── purge ───────────────────────────────────────────────────────────────────
 
 async def _due(doc_id):

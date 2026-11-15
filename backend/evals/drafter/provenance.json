@@ -1,0 +1,463 @@
+{
+ "generated": "2026-10-14T17:00:43+00:00",
+ "source_folder": "C:\\Users\\The Laptop Hut\\Downloads",
+ "files": [
+  {
+   "file": "Application For Leave_2026-10-14T13-08-58-187Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 8527,
+   "sha256": "843f1141535c9b0708f0b046f5c7b44d6cd03b740eb2e4cb28254242f9730280",
+   "doc_type": "Application For Leave",
+   "words": 103,
+   "placeholders": 12,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Articles Of Association_2026-10-14T13-09-53-980Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 11381,
+   "sha256": "e1776eb391292bad0f9a8b1bcab9a10f8267b68d9088c421f8cabdb4fe2f3d3b",
+   "doc_type": "Articles Of Association",
+   "words": 853,
+   "placeholders": 7,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Bail Application_2026-10-14T13-12-13-713Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9182,
+   "sha256": "26b1d88215708aa4b7f8fbbc0950d5611342f3822e211eba2de5c66c0b99f7f1",
+   "doc_type": "Bail Application",
+   "words": 243,
+   "placeholders": 14,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Board Resolution_2026-10-14T13-08-49-733Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9209,
+   "sha256": "3e2ed56f72d0fcd3ceee4a73ca6d654ca4e50a5c3d3693cfceb778f428d5c6e8",
+   "doc_type": "Board Resolution",
+   "words": 226,
+   "placeholders": 19,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Civil Suit Application_2026-10-14T13-11-05-249Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9677,
+   "sha256": "9a7b638e0933b7079f10266d844b6bf44456c90521f1e27df2bee5ff1293d4b6",
+   "doc_type": "Civil Suit Application",
+   "words": 341,
+   "placeholders": 21,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Consultancy Agreement_2026-10-14T13-11-54-809Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 11021,
+   "sha256": "5254bacc2a5fabadf61b7f62df79d779ccf484fb98412c9daab26d4e6e01d126",
+   "doc_type": "Consultancy Agreement",
+   "words": 698,
+   "placeholders": 20,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Cover Letter_2026-10-14T13-08-42-857Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 8591,
+   "sha256": "aa5c78fb3a7554966031919d224e5654f8891cc676b5312f60fed0b8a7983ba0",
+   "doc_type": "Cover Letter",
+   "words": 118,
+   "placeholders": 16,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Criminal Petition_2026-10-14T13-12-36-143Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9478,
+   "sha256": "76c5f72a1007a71a2eda0c2c310c6059c234bd789a942e6ceb940c5b8a849c65",
+   "doc_type": "Criminal Petition",
+   "words": 295,
+   "placeholders": 18,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Custody Application_2026-10-14T13-10-11-867Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9530,
+   "sha256": "54219ff7a370f270e93032c6af0dc19b0f830c21617288dd688a2beb52b1ba85",
+   "doc_type": "Custody Application",
+   "words": 327,
+   "placeholders": 18,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Dissolution Of Marriage Application_2026-10-14T13-08-28-486Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9184,
+   "sha256": "257b5352b0b9ea137d4c4c7faa23e1e42d32570689c056ef74849607d4a3a9c0",
+   "doc_type": "Dissolution Of Marriage Application",
+   "words": 232,
+   "placeholders": 13,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Employment Contract_2026-10-14T13-11-39-731Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9322,
+   "sha256": "13046a84e6bef66f2a53aa978c2e97c57f8501cef8dd7c66919b22103345e04d",
+   "doc_type": "Employment Contract",
+   "words": 302,
+   "placeholders": 16,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Employment Offer Letter_2026-10-14T13-10-02-137Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 10321,
+   "sha256": "6c031ec9d0bac0448039ea82df2a8e2d05aa014be96aa9f9cffc49967518050b",
+   "doc_type": "Employment Offer Letter",
+   "words": 468,
+   "placeholders": 23,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Follow Up Email_2026-10-14T13-09-06-236Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 8345,
+   "sha256": "482f5a08051c9f717ddf982b06c0dc6d2582ff60235bbc25505579b2cebb390f",
+   "doc_type": "Follow Up Email",
+   "words": 69,
+   "placeholders": 7,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "General Letter_2026-10-14T13-11-29-410Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 8377,
+   "sha256": "5f7886b0114b9b8d52fecaaa7f8e89cb87bf883df069719cf01654c496585123",
+   "doc_type": "General Letter",
+   "words": 67,
+   "placeholders": 11,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Guardianship Application_2026-10-14T13-09-13-185Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9787,
+   "sha256": "544885dfe3ac51ea67327b0f58f76c8ba0caf3c40ae85c6063d36b0c0bfc5078",
+   "doc_type": "Guardianship Application",
+   "words": 383,
+   "placeholders": 15,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Habeas Writ Petition_2026-10-14T13-12-22-883Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9779,
+   "sha256": "bbea0d2a787b4110001af63b1376cfb1d35733991c82de61f34b72d3e9317690",
+   "doc_type": "Habeas Writ Petition",
+   "words": 344,
+   "placeholders": 24,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Lease Agreement_2026-10-14T13-12-46-819Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9465,
+   "sha256": "5c397c2d3450fc6bd14fd395bda1b663f2f65cb39ed238735c814d559032a399",
+   "doc_type": "Lease Agreement",
+   "words": 261,
+   "placeholders": 14,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Loan Agreement_2026-10-14T13-10-53-563Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9002,
+   "sha256": "49de9aa40804bb0b8e0e7209f7fdb4225d2f2f73e91ef0379d0e5fd2fc290eb2",
+   "doc_type": "Loan Agreement",
+   "words": 189,
+   "placeholders": 16,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Notice Letter_2026-10-14T13-10-28-248Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 8417,
+   "sha256": "4794a9fc03dfb8379968683898c57a3c35779d50bba35892279093c2be8b0876",
+   "doc_type": "Notice Letter",
+   "words": 67,
+   "placeholders": 11,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Reference Letter_2026-10-14T13-10-45-554Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 8420,
+   "sha256": "a8c1e41fcba529a569ea23843ab8701c1c3773c2e8a3b3b08ebb5dae071a9311",
+   "doc_type": "Reference Letter",
+   "words": 86,
+   "placeholders": 11,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Resignation Letter_2026-10-14T13-10-19-149Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9705,
+   "sha256": "83c83d9f4e8b8231ad5212583df5c2b35767597a7a06347a05e982a49fde5ed2",
+   "doc_type": "Resignation Letter",
+   "words": 315,
+   "placeholders": 23,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Review Petition_2026-10-14T13-09-28-499Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9269,
+   "sha256": "769790565cd5750d09aefd1b1251f2286a3f7df05b97630b7195d3a2c8245402",
+   "doc_type": "Review Petition",
+   "words": 233,
+   "placeholders": 19,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Sale And Purchase Agreement_2026-10-14T13-11-47-250Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9498,
+   "sha256": "33d9556d320c4b01936c3f6228ec4ac668c3ef234ddcce0f2f17e0093b5c4978",
+   "doc_type": "Sale And Purchase Agreement",
+   "words": 324,
+   "placeholders": 14,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  },
+  {
+   "file": "Termination Letter_2026-10-14T13-12-03-899Z.docx",
+   "folder": "C:\\Users\\The Laptop Hut\\Downloads",
+   "format": "docx (Office Open XML)",
+   "bytes": 9706,
+   "sha256": "c5a0ce29f5b3c926aa6a287c819a2123274aaea3a347fe21aa0c345546cad38a",
+   "doc_type": "Termination Letter",
+   "words": 315,
+   "placeholders": 23,
+   "jurisdiction_mentions": {},
+   "pii_counts": {
+    "cnic": 0,
+    "phone": 0,
+    "email": 0,
+    "fir_number": 0
+   },
+   "origin": "exported from the aiattorney.com.pk drafter on 2026-10-14 (third-party template; user-authorised copy for this project). Not a client draft.",
+   "copyright": "third-party (aiattorney.com.pk)"
+  }
+ ],
+ "note": "Template text is not copied into the repo; cases reference files by doc_type and sha256."
+}

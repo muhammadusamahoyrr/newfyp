@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import math
+import re
 import secrets
 from datetime import datetime, timezone
 
@@ -9,12 +10,12 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.types import Command
 
 from app.ai.answer_confidence import confidence_payload, unscored_payload
+from app.ai import imminent_danger
 from app.ai import jurisdiction as jurisdiction_mod
-from app.ai.provider_health import PURPOSE_ANSWER_REFORMAT, turn_scope
+from app.ai.provider_health import turn_scope
 from app.ai.nodes.gatekeeper_node import (
     CANNED_REFUSAL as GATEKEEPER_REFUSAL,
     heuristic_injection_match,
-    llm_injection_reason,
 )
 from app.core.security import decode_token
 from app.core.live_auth import ActiveSessionGate
@@ -31,12 +32,6 @@ logger = logging.getLogger(__name__)
 
 router    = APIRouter(tags=["websockets"])
 
-_DISCLAIMER = (
-    "\n\n---\n"
-    "*This information is for general guidance only and does not constitute legal advice. "
-    "Please consult a qualified Pakistani lawyer for your specific situation.*"
-)
-
 _CANNED_AFFIRM = (
     "Understood. Feel free to ask any follow-up questions or describe another "
     "legal matter you need help with."
@@ -46,10 +41,215 @@ _CANNED_STOP = "Session ended. Come back whenever you need legal guidance."
 
 # Intents answered with a canned reply WITHOUT running the graph. Because they
 # skip every safety check, they are only trusted for short utterances.
-_SHORTCUT_INTENTS = frozenset({"format_brief", "affirm", "stop"})
-# Real affirmations are 1-3 words; the longest plausible reformat request
-# ("can you explain that again but much more briefly this time") is ~12.
+#
+# "format_brief" is NOT here any more (2026-10-13). It used to rewrite the
+# previous answer with a separate model call outside the graph and emit it
+# with `citations: []` -- no retrieval, no grounding judge, no citation
+# matching, so a shortened answer could carry new, unchecked legal claims and
+# lost every citation chip. It now runs the normal checked graph as a
+# follow-up (see `client_turn_overrides`), which also puts it behind the
+# graph's two-layer gatekeeper.
+_SHORTCUT_INTENTS = frozenset({"affirm", "stop"})
+# Real affirmations are 1-3 words.
 _MAX_SHORTCUT_WORDS = 15
+
+# 2026-10-20: the affirm/stop regex fires on "ok", "yes", "great", "enough"
+# ANYWHERE in a message, so "Okay, now tell me how to file an FIR" got the
+# canned "Understood…" reply. A canned reply is only for a message that is
+# short AND asks nothing.
+_ASKS_SOMETHING = re.compile(
+    r"\?|\b(?:what|how|why|when|where|which|who|whom|whose|can|could|should|tell|explain|"
+    r"kya|kia|kaise|kese|kyun|kyon|kab|kahan|kaun|konsa|batao|bataen|bataiye|samjhao)\b",
+    re.IGNORECASE)
+_MAX_CANNED_WORDS = 6
+
+
+def allows_canned_reply(query: str | None) -> bool:
+    q = (query or "").strip()
+    return len(q.split()) <= _MAX_CANNED_WORDS and not _ASKS_SOMETHING.search(q)
+
+
+_REPEAT_FILLER_WORDS = frozenset({
+    "a", "an", "the", "please", "kindly", "tell", "explain", "describe",
+    "what", "whats", "is", "are", "does", "do", "mean", "meaning", "of",
+    "about", "me", "can", "could", "you", "would", "your",
+    "kya", "kia", "hai", "hay", "hain", "he", "batayein", "batao",
+    "samjhayen", "samjhao", "mujhe", "zara",
+})
+_REPEAT_PROTECTED_WORDS = frozenset({
+    "not", "no", "never", "without", "except", "only", "before", "after",
+    "for", "against", "under", "from", "with", "between",
+    "within", "days", "day", "month", "months", "year", "years", "section",
+    "article", "act", "ordinance", "procedure", "process", "steps", "file",
+    "apply", "appeal", "punishment", "penalty", "deadline", "limitation",
+    "punjab", "sindh", "balochistan", "kpk", "khyber", "pakhtunkhwa",
+    "islamabad", "territory", "pakistan",
+})
+
+
+def _repeat_query_tokens(query: str | None) -> frozenset[str]:
+    """Normalize question wrappers, not legal meaning, for same-chat reuse.
+
+    This intentionally stays lexical and conservative: it catches forms like
+    “What is khula?”, “Explain khula”, and “khula kya hai” without an embedding
+    model, network call, or cross-user semantic cache.
+    """
+    words = re.findall(r"[\w]+", (query or "").casefold(), flags=re.UNICODE)
+    return frozenset(w for w in words if w not in _REPEAT_FILLER_WORDS)
+
+
+def _same_demo_question(current: str, previous: str) -> bool:
+    current_tokens = _repeat_query_tokens(current)
+    previous_tokens = _repeat_query_tokens(previous)
+    if not current_tokens or not previous_tokens:
+        return False
+    # Do not let a near-match erase a changed jurisdiction, statutory reference,
+    # negation, deadline, or requested legal action.
+    current_protected = current_tokens & _REPEAT_PROTECTED_WORDS
+    previous_protected = previous_tokens & _REPEAT_PROTECTED_WORDS
+    if current_protected != previous_protected:
+        return False
+    if current_tokens == previous_tokens:
+        return True
+    overlap = len(current_tokens & previous_tokens)
+    union = len(current_tokens | previous_tokens)
+    # One shared topic word is not enough to infer equivalent legal questions.
+    return overlap >= 2 and union > 0 and overlap / union >= 0.82
+
+
+def _reusable_session_answer(query: str, current_state: dict,
+                             previous_state: dict | None) -> dict | None:
+    """Return a safe prior answer from this chat's graph checkpoint, if any.
+
+    A miss always falls through to the regular AI graph; this is an optimization
+    for repeated demo questions, never an answerability/refusal gate.
+    """
+    previous = previous_state or {}
+    prior_query = str(previous.get("query") or "").strip()
+    answer = str(previous.get("answer") or "").strip()
+    citations = previous.get("citations")
+    if not prior_query or not answer or not isinstance(citations, list) or not citations:
+        return None
+    if (previous.get("is_grounded") is not True
+            or previous.get("arbitration_output") != "answer"
+            or previous.get("convergence_status") != "converged"
+            or previous.get("web_search_enabled")
+            or previous.get("case_id")
+            or previous.get("language_mismatch")
+            or previous.get("routing_mode") == "hybrid"):
+        return None
+    if current_state.get("web_search_enabled") or current_state.get("case_id"):
+        return None
+    if str(current_state.get("language") or "en") != str(previous.get("language") or "en"):
+        return None
+    # Explicit selections must match. An unknown current case type is allowed:
+    # the same narrowly matched topic may otherwise be needlessly reclassified.
+    selected_case = str(current_state.get("case_type") or "unknown")
+    prior_case = str(previous.get("case_type") or "unknown")
+    if selected_case != "unknown" and prior_case != selected_case:
+        return None
+    if str(current_state.get("province") or "") != str(previous.get("province") or ""):
+        return None
+    if not _same_demo_question(query, prior_query):
+        return None
+    return previous
+
+
+_KNOWN_CASE_TYPES = frozenset({"civil", "criminal", "family", "constitutional"})
+
+
+def _previous_case_type(previous_state: dict | None, previous_question: str) -> tuple[str, float] | None:
+    """The case type the server resolved when it answered `previous_question`.
+
+    Read from this session's graph checkpoint (the socket's thread is the
+    session), which only the server writes. Used only when the checkpoint is
+    about the SAME question: after a resume its query is the question plus the
+    user's reply, and after a follow-up it carries `followup_base_query`."""
+    prev = previous_state or {}
+    case_type = str(prev.get("case_type") or "")
+    if case_type not in _KNOWN_CASE_TYPES or not previous_question:
+        return None
+    asked = (prev.get("followup_base_query") or prev.get("query") or "").strip()
+    if not asked or not asked.startswith(previous_question.strip()):
+        return None
+    return case_type, float(prev.get("case_type_confidence") or 0.0)
+
+
+# A word that points back at the previous answer ("make IT short", "explain
+# THIS more", "isko mukhtasar karo").
+_REFERS_BACK = re.compile(
+    r"\b(?:it|this|that|above|answer|previous|last|again|ye|yeh|isko|isay|ise|iss|isse|usko|usay|use)\b",
+    re.IGNORECASE)
+_FOLLOWUP_MAX_WORDS = 4
+
+
+def is_reshape_request(query: str | None) -> bool:
+    """True when a "shorter / more detail" message asks to reshape the LAST
+    answer, not a new question that merely contains such a word.
+
+    The intent regex fires on "simple", "short", "further", "more about"
+    anywhere in a message, with no length limit -- so after one answer,
+    "Explain in simple words the punishment for theft" was re-answered as the
+    PREVIOUS question, shortened (2026-10-20). A reshape request is either very
+    short ("make it short", "aur batao") or points back at the answer."""
+    q = (query or "").strip()
+    return len(q.split()) <= _FOLLOWUP_MAX_WORDS or bool(_REFERS_BACK.search(q))
+
+
+def client_turn_overrides(intent_name: str, history: list[dict] | None, last_ai: str | None,
+                          previous_state: dict | None = None,
+                          selected_case_type: str | None = None,
+                          query: str | None = None) -> dict:
+    """Graph-state overrides for a client follow-up asking for less or more
+    detail. Both search the law for the PREVIOUS question (the new message --
+    "make it short" -- has nothing to retrieve on) and answer it again in the
+    requested shape; the answer is generated, judged and citation-matched like
+    any other.
+
+    Everything comes from server-owned state: `history` is the stored message
+    record and `previous_state` this session's graph checkpoint. The case type
+    the server resolved for that question is reused, because re-typing "make it
+    short" -- or even the question again -- is unstable (observed: the triage
+    model returned `unknown` for "What is Section 506 PPC?" in 2 of 3 calls),
+    and an unknown type used to send the turn to clarification. A case type the
+    user selected in the UI (`selected_case_type`) still wins."""
+    if intent_name not in ("format_brief", "format_detail"):
+        return {}
+    if query is not None and not is_reshape_request(query):
+        return {}                     # a new question that mentions "simple"/"further"
+    if intent_name == "format_brief" and not last_ai:
+        return {}                     # nothing to shorten: an ordinary question
+    previous = next((m.get("content", "") for m in reversed(history or [])
+                     if m.get("role") == "user" and (m.get("content") or "").strip()), "")
+    out = {"followup_intent": "format" if intent_name == "format_brief" else "deepen"}
+    if previous:
+        out["followup_base_query"] = previous
+        out["retrieval_query_supplement"] = previous
+        if (selected_case_type or "unknown") not in _KNOWN_CASE_TYPES:
+            reused = _previous_case_type(previous_state, previous)
+            if reused:
+                out["case_type"], out["case_type_confidence"] = reused
+    return out
+
+
+def _with_safety(ws_response: dict, db_content: str, prov_state: dict | None, query: str,
+                 data: dict | None, session: dict | None) -> tuple[dict, str, dict | None]:
+    """Prepend immediate-safety guidance to whatever this turn emits.
+
+    Applied at the socket's emission points, AFTER the graph -- so it cannot be
+    lost to a refusal, a max_attempts verdict, a cache hit, a clarification, a
+    timeout or a provider fault. The stored message and the audit record carry
+    the same text the user saw."""
+    language = (data or {}).get("language") or (session or {}).get("language")
+    province = (data or {}).get("province") or (session or {}).get("province")
+    key = "question" if ws_response.get("type") == "clarification" else "content"
+    visible = imminent_danger.with_guidance(ws_response.get(key) or "", query, language, province)
+    ws_response = {**ws_response, key: visible, "safety_guidance": imminent_danger.GUIDANCE_VERSION}
+    db_content = imminent_danger.with_guidance(db_content or "", query, language, province)
+    if isinstance(prov_state, dict):
+        prov_state = {**prov_state, "answer": db_content, "imminent_danger": True,
+                      "safety_guidance": imminent_danger.GUIDANCE_VERSION}
+    return ws_response, db_content, prov_state
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -66,6 +266,7 @@ _MAX_SHORTCUT_WORDS = 15
 # client chat surface has no case binding; the lawyer research surface has one,
 # and verifies it against the case repository before storing it.
 _CLIENT_SETTABLE_META = ("case_type", "province")
+_CLIENT_CASE_TYPES = frozenset({"civil", "criminal", "family", "constitutional"})
 
 
 def _session_meta_from_frame(data: dict) -> dict:
@@ -126,7 +327,35 @@ async def _session_history(ref, turn_id: str | None = None) -> list[dict]:
 MATCH_KIND_UNAVAILABLE = "unavailable"
 
 
-async def _fetch_matched_lawyers(session: dict, n: int = 3) -> dict:
+def _conversation_signals(values: dict | None) -> dict | None:
+    """What the SERVER concluded this conversation is about, for provisional
+    lawyer suggestions. Read from the graph's own state after the turn ran —
+    never from the client frame, and never from a case.
+
+    None when there is nothing usable: no classification, or a hybrid turn (the
+    graph is retrieving for two case types at once, so naming one would be a
+    guess). The confidence floor is applied by the service, which owns it."""
+    if not isinstance(values, dict):
+        return None
+    if values.get("routing_mode") == "hybrid":
+        return None
+    case_type = str(values.get("case_type") or "")
+    if case_type not in _KNOWN_CASE_TYPES:
+        return None
+    def _num(v):
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return 0.0
+        return f if math.isfinite(f) else 0.0
+    confidence = max(_num(values.get("classifier_confidence")),
+                     _num(values.get("case_type_confidence")))
+    return {"case_type": case_type, "case_type_confidence": confidence,
+            "province": values.get("province")}
+
+
+async def _fetch_matched_lawyers(session: dict, n: int = 3,
+                                 signals: dict | None = None) -> dict:
     """Lawyer candidates for the chat surface, with the service's verdict intact.
 
     THE BUG THIS FIXES
@@ -151,13 +380,24 @@ async def _fetch_matched_lawyers(session: dict, n: int = 3) -> dict:
              "matched_lawyers": []}
 
     case_id = session.get("case_id")
-    if not case_id:
+    if not case_id and not signals:
         # Nothing to match against. Not a failure, and not "no lawyers found".
         return empty
 
     try:
-        from app.services.lawyer_service import match_lawyers_for_case
-        result = await match_lawyers_for_case(case_id, top_n=n)
+        if case_id:
+            # Only a server-verified binding reaches here: client chats carry
+            # none (see _CLIENT_SETTABLE_META), research chats verify theirs.
+            from app.services.lawyer_service import match_lawyers_for_case
+            result = await match_lawyers_for_case(case_id, top_n=n)
+        else:
+            # No case: provisional suggestions from what the server concluded
+            # the conversation is about. Never a case, never "the latest one".
+            from app.services.lawyer_service import suggest_lawyers_from_signals
+            result = await suggest_lawyers_from_signals(
+                case_type=signals.get("case_type"),
+                case_type_confidence=signals.get("case_type_confidence"),
+                province=signals.get("province"), top_n=n)
     except Exception as exc:
         # The class name only. An exception body can quote a query, a document
         # fragment or a connection string, and this is a diagnostic line, not a
@@ -275,11 +515,18 @@ def _build_state(
     from app.ai import jurisdiction
 
     language = data.get("language") or "en"
+    selected_case_type = str(
+        data.get("case_type") or session.get("case_type") or ""
+    ).strip().lower()
+    if selected_case_type not in _CLIENT_CASE_TYPES:
+        selected_case_type = "unknown"
+    selected_confidence = 1.0 if selected_case_type != "unknown" else 0.0
     # Validate at the boundary. A client that sends province="National" has NOT
     # selected a jurisdiction — treating it as one would both filter on a value
     # the corpus cannot match and claim the user chose it.
     province, jurisdiction_basis = jurisdiction.resolve(
-        requested=data.get("province") or session.get("province"))
+        requested=data.get("province") or session.get("province"),
+        requested_basis=data.get("province_basis"))
 
     # Seed LangGraph message list from MongoDB history so nodes have conversation context
     lc_messages = []
@@ -300,20 +547,46 @@ def _build_state(
         "case_context":           data.get("case_context"),
         "user_id":                user_id,
         "user_role":              user_role,
-        "case_type":              "unknown",
-        "case_type_confidence":   0.0,
+        # A case type explicitly selected during intake is a real input, not
+        # decorative session metadata. Invalid values remain unknown and are
+        # classified normally by the graph.
+        "case_type":              selected_case_type,
+        "case_type_confidence":   selected_confidence,
         "complexity":             "simple",
         "urgency":                "low",
         "province":               province,
         "province_inferred":      False,
         "jurisdiction_basis":     jurisdiction_basis,
         "language":               language,
-        "classifier_case_type":         "unknown",
-        "classifier_confidence":        0.0,
+        "classifier_case_type":         selected_case_type,
+        "classifier_confidence":        selected_confidence,
         "classifier_scores":            {},
         "precomputed_collection_names": [],
         "routing_mode":                 "single",
         "followup_intent":        None,
+        # Per-turn keys reset explicitly: the socket's graph thread is the
+        # session, so a key not written here survives from the previous turn's
+        # checkpoint. A "make it short" turn sets the first three
+        # (client_turn_overrides); left unset, the NEXT question retrieved with
+        # the old question as its supplement. A refusal reason likewise must
+        # not reappear on a later turn that sets none.
+        "followup_base_query":        None,
+        "retrieval_query_supplement": None,
+        "response_mode":              None,
+        "refusal_reason":             None,
+        "refusal_redirect":           None,
+        # The same carry-over, for evidence: a turn that ends without
+        # generating (a refusal) emitted the PREVIOUS answer's claims in its
+        # frame, and the grounding judge's fallback could read the previous
+        # turn's case law and engine output as this turn's evidence.
+        "generation_evidence":        [],
+        "claim_assessments":          [],
+        "language_mismatch":          False,
+        "case_law_chunks":            [],
+        "tool_results":               [],
+        "requested_provisions":       {},
+        "periods_removed":            [],
+        "tool_conflicts":             [],
         "needs_clarification":    False,
         "clarification_question": "",
         "clarification_depth":    session.get("clarification_depth", 0),
@@ -547,25 +820,6 @@ class _NullTracer:
         return {}
 
 
-async def _reformat(query: str, last_ai: str) -> str:
-    """Reformat previous answer per user request — bypasses the graph."""
-    _FORMAT_SYSTEM = (
-        "You are a Pakistani legal assistant. Reformat the previous response "
-        "as the user requests. Preserve all key legal facts and statutes. "
-        "Do NOT add a disclaimer — it is appended automatically."
-    )
-    try:
-        from app.ai.llm import get_fast_llm
-        llm    = get_fast_llm(purpose=PURPOSE_ANSWER_REFORMAT)
-        result = await asyncio.to_thread(llm.invoke, [
-            {"role": "system", "content": _FORMAT_SYSTEM},
-            {"role": "user",   "content": f'User request: "{query}"\n\nPrevious response:\n{last_ai}'},
-        ])
-        return result.content.strip() + _DISCLAIMER
-    except Exception:
-        return last_ai
-
-
 def _jurisdiction_fields(state: dict | None, fallback_province: str,
                          fallback_basis: str) -> dict:
     """Jurisdiction disclosure for ONE outgoing frame.
@@ -597,6 +851,7 @@ async def _emit(
     turn_id: str | None = None,
     owner_token: str | None = None,
     heartbeat=None,
+    question_saved: bool = False,
 ) -> None:
     """The one place a chat turn becomes visible to the user.
 
@@ -667,6 +922,9 @@ async def _emit(
         "jurisdiction_basis",
         (prov_state or {}).get("jurisdiction_basis",
                                jurisdiction_mod.BASIS_NOT_APPLICABLE))
+    # Every emitted result has a stable server identity, including shortcuts
+    # and refusals. Feedback can therefore name and verify the exact result.
+    ws_response.setdefault("request_id", getattr(tracer, "request_id", ""))
 
     # ── the fence, before ANY side effect ────────────────────────────────────
     #
@@ -767,18 +1025,23 @@ async def _emit(
         # collections and sometimes credentials.
         saved = False
         try:
+            # Never create an orphan assistant row. When the question could
+            # not be filed, the live answer is still delivered with
+            # `history_saved: false`, but neither half is presented as a
+            # complete transcript after reload.
+            may_store_answer = ref is not None and (not turn_id or question_saved)
             stored = await conversations.append_message(
                 ref, conversations.build_message(
                     "assistant", db_content,
                     client_message_id=getattr(tracer, "request_id", None),
                     answer=ws_response),
-                turn_id=turn_id) if ref is not None else None
+                turn_id=turn_id) if may_store_answer else None
             saved = stored is not None
 
             # A turn that ended by asking for facts is remembered as such, so
             # reopening the conversation can say so instead of looking like it
             # simply stopped mid-thought.
-            if turn_type is not None and ref is not None:
+            if turn_type is not None and may_store_answer:
                 await conversations.set_pending_question(
                     ref.surface, ref.session_id, ref.owner_id,
                     ws_response.get("question")
@@ -795,7 +1058,9 @@ async def _emit(
         # the returned value is only upgraded once the stored one has been —
         # if the annotation fails, this frame keeps the conservative `false` the
         # stored payload still carries, and the two stay identical.
-        if saved and turn_id:
+        # A transcript is saved only when BOTH halves of the turn exist. An
+        # assistant row without its question is not a successfully filed turn.
+        if saved and question_saved and turn_id:
             if await turns.annotate_response(
                     turn_id, getattr(tracer, "request_id", ""),
                     {"history_saved": True}):
@@ -1085,11 +1350,13 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
             # Persist the user's message. Idempotent on
             # (conversation, turn, role), so a reclaimed retry cannot store the
             # question twice.
+            question_saved = False
             try:
-                await conversations.append_message(
+                stored_question = await conversations.append_message(
                     ref, conversations.build_message("user", query,
                                                      client_message_id=turn_key),
                     turn_id=turn_id)
+                question_saved = stored_question is not None
             except Exception:
                 # The turn still runs. A question missing from history is worse
                 # than nothing, but refusing to answer it is worse than that.
@@ -1114,6 +1381,13 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                 await websocket.send_json({"type": "thinking"})
                 progress = ProgressReporter(websocket)
 
+                # Imminent danger is decided HERE, once, deterministically, and
+                # applied at every emission point below -- answer, refusal,
+                # max_attempts, cache hit, clarification, timeout, fault. It
+                # used to depend on the graph producing an answer, so a threat
+                # to someone's life tonight could end in a bare refusal.
+                danger = imminent_danger.detect(query)
+
                 try:
                     # One trace per user turn: records every node, LLM call (including
                     # provider failover) and tool call with timings. Read-only state
@@ -1134,6 +1408,10 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                     pending_question = _extract_interrupt_question(pre_snap)
 
                     if pending_question is not None:
+                        # This message answers the PENDING question: the danger
+                        # it described is still the subject of this turn.
+                        danger = danger or imminent_danger.detect(
+                            (getattr(pre_snap, "values", None) or {}).get("query", ""))
                         await asyncio.wait_for(
                             chat_graph.ainvoke(Command(resume=query),
                                                config=turn_config),
@@ -1172,10 +1450,14 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                             # through and ignore the ones that were stopped.
                             prov_state = _blocked_state(query)
                             turn_type  = provenance_service.TURN_BLOCKED
+                            blocked_content = GATEKEEPER_REFUSAL
+                            if danger:
+                                ws_response, blocked_content, prov_state = _with_safety(
+                                    ws_response, blocked_content, prov_state, query, data, session)
                             await _emit(
                                 websocket   = websocket,
                                 ws_response = ws_response,
-                                db_content  = GATEKEEPER_REFUSAL,
+                                db_content  = blocked_content,
                                 prov_state  = prov_state,
                                 turn_type   = turn_type,
                                 session_id  = session_id,
@@ -1185,8 +1467,9 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                                 turn_id     = turn_id,
                                 owner_token = owner_token,
                                 heartbeat   = heartbeat,
+                                question_saved = question_saved,
                             )
-                            last_ai_content = GATEKEEPER_REFUSAL
+                            last_ai_content = blocked_content
                             continue
 
                         # ── NLU intent classification ─────────────────────────────
@@ -1225,70 +1508,11 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                                 intent_name, len(query.split()), session_id,
                             )
                             intent_name = "new_query"
+                        elif intent_name in _SHORTCUT_INTENTS and not allows_canned_reply(query):
+                            intent_name = "new_query"     # "ok, now how do I file an FIR?"
 
                         # ── Route by intent ───────────────────────────────────────
-                        if intent_name == "format_brief" and last_ai_content:
-                            # Layer 2 of the gatekeeper, which otherwise runs only
-                            # inside the graph. This shortcut feeds the user's
-                            # message to a model AS AN INSTRUCTION, alongside the
-                            # previous answer — so it is the one shortcut where an
-                            # obfuscated injection has something to act on, and
-                            # regex screening alone is not the two-layer defence the
-                            # system claims. affirm and stop do not need this: they
-                            # emit fixed strings and invoke no model, so there is
-                            # nothing for an injection to steer or exfiltrate, and
-                            # putting an LLM call in front of every "ok" would cost
-                            # a second per trivial turn for no security gain.
-                            subtle = await asyncio.to_thread(llm_injection_reason, query)
-                            if subtle is not None:
-                                logger.warning(
-                                    "gatekeeper blocked injection [pre-reformat]: %s | "
-                                    "session=%s query=%r",
-                                    subtle, session_id, query[:200],
-                                )
-                                ws_response = {
-                                    "type": "final", "content": GATEKEEPER_REFUSAL,
-                                    "citations": [], **unscored_payload(),
-                                    "convergence_status": "off_topic",
-                                    "arbitration_source": "gatekeeper:llm",
-                                    "request_id": tracer.request_id,
-                                }
-                                await _emit(
-                                    websocket   = websocket,
-                                    ws_response = ws_response,
-                                    db_content  = GATEKEEPER_REFUSAL,
-                                    prov_state  = _blocked_state(query, "llm"),
-                                    turn_type   = provenance_service.TURN_BLOCKED,
-                                    session_id  = session_id,
-                                    user_id     = str(user_id),
-                                    tracer      = tracer,
-                                    ref         = ref,
-                                    turn_id     = turn_id,
-                                    owner_token = owner_token,
-                                    heartbeat   = heartbeat,
-                                )
-                                last_ai_content = GATEKEEPER_REFUSAL
-                                continue
-
-                            reformatted = await _reformat(query, last_ai_content)
-                            ws_response = {
-                                "type": "final", "content": reformatted,
-                                "citations": [], **unscored_payload(),
-                                "convergence_status": "converged",
-                                "arbitration_source": "nlu:format_brief",
-                            }
-                            db_content = reformatted
-                            # This path rewrites a previous legal answer with an LLM
-                            # and emits it, without retrieval, grounding or
-                            # arbitration. It is the least supervised output the
-                            # system produces, so it is the one that most needs a
-                            # record saying so.
-                            prov_state = {**ws_response, "query": query,
-                                          "answer": reformatted, "is_grounded": False,
-                                          "arbitration_output": "answer"}
-                            turn_type  = provenance_service.TURN_SHORTCUT
-
-                        elif intent_name == "affirm":
+                        if intent_name == "affirm":
                             ws_response = {
                                 "type": "final", "content": _CANNED_AFFIRM,
                                 "citations": [], **unscored_payload(),
@@ -1319,19 +1543,58 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                             turn_type  = provenance_service.TURN_SHORTCUT
 
                         else:
-                            # new_query / format_detail / clarify / unknown → full graph
+                            # new_query / format_brief / format_detail / clarify /
+                            # unknown → full graph (checked like every answer).
                             shortcut = False
+                            turn_history = await _session_history(ref, turn_id)
                             state = _build_state(
                                 query, session_id, session, data,
-                                history=await _session_history(ref, turn_id),
+                                history=turn_history,
                                 user_id=user_id,
                                 user_role=user.get("role", "client"),
                             )
-                            if intent.intent == "format_detail":
-                                state["followup_intent"] = "deepen"
-                            await asyncio.wait_for(
-                                chat_graph.ainvoke(state, config=turn_config),
-                                timeout=turns.TURN_TIMEOUT_S)
+                            # Set by THIS route, never by the browser: the
+                            # response-length policy applies to client chat only.
+                            state["surface"] = "client"
+                            state.update(client_turn_overrides(
+                                intent_name, turn_history, last_ai_content,
+                                previous_state=getattr(pre_snap, "values", None),
+                                selected_case_type=state.get("case_type"),
+                                query=query))
+                            reusable = _reusable_session_answer(
+                                query, state, getattr(pre_snap, "values", None))
+                            if reusable is not None:
+                                # Same-session only: return the already grounded
+                                # answer and its citations verbatim. A non-match
+                                # never blocks the ordinary graph path.
+                                shortcut = True
+                                db_content = reusable["answer"]
+                                ws_response = {
+                                    "type": "final",
+                                    "content": db_content,
+                                    "citations": reusable.get("citations", []),
+                                    "claims": reusable.get("claim_assessments", []),
+                                    **confidence_payload(reusable),
+                                    "convergence_status": "converged",
+                                    "arbitration_source": "session:repeat_question_reuse",
+                                    "request_id": tracer.request_id,
+                                }
+                                prov_state = {
+                                    **reusable,
+                                    "query": query,
+                                    "answer": db_content,
+                                    "arbitration_output": "answer",
+                                    "arbitration_source": "session:repeat_question_reuse",
+                                }
+                                turn_type = provenance_service.TURN_ANSWER
+                                logger.info(
+                                    "client chat reused grounded answer for repeat question "
+                                    "(session=%s)", session_id,
+                                )
+                            else:
+                                await asyncio.wait_for(
+                                    chat_graph.ainvoke(state, config=turn_config),
+                                    timeout=turns.TURN_TIMEOUT_S)
 
                     # A graph turn actually ran — emit the trace rollup. This single
                     # line answers "which tools ran, which provider served it, how
@@ -1345,15 +1608,13 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                         new_question = _extract_interrupt_question(post_snap)
 
                         if new_question is not None:
-                            matched = await _fetch_matched_lawyers(session, n=3)
+                            # No lawyer matching on a clarifying question: the
+                            # conversation is still working out what the matter
+                            # IS, so there is nothing yet to suggest anyone for,
+                            # and a status line under every question ("matching
+                            # unavailable") was noise at best.
                             ws_response = {
                                 "type": "clarification", "question": new_question,
-                                "matched_lawyers": matched["matched_lawyers"],
-                                # The service's verdict travels with the list.
-                                # Without it the UI cannot tell ranked candidates
-                                # from a browsing listing, and invented a score.
-                                "match_result_kind": matched["result_kind"],
-                                "match_notice": matched["notice"],
                                 "request_id": tracer.request_id,
                             }
                             db_content = new_question
@@ -1390,7 +1651,8 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                                 "arbitration_source": result.get("arbitration_source", ""),
                             }
                             if convergence == "max_attempts":
-                                matched = await _fetch_matched_lawyers(session, n=3)
+                                matched = await _fetch_matched_lawyers(
+                                    session, n=3, signals=_conversation_signals(result))
                                 ws_response["matched_lawyers"]   = matched["matched_lawyers"]
                                 ws_response["match_result_kind"] = matched["result_kind"]
                                 ws_response["match_notice"]      = matched["notice"]
@@ -1463,6 +1725,11 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                 # audit record. Previously the graph paths recorded and the intent
                 # shortcuts did not, so the "provenance for every turn" property was
                 # false for canned replies, LLM reformats and faults alike.
+                #
+                # Immediate-safety guidance rides on EVERY exit (see `danger`).
+                if danger and ws_response is not None:
+                    ws_response, db_content, prov_state = _with_safety(
+                        ws_response, db_content, prov_state, query, data, session)
                 await _emit(
                     websocket   = websocket,
                     ws_response = ws_response,
@@ -1476,6 +1743,7 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                     turn_id     = turn_id,
                     owner_token = owner_token,
                     heartbeat   = heartbeat,
+                    question_saved = question_saved,
                 )
 
                 if db_content:

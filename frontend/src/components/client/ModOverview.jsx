@@ -1,12 +1,14 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useClientRouter as useRouter } from "./clientNav.js";
 import { formatPkt } from "@/lib/bookingTime.js";
 import { useCase } from "@/components/shared/CaseContext.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { activeCases, isDraftCase, isEndedCase } from "@/lib/caseStatus.js";
-import { listEngagements, myDocumentsV2 } from "@/lib/api.js";
+import { listEngagements, myDocumentsV2, listMeetingProposals } from "@/lib/api.js";
+import { onNotification } from "@/lib/notificationTarget.js";
 import { DOCS_FONT } from "./documents/ui.jsx";
+import { requestNewMatter } from "./newMatter.js";
 
 /* The client Overview (2026-10-11, the approved "Overview v2" design).
  *
@@ -160,6 +162,23 @@ const ModOverview = ({ onOpenNotifications }) => {
     const [moreError, setMoreError] = useState(null);
     const [engagements, setEngagements] = useState([]);
     const [docs, setDocs] = useState({ items: [], more: false, loaded: false });
+    // MEETINGS A LAWYER PROPOSED, still waiting for the client (2026-10-12).
+    // Three states kept apart: a failed read is not "none proposed".
+    const [proposals, setProposals] = useState({ state: "loading", items: [] });
+    const [proposalsSeq, setProposalsSeq] = useState(0);
+    useEffect(() => {
+        let live = true;
+        Promise.resolve().then(() => listMeetingProposals({ status: "open" })).then(res => {
+            if (!live) return;
+            if (!res || res.error || !Array.isArray(res.data)) { setProposals(p => ({ state: "error", items: p.items })); return; }
+            setProposals({ state: "ready", items: res.data.filter(p => p.status === "open") });
+        }).catch(() => { if (live) setProposals(p => ({ state: "error", items: p.items })); });
+        return () => { live = false; };
+    }, [proposalsSeq]);
+    // A proposal sent, accepted, declined or withdrawn elsewhere: read again.
+    useEffect(() => onNotification((n) => {
+        if (String(n.type || "").startsWith("appointment_propos")) setProposalsSeq(x => x + 1);
+    }), []);
     const [query, setQuery] = useState("");
     const [caseTab, setCaseTab] = useState("active");
     const searchRef = useRef(null);
@@ -228,8 +247,16 @@ const ModOverview = ({ onOpenNotifications }) => {
     cases.forEach(c => { const l = lawyerOf(c); if (l && !working.some(w => w.id === l.id)) working.push(l); });
     const lawyer = working[0];
 
-    // What waits on the client: a draft to confirm, terms a lawyer proposed.
+    // What waits on the client: a meeting to choose a time for, a draft to
+    // confirm, terms a lawyer proposed.
+    const when = (iso) => formatPkt(iso, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
     const needs = [
+        ...proposals.items.map(p => ({
+            key: `meeting-${p.id}`,
+            label: `${p.lawyer_name || "Your lawyer"} proposed a meeting about “${p.case_title || "your case"}”`,
+            sub: `${p.agenda ? `${p.agenda} · ` : ""}${(p.options || []).filter((_, i) => !p.option_passed?.[i]).map(when).join(" / ")} PKT`,
+            action: "Choose a time", go: "/appointments?section=proposals", kind: "meeting",
+        })),
         ...cases.filter(isDraftCase).map(c => ({
             key: `draft-${c._id}`, label: `Confirm your draft case — ${c.title || "Untitled case"}`,
             action: "Review", go: "/intake",
@@ -251,14 +278,17 @@ const ModOverview = ({ onOpenNotifications }) => {
 
     const firstName = String(user?.full_name || "").trim().split(/\s+/)[0] || "";
     const todayLine = formatPkt(new Date(), { weekday: "long", day: "numeric", month: "long" });
+    // Not "nothing needs you" while proposals are unknown.
+    const proposalsUnknown = proposals.state !== "ready";
     const summary = [
-        needs.length ? `${needs.length === 1 ? "One thing needs" : `${needs.length} things need`} you` : "Nothing needs you right now",
+        needs.length ? `${needs.length === 1 ? "One thing needs" : `${needs.length} things need`} you`
+            : proposalsUnknown ? "Checking what needs you" : "Nothing needs you right now",
         next ? `your next appointment is ${daysTo === 0 ? "today" : daysTo === 1 ? "tomorrow" : `in ${daysTo} days`}` : "no appointment is booked",
     ].join(", and ") + ".";
 
     const stats = [
         { n: activeCount, t: "Active cases", d: "Open or in progress", c: "var(--brand-text)", icon: I.brief, go: "/tracking" },
-        { n: apptCount, t: "Appointments", d: next ? `Next: ${formatPkt(next.scheduled_at, { day: "numeric", month: "short" })}` : "None ahead", c: "#6addeb", icon: I.cal, go: "/tracking" },
+        { n: apptCount, t: "Appointments", d: next ? `Next: ${formatPkt(next.scheduled_at, { day: "numeric", month: "short" })}` : "None ahead", c: "#6addeb", icon: I.cal, go: "/appointments" },
         { n: docs.loaded ? `${docs.items.length}${docs.more ? "+" : ""}` : "—", t: "Documents", d: "Drafts and vault", c: "#b9a6f2", icon: I.doc, go: "/documents" },
         { n: working.length, t: "Lawyers", d: "Working with you", c: "var(--gold)", icon: I.user, go: "/lawyers" },
     ];
@@ -289,24 +319,38 @@ const ModOverview = ({ onOpenNotifications }) => {
                         <div style={{ marginTop: 6, fontSize: 14.5, color: "var(--muted)" }}>{summary}</div>
                     </div>
                     {needs.length ? (
-                        <div className="ov-well ov-need">
-                            <span className="ov-badge" aria-hidden="true"><Svg d={I.check} s={18} /></span>
+                        <div className="ov-well ov-need" data-need={needs[0].kind || "other"}>
+                            <span className="ov-badge" aria-hidden="true"><Svg d={needs[0].kind === "meeting" ? I.cal : I.check} s={18} /></span>
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div className="ov-lbl" style={{ color: "var(--brand-text)" }}>Needs you{needs.length > 1 ? ` · ${needs.length}` : ""}</div>
                                 <div className="ov-clip" style={{ fontWeight: 700, fontSize: 14.5, marginTop: 2, color: "var(--ink)" }}>{needs[0].label}</div>
+                                {needs[0].sub && <div className="ov-clip" data-need-sub style={{ fontSize: 12.5, marginTop: 2, color: "var(--muted)" }}>{needs[0].sub}</div>}
                             </div>
                             <button type="button" className="ov-btn" onClick={() => router.push(needs[0].go)}>{needs[0].action} <span className="arr" aria-hidden="true">→</span></button>
                         </div>
-                    ) : (
-                        <div className="ov-well ov-need calm">
+                    ) : proposals.state === "error" ? (
+                        <div className="ov-well ov-need calm" data-need="unknown" role="alert">
                             <span className="ov-ic" style={{ "--c": "var(--brand-text)" }}><Svg d={I.hand} s={18} /></span>
                             <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: "var(--muted)" }}>
-                                You are all caught up. Drafts to confirm and terms from a lawyer will appear here.
+                                Could not check for meetings your lawyer proposed.
+                            </div>
+                            <button type="button" className="ov-btn" onClick={() => setProposalsSeq(x => x + 1)}>Retry</button>
+                        </div>
+                    ) : proposals.state === "loading" ? (
+                        <div className="ov-well ov-need calm" data-need="loading">
+                            <span className="ov-ic" style={{ "--c": "var(--brand-text)" }}><Svg d={I.hand} s={18} /></span>
+                            <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: "var(--muted)" }}>Checking what needs you…</div>
+                        </div>
+                    ) : (
+                        <div className="ov-well ov-need calm" data-need="none">
+                            <span className="ov-ic" style={{ "--c": "var(--brand-text)" }}><Svg d={I.hand} s={18} /></span>
+                            <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: "var(--muted)" }}>
+                                You are all caught up. Meetings to choose, drafts to confirm and terms from a lawyer will appear here.
                             </div>
                         </div>
                     )}
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        <button type="button" className={needs.length ? "ov-btn" : "ov-btn go"} style={{ "--a": "var(--brand-text)" }} onClick={() => router.push("/intake")}>
+                        <button type="button" className={needs.length ? "ov-btn" : "ov-btn go"} style={{ "--a": "var(--brand-text)" }} onClick={() => { requestNewMatter(); router.push("/intake"); }}>
                             <span style={{ color: needs.length ? "var(--brand-text)" : "inherit", display: "inline-flex" }}><Svg d={I.plus} s={15} w={2.4} /></span>Start a new matter
                         </button>
                         <button type="button" className="ov-btn chat" style={{ "--a": "#b9a6f2" }} onClick={() => router.push("/chat")}><span style={{ color: "#b9a6f2", display: "inline-flex" }}><Svg d={I.chat} s={15} /></span>Ask AI</button>
@@ -322,7 +366,9 @@ const ModOverview = ({ onOpenNotifications }) => {
                                 <span style={{ fontFamily: DOCS_FONT }}>{formatPkt(next.scheduled_at, { day: "numeric" })}</span>
                             </div>
                             <div style={{ minWidth: 0 }}>
-                                <div style={{ fontWeight: 700, fontSize: 14 }}>{next.mode === "video" ? "Video consultation" : next.mode === "in_person" ? "In-person meeting" : next.mode === "court" ? "Court hearing" : "Consultation"}</div>
+                                {/* Explicit ink: the well sets no text colour, so the title
+                                    inherited a dark one and vanished on the dark theme. */}
+                                <div style={{ fontWeight: 700, fontSize: 14.5, color: "var(--ink)" }}>{next.mode === "video" ? "Video consultation" : next.mode === "in_person" ? "In-person meeting" : next.mode === "court" ? "Court hearing" : "Consultation"}</div>
                                 <div style={{ fontSize: 12.5, color: "var(--muted)" }}>{formatPkt(next.scheduled_at, { weekday: "short", hour: "numeric", minute: "2-digit" })} PKT</div>
                                 {(next.lawyer_name || next.lawyer?.full_name) && <div className="ov-clip" style={{ fontSize: 12.5, color: "var(--muted)" }}>with {next.lawyer_name || next.lawyer?.full_name}</div>}
                             </div>
@@ -335,8 +381,10 @@ const ModOverview = ({ onOpenNotifications }) => {
                         <div className="ov-empty">No upcoming appointments.</div>
                     )}
                     <div style={{ display: "flex", gap: 8 }}>
-                        <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "#6addeb" }} onClick={() => router.push("/tracking")}>{next ? "Details" : "See all"}</button>
-                        <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "var(--gold)" }} onClick={() => router.push("/lawyers")}>Book a meeting</button>
+                        {/* Theme colours only (2026-10-19): the cyan and gold pair
+                            here matched nothing else in the hero. */}
+                        <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "var(--brand-text)" }} onClick={() => router.push("/tracking")}>{next ? "Details" : "See all"}</button>
+                        <button type="button" className="ov-btn sm go" style={{ flex: 1 }} onClick={() => router.push("/lawyers")}>Book a meeting</button>
                     </div>
                     {upcoming.length > 1 && <div style={{ fontSize: 12, color: "var(--faint)" }}>{upcoming.length - 1} more upcoming</div>}
                     {/* The cache holds one page; the rest is the client's click. */}

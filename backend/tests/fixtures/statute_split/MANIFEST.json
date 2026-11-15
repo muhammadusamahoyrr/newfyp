@@ -1,0 +1,151 @@
+{
+  "schema": "statute-split-fixtures-v1",
+  "extraction": "scripts/ingest_statutes.extract_text",
+  "note": "Contiguous excerpts of official texts; unedited. Pakistan Code: 'information only; Gazette governs'.",
+  "fixtures": {
+    "court_fees_contents_and_start.txt": {
+      "source_file": "court-fees-act-1870.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator9d60b89fa3dd51147d677e764c8772e3.pdf",
+      "source_sha256": "a5cdc51c4422c82d8ed15d75c7dbc0a2729bdc3647ac8e6ad011c9aee078d596",
+      "char_start": 27,
+      "char_end": 4220,
+      "chars": 4193
+    },
+    "court_fees_16_17.txt": {
+      "source_file": "court-fees-act-1870.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator9d60b89fa3dd51147d677e764c8772e3.pdf",
+      "source_sha256": "a5cdc51c4422c82d8ed15d75c7dbc0a2729bdc3647ac8e6ad011c9aee078d596",
+      "char_start": 21302,
+      "char_end": 22024,
+      "chars": 722
+    },
+    "court_fees_11.txt": {
+      "source_file": "court-fees-act-1870.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator9d60b89fa3dd51147d677e764c8772e3.pdf",
+      "source_sha256": "a5cdc51c4422c82d8ed15d75c7dbc0a2729bdc3647ac8e6ad011c9aee078d596",
+      "char_start": 16685,
+      "char_end": 18120,
+      "chars": 1435
+    },
+    "court_fees_19g_19j.txt": {
+      "source_file": "court-fees-act-1870.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator9d60b89fa3dd51147d677e764c8772e3.pdf",
+      "source_sha256": "a5cdc51c4422c82d8ed15d75c7dbc0a2729bdc3647ac8e6ad011c9aee078d596",
+      "char_start": 32851,
+      "char_end": 37914,
+      "chars": 5063
+    },
+    "court_fees_35_36.txt": {
+      "source_file": "court-fees-act-1870.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator9d60b89fa3dd51147d677e764c8772e3.pdf",
+      "source_sha256": "a5cdc51c4422c82d8ed15d75c7dbc0a2729bdc3647ac8e6ad011c9aee078d596",
+      "char_start": 46008,
+      "char_end": 47057,
+      "chars": 1049
+    },
+    "peca_22_22b.txt": {
+      "source_file": "peca-2016.pakistancode.pdf",
+      "official_url": "https://www.pakistancode.gov.pk/pdffiles/administrator6a061efe0ed5bd153fa8b79b8eb4cba7.pdf",
+      "source_sha256": "b096696f758d4b1ec5e764ac500462667ba70e9daba7342050239395171d19f8",
+      "char_start": 46929,
+      "char_end": 49992,
+      "chars": 3063
+    },
+    "peca_26_27.txt": {
+      "source_file": "peca-2016.pakistancode.pdf",
+      "official_url": "https://www.pakistancode.gov.pk/pdffiles/administrator6a061efe0ed5bd153fa8b79b8eb4cba7.pdf",
+      "source_sha256": "b096696f758d4b1ec5e764ac500462667ba70e9daba7342050239395171d19f8",
+      "char_start": 55247,
+      "char_end": 56149,
+      "chars": 902
+    },
+    "peca_28_31.txt": {
+      "source_file": "peca-2016.pakistancode.pdf",
+      "official_url": "https://www.pakistancode.gov.pk/pdffiles/administrator6a061efe0ed5bd153fa8b79b8eb4cba7.pdf",
+      "source_sha256": "b096696f758d4b1ec5e764ac500462667ba70e9daba7342050239395171d19f8",
+      "char_start": 56673,
+      "char_end": 64429,
+      "chars": 7756
+    },
+    "peca_2e_2g.txt": {
+      "source_file": "peca-2016.pakistancode.pdf",
+      "official_url": "https://www.pakistancode.gov.pk/pdffiles/administrator6a061efe0ed5bd153fa8b79b8eb4cba7.pdf",
+      "source_sha256": "b096696f758d4b1ec5e764ac500462667ba70e9daba7342050239395171d19f8",
+      "char_start": 18849,
+      "char_end": 21108,
+      "chars": 2259
+    },
+    "peca_2r_2u.txt": {
+      "source_file": "peca-2016.pakistancode.pdf",
+      "official_url": "https://www.pakistancode.gov.pk/pdffiles/administrator6a061efe0ed5bd153fa8b79b8eb4cba7.pdf",
+      "source_sha256": "b096696f758d4b1ec5e764ac500462667ba70e9daba7342050239395171d19f8",
+      "char_start": 27321,
+      "char_end": 31889,
+      "chars": 4568
+    },
+    "ppc_489d_490.txt": {
+      "source_file": "ppc-1860.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administratoracbdabf2b79c8956d6ea4804fcceb92d.pdf",
+      "source_sha256": "ff2f4748624512e7ff9d810836e3ac11ba95211f52285a27e186e1f3dbd2fda9",
+      "char_start": 438030,
+      "char_end": 441520,
+      "chars": 3490
+    },
+    "ppc_footnote_artifact_153b.txt": {
+      "source_file": "ppc-1860.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administratoracbdabf2b79c8956d6ea4804fcceb92d.pdf",
+      "source_sha256": "ff2f4748624512e7ff9d810836e3ac11ba95211f52285a27e186e1f3dbd2fda9",
+      "char_start": 117425,
+      "char_end": 118854,
+      "chars": 1429
+    },
+    "crpc_10_14.txt": {
+      "source_file": "crpc-1898.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator7db1e56f0f1d39a6e67573ec6b0944e2.pdf",
+      "source_sha256": "08cf18684b87ad585a6af00b962ce7324456826ee22f9291b6f69a9ee735afb4",
+      "char_start": 18704,
+      "char_end": 21244,
+      "chars": 2540
+    },
+    "crpc_22a_22b.txt": {
+      "source_file": "crpc-1898.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator7db1e56f0f1d39a6e67573ec6b0944e2.pdf",
+      "source_sha256": "08cf18684b87ad585a6af00b962ce7324456826ee22f9291b6f69a9ee735afb4",
+      "char_start": 25335,
+      "char_end": 28575,
+      "chars": 3240
+    },
+    "cpc_6_9.txt": {
+      "source_file": "cpc-1908.punjabcode.pdf",
+      "official_url": "https://punjabcode.punjab.gov.pk/uploads/articles/THE_CODE_OF_CIVIL_PROCEDURE,_1908.pdf",
+      "source_sha256": "528384375982b48f0398da46e70606524a8e3db7590dbf087e9b6b86d926a795",
+      "char_start": 15165,
+      "char_end": 17830,
+      "chars": 2665
+    },
+    "cpc_116_117.txt": {
+      "source_file": "cpc-1908.punjabcode.pdf",
+      "official_url": "https://punjabcode.punjab.gov.pk/uploads/articles/THE_CODE_OF_CIVIL_PROCEDURE,_1908.pdf",
+      "source_sha256": "528384375982b48f0398da46e70606524a8e3db7590dbf087e9b6b86d926a795",
+      "char_start": 167250,
+      "char_end": 167526,
+      "chars": 276
+    },
+    "limitation_29_schedule.txt": {
+      "source_file": "limitation-1908.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator3294e35255f255ea96b3356091fb4844.pdf",
+      "source_sha256": "35a1f21a4f2ad6c26a553600c6781065b36a0c25db87bd26d46a9bc01c7a535a",
+      "char_start": 29674,
+      "char_end": 31706,
+      "chars": 2032
+    },
+    "dmma_2.txt": {
+      "source_file": "dmma-1939.pakistancode.pdf",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administratorfb32d6015ae887e6d6b85018961842ea.pdf",
+      "source_sha256": "b790c3c657a92346f05dbe7f1a32ebacbb69c3926bcc3f990eb89edd6d184600",
+      "char_start": 1179,
+      "char_end": 4612,
+      "chars": 3433
+    }
+  }
+}

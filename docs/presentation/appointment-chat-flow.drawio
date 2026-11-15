@@ -1,0 +1,129 @@
+<mxGraphModel dx="2326" dy="1226" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1820" pageHeight="780" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="hdr" parent="1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.5;shadow=1;arcSize=6;align=left;spacingLeft=16;" value="&lt;div style=&quot;font-size:16px;font-weight:800;color:#0F172A;&quot;&gt;Attorney.AI — Client ↔ Lawyer Appointment Chat&lt;/div&gt;&lt;div style=&quot;font-size:11px;color:#64748B;margin-top:3px;&quot;&gt;One private chat per appointment · Send via REST → Safe save (transaction) → Live WebSocket notification → Chat reloads → Read / unread&lt;/div&gt;">
+      <mxGeometry x="50" y="25" width="1720" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- STAGE 1 -->
+    <mxCell id="col1" parent="1" vertex="1" value="  1. CHAT OPENS" style="swimlane;startSize=30;fillColor=#BAE6FD;strokeColor=#BAE6FD;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#EFF6FF;collapsible=0;">
+      <mxGeometry x="50" y="90" width="310" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_ui" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#0284C7;font-size:12px;&quot;&gt;Appointment chat window&lt;/b&gt;&lt;br/&gt;Client: Appointments page&lt;br/&gt;Lawyer: Appointments page + Chat Dock">
+      <mxGeometry x="15" y="45" width="280" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_api" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;GET&lt;/b&gt; /appointments/{id}/messages&lt;br/&gt;(30 per page, scroll up for older)">
+      <mxGeometry x="15" y="135" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_svc" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Who &amp;amp; when&lt;/b&gt;&lt;br/&gt;• Only this client &amp;amp; this lawyer&lt;br/&gt;• Pending → locked · Confirmed → open&lt;br/&gt;• Ended → read-only (history kept)">
+      <mxGeometry x="15" y="215" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_db" parent="col1" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;appointments (status)">
+      <mxGeometry x="15" y="480" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e1_1" parent="col1" edge="1" source="s1_ui" target="s1_api" style="strokeColor=#0284C7;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e1_2" parent="col1" edge="1" source="s1_api" target="s1_svc" style="strokeColor=#0284C7;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e1_3" parent="col1" edge="1" source="s1_svc" target="s1_db" style="strokeColor=#0284C7;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 2 -->
+    <mxCell id="col2" parent="1" vertex="1" value="  2. SEND A MESSAGE" style="swimlane;startSize=30;fillColor=#99F6E4;strokeColor=#99F6E4;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#F0FDFA;collapsible=0;">
+      <mxGeometry x="400" y="90" width="310" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_ui" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#0D9488;font-size:12px;&quot;&gt;Type &amp;amp; press Send&lt;/b&gt;&lt;br/&gt;1–2000 characters&lt;br/&gt;Browser makes a unique message key">
+      <mxGeometry x="15" y="45" width="280" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_api" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;POST&lt;/b&gt; /appointments/{id}/messages&lt;br/&gt;{ text, key }">
+      <mxGeometry x="15" y="135" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_svc" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;No duplicates (idempotency)&lt;/b&gt;&lt;br/&gt;• Slow network → browser retries same key&lt;br/&gt;• Same key → server returns the saved message&lt;br/&gt;• Same key + different text → refused">
+      <mxGeometry x="15" y="215" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_db" parent="col2" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;unique index on message key">
+      <mxGeometry x="15" y="480" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e2_1" parent="col2" edge="1" source="s2_ui" target="s2_api" style="strokeColor=#0D9488;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e2_2" parent="col2" edge="1" source="s2_api" target="s2_svc" style="strokeColor=#0D9488;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e2_3" parent="col2" edge="1" source="s2_svc" target="s2_db" style="strokeColor=#0D9488;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 3 -->
+    <mxCell id="col3" parent="1" vertex="1" value="  3. SAVE SAFELY" style="swimlane;startSize=30;fillColor=#FDE68A;strokeColor=#FDE68A;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#FEF3C7;collapsible=0;">
+      <mxGeometry x="750" y="90" width="310" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_ui" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#D97706;font-size:12px;&quot;&gt;Message service&lt;/b&gt;&lt;br/&gt;appointment_message_service.py">
+      <mxGeometry x="15" y="45" width="280" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_api" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;One MongoDB transaction:&lt;/b&gt;&lt;br/&gt;still CONFIRMED? → then insert message">
+      <mxGeometry x="15" y="135" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_svc" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Why a transaction&lt;/b&gt;&lt;br/&gt;• Lawyer clicks Complete at the same second&lt;br/&gt;• Message can never land after the meeting ended&lt;br/&gt;• Refused → 409 &quot;conversation is closed&quot;">
+      <mxGeometry x="15" y="215" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_state" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#B45309;" value="Saved · notify: pending">
+      <mxGeometry x="15" y="325" width="280" height="34" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_db" parent="col3" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;appointment_messages">
+      <mxGeometry x="15" y="480" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e3_1" parent="col3" edge="1" source="s3_ui" target="s3_api" style="strokeColor=#D97706;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_2" parent="col3" edge="1" source="s3_api" target="s3_svc" style="strokeColor=#D97706;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_3" parent="col3" edge="1" source="s3_svc" target="s3_state" style="strokeColor=#D97706;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_4" parent="col3" edge="1" source="s3_state" target="s3_db" style="strokeColor=#D97706;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 4 -->
+    <mxCell id="col4" parent="1" vertex="1" value="  4. NOTIFY LIVE" style="swimlane;startSize=30;fillColor=#DDD6FE;strokeColor=#DDD6FE;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#F5F3FF;collapsible=0;">
+      <mxGeometry x="1100" y="90" width="310" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_ui" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#6D28D9;font-size:12px;&quot;&gt;Other person's screen&lt;/b&gt;&lt;br/&gt;Bell rings · open chat reloads by itself">
+      <mxGeometry x="15" y="45" width="280" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_api" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;WebSocket&lt;/b&gt; /ws/notifications&lt;br/&gt;(Redis pub/sub → right user)">
+      <mxGeometry x="15" y="135" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_svc" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Notification service&lt;/b&gt;&lt;br/&gt;• Text NOT included (privacy on lock screen)&lt;br/&gt;• Lost notice? re-sent on next open&lt;br/&gt;• One notice per message (no repeats)">
+      <mxGeometry x="15" y="215" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_state" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#6D28D9;" value="notify: sent">
+      <mxGeometry x="15" y="325" width="280" height="34" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_db" parent="col4" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt; notifications&lt;br/&gt;&lt;b&gt;Redis&lt;/b&gt; pub/sub">
+      <mxGeometry x="15" y="480" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e4_1" parent="col4" edge="1" source="s4_ui" target="s4_api" style="strokeColor=#7C3AED;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_2" parent="col4" edge="1" source="s4_api" target="s4_svc" style="strokeColor=#7C3AED;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_3" parent="col4" edge="1" source="s4_svc" target="s4_state" style="strokeColor=#7C3AED;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_4" parent="col4" edge="1" source="s4_state" target="s4_db" style="strokeColor=#7C3AED;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 5 -->
+    <mxCell id="col5" parent="1" vertex="1" value="  5. READ &amp; UNREAD" style="swimlane;startSize=30;fillColor=#A7F3D0;strokeColor=#A7F3D0;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#ECFDF5;collapsible=0;">
+      <mxGeometry x="1450" y="90" width="320" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ui" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#059669;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#059669;font-size:12px;&quot;&gt;Lawyer Chat Dock&lt;/b&gt;&lt;br/&gt;Unread count on each chat&lt;br/&gt;Up to 3 floating chats">
+      <mxGeometry x="15" y="45" width="290" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_api" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;POST&lt;/b&gt; /appointment-threads/{id}/read&lt;br/&gt;&lt;b&gt;GET&lt;/b&gt; /appointment-threads/summary">
+      <mxGeometry x="15" y="135" width="290" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_svc" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Read receipts&lt;/b&gt;&lt;br/&gt;• Saves &quot;last read at&quot; per person&lt;br/&gt;• Unread = other side's messages after it&lt;br/&gt;• Count shown up to 99+">
+      <mxGeometry x="15" y="215" width="290" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_db" parent="col5" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#059669;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;appointment_thread_reads">
+      <mxGeometry x="15" y="480" width="290" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e5_1" parent="col5" edge="1" source="s5_ui" target="s5_api" style="strokeColor=#059669;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5_2" parent="col5" edge="1" source="s5_api" target="s5_svc" style="strokeColor=#059669;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5_3" parent="col5" edge="1" source="s5_svc" target="s5_db" style="strokeColor=#059669;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE-TO-STAGE -->
+    <mxCell id="f12" parent="1" edge="1" source="s1_ui" target="s2_ui" style="strokeColor=#0284C7;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f23" parent="1" edge="1" source="s2_ui" target="s3_ui" style="strokeColor=#0D9488;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f34" parent="1" edge="1" source="s3_ui" target="s4_ui" style="strokeColor=#D97706;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f45" parent="1" edge="1" source="s4_ui" target="s5_ui" style="strokeColor=#7C3AED;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STATUS STRIP -->
+    <mxCell id="status_strip" parent="1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.5;shadow=1;arcSize=12;align=center;fontSize=11;" value="&lt;b&gt;Chat state follows the appointment:&lt;/b&gt;&amp;nbsp; 🔒 pending = locked &amp;nbsp;→&amp;nbsp; ✅ confirmed = open &amp;nbsp;→&amp;nbsp; 📖 completed / cancelled / no-show = read-only">
+      <mxGeometry x="50" y="685" width="1720" height="36" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>

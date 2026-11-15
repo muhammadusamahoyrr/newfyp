@@ -7,7 +7,7 @@
 // not have yet — a court case number distinct from ours, filing date, fee on
 // the case, client-assigned tasks, attachments, lawyer-booked meetings,
 // hearing reschedule — are left out rather than drawn as if they worked.
-import { Fragment, useState, useRef, useEffect, useId, useMemo } from "react";
+import { Fragment, useState, useRef, useEffect, useId, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useTheme, ThemeCtx } from "./theme.js";
 import { useCase, useNotif } from "./theme.js";
@@ -22,14 +22,33 @@ import {
     listCases, createWalkInCase, addHearing as apiAddHearing, recordHearingOutcome as apiRecordOutcome,
     listMessages, sendMessage as apiSendMessage, listTasks, addTask as apiAddTask,
     toggleTask as apiToggleTask, listEngagements, proposeEngagementTerms, declineEngagement,
-    completeEngagement, terminateEngagement, listDocuments, rescheduleHearing as apiReschedule,
+    completeEngagement, terminateEngagement, listDocuments, rescheduleHearing as apiReschedule, cancelHearing as apiCancelHearing,
     myDocumentsV2, fetchRevisionPreview, fetchDocumentPreviewUrl, reviewQueueV2,
     listCaseFiles, uploadCaseFile, openCaseFile, deleteCaseFile,
+    proposeMeeting, listMeetingProposals, withdrawMeetingProposal, getCaseConsultations,
 } from "@/lib/api.js";
 import { documentStatusView } from "@/lib/documentStatus.js";
 import { avatarBg } from "./utils.js";
 import { caseStatusLabel } from "@/lib/caseStatus.js";
-import { pktToday } from "@/lib/bookingTime.js";
+import { BUBBLE_CSS } from "@/components/shared/ChatPieces.jsx";
+import VideoJoin from "@/components/shared/VideoJoin.jsx";
+import { PROVINCES } from "@/lib/jurisdictions.js";
+import { pktToday, pktSlotToUtcISO, isPktSlotPast, formatPkt } from "@/lib/bookingTime.js";
+
+// "Sun, 18 Oct · 09:00 PKT · Video call" for a consultation row (2026-10-20).
+const CONSULT_MODE = { video: "Video call", phone: "Phone call", in_person: "In person", office: "In person" };
+export function consultLine(k) {
+    if (!k?.scheduled_at) return "";
+    const when = formatPkt(k.scheduled_at, { weekday: "short", day: "numeric", month: "short" });
+    const time = formatPkt(k.scheduled_at, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+    return [when, `${time} PKT`, CONSULT_MODE[k.mode] || null].filter(Boolean).join(" · ");
+}
+// Open that consultation on the Appointments page (its detail).
+function openConsultation(setPage, id) {
+    try { sessionStorage.setItem("attorney:lawyer-open-appointment", id); } catch { /* storage off */ }
+    setPage?.("appointments");
+    window.dispatchEvent(new CustomEvent("attorney:open-appointment", { detail: id }));
+}
 
 // ─────────────────────────────────────────────
 // SMALL HELPERS
@@ -39,6 +58,8 @@ const TEAL = "#38d8c4";
 const BLUE = "#5ab3ff";
 const RED = "#e8526a";
 const HISTORY_STATUSES = ["Closed", "Dismissed"];
+// Session key for a hire request to open on New requests (set by Appointments).
+export const OPEN_REQUEST_KEY = "attorney:lawyer-open-request";
 // Scales of justice: a beam on a post, two pans.
 const SCALES = ["M12 3v18", "M7 21h10", "M5 7h14", "M12 5a1 1 0 100-2 1 1 0 000 2", "M5 7l-3 7a3 3 0 006 0z", "M19 7l-3 7a3 3 0 006 0z"];
 
@@ -177,8 +198,11 @@ function Modal({ title, subtitle, onClose, children, width = 560, busy = false, 
                 downOnBackdrop.current = false;
                 if (fromBackdrop && backdropClose && !busy) onClose();
             }}>
-            <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
-                style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 26, width, maxWidth: "95vw", boxShadow: t.shadowCard, maxHeight: "90vh", overflowY: "auto", outline: "none" }}>
+            {/* data-lenis-prevent: the app-wide smooth scroll takes wheel
+                events for the page, so a tall dialog (Record Hearing Outcome)
+                showed a scrollbar but would not scroll (2026-10-19). */}
+            <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} data-lenis-prevent
+                style={{ overscrollBehavior: "contain", background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 26, width, maxWidth: "95vw", boxShadow: t.shadowCard, maxHeight: "90vh", overflowY: "auto", outline: "none" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                     <div>
                         <div id={titleId} className="serif" style={{ fontSize: 22, fontWeight: 700, color: t.text }}>{title}</div>
@@ -243,6 +267,99 @@ function Toast({ msg }) {
     );
 }
 
+/* PROPOSE A MEETING (2026-10-12). A client meeting needs the client: the
+ * lawyer proposes up to three times, the client chooses one in their app and
+ * it becomes a confirmed appointment on this case. Nothing is booked until
+ * then. (A private diary meeting is Appointments › Create › Meeting.) */
+const MEETING_TIMES = Array.from({ length: 24 }, (_, i) => {
+    const m = 9 * 60 + i * 30;
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${m % 60 ? "30" : "00"}`;
+});
+
+function ProposeMeetingModal({ client, caseId, onClose, onSent }) {
+    const { t } = useTheme();
+    const [mode, setMode] = useState("video");
+    const [duration, setDuration] = useState("60");
+    const [slots, setSlots] = useState([{ date: "", time: "" }]);
+    const [agenda, setAgenda] = useState("");
+    const [link, setLink] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState(null);
+    const setSlot = (i, patch) => setSlots(list => list.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+    const submit = async () => {
+        if (busy) return;
+        setErr(null);
+        const filled = slots.filter(x => x.date || x.time);
+        if (!filled.length || filled.some(x => !x.date || !x.time)) { setErr("Give each proposed time a date and a time."); return; }
+        if (filled.some(x => isPktSlotPast(x.date, x.time))) { setErr("Every proposed time must be in the future."); return; }
+        const keys = filled.map(x => `${x.date} ${x.time}`);
+        if (new Set(keys).size !== keys.length) { setErr("Each proposed time must be different."); return; }
+        if (agenda.trim().length < 3) { setErr("Say briefly what the meeting is for."); return; }
+        const url = link.trim();
+        if (mode === "video" && url && !/^https:\/\/\S+\.\S+/.test(url)) { setErr("The joining link must start with https://"); return; }
+        setBusy(true);
+        const { data, error } = await proposeMeeting({
+            case_id: caseId,
+            options: filled.map(x => pktSlotToUtcISO(x.date, x.time)),
+            duration_minutes: Number(duration),
+            mode,
+            agenda: agenda.trim(),
+            meeting_link: mode === "video" && url ? url : null,
+        });
+        setBusy(false);
+        if (error) { setErr(error.message || "Could not send the proposal. Please try again."); return; }
+        onSent(data);
+    };
+    return (
+        <Modal title="Propose a meeting" subtitle={`${client} chooses one of your times in their app.`} onClose={onClose} width={560} busy={busy}>
+            <div data-propose-meeting style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <Select label="How" value={mode} onChange={setMode}
+                        options={[{ value: "video", label: "Video call" }, { value: "in_person", label: "In person" }]} />
+                    <Select label="Length" value={duration} onChange={setDuration}
+                        options={[{ value: "30", label: "30 minutes" }, { value: "60", label: "1 hour" }, { value: "90", label: "1 hour 30 minutes" }]} />
+                </div>
+                <div>
+                    <Label>Times you can do (up to 3)</Label>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {slots.map((x, i) => (
+                            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 140px 40px", gap: 8, alignItems: "center" }}>
+                                <input type="date" aria-label={`Date ${i + 1}`} min={pktToday()} value={x.date} onChange={e => setSlot(i, { date: e.target.value })}
+                                    style={{ height: 40, border: `1px solid ${t.border}`, borderRadius: 9, background: t.inputBg, color: t.text, fontSize: 14, padding: "0 12px", outline: "none", boxSizing: "border-box", colorScheme: t.mode }} />
+                                <select aria-label={`Time ${i + 1}`} value={x.time} onChange={e => setSlot(i, { time: e.target.value })}
+                                    style={{ height: 40, border: `1px solid ${t.border}`, borderRadius: 9, background: t.inputBg, color: t.text, fontSize: 14, padding: "0 10px", outline: "none", boxSizing: "border-box" }}>
+                                    <option value="">Time…</option>
+                                    {MEETING_TIMES.map(v => <option key={v} value={v} style={{ background: t.surface }}>{v}</option>)}
+                                </select>
+                                {slots.length > 1
+                                    ? <button type="button" aria-label={`Remove time ${i + 1}`} onClick={() => setSlots(list => list.filter((_, j) => j !== i))}
+                                        style={{ height: 40, borderRadius: 9, border: `1px solid ${t.border}`, background: "transparent", color: t.textMuted, cursor: "pointer" }}>✕</button>
+                                    : <span />}
+                            </div>
+                        ))}
+                    </div>
+                    {slots.length < 3 && (
+                        <button type="button" onClick={() => setSlots(list => [...list, { date: "", time: "" }])}
+                            style={{ marginTop: 8, border: 0, background: "none", padding: 0, color: t.primary, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+ Add another time</button>
+                    )}
+                </div>
+                <Textarea label="What is it for? *" value={agenda} onChange={setAgenda} rows={2} maxLength={300}
+                    placeholder="e.g. Prepare for the hearing on the 20th; bring the original agreement" />
+                {mode === "video" && (
+                    <FieldInput label="Joining link (optional)" value={link} onChange={setLink} maxLength={500}
+                        placeholder="https://meet.google.com/… — or add it later" />
+                )}
+                <div style={{ fontSize: 12, color: t.textMuted }}>Nothing is booked until {client} chooses a time; then it appears in both your Appointments.</div>
+                {err && <div role="alert" style={{ fontSize: 13, color: t.danger || "#e8526a", fontWeight: 600 }}>{err}</div>}
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
+                    <Btn variant="secondary" onClick={onClose} disabled={busy}>Cancel</Btn>
+                    <Btn onClick={submit} disabled={busy}>{busy ? "Sending…" : "Send proposal"}</Btn>
+                </div>
+            </div>
+        </Modal>
+    );
+}
+
 function useToast() {
     const [toast, setToast] = useState(null);
     // ONE timer. Each toast used to start its own and never cancel the last,
@@ -296,29 +413,33 @@ const TASK_TEMPLATES = [
 // ─────────────────────────────────────────────
 // ENGAGEMENT ACTIONS — send terms, decline, complete, end
 // ─────────────────────────────────────────────
-function useEngagementActions(onChanged, showToast) {
+export function useEngagementActions(onChanged, showToast) {
     const [accepting, setAccepting] = useState(null);   // request being accepted (opens terms modal)
     const [feeAmount, setFeeAmount] = useState("");
     const [feeType, setFeeType] = useState("fixed");
     const [scopeNote, setScopeNote] = useState("");
     const [busy, setBusy] = useState(false);
+    const [termsError, setTermsError] = useState(null);
 
-    const openAccept = (req) => { setAccepting(req); setFeeAmount(""); setFeeType("fixed"); setScopeNote(""); };
+    const openAccept = (req) => { setAccepting(req); setFeeAmount(""); setFeeType("fixed"); setScopeNote(""); setTermsError(null); };
 
     // Sends TERMS, and takes nothing. The case is not yours until the client
     // accepts these — they have to see the price before they are committed.
     const submitAccept = async () => {
         const amount = feeAmount === "" ? null : Number(feeAmount);
         if (amount === null || !Number.isFinite(amount) || amount < 0) {
-            showToast("⚠️ Enter the fee you are proposing — the client has to see a price");
+            // Said in the dialog, next to the field (2026-10-20), not in a toast
+            // behind the dialog.
+            setTermsError("Enter the fee you are proposing — the client has to see a price.");
             return;
         }
+        setTermsError(null);
         setBusy(true);
         const { error } = await proposeEngagementTerms(accepting.id, {
             fee_amount: amount, fee_type: feeType, scope_note: scopeNote.trim() || null,
         });
         setBusy(false);
-        if (error) { showToast("❌ " + (error.message || "Failed to send terms")); return; }
+        if (error) { setTermsError(error.message || "Could not send the terms. Try again."); return; }
         setAccepting(null);
         showToast("✅ Terms sent — the case is yours once the client accepts them");
         onChanged();
@@ -367,34 +488,117 @@ function useEngagementActions(onChanged, showToast) {
     };
 
     const termsModal = accepting && (
-        <Modal title="Send your terms"
-            subtitle={`${accepting.case_title || "This case"} — the client reviews these and decides. The case becomes yours when they accept.`}
-            onClose={() => setAccepting(null)} width={480}>
-            <TermsForm feeAmount={feeAmount} setFeeAmount={setFeeAmount} feeType={feeType} setFeeType={setFeeType}
-                scopeNote={scopeNote} setScopeNote={setScopeNote} busy={busy}
+        <Modal title="Send your terms" busy={busy}
+            subtitle={`${firstName(accepting.client_name)} sees your fee and scope, then decides. The case becomes yours only when they accept.`}
+            onClose={() => setAccepting(null)} width={560}>
+            <TermsForm req={accepting} feeAmount={feeAmount} setFeeAmount={v => { setFeeAmount(v); setTermsError(null); }}
+                feeType={feeType} setFeeType={setFeeType}
+                scopeNote={scopeNote} setScopeNote={setScopeNote} busy={busy} error={termsError}
                 onCancel={() => setAccepting(null)} onSubmit={submitAccept} />
         </Modal>
     );
     return { busy, openAccept, handleDecline, handleComplete, handleTerminate, termsModal };
 }
 
-function TermsForm({ feeAmount, setFeeAmount, feeType, setFeeType, scopeNote, setScopeNote, busy, onCancel, onSubmit }) {
-    const { t: T } = useTheme();
+const firstName = (name) => String(name || "the client").trim().split(/\s+/)[0] || "the client";
+const FEE_TYPE_HINT = { fixed: "One fee for the whole case", hourly: "Charged per hour of work", per_hearing: "Charged for each hearing (peshi)" };
+const FEE_TYPE_SHORT = { fixed: "Fixed fee", hourly: "Per hour", per_hearing: "Per hearing" };
+const SCOPE_MAX = 2000;
+
+/* The terms form (redesigned 2026-10-20): who and what it is for, the fee
+ * with its unit, the fee type as three plain choices, an optional scope, and
+ * a line saying exactly what the client will see. Errors are said here, in
+ * the dialog. */
+const TERMS_CSS = `[data-terms]{display:flex;flex-direction:column;gap:16px;color:var(--ink)}
+[data-terms] .tf-ctx{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+[data-terms] .tf-ctx b{display:block;font-size:14px}
+[data-terms] .tf-title{font-size:13px;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-terms] .tf-meta{font-size:12px;color:var(--faint);margin-top:4px}
+[data-terms] .tf-lbl{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+[data-terms] .tf-fee{display:flex;align-items:center;height:48px;border-radius:12px;border:1px solid var(--line-strong);background:var(--input);overflow:hidden}
+[data-terms] .tf-fee:focus-within{border-color:var(--focus);box-shadow:0 0 0 3px var(--brand-soft)}
+[data-terms] .tf-fee.bad{border-color:var(--danger)}
+[data-terms] .tf-fee span{padding:0 12px;height:100%;display:flex;align-items:center;font-weight:700;color:var(--muted);border-right:1px solid var(--line);background:var(--surface-2)}
+[data-terms] .tf-fee input{flex:1;min-width:0;height:100%;border:0;outline:none;background:transparent;color:var(--ink);font:inherit;font-size:17px;font-weight:700;padding:0 14px}
+[data-terms] .tf-types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+[data-terms] .tf-type{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:12px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+[data-terms] .tf-type b{font-size:13.5px}
+[data-terms] .tf-type small{font-size:11.5px;color:var(--muted);line-height:1.35}
+[data-terms] .tf-type:hover{border-color:var(--hover-line)}
+[data-terms] .tf-type[aria-checked="true"]{border-color:var(--brand-text);background:var(--brand-soft)}
+[data-terms] textarea{width:100%;min-height:84px;resize:vertical;border-radius:12px;border:1px solid var(--line-strong);background:var(--input);color:var(--ink);font:inherit;font-size:14px;padding:10px 12px;outline:none;box-sizing:border-box}
+[data-terms] textarea:focus{border-color:var(--focus);box-shadow:0 0 0 3px var(--brand-soft)}
+[data-terms] .tf-count{text-align:right;font-size:11.5px;color:var(--faint);margin-top:4px}
+[data-terms] .tf-preview{padding:12px 14px;border-radius:12px;border:1px dashed var(--line-strong);font-size:13px;color:var(--muted);line-height:1.5}
+[data-terms] .tf-preview b{color:var(--ink)}
+[data-terms] .tf-err{font-size:13px;color:var(--danger);font-weight:600}
+[data-terms] .tf-foot{display:flex;justify-content:flex-end;gap:10px}
+[data-terms] .tf-btn{height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+[data-terms] .tf-btn.go{border:0;background:var(--brand-solid);color:var(--on-brand);padding:0 22px}
+[data-terms] .tf-btn.go:hover:not(:disabled){background:var(--brand-solid-hover)}
+[data-terms] .tf-btn:disabled{opacity:.6;cursor:default}`;
+
+function TermsForm({ req = {}, feeAmount, setFeeAmount, feeType, setFeeType, scopeNote, setScopeNote, busy, error = null, onCancel, onSubmit }) {
+    const first = firstName(req.client_name);
+    const amount = feeAmount === "" ? null : Number(feeAmount);
+    const valid = amount !== null && Number.isFinite(amount) && amount >= 0;
+    const money = valid ? `Rs ${amount.toLocaleString("en-PK")}` : null;
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontSize: 12, color: T.textMuted, background: T.primaryGlow2, border: `1px solid color-mix(in srgb, ${T.primary} 19%, transparent)`, borderRadius: 10, padding: "10px 12px", lineHeight: 1.6 }}>
-                Nothing is assigned yet. The client sees this fee before agreeing to it,
-                and the case is assigned to you only when they accept these terms.
+        <div data-terms>
+            <style>{TERMS_CSS}</style>
+            <div className="tf-ctx">
+                <Avatar name={req.client_name || "Client"} size={38} />
+                <div style={{ minWidth: 0 }}>
+                    <b>{req.client_name || "Client"}</b>
+                    <div className="tf-title" title={req.case_title || ""}>{req.case_title || "Untitled case"}</div>
+                    <div className="tf-meta">
+                        {[req.case_number, req.consultation ? `After consultation on ${consultLine(req.consultation)}` : null].filter(Boolean).join(" · ")}
+                    </div>
+                </div>
             </div>
-            <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <FieldInput label="Fee (PKR)" type="number" value={feeAmount} onChange={setFeeAmount} placeholder="e.g. 50000" />
-                <Select label="Fee Type" value={feeType} onChange={setFeeType} options={FEE_TYPE_OPTIONS} />
+
+            <div>
+                <label className="tf-lbl" htmlFor="tf-fee">Your fee</label>
+                <div className={`tf-fee${error && !valid ? " bad" : ""}`}>
+                    <span>Rs</span>
+                    <input id="tf-fee" type="number" min="0" step="500" inputMode="numeric" value={feeAmount}
+                        onChange={e => setFeeAmount(e.target.value)} placeholder="e.g. 50000" aria-invalid={Boolean(error && !valid)} />
+                </div>
             </div>
-            <Textarea label="Scope Note (optional)" rows={3} value={scopeNote} onChange={setScopeNote}
-                placeholder="What the engagement covers — e.g. representation through trial, drafting, hearings…" />
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>
-                <Btn variant="accent" disabled={busy} onClick={onSubmit}>{busy ? "Sending…" : "Send Terms to Client"}</Btn>
+
+            <div>
+                <span className="tf-lbl" id="tf-type-l">Fee type</span>
+                <div className="tf-types" role="radiogroup" aria-labelledby="tf-type-l">
+                    {FEE_TYPE_OPTIONS.map(o => (
+                        <button key={o.value} type="button" role="radio" aria-checked={feeType === o.value} className="tf-type"
+                            data-fee-type={o.value} onClick={() => setFeeType(o.value)}>
+                            <b>{FEE_TYPE_SHORT[o.value] || o.label}</b>
+                            <small>{FEE_TYPE_HINT[o.value]}</small>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div>
+                <label className="tf-lbl" htmlFor="tf-scope">What it covers <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500 }}>(optional)</span></label>
+                <textarea id="tf-scope" rows={3} maxLength={SCOPE_MAX} value={scopeNote} onChange={e => setScopeNote(e.target.value)}
+                    placeholder="e.g. Drafting the suit, representation at every hearing until the judgment." />
+                <div className="tf-count">{scopeNote.length} / {SCOPE_MAX}</div>
+            </div>
+
+            <div className="tf-preview" data-terms-preview>
+                {money
+                    ? <>{first} will see <b>{money}</b> · {(FEE_TYPE_OPTIONS.find(o => o.value === feeType) || {}).label}{scopeNote.trim() ? " · with your note on what it covers" : ""}. Nothing is assigned until they accept.</>
+                    : <>Enter your fee to see what {first} will be shown. Nothing is assigned until they accept.</>}
+            </div>
+
+            {error && <div role="alert" className="tf-err" data-terms-error>{error}</div>}
+
+            <div className="tf-foot">
+                <button type="button" className="tf-btn" onClick={onCancel} disabled={busy}>Cancel</button>
+                <button type="button" className="tf-btn go" data-terms-send onClick={onSubmit} disabled={busy}>
+                    {busy ? "Sending…" : `Send terms to ${first}`}
+                </button>
             </div>
         </div>
     );
@@ -453,7 +657,6 @@ function BarMenu({ label, icon, badge, children, width = 240 }) {
 }
 
 const CASE_TYPES = [["civil", "Civil"], ["criminal", "Criminal"], ["family", "Family"], ["constitutional", "Constitutional"]];
-const PROVINCES = [["punjab", "Punjab"], ["sindh", "Sindh"], ["kpk", "Khyber Pakhtunkhwa"], ["balochistan", "Balochistan"], ["federal", "Federal / Islamabad"]];
 
 // The Filter panel's order and short labels, two per row. Short names keep
 // the tiles one consistent width; the full name is the tile's tooltip.
@@ -652,6 +855,8 @@ export const CASES_WS_CSS = `[data-cases-ws]{height:100%;color:var(--ink);font-f
 [data-cases-ws] .cw-btn:hover:not(:disabled){border-color:var(--hover-line);background:var(--hover-tint);color:var(--hover-ink)}
 [data-cases-ws] .cw-btn:disabled,[data-cases-ws] .cw-cta:disabled{opacity:.5;cursor:not-allowed}
 [data-cases-ws] .cw-btn.danger{color:var(--danger)}
+[data-cases-ws] .cw-btn.sm{height:34px;padding:0 13px;border-radius:10px;font-size:13px;font-weight:600}
+[data-cases-ws] .cw-btn.sm.icon{width:34px;padding:0}
 [data-cases-ws] .cw-btn.danger:hover:not(:disabled){background:var(--danger-soft);border-color:var(--danger);color:var(--danger)}
 [data-cases-ws] .cw-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 18px;border-radius:12px;border:0;background:var(--brand-solid);color:var(--on-brand);font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 10px 22px -12px rgba(46,196,214,.8);transition:transform .15s,background .15s}
 [data-cases-ws] .cw-cta:hover:not(:disabled){background:var(--brand-solid-hover);transform:translateY(-1px)}
@@ -676,6 +881,13 @@ export const CASES_WS_CSS = `[data-cases-ws]{height:100%;color:var(--ink);font-f
 [data-cases-ws] .cw-n.hot{background:color-mix(in srgb,var(--gold) 25%,transparent);color:var(--gold)}
 [data-cases-ws] .cw-split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
 [data-cases-ws] .cw-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+[data-cases-ws] .cw-consult{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+[data-cases-ws] .cw-consult:first-of-type{border-top:none}
+[data-cases-ws] .cw-consult b{display:block;font-size:13px;font-weight:700;color:var(--ink)}
+[data-cases-ws] .cw-consult span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+[data-cases-ws] .cw-consult em{display:block;font-style:normal;font-size:12.5px;color:var(--muted);margin-top:4px}
+[data-cases-ws] .cw-consult-note{font-size:12.5px;color:var(--muted);margin-top:8px}
+[data-cases-ws] .cw-link{margin-left:auto;background:none;border:none;padding:0;color:var(--teal-ink);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;flex:none}
 [data-cases-ws] .cw-card{border-radius:18px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-rest);padding:18px 20px}
 [data-cases-ws] .cw-card.cw-flush{padding:0;overflow:hidden}
 [data-cases-ws] .cw-lead{padding:22px}
@@ -756,9 +968,15 @@ export const CASES_WS_CSS = `[data-cases-ws]{height:100%;color:var(--ink);font-f
 [data-cases-ws] .cw-chat-body{flex:1;display:flex;flex-direction:column;gap:12px;padding:18px;max-height:460px;overflow-y:auto;background:var(--surface-2)}
 [data-cases-ws] .cw-msg{display:flex;gap:10px;align-items:flex-start}
 [data-cases-ws] .cw-msg.mine{justify-content:flex-end}
-[data-cases-ws] .cw-bubble{max-width:70%;padding:10px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-size:14px;line-height:1.55}
-[data-cases-ws] .cw-msg.mine .cw-bubble{background:var(--brand-soft);border-color:color-mix(in srgb,var(--brand-text) 30%,transparent)}
-[data-cases-ws] .cw-bubble small{display:block;margin-top:4px;font-size:11.5px;color:var(--muted)}
+[data-cases-ws] .cw-msg{align-items:flex-end}
+[data-cases-ws] .cw-bubble{max-width:70%;padding:8px 16px;font-size:14px;line-height:1.55;--bub:var(--surface);--bub-page:var(--surface-2);color:var(--ink)}
+[data-cases-ws] .cw-msg.mine .cw-bubble{--bub:#2EC4D6;color:#10282E}
+[data-cases-ws][data-mode="light"] .cw-msg.mine .cw-bubble{--bub:#0B7A8C;color:#fff}
+[data-cases-ws] .cw-msg:not(.mine) .cw-bubble{margin-left:8px}
+[data-cases-ws] .cw-msg.mine .cw-bubble{margin-right:8px}
+[data-cases-ws] .cw-bubble small{position:relative;z-index:2;display:block;margin-top:2px;font-size:11px;color:var(--muted)}
+[data-cases-ws] .cw-msg.mine .cw-bubble small{color:currentColor;opacity:.7;text-align:right}
+[data-cases-ws] .cw-bubble>div{position:relative;z-index:2}
 [data-cases-ws] .cw-chat-foot{padding:12px 18px 16px;border-top:1px solid var(--line)}
 [data-cases-ws] .cw-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
 [data-cases-ws] .cw-chips button{height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
@@ -896,6 +1114,10 @@ export const CASES_HOME_CSS = `[data-cases-home]{color:var(--ink);font:15px/1.5 
 [data-cases-home] .ch-btn.gold:hover:not(:disabled){filter:brightness(1.06);color:#241a05;background:var(--gold)}
 [data-cases-home] .ch-btn:disabled{opacity:.5;cursor:not-allowed}
 [data-cases-home][data-mode="light"] .ch-btn.gold,[data-cases-home][data-mode="light"] .ch-btn.gold:hover:not(:disabled),[data-cases-home][data-mode="light"] .ch-n.hot{color:#fff}
+[data-cases-home] .ch-consult{grid-column:1 / -1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+[data-cases-home] .ch-consult b{color:var(--ink);font-weight:600}
+[data-cases-home] .ch-consult em{font-style:normal}
+[data-cases-home] .ch-consult .ch-link{margin-left:auto;background:none;border:none;padding:0;color:var(--teal-ink);font:inherit;font-weight:700;cursor:pointer}
 [data-cases-home] .ch-quote{grid-column:1 / -1;font-size:12.5px;color:var(--muted);padding:8px 12px;border-left:3px solid var(--gold);background:color-mix(in srgb,var(--gold) 8%,transparent);border-radius:0 8px 8px 0}
 [data-cases-home] .ch-empty{padding:26px 18px;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted);text-align:center}
 [data-cases-home] .ch-alert{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 8%,transparent);font-size:13px}
@@ -929,11 +1151,31 @@ export function courtWeek(cases, today) {
 }
 
 function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {}, onCaseCreated = () => {},
-                     loadError = null, onRetryCases = () => {}, reqError = null, onRetryRequests = () => {} }) {
+                     loadError = null, onRetryCases = () => {}, reqError = null, onRetryRequests = () => {},
+                     focusRequest = null, requestsSettled = false, onFocusApplied = () => {} }) {
     const { t: T } = useTheme();
     const { setPage } = useCase();
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState("all");      // all | needs | requests | nohearing | active | history
+    const [focusedRequestId, setFocusedRequestId] = useState(null);
+    // Open New requests on the request asked for. A missing or unknown id still
+    // opens New requests (the safe fallback); filters are cleared so it shows.
+    useEffect(() => {
+        if (!focusRequest || !requestsSettled) return;
+        setSearch("");
+        setTypes([]);
+        setProvinces([]);
+        setFilter("requests");
+        const id = focusRequest.id && requests.some(r => r.id === focusRequest.id) ? focusRequest.id : null;
+        setFocusedRequestId(id);
+        onFocusApplied();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusRequest, requestsSettled, requests]);
+    useEffect(() => {
+        if (!focusedRequestId) return;
+        const el = [...document.querySelectorAll("[data-request-id]")].find(x => x.getAttribute("data-request-id") === focusedRequestId);
+        try { el?.scrollIntoView?.({ block: "center", behavior: "smooth" }); } catch { /* not in a browser */ }
+    }, [focusedRequestId]);
     const [newOpen, setNewOpen] = useState(false);
     const [sortBy, setSortBy] = useState("hearing");
     const [types, setTypes] = useState([]);            // case types to keep; empty = all
@@ -978,7 +1220,7 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
     const chips = [
         { id: "all", label: "All", n: counts.all },
         { id: "needs", label: "Needs me", n: counts.needs, hot: true },
-        { id: "requests", label: "New requests", n: counts.requests, hot: true },
+        { id: "requests", label: "New hire requests", n: counts.requests, hot: true },
         { id: "nohearing", label: "Not filed yet", n: counts.nohearing },
         { id: "active", label: "Active", n: counts.active },
     ];
@@ -1100,10 +1342,12 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
 
     const requestRow = (r) => {
         const sent = r.status === "terms_proposed";
+        const focused = focusedRequestId === r.id;
         // Days since it was sent, counted in PKT days (not by the UTC date).
         const ageDays = requestAgeDays(r.created_at, today);
         return (
-            <div key={r.id} data-row="request" className="ch-row" style={{ "--edge": "var(--gold)" }}>
+            <div key={r.id} data-row="request" data-request-id={r.id} data-focused={focused ? "" : undefined} className="ch-row"
+                style={{ "--edge": "var(--gold)", ...(focused ? { outline: "2px solid var(--gold)", outlineOffset: 2 } : {}) }}>
                 {titleBlock(r.case_title || "Untitled case", r.case_number,
                     [r.case_type && r.case_type.charAt(0).toUpperCase() + r.case_type.slice(1)], "var(--gold)")}
                 {clientCell(r.client_name, sent ? (r.fee_amount ? `PKR ${Number(r.fee_amount).toLocaleString()} proposed` : "Terms sent") : null)}
@@ -1120,6 +1364,15 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
                     </>)}
                 </div>
                 {r.message && <div className="ch-quote">“{r.message}”</div>}
+                {/* The consultation it followed (2026-10-20): from the request's
+                    stored appointment id only, never guessed. */}
+                <div className="ch-consult" data-request-consultation={r.consultation ? r.consultation.id : "unavailable"}>
+                    {r.consultation ? (<>
+                        <span><b>After consultation on {consultLine(r.consultation)}</b>
+                            {r.consultation.note && <em> — “{r.consultation.note}”</em>}</span>
+                        <button type="button" className="ch-link" onClick={() => openConsultation(setPage, r.consultation.id)}>View consultation</button>
+                    </>) : <span className="muted">Consultation record unavailable</span>}
+                </div>
             </div>
         );
     };
@@ -1133,7 +1386,7 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
 
     const sections_ = [];
     if (show("requests") && (newRequests.length > 0 || filter === "requests")) sections_.push(
-        <div key="req">{group("New requests", "Waiting for your terms", newRequests.length, "var(--gold)")}
+        <div key="req">{group("New hire requests", "Waiting for your terms", newRequests.length, "var(--gold)")}
             {newRequests.length ? newRequests.map(requestRow) : empty("No requests waiting.")}</div>);
     if (filter === "all" && awaitingClient.length > 0) sections_.push(
         <div key="await">{group("Waiting for the client", "Terms sent — the client decides", awaitingClient.length, "var(--teal-ink)")}
@@ -1308,11 +1561,49 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
                          hasLoaded = true, loadError = null, onReload = async () => null }) {
     const { t: T } = useTheme();
     const { setPage, setActiveCase } = useCase() || {};
-    const [tab, setTab] = useState("overview");
+    // A page that sends the lawyer here can name the tab (2026-10-20: the
+    // Clients card's Message opens the case on Messages).
+    const [tab, setTab] = useState(() => {
+        try {
+            return sessionStorage.getItem("attorney:lawyer-case-tab") || "overview";
+        } catch { return "overview"; }
+    });
     const [toast, showToast] = useToast();
     const [focusTask, setFocusTask] = useState(0);
     const c = cases.find(x => x.id === caseId);
+    useEffect(() => {
+        if (!c) return;
+        try { sessionStorage.removeItem("attorney:lawyer-case-tab"); } catch { /* storage off */ }
+    }, [c]);
     const realId = c?._id || caseId;
+    // Meeting proposals on this case: the open one is shown under the header.
+    const [proposals, setProposals] = useState([]);
+    const [pmOpen, setPmOpen] = useState(false);
+    const loadProposals = () => Promise.resolve().then(() => listMeetingProposals({ case_id: realId }))
+        .then(res => { if (res && !res.error && Array.isArray(res.data)) setProposals(res.data); })
+        .catch(() => {});
+    useEffect(() => {
+        if (!c || c.walkIn) return;
+        loadProposals();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [realId, !!c]);
+    const openProposal = proposals.find(p => p.status === "open") || null;
+    // The last proposal that ended without a meeting (declined or expired), so
+    // the lawyer sees what happened and can propose again. Shown only when it
+    // is the latest finished one: an accepted or withdrawn one after it means
+    // there is nothing to follow up. The list comes newest first.
+    const lastEnded = proposals.find(p => p.status !== "open" && p.status !== "accepting") || null;
+    const missedProposal = lastEnded && (lastEnded.status === "declined" || lastEnded.status === "expired") ? lastEnded : null;
+    // `closed` is computed further down; the same rule is applied here.
+    const canPropose = Boolean(c) && !HISTORY_STATUSES.includes(c.status) && !c.walkIn && !openProposal;
+    const fmtTimes = (p) => p.options.map(o => formatPkt(o, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })).join(" / ") + " PKT";
+    const withdrawProposal = async () => {
+        if (!openProposal) return;
+        const { error } = await withdrawMeetingProposal(openProposal.id);
+        if (error) { showToast(error.message || "Could not withdraw it."); return; }
+        showToast("Proposal withdrawn — the client was told.");
+        loadProposals();
+    };
 
     // Tasks and messages are read once per case and shared by the header
     // counts and their tabs.
@@ -1388,6 +1679,9 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
     const [rsFor, setRsFor] = useState(null);     // hearing being rescheduled
     const [rsForm, setRsForm] = useState({ date: "", time: "10:00", reason: "" });
     const [rsBusy, setRsBusy] = useState(false);
+    const [cxFor, setCxFor] = useState(null);     // hearing being cancelled
+    const [cxReason, setCxReason] = useState("");
+    const [cxBusy, setCxBusy] = useState(false);
     // One hearing per form. The ref blocks a second submit within the same
     // tick (state would still read false); the id is created per form and kept
     // across retries of that form, so the server can recognise a repeat.
@@ -1481,11 +1775,36 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
         showToast(`✅ Hearing moved to ${fmtDate(rsForm.date)} — the client has been notified`, 3200);
     };
 
+    // Cancel: take an upcoming hearing off the schedule (2026-10-19). Only one
+    // with no outcome; the server keeps a copy and tells the client.
+    const openCancel = (h) => {
+        if (!h._id) { showToast("⚠️ This hearing predates tracking and cannot be cancelled here"); return; }
+        setCxReason("");
+        setCxFor(h);
+    };
+    const saveCancel = async () => {
+        if (cxBusy) return;
+        setCxBusy(true);
+        const { data, error, status } = await apiCancelHearing(realId, cxFor._id, { reason: cxReason.trim() });
+        setCxBusy(false);
+        if (error && status === 409) {
+            showToast("⚠️ " + (error.message || "This hearing changed meanwhile."), 3600);
+            setCxFor(null);
+            await refreshThisCase();
+            return;
+        }
+        if (error) { showToast("❌ " + (error.message || "Could not cancel the hearing")); return; }
+        if (data) applyServerCase(data);
+        setCxFor(null);
+        // A walk-in case has no client account, so nobody was told.
+        showToast(data?.client_id ? "✅ Hearing cancelled — the client has been notified" : "✅ Hearing cancelled", 3200);
+    };
+
     // "+ Task": open Tasks with the new-task box focused.
     const goTask = () => { setTab("tasks"); setFocusTask(n => n + 1); };
 
-    // Scheduling only: hearing edit and delete have no backend endpoint and
-    // are not offered.
+    // Scheduling here; a hearing is moved (Reschedule) or taken off (Cancel)
+    // from its row.
     const saveHearing = async (f = form) => {
         if (hSubmitting.current) return false;
         if (!f.date || !f.purpose || !f.court) { showToast("⚠️ Date, court and purpose are required"); return false; }
@@ -1620,6 +1939,9 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
                     </div>
                     <div className="cw-actions">
                         <button type="button" className="cw-btn" onClick={() => setTab("messages")}><Icon d={I.chat} size={16} />Message client</button>
+                        {canPropose && (
+                            <button type="button" className="cw-btn" data-open-propose onClick={() => setPmOpen(true)}><Icon d={I.calendar} size={16} />Propose meeting</button>
+                        )}
                         {!closed && <button type="button" className="cw-btn" onClick={goTask}><Icon d={I.checkSquare} size={16} />Add task</button>}
                         {!closed && <button type="button" className="cw-cta" onClick={() => openAdd()}><Icon d={I.plus} size={16} />Add hearing</button>}
                     </div>
@@ -1641,6 +1963,36 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
                 </div>
             )}
 
+            {openProposal && (
+                <div role="status" className="cw-note" data-meeting-proposal style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <span style={{ flex: 1, minWidth: 240 }}>
+                        <strong>Meeting proposed — waiting for {c.client}.</strong>{" "}
+                        {openProposal.agenda} · {fmtTimes(openProposal)}
+                    </span>
+                    <button type="button" className="cw-btn" onClick={withdrawProposal}>Withdraw</button>
+                </div>
+            )}
+            {missedProposal && (
+                <div role="status" className="cw-note" data-proposal-history={missedProposal.status} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <span style={{ flex: 1, minWidth: 240 }}>
+                        <strong>{missedProposal.status === "declined"
+                            ? `${c.client} could not make the proposed times.`
+                            : `The proposed times passed — ${c.client} did not choose one.`}</strong>{" "}
+                        {missedProposal.agenda} · {fmtTimes(missedProposal)}
+                        {missedProposal.status === "declined" && missedProposal.decline_reason && (
+                            <> · “{missedProposal.decline_reason}”</>
+                        )}
+                    </span>
+                    {canPropose && (
+                        <button type="button" className="cw-btn" data-propose-again onClick={() => setPmOpen(true)}>Propose new times</button>
+                    )}
+                </div>
+            )}
+            {pmOpen && (
+                <ProposeMeetingModal client={c.client} caseId={realId} onClose={() => setPmOpen(false)}
+                    onSent={() => { setPmOpen(false); showToast(`Proposal sent — ${c.client} will choose a time.`); loadProposals(); }} />
+            )}
+
             <div role="tablist" aria-label="Case sections" className="cw-tabs">
                 {tabs.map(tb => (
                     <button key={tb.id} type="button" role="tab" aria-selected={tab === tb.id} onClick={() => setTab(tb.id)}>
@@ -1653,12 +2005,15 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
             {tab === "overview" && (
                 <CaseOverview c={c} cases={cases} hearings={cHearings} nextHearing={nextHearing} past={past}
                     tasks={tasks} messages={messages} docs={docs} lastCourt={lastCourt} engagement={engagement} eng={eng}
-                    onSaveHearing={saveHearing} onRecord={markOutcome} onReschedule={openReschedule} goTab={setTab} openAdd={openAdd}
+                    onSaveHearing={saveHearing} onRecord={markOutcome} onReschedule={openReschedule} onCancel={openCancel} goTab={setTab} openAdd={openAdd}
                     readOnly={closed} setPage={setPage} />
+            )}
+            {tab === "schedule" && !closed && c._id && !c.walkIn && (
+                <CaseMeetings caseDbId={c._id} clientName={c.client} setPage={setPage} />
             )}
             {tab === "schedule" && (
                 <CaseSchedule upcoming={upcoming} past={past} lastCourt={lastCourt} busy={hBusy} onSchedule={saveHearing}
-                    onRecord={markOutcome} onReschedule={openReschedule} readOnly={closed} />
+                    onRecord={markOutcome} onReschedule={openReschedule} onCancel={openCancel} readOnly={closed} />
             )}
             {tab === "messages" && (
                 <CaseMessages caseId={realId} c={c} messages={messages || []} setMessages={setMessages}
@@ -1683,8 +2038,11 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
                             <FieldInput label="Date *" type="date" value={form.date} onChange={v => setForm(p => ({ ...p, date: v }))} />
                             <FieldInput label="Time" type="time" value={form.time} onChange={v => setForm(p => ({ ...p, time: v }))} />
                         </div>
-                        <FieldInput label="Court *" value={form.court} onChange={v => setForm(p => ({ ...p, court: v }))} placeholder="e.g. Lahore High Court" maxLength={200} />
-                        <FieldInput label="Judge / Presiding Officer" value={form.judge} onChange={v => setForm(p => ({ ...p, judge: v }))} placeholder="e.g. Hon. Justice Mehta" maxLength={120} />
+                        {/* Court and judge side by side: the dialog fits a laptop screen without scrolling (2026-10-19). */}
+                        <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            <FieldInput label="Court *" value={form.court} onChange={v => setForm(p => ({ ...p, court: v }))} placeholder="e.g. Lahore High Court" maxLength={200} />
+                            <FieldInput label="Judge / Presiding Officer" value={form.judge} onChange={v => setForm(p => ({ ...p, judge: v }))} placeholder="e.g. Hon. Justice Mehta" maxLength={120} />
+                        </div>
                         <FieldInput label="Purpose / Agenda *" value={form.purpose} onChange={v => setForm(p => ({ ...p, purpose: v }))} placeholder="e.g. Evidence hearing — witness examination" maxLength={300} />
                         <div style={{ fontSize: 12, color: T.textMuted }}>The client sees the new date in their app.</div>
                         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 6 }}>
@@ -1708,6 +2066,22 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
                         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                             <Btn variant="secondary" onClick={() => setRsFor(null)}>Cancel</Btn>
                             <Btn onClick={saveReschedule} disabled={rsBusy || !rsForm.date}>{rsBusy ? "Saving…" : "Reschedule & notify client"}</Btn>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+            {/* Cancel: the hearing is not happening at all */}
+            {cxFor && (
+                <Modal title="Cancel hearing?" subtitle={`${fmtDate(cxFor.date)} · ${fmtTime(cxFor.time)} · ${cxFor.purpose || "Hearing"}`} onClose={() => setCxFor(null)} width={480} busy={cxBusy}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        <Textarea label="Reason (shown to the client)" rows={2} value={cxReason} onChange={setCxReason}
+                            placeholder="e.g. Entered by mistake" maxLength={300} />
+                        <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>
+                            The hearing is taken off the schedule and the client is notified. If the court only moved the date, use Reschedule instead.
+                        </div>
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                            <Btn variant="secondary" onClick={() => setCxFor(null)} disabled={cxBusy}>Keep hearing</Btn>
+                            <Btn variant="danger" onClick={saveCancel} disabled={cxBusy}>{cxBusy ? "Cancelling…" : "Cancel hearing"}</Btn>
                         </div>
                     </div>
                 </Modal>
@@ -1799,7 +2173,101 @@ function DateTile({ date, weekday = false, tone = "brand" }) {
 const CardLabel = ({ children, tone }) => <div className={`cw-label${tone ? ` ${tone}` : ""}`}>{children}</div>;
 
 // ── Overview ──────────────────────────────────────────────────
-function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, docs, lastCourt, engagement, eng, onSaveHearing, onRecord, onReschedule, goTab, openAdd, readOnly, setPage }) {
+/* The meetings behind this case (2026-10-20): the consultation the hire
+ * followed (stored link only) and the meetings booked for THIS case. A
+ * client's other appointments are not shown. A failed read says so. */
+// A meeting still ahead (or under way): it is joined from the case itself.
+const meetingAhead = (k, now = Date.now()) => ["confirmed", "pending"].includes(k.status) && k.end_at && new Date(k.end_at).getTime() > now;
+// Join for one case meeting (2026-10-20): the same in-app video as the
+// Appointments page, opening a day before; a meeting not by video says how.
+function MeetingJoin({ k, clientName }) {
+    if (k.status !== "confirmed") return <span className="cw-consult-note" style={{ margin: 0 }}>Waiting for the client to confirm</span>;
+    if (k.mode !== "video") return <span className="cw-consult-note" style={{ margin: 0 }}>{k.mode === "phone" ? "Phone call" : "In person"} — no joining link</span>;
+    return (
+        <div data-case-meeting-join={k.id} style={{ minWidth: 0 }}>
+            <VideoJoin apptId={k.id} status="confirmed" mode="video" accent="#13806b" muted="var(--muted)" danger="var(--danger)"
+                otherName={clientName || "your client"} />
+        </div>
+    );
+}
+
+/* "Meetings with client" on the Schedule tab (2026-10-20): court hearings
+ * have no joining link, so the case's own meetings -- the ones agreed through
+ * "Propose meeting" -- are listed here with their Join. */
+function CaseMeetings({ caseDbId, clientName, setPage }) {
+    const [st, setSt] = useState({ status: "loading" });
+    const load = useCallback(() => {
+        setSt({ status: "loading" });
+        getCaseConsultations(caseDbId).then(({ data, error }) =>
+            setSt(error || !data ? { status: "error" } : { status: "ready", ...data }));
+    }, [caseDbId]);
+    useEffect(() => { load(); }, [load]);
+    const ahead = st.status === "ready" ? (st.linked || []).filter(k => meetingAhead(k)).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)) : [];
+    return (
+        <div className="cw-card" data-case-meetings style={{ marginBottom: 16 }}>
+            <CardLabel>Meetings with client</CardLabel>
+            {st.status === "loading" && <div className="cw-consult-note">Loading…</div>}
+            {st.status === "error" && (
+                <div className="cw-consult-note" role="alert">Could not load this case's meetings.{" "}
+                    <button type="button" className="cw-link" onClick={load}>Try again</button></div>
+            )}
+            {st.status === "ready" && !ahead.length && (
+                <div className="cw-consult-note" data-case-meetings-empty>No meeting with {clientName || "the client"} is booked. Use <b>Propose meeting</b> at the top — once they choose a time, it appears here with its joining link.</div>
+            )}
+            {ahead.map(k => (
+                <div key={k.id} className="cw-consult" data-case-meeting={k.id} style={{ flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 0, flex: "1 1 260px" }}>
+                        <b>{consultLine(k)}</b>
+                        {k.note && <em>“{k.note}”</em>}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                        <MeetingJoin k={k} clientName={clientName} />
+                        <button type="button" className="cw-link" onClick={() => openConsultation(setPage, k.id)}>Open</button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function CaseConsultations({ caseDbId, setPage, clientName = null }) {
+    const [st, setSt] = useState({ status: "loading" });
+    const load = useCallback(() => {
+        setSt({ status: "loading" });
+        getCaseConsultations(caseDbId).then(({ data, error }) =>
+            setSt(error || !data ? { status: "error" } : { status: "ready", ...data }));
+    }, [caseDbId]);
+    useEffect(() => { load(); }, [load]);
+    if (st.status === "ready" && !st.has_hire && !(st.linked || []).length) return null;
+    const item = (k, label) => (
+        <div key={k.id} className="cw-consult" data-case-consultation={k.id}>
+            <div style={{ minWidth: 0 }}>
+                <b>{label}</b>
+                <span>{consultLine(k)}{k.status ? ` · ${String(k.status).replace(/_/g, " ")}` : ""}</span>
+                {k.note && <em>“{k.note}”</em>}
+                {meetingAhead(k) && <div style={{ marginTop: 8 }}><MeetingJoin k={k} clientName={clientName} /></div>}
+            </div>
+            <button type="button" className="cw-link" onClick={() => openConsultation(setPage, k.id)}>View</button>
+        </div>
+    );
+    return (
+        <div className="cw-card" data-case-consultations>
+            <CardLabel>Consultations</CardLabel>
+            {st.status === "loading" && <div className="cw-consult-note">Loading…</div>}
+            {st.status === "error" && (
+                <div className="cw-consult-note" role="alert">Could not load this case's consultations.{" "}
+                    <button type="button" className="cw-link" onClick={load}>Try again</button></div>
+            )}
+            {st.status === "ready" && (<>
+                {st.originating ? item(st.originating, "The consultation that led to this case")
+                    : st.originating_unavailable && <div className="cw-consult-note" data-consultation-unavailable>Consultation record unavailable</div>}
+                {(st.linked || []).map(k => item(k, "Meeting on this case"))}
+            </>)}
+        </div>
+    );
+}
+
+function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, docs, lastCourt, engagement, eng, onSaveHearing, onRecord, onReschedule, onCancel, goTab, openAdd, readOnly, setPage }) {
     const [quick, setQuick] = useState({ date: "", time: "10:00", court: lastCourt });
     // The court is filled from the latest hearing's court when that becomes
     // known after the form opened (a reload, a live update) — but never once
@@ -1859,6 +2327,7 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
             <div className="cw-row-btns">
                 <button type="button" className="cw-cta gold" onClick={() => onRecord(overdueHearing)}>Record outcome</button>
                 <button type="button" className="cw-btn" onClick={() => onReschedule(overdueHearing)}>Reschedule</button>
+                <button type="button" className="cw-btn danger" style={{ width: 42, padding: 0 }} onClick={() => onCancel(overdueHearing)} aria-label="Cancel hearing" title="Cancel hearing"><Icon d={I.trash} size={16} /></button>
             </div>
         </>);
     } else if (!nextHearing) {
@@ -1888,6 +2357,7 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
                 </div>
                 <div className="cw-row-btns" style={{ marginTop: 0 }}>
                     <button type="button" className="cw-btn" onClick={() => onReschedule(nextHearing)}>Reschedule</button>
+                    <button type="button" className="cw-btn danger" style={{ width: 42, padding: 0 }} onClick={() => onCancel(nextHearing)} aria-label="Cancel hearing" title="Cancel hearing"><Icon d={I.trash} size={16} /></button>
                     <button type="button" className="cw-btn" onClick={() => onRecord(nextHearing)}>Record outcome</button>
                 </div>
             </div>
@@ -1992,9 +2462,14 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
                     </div>
                     <div className="cw-row-btns" style={{ gridTemplateColumns: "1fr 1fr", display: "grid" }}>
                         <button type="button" className="cw-btn" onClick={() => goTab("messages")}><Icon d={I.chat} size={15} />Message</button>
-                        <button type="button" className="cw-btn" onClick={() => setPage?.("clients")}>Profile</button>
+                        <button type="button" className="cw-btn" data-client-profile onClick={() => {
+                            // Clients opens with THIS client's card in view and marked.
+                            try { if (c.clientId) sessionStorage.setItem("attorney:lawyer-focus-client", c.clientId); } catch { /* storage off */ }
+                            setPage?.("clients");
+                        }}>Profile</button>
                     </div>
                 </div>
+                {!readOnly && c._id && !c.walkIn && <CaseConsultations caseDbId={c._id} setPage={setPage} clientName={c.client} />}
                 <div className="cw-card">
                     <CardLabel>Key facts</CardLabel>
                     <dl className="cw-facts">
@@ -2024,7 +2499,7 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
 }
 
 // ── Schedule ──────────────────────────────────────────────────
-function CaseSchedule({ upcoming, past, lastCourt, busy, onSchedule, onRecord, onReschedule, readOnly }) {
+function CaseSchedule({ upcoming, past, lastCourt, busy, onSchedule, onRecord, onReschedule, onCancel, readOnly }) {
     // Scheduling is IN the tab: the form sits above the list it adds to. It
     // goes through the same save as the header's Add hearing (one request id
     // per hearing, a busy guard, the server's copy back).
@@ -2051,8 +2526,10 @@ function CaseSchedule({ upcoming, past, lastCourt, busy, onSchedule, onRecord, o
                 </div>
                 {isPast ? <span className="cw-tag green">Held</span> : (<>
                     <span className={`cw-tag ${d !== null && d < 0 ? "red" : "brand"}`}>{d !== null && d < 0 ? "Outcome due" : h.movedFrom?.length ? `Rescheduled · ${inDays(d)}` : inDays(d)}</span>
-                    {!readOnly && <button type="button" className="cw-btn" onClick={() => onReschedule(h)}>Reschedule</button>}
-                    {!readOnly && <button type="button" className="cw-btn" onClick={() => onRecord(h)}>Record outcome</button>}
+                    {/* Compact row actions (2026-10-19): the 42px buttons outweighed the row. */}
+                    {!readOnly && <button type="button" className="cw-btn sm icon danger" onClick={() => onCancel(h)} aria-label={`Cancel the hearing on ${fmtDate(h.date)}`} title="Cancel hearing"><Icon d={I.trash} size={15} /></button>}
+                    {!readOnly && <button type="button" className="cw-btn sm" onClick={() => onReschedule(h)}>Reschedule</button>}
+                    {!readOnly && <button type="button" className="cw-btn sm" onClick={() => onRecord(h)}>Record outcome</button>}
                 </>)}
             </div>
         );
@@ -2127,8 +2604,12 @@ function CaseMessages({ caseId, c, messages, setMessages, loading, nextHearing, 
                         <span>Messages stay inside this case · the client replies in their app</span>
                     </div>
                 </div>
-                <div className="cw-chat-body">
-                    {loading && <div className="cw-muted" style={{ textAlign: "center" }}>Loading messages…</div>}
+                {/* Round bubbles with a tail, as in the AI chat (2026-10-19).
+                    data-lenis-prevent: the app's smooth scroll would take the
+                    wheel and this list would not scroll. */}
+                <style>{BUBBLE_CSS}</style>
+                <div className="cw-chat-body" data-lenis-prevent>
+                    {loading &&<div className="cw-muted" style={{ textAlign: "center" }}>Loading messages…</div>}
                     {!loading && messages.length === 0 && (
                         <div className="cw-muted" style={{ textAlign: "center", margin: "auto" }}>No messages yet. Start the conversation, or use a quick message below.</div>
                     )}
@@ -2138,7 +2619,7 @@ function CaseMessages({ caseId, c, messages, setMessages, loading, nextHearing, 
                         return (
                             <div key={m._id || i} className={`cw-msg${mine ? " mine" : ""}`}>
                                 {!mine && <Avatar name={m.sender_name || c.client} size={32} />}
-                                <div className="cw-bubble">
+                                <div className="cw-bubble" data-bubble={mine ? "user" : "ai"}>
                                     <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{m.text}</div>
                                     <small>{time}</small>
                                 </div>
@@ -2557,6 +3038,7 @@ function _mapApiCase(c) {
         _id: c._id,
         title: c.title || "Untitled Case",
         client: c.client_name || "—",
+        clientId: c.client_id || null,
         court: c.province ? c.province.charAt(0).toUpperCase() + c.province.slice(1) : "—",
         type: c.case_type ? c.case_type.charAt(0).toUpperCase() + c.case_type.slice(1) : "Other",
         status: caseStatusLabel(c.status),
@@ -2645,6 +3127,29 @@ function CasesScreens() {
     // swallowed, so the list simply showed no requests) and keeps what was
     // shown; only the newest read may write.
     const [reqError, setReqError] = useState(null);
+    const [reqLoaded, setReqLoaded] = useState(false);
+    // A hire request to open on New requests (2026-10-12), named by the
+    // Appointments page. Kept in session storage until it has been applied, so
+    // a reload on the way still lands on it. "" means New requests, no focus.
+    const [focusRequest, setFocusRequest] = useState(() => {
+        try {
+            const v = sessionStorage.getItem(OPEN_REQUEST_KEY);
+            return v === null ? null : { id: v || null };
+        } catch { return null; }
+    });
+    useEffect(() => {
+        const heard = (e) => {
+            setOpenCaseId?.(null);
+            setFocusRequest({ id: typeof e.detail === "string" && e.detail ? e.detail : null });
+        };
+        window.addEventListener("attorney:open-request", heard);
+        return () => window.removeEventListener("attorney:open-request", heard);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    const focusApplied = useCallback(() => {
+        try { sessionStorage.removeItem(OPEN_REQUEST_KEY); } catch { /* storage off */ }
+        setFocusRequest(null);
+    }, []);
     const reqGen = useRef(0);
     useEffect(() => () => { reqGen.current += 1; }, []);
     const loadRequests = () => {
@@ -2657,6 +3162,7 @@ function CasesScreens() {
             }
             setRequests(data);
             setReqError(null);
+            setReqLoaded(true);
         }).catch(() => { if (mine === reqGen.current) setReqError("Could not load case requests."); });
     };
 
@@ -2747,7 +3253,8 @@ function CasesScreens() {
     };
 
     return <CasesList cases={cases} onOpen={handleOpenCase} requests={requests} onRequestsChanged={handleRequestsChanged} onCaseCreated={handleCaseCreated}
+        focusRequest={focusRequest} requestsSettled={reqLoaded || Boolean(reqError)} onFocusApplied={focusApplied}
         loadError={loadError} onRetryCases={loadCases} reqError={reqError} onRetryRequests={loadRequests} />;
 }
 
-export { CasesPage };
+export { CasesPage, ProposeMeetingModal };

@@ -75,15 +75,71 @@ class AppointmentRepository(BaseRepository):
         page_size: int,
         starts_from: datetime | None = None,
         starts_before: datetime | None = None,
+        upcoming_only: bool = False,
+        order: str = "time",
+        now: datetime | None = None,
     ) -> PaginatedResponse:
+        now = now or datetime.now(timezone.utc)
         q: dict = {"lawyer_id": lawyer_id}
         if status:
             q["status"] = status
+        # "Upcoming" (2026-10-20) is a confirmed meeting that has NOT ended. An
+        # ended one waits for its outcome and is listed under Needs outcome.
+        if upcoming_only:
+            q["status"] = "confirmed" if status in (None, "confirmed") else status
+            q["end_at"] = {"$gte": now}
         _window(q, starts_from, starts_before)
+        if order == "action":
+            return await self._by_action(q, page, page_size, now)
         return await self.paginate(
             q, page=page, page_size=page_size,
             sort=[("scheduled_at", ASCENDING)],
         )
+
+    async def _by_action(self, q: dict, page: int, page_size: int, now: datetime) -> PaginatedResponse:
+        """The lawyer's whole list in the order it is worked (2026-10-20):
+
+          0  needs an outcome   oldest ended first
+          1  request to answer  nearest answer-by time first
+          2  upcoming           earliest first
+          3  everything else    newest first (history)
+
+        One sort key per row, computed by the database, so pages stay
+        consistent with the order and with `total`.
+        """
+        ended = {"$and": [{"$eq": ["$status", "confirmed"]}, {"$lt": ["$end_at", now]}]}
+        # Answerable = pending and not past its answer-by time (lawyer_actions'
+        # rule). A lapsed one the sweep has not flipped yet is history.
+        answerable = {"$and": [{"$eq": ["$status", "pending"]},
+                               {"$or": [{"$eq": [{"$ifNull": ["$expires_at", None]}, None]},
+                                        {"$gt": ["$expires_at", now]}]}]}
+        millis = lambda field: {"$toLong": {"$ifNull": [field, "$scheduled_at"]}}
+        pipeline = [
+            {"$match": q},
+            {"$addFields": {
+                "_rank": {"$switch": {"branches": [
+                    {"case": ended, "then": 0},
+                    {"case": answerable, "then": 1},
+                    {"case": {"$eq": ["$status", "confirmed"]}, "then": 2},
+                ], "default": 3}},
+                "_key": {"$switch": {"branches": [
+                    {"case": ended, "then": millis("$end_at")},
+                    {"case": answerable, "then": millis("$expires_at")},
+                    {"case": {"$eq": ["$status", "confirmed"]}, "then": millis("$scheduled_at")},
+                ], "default": {"$subtract": [0, millis("$scheduled_at")]}}},
+            }},
+            {"$sort": {"_rank": 1, "_key": 1, "_id": 1}},
+            {"$facet": {
+                "items": [{"$skip": (page - 1) * page_size}, {"$limit": page_size},
+                          {"$project": {"_rank": 0, "_key": 0}}],
+                "total": [{"$count": "n"}],
+            }},
+        ]
+        out = await self.col.aggregate(pipeline).to_list(1)
+        items = out[0]["items"] if out else []
+        total = out[0]["total"][0]["n"] if out and out[0]["total"] else 0
+        return PaginatedResponse(items=items, total=total, page=page, page_size=page_size,
+                                 pages=max((total + page_size - 1) // page_size, 1))
 
     async def has_conflict(
         self,

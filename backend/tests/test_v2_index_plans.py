@@ -17,6 +17,8 @@ where a lawyer needs pagination.
 """
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from app.db.collections import get_documents_col
@@ -88,7 +90,7 @@ async def test_the_obsolete_reviewer_index_is_gone(mongo):
         "the obsolete reviewer-keyed queue index is still created")
 
 
-async def test_the_manifest_is_exactly_these_nine(mongo):
+async def test_the_manifest_is_exactly_these_ten(mongo):
     """Pinned definitions.
 
     Every one of these decides either a guarantee or which queries are fast in
@@ -98,7 +100,10 @@ async def test_the_manifest_is_exactly_these_nine(mongo):
     """
     actual = {
         (s.collection, s.name, s.keys, s.unique, s.sparse,
-         dict(s.partial_filter) if s.partial_filter else None, s.kind)
+         # A partial filter is a dict, which a set cannot hold: compared as
+         # canonical JSON instead.
+         json.dumps(dict(s.partial_filter), sort_keys=True) if s.partial_filter else None,
+         s.kind)
         for s in V2_INDEX_REQUIREMENTS
     }
     assert actual == {
@@ -110,6 +115,12 @@ async def test_the_manifest_is_exactly_these_nine(mongo):
         ("document_draft_plans", "uniq_draft_plan_owner_key",
          (("owner_id", 1), ("create_idempotency_key", 1)), True, False,
          None, CORRECTNESS),
+        # 2026-10-20: two simultaneous creates with one key made two documents.
+        # PARTIAL so legacy documents (no key) do not collide on a shared null.
+        ("documents", "uniq_document_owner_create_key",
+         (("client_id", 1), ("create_idempotency_key", 1)), True, False,
+         json.dumps({"create_idempotency_key": {"$type": "string"}}, sort_keys=True),
+         CORRECTNESS),
         # Mongo's generated name, not one we chose — production creates this
         # IndexModel without `name=`, and renaming it would make production try
         # to create a second index over the same keys, which Mongo refuses.

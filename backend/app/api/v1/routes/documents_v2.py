@@ -344,6 +344,8 @@ def _revision_public(rev: dict) -> dict:
         # Set when the reviewing lawyer wrote this revision's wording (a return
         # with edits), so it is never shown as the client's own text.
         "edited_by": rev.get("edited_by"),
+        # Set when the owner brought an older version back: {revision_id, version}.
+        "restored_from": rev.get("restored_from"),
         "created_at": rev.get("created_at"),
     }
 
@@ -528,9 +530,19 @@ async def get_document_workspace_v2(
     revision_id = doc.get("current_revision_id")
     rev = await revision_repo.find_by_id(revision_id) if revision_id else None
     if not rev or rev.get("document_id") != doc_id or rev.get("status") != "generated":
+        # A document whose first render failed was a dead end: listed in
+        # History and the Vault, and refused here with nothing to do about it
+        # (audit 2026-10-15, F2). Its draft plan -- the owner's own -- can
+        # generate it again on the SAME document, so say which one.
+        from app.db.collections import get_document_draft_plans_col
+        plan = await get_document_draft_plans_col().find_one(
+            {"owner_id": str(current_user["_id"]), "generation.document_id": doc_id},
+            {"_id": 1, "version": 1, "status": 1})
         raise HTTPException(status_code=409, detail={
             "code": "no_editable_revision",
             "message": "Generate the first revision before opening the editor.",
+            **({"plan_id": plan["_id"], "plan_version": plan.get("version"),
+                "plan_status": plan.get("status")} if plan else {}),
         })
 
     rev_template = rev.get("template_type")
@@ -689,6 +701,10 @@ async def save_document_workspace_v2(
                 "author_name": str(current_user.get("full_name") or "").strip(),
                 "body_html": _clean_draft_html(body.body_html),
             }
+        elif template_type in template_registry.AI_AUTHORED:
+            # The AI's draft from the client's description (2026-10-19): it
+            # stays what it is when edited -- it began as no template.
+            fields = {"title": title, "body_html": _clean_draft_html(body.body_html)}
         else:
             fields = {
                 "title": title,
@@ -1096,6 +1112,72 @@ async def list_revisions_v2(
     return {"items": [_revision_public(r) for r in rows]}
 
 
+class RestoreBody(BaseModel):
+    expected_revision_id: str = Field(min_length=1, max_length=200)
+    expected_version: int = Field(ge=1)
+    expected_content_epoch: int = Field(ge=0)
+
+
+@router.post("/{doc_id}/revisions/{revision_id}/restore")
+async def restore_revision_v2(
+    doc_id: str,
+    revision_id: str,
+    body: RestoreBody,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    current_user: dict = Depends(get_current_user),
+):
+    """Bring an older version back as the NEXT version (2026-10-19).
+
+    Nothing is rewritten: the old revision is rendered again from its own
+    stored source (its fields, or its edited text) as a new, hash-bound
+    revision, guarded like a save so a stale screen cannot overwrite a newer
+    version. The new revision records where it came from, and wording a
+    lawyer wrote keeps that attribution. Owner-only; not while under review.
+    """
+    _require_enabled()
+    doc = await _owner_document(doc_id, current_user)
+    if doc.get("review_status") == "submitted":
+        raise HTTPException(status_code=409, detail={
+            "code": "revision_under_review",
+            "message": "Withdraw the submitted revision before restoring an older one.",
+        })
+    source = await revision_repo.find_by_id(revision_id)
+    if not source or source.get("document_id") != doc_id:
+        raise _not_found()
+    if source.get("status") != "generated" or not source.get("fields"):
+        raise HTTPException(status_code=409, detail={
+            "code": "revision_not_restorable",
+            "message": "That version did not finish generating, so it cannot be restored.",
+        })
+    if revision_id == doc.get("current_revision_id"):
+        raise HTTPException(status_code=409, detail={
+            "code": "already_current",
+            "message": "That version is already the current one.",
+        })
+    rev = await _run(v2.generate_revision(
+        document_id=doc_id,
+        template_type=source.get("template_type") or doc.get("template_type"),
+        fields=dict(source["fields"]),
+        idempotency_key=_require_key(idempotency_key),
+        expected_revision_id=body.expected_revision_id,
+        expected_version=body.expected_version,
+        expected_content_epoch=body.expected_content_epoch,
+    ))
+    if rev.get("status") != "generated":
+        raise HTTPException(status_code=503, detail={
+            "code": "generation_failed",
+            "message": "That version could not be restored. Reload and try again.",
+        })
+    marks = {"restored_from": {"revision_id": source["_id"], "version": source.get("version")}}
+    if source.get("edited_by"):
+        marks["edited_by"] = source["edited_by"]
+    await get_document_revisions_col().update_one({"_id": rev["_id"]}, {"$set": marks})
+    rev.update(marks)
+    result = _revision_public(rev)
+    result["based_on_revision_id"] = rev.get("based_on_revision_id")
+    return result
+
+
 @router.get("/{doc_id}/revisions/{revision_id}/preview")
 async def preview_revision_v2(
     doc_id: str,
@@ -1381,6 +1463,7 @@ async def return_with_edits_v2(
         expected_revision_id=base["_id"],
         expected_version=doc.get("current_version", 0),
         expected_content_epoch=doc.get("content_epoch", 0),
+        refuse_when_submitted=False,     # the lawyer's edit IS part of the review
     ))
     if rev.get("status") != "generated":
         raise HTTPException(status_code=503, detail={

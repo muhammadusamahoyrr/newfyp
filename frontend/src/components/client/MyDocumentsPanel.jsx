@@ -17,6 +17,7 @@
  * thing to drift.
  */
 import { useCallback, useState } from "react";
+import { onPrimaryInk } from "./clientTheme.js";
 
 import { myDocumentsV2, downloadDocumentFile, getDocumentV2 } from "@/lib/api.js";
 import { useMyDocuments, rowActions, DOCUMENTS_UNAVAILABLE } from "@/lib/useMyDocuments.js";
@@ -160,11 +161,19 @@ export default function MyDocumentsPanel({ t, onOpen, onPreview }) {
                                 refuses to serve different bytes than the row
                                 described. */}
                             {actions.canDownload && (
-                                <button onClick={() => downloadDocumentFile(
-                                    row.id, row.title || "document",
-                                    { revisionId: actions.revisionId,
-                                      expectedPdfSha256: actions.pdfSha256 })}
-                                    style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: t.primary, color: "#fff", fontSize: 11, cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
+                                <button data-download-doc={row.id} onClick={async () => {
+                                    // ".pdf", like every other download, and a failure is SAID
+                                    // (audit 2026-10-15, F4: a changed document or a network
+                                    // error used to do nothing at all).
+                                    setActionError(null);
+                                    const res = await downloadDocumentFile(
+                                        row.id, `${row.title || "document"}.pdf`,
+                                        { revisionId: actions.revisionId,
+                                          expectedPdfSha256: actions.pdfSha256 });
+                                    // downloadDocumentFile reports its error as a STRING.
+                                    if (res?.error) setActionError(typeof res.error === "string" ? res.error : (res.error.message || "The document could not be downloaded. Please try again."));
+                                }}
+                                    style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: t.primary, color: onPrimaryInk(t), fontSize: 11, cursor: "pointer", fontFamily: "'Inter',sans-serif" }}>
                                     Download
                                 </button>
                             )}

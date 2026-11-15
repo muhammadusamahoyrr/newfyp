@@ -1,88 +1,51 @@
 'use client';
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { InputField } from '@/app/UIComponents';
-import { AuthLayout } from '@/app/LayoutComponents';
-import { Ic } from '@/app/Icons';
 import { authForgotPassword, authResetPassword } from '@/lib/api.js';
+import {
+  AuthShell, Brand, Icon, NextCard, Notice, PasswordRules, PillInput, PrimaryButton, RecoveryVisual, ShowToggle,
+  passwordProblem,
+} from '@/components/auth/AuthShell.jsx';
 
-import { DARK } from '@/components/admin/themes.js';
-
-// This page previously called nothing at all. "Send Reset Link" ran setSub(1)
-// and "Set New Password" ran setSub(2) — the buttons only advanced a wizard —
-// and the final screen announced "Password updated! Your password has been
-// successfully changed." while no request had been made and no password had
-// changed. The backend endpoints and the api.js wrappers both already existed.
-//
 // The real flow has two halves that happen in different sessions: request a
-// link by email, then follow that link back here with ?token=... . The old
-// three-step wizard pretended both happened in one sitting, which is also why
-// it never needed the token.
+// link by email, then follow that link back here with ?token=... . Each stage
+// is only reached after the matching API call succeeds.
 
-// Mirrors backend validate_password_strength: >= 8 chars, one digit, one
-// uppercase. Checked here only to fail fast — the server is the authority.
-const passwordProblem = (pw) => {
-  if (pw.length < 8) return 'Use at least 8 characters.';
-  if (!/[0-9]/.test(pw)) return 'Include at least one number.';
-  if (!/[A-Z]/.test(pw)) return 'Include at least one uppercase letter.';
-  return null;
-};
+// /auth/reset-password answers "Invalid or expired reset token" for a stale or
+// already-used link; that needs a fresh link, not another attempt here.
+const isDeadLink = (msg = '') => /expired|invalid.*token|reset token/i.test(msg);
 
-const Notice = ({ t, tone = 'error', children }) => {
-  const color = tone === 'error' ? t.danger : t.success;
-  return (
-    <div style={{
-      padding: '10px 14px', borderRadius: t.r.md, marginBottom: 16,
-      background: tone === 'error' ? 'rgba(233,86,86,.08)' : 'rgba(60,201,154,.07)',
-      border: `1px solid ${color}40`, color, fontSize: 12.5, lineHeight: 1.55,
-      fontWeight: 600,
-    }}>
-      {children}
-    </div>
-  );
-};
-
-const PrimaryBtn = ({ t, onClick, disabled, children }) => (
-  <button className="aBtn" onClick={onClick} disabled={disabled} style={{
-    flex: 2, padding: '11px 0', borderRadius: t.r.md, background: t.grad1, border: 'none',
-    color: t.mode === 'dark' ? '#182B32' : '#fff', fontSize: 13, fontWeight: 700,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-    cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.65 : 1,
-    boxShadow: `0 4px 16px ${t.primaryGlow}`,
-  }}>
-    {children}
-  </button>
-);
-
-const BackBtn = ({ t, onClick, label = 'Back' }) => (
-  <button className="aBtn" onClick={onClick} style={{
-    flex: 1, padding: '11px 0', borderRadius: t.r.md, background: 'transparent',
-    border: `1.5px solid ${t.border}`, color: t.textDim, fontSize: 13, fontWeight: 600,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer',
-  }}>
-    {Ic.arrowL(t.textDim)} {label}
-  </button>
-);
-
-function ForgotPw({ t, goBack }) {
+function ForgotPw({ goBack }) {
   const params = useSearchParams();
-  const token = params?.get('token') || '';
+  // The emailed link carries the secret in the fragment (#token=…), which never
+  // reaches a server. Links sent before that change used ?token=…; those still
+  // work for their one-hour life. Either way the token is read once and then
+  // removed from the address bar, so it does not stay in history.
+  const [token, setToken] = useState('');
+  const [stage, setStage] = useState('loading');
 
-  // With a token in the URL the user has followed the emailed link, so they
-  // start at the "set a new password" step. Without one they start by asking
-  // for the link.
-  const [stage, setStage] = useState(token ? 'reset' : 'request');
+  useEffect(() => {
+    const fromHash = new URLSearchParams(window.location.hash.slice(1)).get('token') || '';
+    const fromQuery = params?.get('token') || '';
+    const found = fromHash || fromQuery;
+    if (window.location.hash || fromQuery) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    setToken(found);
+    setStage(found ? 'reset' : 'request');
+  }, []);
+
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [spw, setSPW] = useState(false);
-  const [scf, setSCF] = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  const sendLink = async () => {
+  const sendLink = async (e) => {
+    e?.preventDefault();
     setError(null);
-    if (!email.trim()) { setError('Enter the email you registered with.'); return; }
+    if (!email.trim()) { setError('Enter the email you signed up with.'); return; }
     setBusy(true);
     const { error: err } = await authForgotPassword(email.trim());
     setBusy(false);
@@ -90,7 +53,8 @@ function ForgotPw({ t, goBack }) {
     setStage('sent');
   };
 
-  const submitNewPassword = async () => {
+  const submitNewPassword = async (e) => {
+    e?.preventDefault();
     setError(null);
     const problem = passwordProblem(pw);
     if (problem) { setError(problem); return; }
@@ -99,109 +63,92 @@ function ForgotPw({ t, goBack }) {
     const { error: err } = await authResetPassword(token, pw);
     setBusy(false);
     if (err) {
-      // Covers an expired or already-used token, which is the common failure
-      // and needs to send the user back to the start rather than retry here.
-      setError(err.message || 'Could not reset the password. The link may have expired.');
+      if (isDeadLink(err.message)) { setStage('expired'); return; }
+      setError(err.message || 'Could not reset the password. Please try again.');
       return;
     }
     setStage('done');
   };
 
-  // ── request a link ─────────────────────────────────────────────────────────
-  if (stage === 'request') return (
-    <AuthLayout t={t} fullCard={true}>
-      <div style={{ animation: 'scaleUp .35s ease both' }}>
-        <button onClick={goBack} className="aBtn" style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', color: t.textMuted, fontSize: 13, fontWeight: 500, marginBottom: 22, padding: 0 }}>
-          {Ic.arrowL(t.textFaint)} Back to login
-        </button>
-        <div style={{ textAlign: 'center', marginBottom: 22 }}>
-          <div style={{ width: 60, height: 60, borderRadius: '50%', margin: '0 auto 14px', background: t.primaryGlow2, border: `2px solid ${t.primary}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{Ic.shield(t.primary)}</div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: t.text, marginBottom: 5 }}>Reset your password</h1>
-          <p style={{ color: t.textMuted, fontSize: 13, lineHeight: 1.6 }}>Enter your registered email and we&apos;ll send you a secure reset link.</p>
-        </div>
-        {error && <Notice t={t}>{error}</Notice>}
-        <InputField label="Registered Email" type="email" placeholder="you@lawfirm.com" t={t} d={0}
-          icon={Ic.mail(t.textFaint)} value={email} onChange={e => setEmail(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') sendLink(); }} autoComplete="email" />
-        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-          <BackBtn t={t} onClick={goBack} />
-          <PrimaryBtn t={t} onClick={sendLink} disabled={busy}>
-            {busy ? 'Sending…' : 'Send Reset Link'} {!busy && Ic.arrowR(t.mode === 'dark' ? '#182B32' : '#fff')}
-          </PrimaryBtn>
-        </div>
+  const startOver = () => { setError(null); setStage('request'); };
+  const backToSignIn = <NextCard title="Remembered your password?" sub="Go back and sign in." cta="Sign in" onClick={goBack} />;
+
+  // Until the token has been read from the URL, render nothing rather than a
+  // stage that may be wrong (the final `else` below is the success screen).
+  if (stage === 'loading') return null;
+
+  let body;
+  if (stage === 'request') body = (
+    <form onSubmit={sendLink} noValidate style={{ display: 'contents' }}>
+      <button type="button" className="aa-link aa-back" onClick={goBack}>{Icon.back()}Back to sign in</button>
+      <Brand />
+      <h1 className="aa-title">Forgot your password?</h1>
+      <p className="aa-sub">Enter the email you signed up with and we&apos;ll send you a secure link to set a new one.</p>
+      <Notice>{error}</Notice>
+      <PillInput icon={Icon.mail()} label="Email" type="email" placeholder="you@example.com" autoComplete="email"
+        value={email} onChange={e => setEmail(e.target.value)} error={!!error} />
+      <PrimaryButton type="submit" busy={busy} busyLabel="Sending…">Send reset link</PrimaryButton>
+    </form>
+  );
+  else if (stage === 'sent') body = (
+    <>
+      <Brand />
+      <h1 className="aa-title">Check your inbox</h1>
+      {/* Deliberately does not confirm whether the address is registered —
+          the endpoint answers the same either way. */}
+      <p className="aa-sub">If an account exists for <b style={{ color: 'var(--ink)' }}>{email}</b>, a reset link is on its way. It works once and expires in 1 hour.</p>
+      {/* No "Resend" button: the server keeps ONE active link per account and
+          silently ignores a second request while it is valid (auth_service.
+          forgot_password, DuplicateKeyError), so a resend would not send. */}
+      <div className="aa-hint" style={{ textAlign: 'left', alignItems: 'flex-start', maxWidth: 400, justifySelf: 'center' }}>
+        {Icon.info()}<span>Can&apos;t find it? Check your spam folder. Only one link is active at a time; you can ask for a new one after this one expires.</span>
       </div>
-    </AuthLayout>
+      <button type="button" className="aa-ghost" onClick={startOver}>Use a different email</button>
+    </>
+  );
+  else if (stage === 'reset') body = (
+    <form onSubmit={submitNewPassword} noValidate style={{ display: 'contents' }}>
+      <Brand />
+      <h1 className="aa-title">Set a new password</h1>
+      <p className="aa-sub">Pick a strong password you don&apos;t use on other sites.</p>
+      <Notice>{error}</Notice>
+      <PillInput icon={Icon.lock()} label="New password" type={showPw ? 'text' : 'password'} placeholder="New password"
+        autoComplete="new-password" value={pw} onChange={e => setPw(e.target.value)}
+        side={<ShowToggle shown={showPw} onToggle={() => setShowPw(p => !p)} />} />
+      <PasswordRules value={pw} />
+      <PillInput icon={Icon.lock()} label="Confirm new password" type={showPw ? 'text' : 'password'} placeholder="Type it again"
+        autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)}
+        error={!!confirm && confirm !== pw && confirm.length >= pw.length} />
+      {confirm && confirm === pw && <div className="aa-hint ok">{Icon.check()}Passwords match</div>}
+      <PrimaryButton type="submit" busy={busy} busyLabel="Updating…">Update password</PrimaryButton>
+    </form>
+  );
+  else if (stage === 'expired') body = (
+    <>
+      <Brand />
+      <h1 className="aa-title">This link has expired</h1>
+      <p className="aa-sub">Reset links work once and expire after an hour. Request a new one and use the latest email we send.</p>
+      <PrimaryButton type="button" onClick={startOver}>Send a new link</PrimaryButton>
+      <button type="button" className="aa-ghost" onClick={goBack}>Back to sign in</button>
+    </>
+  );
+  else body = (
+    <>
+      {/* Only reachable after /auth/reset-password returned success. */}
+      <Brand />
+      <h1 className="aa-title">Password updated</h1>
+      <p className="aa-sub">Your password has been changed and you&apos;ve been signed out on every device. Sign in with your new password.</p>
+      <PrimaryButton type="button" onClick={goBack}>Sign in</PrimaryButton>
+    </>
   );
 
-  // ── link sent ──────────────────────────────────────────────────────────────
-  if (stage === 'sent') return (
-    <AuthLayout t={t} fullCard={true}>
-      <div style={{ textAlign: 'center', animation: 'scaleUp .4s ease both', padding: '16px 0' }}>
-        <div style={{ width: 76, height: 76, borderRadius: '50%', margin: '0 auto 20px', background: 'rgba(60,201,154,.1)', border: `2.5px solid ${t.success}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {Ic.mail(t.success)}
-        </div>
-        <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: t.text, marginBottom: 8 }}>Check your email</h2>
-        {/* Deliberately does not confirm whether the address is registered —
-            the endpoint answers the same either way so it cannot be used to
-            discover who has an account. */}
-        <p style={{ color: t.textMuted, fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>
-          If <strong style={{ color: t.text }}>{email}</strong> belongs to an account, a reset link is on its way.<br />
-          Open the link on this device to choose a new password. It expires in one hour.
-        </p>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <BackBtn t={t} onClick={() => setStage('request')} label="Use another email" />
-          <PrimaryBtn t={t} onClick={goBack}>Return to Sign In</PrimaryBtn>
-        </div>
-      </div>
-    </AuthLayout>
-  );
-
-  // ── set a new password (reached via the emailed link) ──────────────────────
-  if (stage === 'reset') return (
-    <AuthLayout t={t} fullCard={true}>
-      <div style={{ animation: 'scaleUp .35s ease both' }}>
-        <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, fontWeight: 700, color: t.text, marginBottom: 4 }}>Set new password</h2>
-        <p style={{ color: t.textMuted, fontSize: 13, marginBottom: 16 }}>
-          At least 8 characters, with a number and a capital letter.
-        </p>
-        {error && <Notice t={t}>{error}</Notice>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <InputField label="New Password" type={spw ? 'text' : 'password'} placeholder="Min. 8 characters" t={t} d={.06}
-            icon={Ic.lock(t.textFaint)} value={pw} onChange={e => setPw(e.target.value)} autoComplete="new-password"
-            right={<button onClick={() => setSPW(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: t.textFaint, display: 'flex' }}>{spw ? Ic.eyeOff(t.textFaint) : Ic.eye(t.textFaint)}</button>} />
-          <InputField label="Confirm New Password" type={scf ? 'text' : 'password'} placeholder="Re-enter password" t={t} d={.11}
-            icon={Ic.lock(t.textFaint)} value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="new-password"
-            onKeyDown={e => { if (e.key === 'Enter') submitNewPassword(); }}
-            right={<button onClick={() => setSCF(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: t.textFaint, display: 'flex' }}>{scf ? Ic.eyeOff(t.textFaint) : Ic.eye(t.textFaint)}</button>} />
-        </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-          <BackBtn t={t} onClick={goBack} label="Cancel" />
-          <PrimaryBtn t={t} onClick={submitNewPassword} disabled={busy}>
-            {busy ? 'Saving…' : 'Set New Password'} {!busy && Ic.arrowR(t.mode === 'dark' ? '#182B32' : '#fff')}
-          </PrimaryBtn>
-        </div>
-      </div>
-    </AuthLayout>
-  );
-
-  // ── done ───────────────────────────────────────────────────────────────────
   return (
-    <AuthLayout t={t} fullCard={true}>
-      <div style={{ textAlign: 'center', animation: 'scaleUp .4s ease both', padding: '16px 0' }}>
-        <div style={{ position: 'relative', width: 76, height: 76, margin: '0 auto 20px' }}>
-          <div style={{ position: 'absolute', inset: -10, borderRadius: '50%', background: 'rgba(60,201,154,.08)', animation: 'pulse 2s infinite' }} />
-          <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(60,201,154,.1)', border: `2.5px solid ${t.success}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={t.success} strokeWidth="2"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9" /><path d="M9 12l2 2 8-8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          </div>
-        </div>
-        {/* Only reachable after /auth/reset-password returned success. */}
-        <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: t.text, marginBottom: 8 }}>Password updated</h2>
-        <p style={{ color: t.textMuted, fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>Your password has been changed and every other session has been signed out.<br />You can now sign in with your new credentials.</p>
-        <button className="aBtn" onClick={goBack} style={{ width: '100%', padding: '12px 0', borderRadius: t.r.md, background: t.grad1, border: 'none', color: t.mode === 'dark' ? '#182B32' : '#fff', fontSize: 13.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer', boxShadow: `0 4px 16px ${t.primaryGlow}` }}>
-          Return to Sign In {Ic.arrowR(t.mode === 'dark' ? '#182B32' : '#fff')}
-        </button>
-      </div>
-    </AuthLayout>
+    <AuthShell visual={<RecoveryVisual stage={stage} />}
+      next={stage === 'done'
+        ? <NextCard title="Keep your account safe" sub="Use a password you don't use anywhere else." cta="Sign in" onClick={goBack} />
+        : backToSignIn}>
+      {body}
+    </AuthShell>
   );
 }
 
@@ -210,7 +157,7 @@ export default function ResetPasswordPage() {
   // useSearchParams needs a Suspense boundary during static prerender.
   return (
     <Suspense fallback={null}>
-      <ForgotPw t={DARK} goBack={() => router.push('/login')} />
+      <ForgotPw goBack={() => router.push('/login')} />
     </Suspense>
   );
 }

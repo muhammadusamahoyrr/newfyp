@@ -113,14 +113,16 @@ test("a recovery status with no recovery block still refuses to look normal", ()
 
 import { readFileSync } from "node:fs";
 
+// The client's document surface is the drafting workspace (one workspace for
+// every draft since 2026-10-19).
 const CLIENT_DOCS = readFileSync(
-    new URL("../src/components/client/ModDocuments.jsx", import.meta.url), "utf8");
+    new URL("../src/components/client/documents/DocsDrafts.jsx", import.meta.url), "utf8");
 const LAWYER_DOCS = readFileSync(
     new URL("../src/components/lawyer/MyDocuments.jsx", import.meta.url), "utf8");
 
 test("the client document surface uses the shared status view", () => {
     assert.ok(/documentStatusView/.test(CLIENT_DOCS),
-              "ModDocuments must derive its label from the shared helper");
+              "the drafting workspace must derive its label from the shared helper");
 });
 
 test("the owner list uses the shared status view", () => {

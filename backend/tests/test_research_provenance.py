@@ -72,6 +72,10 @@ def wire(monkeypatch):
         async def aget_state(self, config=None):
             return _Snap()
 
+        async def aupdate_state(self, config, values, *a, **k):
+            # A resumed turn re-asserts the research surface on the checkpoint.
+            captured.setdefault("updates", []).append(values)
+
         async def ainvoke(self, *a, **k):
             # Simulate the LLM calls a real turn makes, inside the turn scope.
             for fn in captured["during"]:
@@ -237,6 +241,9 @@ def test_thread_id_is_scoped_to_the_authenticated_user(wire, monkeypatch):
                 tasks = ()
             return S()
 
+        async def aupdate_state(self, config, values, *a, **k):
+            return None
+
         async def ainvoke(self, *a, **k):
             return None
 
@@ -398,6 +405,9 @@ def test_a_clarification_turn_also_carries_its_request_id(wire):
     result = call(Body())
     assert result["type"] == "clarification"
     assert result["request_id"] == "req-abc123"
+    # The pending question made this a resume: the route re-asserted its own
+    # surface on the checkpoint rather than trusting what was stored.
+    assert {"surface": "research"} in wire.get("updates", [])
 
 
 def test_adding_the_id_changed_no_existing_field(wire):

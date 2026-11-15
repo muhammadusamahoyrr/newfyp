@@ -1,0 +1,556 @@
+{
+ "schema": "capability-eval-v1",
+ "timestamp": "2026-10-13T03:19:53.059452+00:00",
+ "labels": {
+  "n": 87,
+  "gold": 0,
+  "silver_or_unadjudicated": 87,
+  "label_versions": [
+   "v1"
+  ],
+  "status": "silver"
+ },
+ "n": 87,
+ "accuracy": 1.0,
+ "accuracy_by_language": {
+  "en": 1.0,
+  "ur": 1.0,
+  "roman_ur": 1.0,
+  "code_switched": 1.0
+ },
+ "missed_not_capable": [],
+ "false_not_capable": [],
+ "confusion": {
+  "corpus_capable -> corpus_capable": 78,
+  "court_statistic -> court_statistic": 1,
+  "instrument_not_in_corpus -> instrument_not_in_corpus": 4,
+  "live_rate -> live_rate": 1,
+  "mixed_supported_unsupported -> mixed_supported_unsupported": 1,
+  "outcome_prediction -> outcome_prediction": 1,
+  "personal_record -> personal_record": 1
+ },
+ "rows": [
+  {
+   "query_id": "d001",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d002",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d003",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d004",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d005",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d006",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d007",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d008",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d009",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d010",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d011",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d012",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d013",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d014",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d015",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d016",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d017",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d018",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d019",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d020",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d021",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d022",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d023",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d024",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d025",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d026",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d027",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d028",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d029",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d030",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d031",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d032",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d033",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d034",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d035",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d036",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d037",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d038",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d039",
+   "language": "en",
+   "expected": "live_rate",
+   "predicted": "live_rate"
+  },
+  {
+   "query_id": "d040",
+   "language": "en",
+   "expected": "court_statistic",
+   "predicted": "court_statistic"
+  },
+  {
+   "query_id": "d041",
+   "language": "en",
+   "expected": "personal_record",
+   "predicted": "personal_record"
+  },
+  {
+   "query_id": "d042",
+   "language": "en",
+   "expected": "outcome_prediction",
+   "predicted": "outcome_prediction"
+  },
+  {
+   "query_id": "d043",
+   "language": "en",
+   "expected": "instrument_not_in_corpus",
+   "predicted": "instrument_not_in_corpus"
+  },
+  {
+   "query_id": "d044",
+   "language": "roman_ur",
+   "expected": "instrument_not_in_corpus",
+   "predicted": "instrument_not_in_corpus"
+  },
+  {
+   "query_id": "d045",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d046",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d047",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "d048",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c001",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c002",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c003",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c004",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c005",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c006",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c007",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c008",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c009",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c010",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c011",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c012",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c013",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c014",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c015",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c016",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c017",
+   "language": "en",
+   "expected": "instrument_not_in_corpus",
+   "predicted": "instrument_not_in_corpus"
+  },
+  {
+   "query_id": "c018",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c019",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "c020",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "v001",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "v002",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "v003",
+   "language": "en",
+   "expected": "instrument_not_in_corpus",
+   "predicted": "instrument_not_in_corpus"
+  },
+  {
+   "query_id": "v004",
+   "language": "code_switched",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "v005",
+   "language": "code_switched",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "m001",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "m002",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "m003",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "m004",
+   "language": "en",
+   "expected": "mixed_supported_unsupported",
+   "predicted": "mixed_supported_unsupported"
+  },
+  {
+   "query_id": "l001",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l002",
+   "language": "roman_ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l003",
+   "language": "ur",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l004",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l005",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l006",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l007",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l008",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l009",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  },
+  {
+   "query_id": "l010",
+   "language": "en",
+   "expected": "corpus_capable",
+   "predicted": "corpus_capable"
+  }
+ ]
+}

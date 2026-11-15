@@ -193,53 +193,72 @@ test("rejecting a stale request stays available when accepting does not", async 
     const ui = await mountAppointments([appointment({ status: "pending" })]);
 
     assert.equal(ui.state("Accept").disabled, true);
-    assert.equal(ui.state("Reject").disabled, false);
+    assert.equal(ui.state("Decline").disabled, false);
     await ui.unmount();
 });
 
-/* ── No Show: from the START of the appointment ───────────────────────────── */
+/* ── A no-show: 15 minutes after the START (NO_SHOW_GRACE, 2026-10-19) ────
+ *
+ * ONE outcome interface (2026-10-20): no standalone "No Show" button. From
+ * fifteen minutes after the start, "Record outcome" opens the four-option
+ * dialog with only "The client didn't attend" open until the meeting ends. */
 
-test("No Show is unavailable before the appointment starts", async () => {
+const dialogOption = (label) => [...document.querySelectorAll('[role="radio"]')].find(b => b.textContent.trim() === label);
+async function openOutcome(ui) {
+    const btn = ui.find("Record outcome");
+    assert.ok(btn, "no Record outcome");
+    await act(async () => { btn.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+    await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
+}
+
+test("no outcome control before the appointment starts", async () => {
     setClock("2026-09-20T11:59:00Z");
     const ui = await mountAppointments([appointment()]);
-
-    const noShow = ui.state("No Show");
-    assert.equal(noShow.disabled, true);
-    assert.match(noShow.title, /once the appointment has started/);
+    // Not offered at all before the start (2026-10-19), rather than disabled.
+    assert.equal(ui.find("Record outcome"), undefined);
+    assert.equal(ui.find("No Show"), undefined);
     await ui.unmount();
 });
 
-test("No Show becomes available exactly at the start instant", async () => {
-    // The boundary itself, not a second past it. The server's rule is
-    // `now >= scheduled_at`, so the instant of the start is INSIDE it.
+test("a no-show can be recorded exactly fifteen minutes after the start", async () => {
+    // The boundary itself. The server's rule is `now >= scheduled_at + 15 min`,
+    // so that instant is INSIDE it -- and the start itself is not.
+    setClock("2026-09-20T11:59:59Z");
+    let ui0 = await mountAppointments([appointment()]);
+    assert.equal(ui0.find("Record outcome"), undefined);
+    await ui0.unmount();
     setClock(START);
+    ui0 = await mountAppointments([appointment()]);
+    assert.equal(ui0.find("Record outcome"), undefined, "offered at the start instant, before the grace");
+    await ui0.unmount();
+    setClock("2026-09-20T12:15:00Z");
     const ui = await mountAppointments([appointment()]);
-
-    assert.deepEqual(ui.state("No Show"), { disabled: false, title: "" });
+    assert.deepEqual(ui.state("Record outcome"), { disabled: false, title: "" });
+    assert.equal(ui.find("No Show"), undefined, "a standalone No Show button is back");
+    await openOutcome(ui);
+    assert.equal(dialogOption("The client didn't attend").disabled, false);
     await ui.unmount();
 });
 
-test("No Show stays available after the appointment has started", async () => {
-    setClock("2026-09-20T12:10:00Z");
+test("a no-show stays available after the grace period", async () => {
+    setClock("2026-09-20T12:25:00Z");
     const ui = await mountAppointments([appointment()]);
-
-    assert.equal(ui.state("No Show").disabled, false);
+    await openOutcome(ui);
+    assert.equal(dialogOption("The client didn't attend").disabled, false);
     await ui.unmount();
 });
 
 /* ── Done: from the END of the appointment ────────────────────────────────── */
 
 test("Done is unavailable while the consultation is still running", async () => {
-    // Started but not finished — the case that separates Done from No Show.
+    // Started but not finished — the case that separates Done from a no-show.
     setClock("2026-09-20T12:15:00Z");
     const ui = await mountAppointments([appointment()]);
-
-    const done = ui.state("Done");
-    assert.equal(done.disabled, true);
-    assert.match(done.title, /once the consultation has ended/);
-    // And the other control is already live at the same instant, which is the
-    // point of evaluating them separately.
-    assert.equal(ui.state("No Show").disabled, false);
+    await openOutcome(ui);
+    assert.equal(dialogOption("It took place").disabled, true, "a running meeting could be completed");
+    // And a no-show is already live at the same instant, which is the point
+    // of evaluating them separately.
+    assert.equal(dialogOption("The client didn't attend").disabled, false);
     await ui.unmount();
 });
 
@@ -247,7 +266,7 @@ test("Done becomes available exactly at the end instant", async () => {
     setClock(END);
     const ui = await mountAppointments([appointment()]);
 
-    assert.deepEqual(ui.state("Done"), { disabled: false, title: "" });
+    assert.deepEqual(ui.state("Record outcome"), { disabled: false, title: "" });
     await ui.unmount();
 });
 
@@ -264,7 +283,10 @@ test("the server's end_at decides completion, not the duration", async () => {
         duration_minutes: 30,
     })]);
 
-    assert.equal(ui.state("Done").disabled, true,
+    // Under way by the server's end_at: only a no-show can be recorded.
+    // (Compared as a boolean: a failing assert on a DOM node exhausts memory.)
+    await openOutcome(ui);
+    assert.equal(dialogOption("It took place").disabled, true,
                  "the duration was believed over the server's own end_at");
     await ui.unmount();
 });
@@ -277,7 +299,7 @@ test("a response with no end_at falls back to the duration", async () => {
         end_at: undefined, duration_minutes: 30,
     })]);
 
-    assert.equal(ui.state("Done").disabled, false);
+    assert.equal(ui.state("Record outcome").disabled, false);
     await ui.unmount();
 });
 
@@ -301,26 +323,24 @@ test("an appointment with no usable time offers no enabled outcome", async () =>
         scheduled_at: null, end_at: null,
     })]);
 
-    assert.equal(ui.state("Done").disabled, true);
-    assert.match(ui.state("Done").title, /no end time/);
-    assert.equal(ui.state("No Show").disabled, true);
-    assert.match(ui.state("No Show").title, /no scheduled time/);
+    assert.equal(ui.find("Record outcome"), undefined);
+    assert.equal(ui.find("No Show"), undefined);
     await ui.unmount();
 });
 
 /* ── the boundary crossing, without a refresh ─────────────────────────────── */
 
-test("No Show turns on when the clock crosses the start, with no refresh", async () => {
-    setClock("2026-09-20T11:59:30Z");
+test("Record outcome (for a no-show) turns on when the clock crosses start + 15 minutes, with no refresh", async () => {
+    setClock("2026-09-20T12:14:30Z");
     const ui = await mountAppointments([appointment()]);
 
-    assert.equal(ui.state("No Show").disabled, true, "precondition: still early");
+    assert.equal(ui.find("Record outcome"), undefined, "precondition: still early");
 
-    await ui.tick("2026-09-20T12:00:30Z");
+    await ui.tick("2026-09-20T12:15:30Z");
 
-    assert.equal(ui.state("No Show").disabled, false,
-                 "the control did not update when the appointment started");
-    assert.equal(ui.state("No Show").title, "");
+    assert.equal(ui.state("Record outcome").disabled, false,
+                 "the control did not update when the grace period ended");
+    assert.equal(ui.state("Record outcome").title, "");
     await ui.unmount();
 });
 
@@ -328,12 +348,17 @@ test("Done turns on when the clock crosses the end, with no refresh", async () =
     setClock("2026-09-20T12:29:30Z");
     const ui = await mountAppointments([appointment()]);
 
-    assert.equal(ui.state("Done").disabled, true, "precondition: still running");
+    // Still running: Record outcome is the no-show path, "It took place" closed.
+    await openOutcome(ui);
+    assert.equal(dialogOption("It took place").disabled, true, "precondition: still running");
+    await act(async () => { document.querySelector("[aria-label=\"Complete the consultation\"] .ad-x").dispatchEvent(new window.MouseEvent("click", { bubbles: true })); });
 
     await ui.tick("2026-09-20T12:30:30Z");
 
-    assert.equal(ui.state("Done").disabled, false,
+    assert.equal(ui.state("Record outcome").disabled, false,
                  "the control did not update when the consultation ended");
+    await openOutcome(ui);
+    assert.equal(dialogOption("It took place").disabled, false, "the ended meeting still could not be completed");
     await ui.unmount();
 });
 
@@ -355,12 +380,12 @@ test("the tick does not depend on any other state changing", async () => {
     // unrelated re-render — only time passing.
     setClock("2026-09-20T11:00:00Z");
     const ui = await mountAppointments([appointment()]);
-    const before = ui.state("No Show").disabled;
+    const before = ui.find("Record outcome");
 
-    await ui.tick("2026-09-20T12:05:00Z");
+    await ui.tick("2026-09-20T12:20:00Z");
 
-    assert.equal(before, true);
-    assert.equal(ui.state("No Show").disabled, false);
+    assert.equal(before, undefined);
+    assert.equal(ui.state("Record outcome").disabled, false);
     await ui.unmount();
 });
 
@@ -387,4 +412,26 @@ test("no timer survives unmount", async () => {
 
     assert.ok(clearedIds.includes(id), "the clock interval was never cleared");
     assert.equal(pageTicker(), undefined, "a ticker is still registered");
+});
+
+/* ── met in the video (2026-10-20): completed from the start ─────────────── */
+
+test("once both joined the video, the meeting can be completed before its booked end", async () => {
+    setClock("2026-09-20T12:05:00Z");                       // started, not ended, before the no-show grace
+    let ui = await mountAppointments([appointment()]);
+    assert.equal(ui.find("Record outcome"), undefined, "without meeting, nothing is offered this early");
+    await ui.unmount();
+    ui = await mountAppointments([appointment({ video_met: true })]);
+    assert.deepEqual(ui.state("Record outcome"), { disabled: false, title: "" });
+    await openOutcome(ui);
+    assert.equal(dialogOption("It took place").disabled, false, "a meeting that took place could not be completed");
+    assert.equal(dialogOption("It took place").getAttribute("aria-checked"), "true");
+    await ui.unmount();
+});
+
+test("met in the video but not yet started: still nothing to record", async () => {
+    setClock("2026-09-20T11:50:00Z");
+    const ui = await mountAppointments([appointment({ video_met: true })]);
+    assert.equal(ui.find("Record outcome"), undefined);
+    await ui.unmount();
 });

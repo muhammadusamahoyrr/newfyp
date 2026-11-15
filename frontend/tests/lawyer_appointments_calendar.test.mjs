@@ -478,10 +478,10 @@ test("Accept all asks first, then confirms only requests whose time has not pass
     await ui.unmount();
 });
 
-test("Review requests opens the list on the Pending tab", async () => {
+test("Answer appointment requests opens the list on the Pending tab", async () => {
     const ui = await mountCalendar();
     await openCalendar(ui);
-    await ui.press(ui.button(b => b.textContent === "Review requests"));
+    await ui.press(ui.button(b => b.textContent === "Answer appointment requests"));
     const tab = ui.container.querySelector('[role="tab"][aria-selected="true"]');
     assert.equal(tab?.textContent.trim().startsWith("Pending"), true);
     await ui.unmount();
@@ -524,11 +524,13 @@ test("an agenda appointment opens its details; actions are the list's own; ✕ r
     assert.match(panel.textContent, /Client a/);
     assert.match(panel.textContent, /Matter a/, "the client's note is not shown");
     const labels = [...panel.querySelectorAll("button")].map(b => b.textContent.trim());
-    // Not started yet: completion and no-show are offered but held back.
-    const done = [...panel.querySelectorAll("button")].find(b => b.textContent.trim() === "Mark completed");
-    assert.ok(done && done.disabled, "Mark completed is offered before the meeting");
+    // Not started yet (2026-10-19): no outcome controls at all; the lawyer can
+    // propose a new time (the client accepts or declines) or cancel.
+    assert.ok(!labels.includes("Mark completed") && !labels.includes("Record outcome"), "an outcome is offered before the meeting");
+    assert.ok(!labels.includes("No-show"), "a no-show is offered before the meeting");
+    assert.ok(labels.includes("Propose new time"), "no way to propose a new time");
     assert.ok(labels.includes("Cancel"));
-    assert.ok(!labels.includes("Reschedule"), "no reschedule action exists for a lawyer here");
+    assert.ok(!labels.includes("Reschedule"), "no unilateral reschedule exists for a lawyer here");
     assert.doesNotMatch(panel.textContent, /Fee|Rs\./, "a fee was invented");
     await ui.press(panel.querySelector('[aria-label="Close appointment details"]'));
     assert.equal(dom.window.document.querySelector("[data-appointment-detail]"), null);

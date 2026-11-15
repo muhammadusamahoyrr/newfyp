@@ -179,6 +179,11 @@ export const LAWYER_VAULT_CSS = `[data-lawyer-vault]{color:var(--ink);font:15px/
 [data-lawyer-vault] .lv-cta.k3d{box-shadow:0 4px 0 color-mix(in srgb,var(--brand-solid) 55%,#000),0 12px 24px -12px rgba(46,196,214,.8)}
 [data-lawyer-vault] .lv-cta.k3d:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 0 color-mix(in srgb,var(--brand-solid) 55%,#000),0 16px 28px -12px rgba(46,196,214,.9)}
 [data-lawyer-vault] .lv-cta.k3d:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--brand-solid) 55%,#000),0 6px 14px -10px rgba(46,196,214,.8)}
+/* Balanced sizes (2026-10-19): the header buttons, the folder art and the
+   folder card's actions were a size too large for the cards around them. */
+[data-lawyer-vault] .lv-btn.hd,[data-lawyer-vault] .lv-cta.hd{height:40px;padding:0 16px;gap:8px;border-radius:12px;font-size:14px}
+[data-lawyer-vault] .lv-f3d{zoom:.8}
+[data-lawyer-vault] .lv-folder .lv-ib{width:32px;height:32px;border-radius:9px}
 @keyframes lvDrop{0%{transform:translateY(-9px);opacity:0}60%{transform:translateY(2px);opacity:1}100%{transform:none}}
 @keyframes lvBurst{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-22px) scale(.4)}}
 @keyframes lvShine{to{transform:translateX(360%) skewX(-20deg)}}
@@ -642,11 +647,11 @@ function VaultScreen() {
                     </div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                         {/* No upload backend yet: shown disabled and labelled, never as a working action. */}
-                        <button type="button" className="lv-btn" disabled data-vault-soon="Upload File" title="Uploading files isn't connected yet — coming soon." style={{ height: 48 }}>
-                            {svg(G.cloud, 18)} Upload File <span className="lv-soon">Soon</span>
+                        <button type="button" className="lv-btn hd" disabled data-vault-soon="Upload File" title="Uploading files isn't connected yet — coming soon.">
+                            {svg(G.cloud, 16)} Upload File <span className="lv-soon">Soon</span>
                         </button>
-                        <button type="button" className="lv-cta k3d" data-create-folder onClick={() => setNaming({ mode: "create" })}>
-                            {svg(G.folderPlus, 19)} Create Folder
+                        <button type="button" className="lv-cta k3d hd" data-create-folder onClick={() => setNaming({ mode: "create" })}>
+                            {svg(G.folderPlus, 17)} Create Folder
                         </button>
                     </div>
                 </div>

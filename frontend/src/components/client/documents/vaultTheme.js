@@ -141,6 +141,9 @@ export const CLIENT_VAULT_CSS = `[data-client-vault]{color:var(--ink);font:15px/
 [data-client-vault] .cv-cta.k3d{box-shadow:0 4px 0 color-mix(in srgb,var(--brand-solid) 55%,#000),0 12px 24px -12px rgba(46,196,214,.8)}
 [data-client-vault] .cv-cta.k3d:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 0 color-mix(in srgb,var(--brand-solid) 55%,#000),0 16px 28px -12px rgba(46,196,214,.9)}
 [data-client-vault] .cv-cta.k3d:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--brand-solid) 55%,#000),0 6px 14px -10px rgba(46,196,214,.8)}
+[data-client-vault] .cv-btn.hd,[data-client-vault] .cv-cta.hd{height:40px;padding:0 16px;gap:8px;border-radius:12px;font-size:14px}
+[data-client-vault] .cv-f3d{zoom:.8}
+[data-client-vault] .cv-folder .cv-ib{width:32px;height:32px;border-radius:9px}
 @keyframes cvDrop{0%{transform:translateY(-9px);opacity:0}60%{transform:translateY(2px);opacity:1}100%{transform:none}}
 @keyframes cvBurst{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-22px) scale(.4)}}
 @keyframes cvShine{to{transform:translateX(360%) skewX(-20deg)}}

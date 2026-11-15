@@ -11,6 +11,9 @@ class RegisterRequest(BaseModel):
     password: str
     role: UserRole = UserRole.CLIENT
     phone: str | None = None
+    # The sign-up checkbox. Required to be true (auth_service.register); the
+    # versions accepted are recorded on the account.
+    accepted_terms: bool = False
 
 
 class LoginRequest(BaseModel):
@@ -31,6 +34,14 @@ class RefreshResponse(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
 

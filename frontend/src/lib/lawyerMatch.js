@@ -10,6 +10,10 @@
  *                    them as ranked
  *   none             no verified lawyers at all
  *
+ *   provisional      no case to match against (the client chat has none):
+ *                    verified lawyers who handle the KIND of matter the server
+ *                    concluded the conversation is about. Never scored.
+ *
  * Plus one the socket adds: `unavailable` — no case to match against, or the
  * lookup failed. That is not "no lawyers found", and telling a client there are
  * none when we simply could not look is the kind of confident wrong answer this
@@ -26,6 +30,7 @@ export const KIND_MATCHED = "matched";
 export const KIND_BROWSING = "general_listing";
 export const KIND_NONE = "none";
 export const KIND_UNAVAILABLE = "unavailable";
+export const KIND_PROVISIONAL = "provisional";
 
 /**
  * The score as a percentage string, or null when there is no score.
@@ -67,7 +72,15 @@ export function matchHeading(kind, { count = 0, suggestLawyer = false } = {}) {
             // Deliberately not "matches". These were NOT matched — the service
             // found nothing that qualified and is offering verified lawyers to
             // look through.
-            title: "No specific match — verified lawyers you can browse",
+            title: "No specific match — registered lawyers you can browse",
+        };
+    }
+    if (kind === KIND_PROVISIONAL && count > 0) {
+        return {
+            show: true, ranked: false,
+            // Not "matched": these lawyers handle this kind of matter; nobody
+            // has compared them with the client's facts.
+            title: "Lawyers who handle this kind of matter",
         };
     }
     if (kind === KIND_MATCHED && count > 0) {
@@ -90,7 +103,7 @@ export function matchHeading(kind, { count = 0, suggestLawyer = false } = {}) {
  */
 export function matchFallbackNotice(kind, notice) {
     if (typeof notice === "string" && notice.trim()) return notice.trim();
-    if (kind === KIND_NONE) return "No verified lawyers are available right now.";
+    if (kind === KIND_NONE) return "No registered lawyers are available right now.";
     if (kind === KIND_UNAVAILABLE) {
         return "Lawyer matching is unavailable for this conversation.";
     }

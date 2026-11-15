@@ -17,6 +17,7 @@ from app.ai.graph.state import AgentState
 from app.ai.llm import get_structured_llm
 from app.ai.provider_health import PURPOSE_TRIAGE
 from app.ai.nodes._history import format_history
+from app.ai.response_policy import presentation_base_query
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,20 @@ logger = logging.getLogger(__name__)
 _CANNED_OFF_TOPIC = (
     "I can only assist with Pakistani legal matters. "
     "Please describe a legal issue or question related to Pakistani law."
+)
+
+# A client "make it short" / "explain in detail" turn whose area of law could
+# not be established. Retrieval would fall back to the civil collection, which
+# is the wrong law for a criminal question, so the turn ends here instead.
+_UNTYPED_FOLLOWUP_EN = (
+    "I couldn't tell which area of law your previous question falls under, so I "
+    "can't safely re-answer it in a different length. Please ask the question "
+    "again, with a little detail about your situation."
+)
+_UNTYPED_FOLLOWUP_UR = (
+    "میں یہ طے نہیں کر سکا کہ آپ کا پچھلا سوال قانون کے کس شعبے سے متعلق ہے، اس لیے "
+    "اسے مختصر یا تفصیل سے دوبارہ محفوظ طریقے سے نہیں بتا سکتا۔ براہِ کرم اپنا سوال "
+    "اپنی صورتحال کی تھوڑی تفصیل کے ساتھ دوبارہ پوچھیں۔"
 )
 
 _CANNED_GIBBERISH = (
@@ -49,6 +64,17 @@ def _is_gibberish(query: str) -> bool:
 # Arabic/Urdu script block. Presence or absence of these characters is a FACT
 # about the string, so it beats the model's opinion about which script it is.
 _URDU_SCRIPT_RE = re.compile(r'[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]')
+
+# Strong Roman-Urdu function words. Two are required so an English legal
+# question containing one borrowed word ("talaq", "nikah", "khula") stays
+# English, while ordinary Roman Urdu remains detectable without asking an LLM
+# that has also been shown the conversation history.
+_ROMAN_URDU_WORD_RE = re.compile(
+    r"\b(?:aap|ap|mein|main|mujhe|mera|meri|mere|hum|hamara|kya|kia|kyun|kaise|"
+    r"hai|hain|tha|thi|nahi|nahin|ko|se|ke|ki|ka|kar|karein|karun|raha|rahi|"
+    r"wala|wali|chahiye|batao|batayein|qanoon|wakeel|shohar|biwi)\b",
+    re.IGNORECASE,
+)
 
 
 EN_INVARIANT_VIOLATION = "triage_en_normalization"
@@ -100,13 +126,16 @@ def _reconcile_language(query: str, language: str) -> str:
     input is Roman Urdu, and generation answers in the language it was told, so
     a user typing Latin script got an Urdu-script reply.
     """
-    has_script = bool(_URDU_SCRIPT_RE.search(query))
-
-    if has_script and language == "roman_urdu":
-        return "ur"          # it is genuinely Urdu script
-    if not has_script and language == "ur":
-        return "roman_urdu"  # cannot be Urdu script — no Urdu characters exist
-    return language
+    # The model sees conversation history as well as this message. Its label can
+    # therefore describe the conversation's language instead of the current
+    # question's language. Script is conclusive; Roman Urdu needs two
+    # characteristic words; everything else is English. The model's label is
+    # deliberately not a tie-breaker.
+    if _URDU_SCRIPT_RE.search(query):
+        return "ur"
+    if len(_ROMAN_URDU_WORD_RE.findall(query or "")) >= 2:
+        return "roman_urdu"
+    return "en"
 
 
 def _prefer_fast() -> bool:
@@ -272,6 +301,24 @@ async def triage_node(state: AgentState) -> dict:
 
     query = state["query"]
 
+    # ── "Can you help me?" ────────────────────────────────────────────────────
+    # A question ABOUT the assistant goes straight to the finalizer's fixed
+    # answer (ai/client_help.py). Checked before the gibberish guard ("help me"
+    # has one 3+ letter word) and before the model, which may call "what can
+    # you do?" off-topic -- both mark the turn grounded, which skipped it.
+    from app.ai.client_help import is_capability_question, _ROMAN
+    if is_capability_question(query):
+        return {
+            "language":           "ur" if _URDU_SCRIPT_RE.search(query)
+                                  else "roman_urdu" if _ROMAN.match(query.strip()) else "en",
+            "normalized_query":   query,
+            "case_type":          _resolved_case_type(state),
+            "province":           existing_province or "unknown",
+            "known_facts":        state.get("known_facts", []),
+            "followup_intent":    None,
+            "convergence_status": "pending",
+        }
+
     # ── Gibberish guard ───────────────────────────────────────────────────────
     if _is_gibberish(query):
         return {
@@ -289,12 +336,46 @@ async def triage_node(state: AgentState) -> dict:
     # ── Honour pre-set intent injected by chat_socket ────────────────────────
     pre_intent = state.get("followup_intent")
     if pre_intent in ("format", "deepen"):
+        case_type = _resolved_case_type(state)
+        case_conf = state.get("case_type_confidence", 0.0)
+        base_query = presentation_base_query(state)
+        # A client "make it short" turn normally arrives with the case type the
+        # server resolved for the previous answer (chat_socket reads it from the
+        # session checkpoint). When there is none, type the question being
+        # re-answered with the same triage call a new question gets -- client
+        # follow-ups only; research keeps the old path. If it is STILL unknown,
+        # routing ends the turn honestly (edges.route_after_triage) instead of
+        # asking about "make it short" or searching the civil default.
+        if base_query and case_type in ("", "unknown", None):
+            try:
+                llm = get_structured_llm(TriageOutput, fast=_prefer_fast(), purpose=PURPOSE_TRIAGE)
+                result: TriageOutput = await asyncio.to_thread(llm.invoke, [
+                    {"role": "system", "content": _SYSTEM},
+                    {"role": "user",   "content": base_query},
+                ])
+                if result.case_type not in ("unknown", None, ""):
+                    case_type = result.case_type
+                    # Routing reads this when the keyword classifier found
+                    # nothing (hybrid, 0.0): carrying the old 0.0 sent the
+                    # typed turn to clarification anyway.
+                    case_conf = result.case_type_confidence
+            except Exception:
+                logger.warning("triage: could not type the re-answered question", exc_info=True)
+        untyped = {}
+        if base_query and case_type in ("", "unknown", None):
+            untyped = {"refusal_reason": _UNTYPED_FOLLOWUP_UR if state.get("language") == "ur"
+                       else _UNTYPED_FOLLOWUP_EN}
         return {
+            **untyped,
             "followup_intent":      pre_intent,
             "language":             state.get("language", "en"),
-            "normalized_query":     query,
-            "case_type":            _resolved_case_type(state),
-            "case_type_confidence": state.get("case_type_confidence", 0.0),
+            # A client "make it short" turn is graded, judged and answered on
+            # the question it re-answers: graded against the literal words
+            # "make it short", every chunk scored irrelevant and the turn was
+            # refused. Lawyer research (no client surface) keeps `query`.
+            "normalized_query":     base_query or query,
+            "case_type":            case_type,
+            "case_type_confidence": case_conf,
             "complexity":           state.get("complexity", "simple"),
             "urgency":              state.get("urgency", "low"),
             "province":             existing_province or "unknown",

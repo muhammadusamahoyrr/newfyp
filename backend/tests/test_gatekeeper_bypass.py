@@ -77,7 +77,8 @@ def test_the_widened_patterns_do_not_catch_legal_phrasing(legal_phrasing):
 # ── Guard 2: canned replies are only for short utterances ─────────────────────
 
 def test_shortcut_intents_are_the_ones_that_skip_the_graph():
-    assert _SHORTCUT_INTENTS == {"format_brief", "affirm", "stop"}
+    # format_brief left this set on 2026-10-13: it now runs the checked graph.
+    assert _SHORTCUT_INTENTS == {"affirm", "stop"}
 
 
 def test_a_long_message_is_too_long_to_shortcut():

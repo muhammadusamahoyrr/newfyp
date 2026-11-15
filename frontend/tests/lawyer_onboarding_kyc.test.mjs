@@ -136,6 +136,6 @@ test("a failed read of earlier uploads is not shown as 'nothing uploaded'", asyn
 test("the step does not promise clients will see the uploads (only the admin does)", async () => {
     const view = await toStepTwo();
     assert.doesNotMatch(view.container.textContent, /clients see these/i);
-    assert.match(view.container.textContent, /Only the admin reviewing your verification sees them/);
+    assert.match(view.container.textContent, /Only you and the Attorney.AI admin team can open them; they are not shown to clients/);
     await view.unmount();
 });

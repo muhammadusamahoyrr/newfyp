@@ -287,6 +287,40 @@ async def inbox(lawyer_id: str) -> list[dict]:
     return [_public(r) async for r in cursor]
 
 
+# ── closing a request because its document is gone (audit 2026-10-15, B2) ──
+# Deleting a document left its quick-review request open: the lawyer still saw
+# it, accepting it hit a missing document, and the generic error path REOPENED
+# the request, so it sat in the inbox until it expired. Closed now -- never
+# deleted: the request keeps every field it had, and the closing is appended to
+# its own audit trail.
+DOCUMENT_DELETED = "document_deleted"
+
+
+def _closing(reason: str, by: str, now: datetime) -> dict:
+    return {"$set": {"status": CANCELLED, "decided_at": now, "closed_reason": reason},
+            "$push": {"audit": {"at": now, "event": "closed", "reason": reason, "by": by}}}
+
+
+async def close_for_deleted_document(*, doc_id: str, by: str, now: datetime | None = None,
+                                     session=None) -> list[dict]:
+    """Close every waiting (or being-accepted) request for a deleted document.
+    Returns the closed requests, for notifications after the caller commits."""
+    now = now or _now()
+    match = {"doc_id": doc_id, "status": {"$in": [OPEN, _ACCEPTING]}}
+    closing = [r async for r in _col().find(match, session=session)]
+    if closing:
+        await _col().update_many(match, _closing(DOCUMENT_DELETED, by, now), session=session)
+    return closing
+
+
+async def notify_closed_for_deleted_document(closed: list[dict]) -> None:
+    for req in closed:
+        await _notify(req["lawyer_id"], NotificationType.QUICK_REVIEW_CANCELLED,
+                      "Review request withdrawn",
+                      "The client deleted this document, so the review request was closed.",
+                      {"request_id": req["_id"]})
+
+
 async def accept(*, lawyer_id: str, request_id: str) -> dict:
     """Accept, and submit the requested version to this lawyer for review."""
     from app.services import document_transitions as tx
@@ -322,7 +356,23 @@ async def accept(*, lawyer_id: str, request_id: str) -> dict:
                       {"doc_id": req["doc_id"], "request_id": request_id})
         raise ConflictError("The client changed this document after asking, so the "
                             "request has been closed.")
+    except NotFoundError:
+        # The client deleted the document. Close -- never reopen: a reopened
+        # request could only fail the same way again until it expired.
+        await _col().update_one({"_id": request_id, "status": _ACCEPTING},
+                                _closing(DOCUMENT_DELETED, lawyer_id, _now()))
+        raise ConflictError("The client deleted this document, so the request has been closed.")
+    except ForbiddenError:
+        # No longer allowed (e.g. the case has engaged a different lawyer):
+        # a permanent answer, so the request is closed like a stale one.
+        await _col().update_one({"_id": request_id, "status": _ACCEPTING},
+                                {"$set": {"status": STALE, "decided_at": _now(),
+                                          "closed_reason": "not_eligible"},
+                                 "$push": {"audit": {"at": _now(), "event": "closed",
+                                                     "reason": "not_eligible", "by": lawyer_id}}})
+        raise
     except Exception:
+        # Transient: give the request back so it can be accepted again.
         await _col().update_one({"_id": request_id, "status": _ACCEPTING},
                                 {"$set": {"status": OPEN}})
         raise

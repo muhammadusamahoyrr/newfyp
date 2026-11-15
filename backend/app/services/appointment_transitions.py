@@ -20,7 +20,7 @@ Two kinds of rule live here, and they are deliberately separate:
 This module is pure. It touches no database and no clock it was not handed, so
 the rules can be tested exhaustively without Mongo.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.core.constants import AppointmentStatus
 
@@ -109,13 +109,25 @@ def explain(source: AppointmentStatus, target: AppointmentStatus) -> str:
     )
 
 
+# A no-show may be recorded only this long after the start (2026-10-19,
+# APPOINTMENT_FLOW_PLAN.md): at the start instant the other party has had no
+# time at all to arrive, and a no-show is a mark against them.
+NO_SHOW_GRACE = timedelta(minutes=15)
+
+
 def timing_error(
     target: AppointmentStatus,
     scheduled_at: datetime,
     end_at: datetime,
     now: datetime,
+    met: bool = False,
 ) -> str | None:
     """Why `target` is premature, or None when the clock permits it.
+
+    `met` (2026-10-20): both people joined this appointment's in-app video
+    room. A consultation that demonstrably took place may be completed once
+    it has started, before its scheduled end -- a short meeting no longer
+    waits out the booked slot.
 
     All three datetimes must be timezone-aware; the caller normalises stored
     values through `_as_utc` first. Comparing a naive stored instant against an
@@ -130,7 +142,7 @@ def timing_error(
             "This appointment time has already passed and can no longer be "
             "confirmed. Cancel it instead."
         )
-    if target is COMPLETED and now < end_at:
+    if target is COMPLETED and now < end_at and not (met and now >= scheduled_at):
         # Completion is a statement about a consultation that finished. Before
         # the scheduled end there is nothing to report on yet.
         return (
@@ -144,12 +156,12 @@ def timing_error(
         # asserts it in its own filter. There is nothing to add here, and a
         # second half-rule in this file would be one more place to disagree.
         return None
-    if target is NO_SHOW and now < scheduled_at:
+    if target is NO_SHOW and now < scheduled_at + NO_SHOW_GRACE:
         # And a client cannot have failed to turn up to something that has not
         # started. This was reachable: the lawyer's UI offers no-show on
         # Upcoming rows, so the action sat next to appointments days away.
         return (
-            "This appointment has not started yet, so the client cannot be "
-            "marked as a no-show."
+            "A no-show can be recorded only 15 minutes after the appointment "
+            "starts — give the client time to join first."
         )
     return None

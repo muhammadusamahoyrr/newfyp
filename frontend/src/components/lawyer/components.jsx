@@ -34,7 +34,9 @@ function Card({ children, style = {}, className = "", onClick, hover = true }) {
 // without saying why reads as broken. Every disabled state in this file is a
 // rule the server enforces, so the tooltip is the only place the rule is
 // visible before the user clicks.
-function Btn({ children, variant = "primary", size = "md", onClick, style = {}, disabled = false, full = false, title, "aria-label": ariaLabel }) {
+function Btn({ children, variant = "primary", size = "md", onClick, style = {}, disabled = false, full = false, title, "aria-label": ariaLabel, ...rest }) {
+    // data-* attributes pass through (2026-10-20), so a page can mark its buttons.
+    const data = Object.fromEntries(Object.entries(rest).filter(([k]) => k.startsWith("data-")));
     const { t } = useTheme();
     const [hov, setHov] = useState(false);
     const vs = {
@@ -54,7 +56,7 @@ function Btn({ children, variant = "primary", size = "md", onClick, style = {}, 
     const resolvedBorder = border
         ?? (borderColor ? `1px solid ${borderColor}` : (v.border || "none"));
     return (
-        <button disabled={disabled} title={title} aria-label={ariaLabel} onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+        <button {...data} disabled={disabled} title={title} aria-label={ariaLabel} onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
             style={{
                 display: "inline-flex", alignItems: "center", gap: 7, justifyContent: "center", borderRadius: 9,
                 fontWeight: 600, transition: "all .18s ease", width: full ? "100%" : undefined,

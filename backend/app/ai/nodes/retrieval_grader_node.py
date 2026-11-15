@@ -158,16 +158,27 @@ async def retrieval_grader_node(state: AgentState) -> dict:
     # not distinguish an answerable question from an unanswerable one. The
     # passage vectors already exist in Chroma from ingest, so recovering them is
     # a lookup, not a re-encode.
-    scoring_query = state.get("normalized_query") or state["query"]
+    # Client chat: the English retrieval query when retrieval built one
+    # (ai/retrieval_query.py) -- the Urdu / Roman question words and "Briefly"
+    # matched no statute and held the score down. The LLM grader above still
+    # reads the user's own words.
+    scoring_query = state.get("retrieval_query") or state.get("normalized_query") or state["query"]
     embedding_scores = await asyncio.to_thread(
         similarity_scores, scoring_query, to_grade, state.get("case_type") or "civil")
 
+    # Purpose policy. Chat/research keep their contract (a minimum of three,
+    # ungraded tail passed through); intake allows zero and drops the tail --
+    # an ungraded chunk is not evidence.
+    policy = state.get("retrieval_policy") or {}
     graded, signals = score_retrieval_batch(
         query_text=scoring_query,
         chunks=to_grade,
         embedding_scores=embedding_scores,
         llm_grades=grades,
+        **({"min_chunks": int(policy["min_chunks"])} if "min_chunks" in policy else {}),
     )
+    if policy.get("include_ungraded") is False:
+        rest = []
 
     await _record_observation(state, signals.aggregate)
 
@@ -176,8 +187,7 @@ async def retrieval_grader_node(state: AgentState) -> dict:
     # discards that order. Re-applying here makes it the final word: without
     # this the Punjab Tenancy Act 1887 still led a rented-premises question,
     # exactly the failure the rules exist to prevent.
-    ordered = _reorder_by_topic(graded + rest,
-                               state.get("normalized_query") or state.get("query", ""))
+    ordered = _reorder_by_topic(graded + rest, scoring_query)
 
     # Grading re-sorts by relevance and throws away the order retrieval_node
     # chose, so the affinity applied there does not survive to generation on its
@@ -186,9 +196,19 @@ async def retrieval_grader_node(state: AgentState) -> dict:
     #
     # Raw query only: _reorder_by_topic above may read the LLM rewrite, but
     # preference must not be steerable by model-invented statute names.
-    ordered, named = apply_affinity(ordered, state.get("query", ""))
+    ordered, named = apply_affinity(ordered, state.get("user_text") or state.get("query", ""))
     if named:
         logger.info("grader: named-statute affinity re-applied for %s", named)
+
+    # Client chat: the exact text of a provision the user named stays first --
+    # grading re-sorts, and may drop, what retrieval pinned. Only chunks
+    # retrieval itself marked exact; research and intake never carry any.
+    from app.ai import answer_safeguards
+    if answer_safeguards.on(state):
+        from app.ai import exact_provision
+        exact = exact_provision.exact_from(state.get("retrieved_chunks"))
+        if exact:
+            ordered = exact_provision.pin(ordered, exact)
 
     return {
         "reranked_chunks":      ordered,

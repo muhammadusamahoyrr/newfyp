@@ -7,6 +7,7 @@
  * here is presentation.
  */
 import { EMPTY, UNUSED } from "@/lib/fieldReview.js";
+import { onPrimaryInk } from "./clientTheme.js";
 
 export default function FieldReview({
     t, rows, missing, edited, busy, onEdit, onGenerate, onBack,
@@ -94,7 +95,7 @@ export default function FieldReview({
                 <button
                     onClick={onGenerate}
                     disabled={busy}
-                    style={{ flex: 1, padding: "11px 16px", borderRadius: 11, border: "none", background: t.primary, color: "#fff", fontSize: 12, fontWeight: 700, cursor: busy ? "default" : "pointer", fontFamily: "'Inter',sans-serif", opacity: busy ? 0.6 : 1 }}>
+                    style={{ flex: 1, padding: "11px 16px", borderRadius: 11, border: "none", background: t.primary, color: onPrimaryInk(t), fontSize: 12, fontWeight: 700, cursor: busy ? "default" : "pointer", fontFamily: "'Inter',sans-serif", opacity: busy ? 0.6 : 1 }}>
                     {busy ? "Generating…"
                         : edited ? "Generate with my corrections →"
                         : "These are correct — generate →"}

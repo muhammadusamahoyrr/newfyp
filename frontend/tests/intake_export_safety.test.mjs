@@ -122,3 +122,15 @@ test("completion does not promise a review or a deadline", () => {
     assert.ok(!code.includes("within 2 hours"));
     assert.ok(!code.includes("submitted for attorney review"));
 });
+
+/* Batch 7: the print view and the text export say "not assessed" for a withheld estimate,
+   keyed on the SAME value the backend writes. */
+test("both exports handle a withheld risk estimate with the backend's own key", () => {
+    const ui = readFileSync(MODINTAKE, "utf8");
+    const backend = readFileSync(resolve(here, "../../backend/app/ai/source_currency.py"), "utf8");
+    const key = backend.match(/RISK_NOT_ASSESSED = "([a-z_]+)"/)[1];
+    assert.ok(ui.includes(`const RISK_NOT_ASSESSED = "${key}"`));
+    const print = ui.slice(ui.indexOf("<h2>Case Summary</h2>"));
+    assert.match(print, /risk_level_basis === RISK_NOT_ASSESSED \? `<h2>Risk Assessment<\/h2><p data-risk-not-assessed>Not assessed — needs review/);
+    assert.match(ui, /RISK LEVEL: NOT ASSESSED — NEEDS REVIEW/);
+});

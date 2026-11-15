@@ -1,0 +1,1385 @@
+{
+ "uqa128_000": {
+  "layperson_en": "Can the National Assembly talk about or vote on the approved spending plan?",
+  "roman_urdu": "Kya National Assembly approved kharchon ka schedule discuss ya vote kar sakti hai?",
+  "keyword": "National Assembly discuss vote authorized expenditure schedule"
+ },
+ "uqa128_001": {
+  "layperson_en": "What is the government's plan to help people understand life according to Islamic teachings?",
+  "roman_urdu": "State ka plan kya hai life ko Islamic teachings ke mutabiq samajhne ke liye?",
+  "keyword": "State plan promote Islamic life understanding"
+ },
+ "uqa128_002": {
+  "layperson_en": "Can Pakistani citizens move to and travel anywhere within Pakistan?",
+  "roman_urdu": "Kya Pakistani shehri mulk ke har ilaqe mein reh sakte hain aur safar kar sakte hain?",
+  "keyword": "Pakistani citizens live travel anywhere"
+ },
+ "uqa128_003": {
+  "layperson_en": "What will happen if the Speaker of the National Assembly can't carry out his duties?",
+  "roman_urdu": "Agar National Assembly ka Speaker apni zimmedariyan ada nahi kar sakta to kya hoga?",
+  "keyword": "Speaker unable to perform duties National Assembly"
+ },
+ "uqa128_004": {
+  "layperson_en": "Who is the person in charge of the National Economic Council?",
+  "roman_urdu": "National Economic Council ka head kaun hai?",
+  "keyword": "National Economic Council head"
+ },
+ "uqa128_005": {
+  "layperson_en": "Are there any situations where a court or tribunal can still handle matters that are normally under the Court's jurisdiction?",
+  "roman_urdu": "Kya koi istisnaat hain us rule ke ke koi court ya tribunal Court ki jurisdiction ke andar ke mamlaat par power nahi laga sakta?",
+  "keyword": "exceptions court jurisdiction rule"
+ },
+ "uqa128_006": {
+  "layperson_en": "Who gets special representation in local government bodies?",
+  "roman_urdu": "Local government institutions mein special representation kis ko milegi?",
+  "keyword": "special representation local government institutions"
+ },
+ "uqa128_007": {
+  "layperson_en": "What power does the Supreme Court have to make sure justice is done in the cases it hears?",
+  "roman_urdu": "Supreme Court ke paas kya authority hai jo wo apne samne aane wale cases mein insaaf ko ensure kar sake?",
+  "keyword": "Supreme Court authority ensure justice"
+ },
+ "uqa128_008": {
+  "layperson_en": "What is the length of the term for the Senate's Chairman or Deputy Chairman?",
+  "roman_urdu": "Senate ke Chairman ya Deputy Chairman ka term kitna lamba hota hai?",
+  "keyword": "Senate Chairman term length"
+ },
+ "uqa128_009": {
+  "layperson_en": "When is the President of Pakistan allowed to declare a state of emergency?",
+  "roman_urdu": "President kab Pakistan mein state of emergency declare kar sakte hain?",
+  "keyword": "President state emergency circumstances Pakistan"
+ },
+ "uqa128_010": {
+  "layperson_en": "What does a newly elected Speaker or Deputy Speaker need to do before starting the job?",
+  "roman_urdu": "Naya Speaker ya Deputy Speaker ko office lene se pehle kya karna hota hai?",
+  "keyword": "new speaker duties before office"
+ },
+ "uqa128_011": {
+  "layperson_en": "Under whose name does the Federal Government carry out all its executive actions?",
+  "roman_urdu": "Federal government ke tamam executive actions kis ke naam se li jati hain?",
+  "keyword": "executive actions federal government name"
+ },
+ "uqa128_012": {
+  "layperson_en": "How long was the term for the first group and the second group of Senate members?",
+  "roman_urdu": "Senate ke pehle aur doosre group ke members ka term kitna tha?",
+  "keyword": "Senate term first group second group"
+ },
+ "uqa128_013": {
+  "layperson_en": "What will happen to the laws that were passed between July 5, 1977 and the day this Article comes into force?",
+  "roman_urdu": "July 5, 1977 se le kar is Article ke force hone tak banaye gaye qanunon ka kya hoga?",
+  "keyword": "laws July 5 1977 article effective"
+ },
+ "uqa128_014": {
+  "layperson_en": "How are the members of the Senate split into different groups?",
+  "roman_urdu": "Senate ke members ko groups mein kaise divide kiya gaya?",
+  "keyword": "Senate members groups division"
+ },
+ "uqa128_015": {
+  "layperson_en": "Can the Court look at the rulings that criminal courts have made about the Hudood laws?",
+  "roman_urdu": "Kya Court criminal courts ke Hudood laws ke faislon ko review kar sakti hai?",
+  "keyword": "Court review Hudood criminal decisions"
+ },
+ "uqa128_016": {
+  "layperson_en": "What can the President do to fix problems or make the Constitution work well before the deadline ends?",
+  "roman_urdu": "President kya kar sakta hai issues ko address karne ya Constitution ko theek se chalane ke liye specified time period ke khatam hone se pehle?",
+  "keyword": "President actions Constitution deadline"
+ },
+ "uqa128_017": {
+  "layperson_en": "What will happen to a law that goes against the rights listed in this Chapter?",
+  "roman_urdu": "Agar koi qanoon is chapter ke huqooq ke khilaaf ho to kya hoga?",
+  "keyword": "law conflict rights chapter outcome"
+ },
+ "uqa128_018": {
+  "layperson_en": "Who stays in the position until a caretaker Prime Minister or Chief Minister is appointed?",
+  "roman_urdu": "Kaun office mein rehta hai jab tak caretaker Prime Minister ya Chief Minister appoint nahi hota?",
+  "keyword": "who holds office caretaker appointment"
+ },
+ "uqa128_019": {
+  "layperson_en": "If the President issues a direction, does it change how the law works before the date that is mentioned?",
+  "roman_urdu": "Agar President koi direction de, kya woh law ki amal ko specified date se pehle affect karta hai?",
+  "keyword": "President direction law effect before date"
+ },
+ "uqa128_020": {
+  "layperson_en": "Can a proclamation issued under this part be changed or cancelled?",
+  "roman_urdu": "Kya is part ke tehat jari ki gayi proclamation ko badla ya cancel kiya ja sakta hai?",
+  "keyword": "proclamation change cancel"
+ },
+ "uqa128_021": {
+  "layperson_en": "Who can change the laws mentioned in the Article?",
+  "roman_urdu": "Kaun Article mein zikr shuda qawaneen ko tabdeel karne ka ikhtiyar rakhta hai?",
+  "keyword": "who amend laws article authority"
+ },
+ "uqa128_022": {
+  "layperson_en": "Can the Supreme Court hear cases that are supposed to be dealt with by the other court mentioned in the article?",
+  "roman_urdu": "Kya Supreme Court un cases ko handle kar sakti hai jo is article mein zikr ki gayi court ki jurisdiction mein aati hain?",
+  "keyword": "Supreme Court jurisdiction other court cases"
+ },
+ "uqa128_023": {
+  "layperson_en": "How are the women members of the Senate elected?",
+  "roman_urdu": "Senate ki women members ka election kaise hota hai?",
+  "keyword": "women Senate election process"
+ },
+ "uqa128_024": {
+  "layperson_en": "What are the two parts that make up Pakistan's Parliament?",
+  "roman_urdu": "Pakistan ki Parliament ke do hisse kaun se hain?",
+  "keyword": "Pakistan Parliament two components"
+ },
+ "uqa128_025": {
+  "layperson_en": "Is the press in Pakistan completely free from any restrictions?",
+  "roman_urdu": "Kya Pakistan ki press ko koi pabandi nahi?",
+  "keyword": "press freedom Pakistan unrestricted"
+ },
+ "uqa128_026": {
+  "layperson_en": "Who appoints the Chairman of a province's Public Service Commission?",
+  "roman_urdu": "Province ke Public Service Commission ka Chairman kaun appoint karta hai?",
+  "keyword": "appoint Chairman Provincial Public Service Commission"
+ },
+ "uqa128_027": {
+  "layperson_en": "Who decides who the Chairman of the Federal Public Service Commission will be?",
+  "roman_urdu": "Public Service Commission ka Chairman kaun appoint karta hai?",
+  "keyword": "Chairman Public Service Commission appointment"
+ },
+ "uqa128_028": {
+  "layperson_en": "Can anyone be taken to court or face legal consequences for what officials or people did using the powers described in the Article?",
+  "roman_urdu": "Kya koi kanooni karwai ki ja sakti hai authorities ya individuals ke khilaf jo Article mein diye gaye powers ke tehat ki gayi actions ke liye?",
+  "keyword": "legal action authorities powers article"
+ },
+ "uqa128_029": {
+  "layperson_en": "Can a court challenge whether an order or document issued in the President's name is valid?",
+  "roman_urdu": "Kya President ke naam se jari ki gayi koi order ya document ki validity court mein challenge ki ja sakti hai?",
+  "keyword": "President order validity court challenge"
+ },
+ "uqa128_030": {
+  "layperson_en": "What are the President and the Governors required to do each year concerning the Principles of Policy?",
+  "roman_urdu": "President aur Governors ko har saal Principles of Policy ke hawale se kya karna zaroori hai?",
+  "keyword": "President Governors annual Principles of Policy requirement"
+ },
+ "uqa128_031": {
+  "layperson_en": "What happens to the ability to go to any court to enforce my fundamental rights when an emergency is declared?",
+  "roman_urdu": "Emergency ke dauran fundamental rights enforce karne ke liye kisi bhi court mein jaane ka haq kya hota hai?",
+  "keyword": "emergency fundamental rights court access"
+ },
+ "uqa128_032": {
+  "layperson_en": "What can be done if there's a problem putting the Eighteenth Amendment Act, 2010 into practice?",
+  "roman_urdu": "Agar Eighteenth Amendment Act, 2010 ko implement karne mein koi masla ho to kya karna chahiye?",
+  "keyword": "Eighteenth Amendment implementation problem"
+ },
+ "uqa128_033": {
+  "layperson_en": "When was the proclamation that ended Martial Law issued?",
+  "roman_urdu": "Martial Law khatam karne ka proclamation kab issue hua?",
+  "keyword": "proclamation withdrawal martial law date"
+ },
+ "uqa128_034": {
+  "layperson_en": "Can the President of Pakistan have another job that pays him for his work?",
+  "roman_urdu": "Kya Pakistan ke President koi aur kaam kar sakte hain jismein unko paisa milta ho?",
+  "keyword": "President Pakistan second paid job"
+ },
+ "uqa128_035": {
+  "layperson_en": "How are orders issued during an emergency period approved?",
+  "roman_urdu": "Emergency period mein banaye gaye orders ko kaise approve kiya jata hai?",
+  "keyword": "emergency orders approval process"
+ },
+ "uqa128_036": {
+  "layperson_en": "Can new laws go against the teachings of the Quran and Sunnah?",
+  "roman_urdu": "Kya naye qanoon Quran aur Sunnat ke usoolon ke khilaf ho sakte hain?",
+  "keyword": "new laws contradict Islam Quran Sunnah"
+ },
+ "uqa128_037": {
+  "layperson_en": "Can a court turn a not‑guilty verdict into a guilty one?",
+  "roman_urdu": "Kya court acquittal ko conviction mein badal sakti hai?",
+  "keyword": "court change acquittal conviction"
+ },
+ "uqa128_038": {
+  "layperson_en": "What's the smallest amount of money involved in a case that can be appealed to the Supreme Court?",
+  "roman_urdu": "Supreme Court ko appeal karne ke liye dispute ki subject matter ki minimum value kya hai?",
+  "keyword": "Supreme Court appeal minimum value"
+ },
+ "uqa128_039": {
+  "layperson_en": "Is the President allowed to cut the pay and benefits of provincial employees during a financial emergency?",
+  "roman_urdu": "Kya President financial emergency ke dauran provincial employees ki salaries aur allowances kam kar sakta hai?",
+  "keyword": "President reduce provincial salaries financial emergency"
+ },
+ "uqa128_040": {
+  "layperson_en": "What is the highest percentage of all Parliament members that can be part of the Cabinet, including Ministers of State?",
+  "roman_urdu": "Cabinet aur Ministers of State milke Parliament ke total members ka maximum kitna percent ho sakta hai?",
+  "keyword": "Cabinet maximum percentage Parliament members"
+ },
+ "uqa128_041": {
+  "layperson_en": "Can any court in Pakistan approve or confirm acts of high treason?",
+  "roman_urdu": "Kya Pakistan ke kisi bhi court se high treason ke amal ko validate kiya ja sakta hai?",
+  "keyword": "high treason validation Pakistan court"
+ },
+ "uqa128_042": {
+  "layperson_en": "Who is allowed to act as a representative for a party in court proceedings?",
+  "roman_urdu": "Court ke proceedings mein party ki taraf se kaun represent kar sakta hai?",
+  "keyword": "represent party court proceedings"
+ },
+ "uqa128_043": {
+  "layperson_en": "How many members were in the Senate before the first National Assembly stayed in existence?",
+  "roman_urdu": "Pehli National Assembly ke jari rehne tak Senate mein kitne members thay?",
+  "keyword": "Senate members count first National Assembly"
+ },
+ "uqa128_044": {
+  "layperson_en": "Who decides how many judges a High Court has?",
+  "roman_urdu": "High Court mein judges ki tadaad ka faisla kaun karta hai?",
+  "keyword": "who decides High Court judges number"
+ },
+ "uqa128_045": {
+  "layperson_en": "Can ordinary people keep their own cultural traditions?",
+  "roman_urdu": "Kya shehri apni munfarid saqaafati riwayat ko barqarar rakhne ka haq rakhte hain?",
+  "keyword": "citizens cultural rights practice"
+ },
+ "uqa128_046": {
+  "layperson_en": "Who has to keep the President informed about what's happening in the government?",
+  "roman_urdu": "President ko sarkari mamlaat ki updates dene ki zimmedari kis ki hai?",
+  "keyword": "who updates president government matters"
+ },
+ "uqa128_047": {
+  "layperson_en": "Can the Supreme Court ever re‑examine its own decisions, and if so, under what circumstances?",
+  "roman_urdu": "Kya Supreme Court apne faislay dobara dekh sakti hai? Kis surat mein?",
+  "keyword": "Supreme Court review judgments conditions"
+ },
+ "uqa128_048": {
+  "layperson_en": "What will happen if the Prime Minister and the Opposition leader can't agree on who should be the caretaker Prime Minister?",
+  "roman_urdu": "Agar Prime Minister aur Leader of the Opposition caretaker Prime Minister par ittefaq nahi kar sakte to kya hoga?",
+  "keyword": "caretaker prime minister disagreement"
+ },
+ "uqa128_049": {
+  "layperson_en": "When does the Senate choose a new Chairman or Deputy Chairman?",
+  "roman_urdu": "Senate kab naya Chairman ya Deputy Chairman elect karti hai?",
+  "keyword": "Senate Chairman Deputy election timing"
+ },
+ "uqa128_050": {
+  "layperson_en": "What rights do people have about how they're treated by the law in Pakistan?",
+  "roman_urdu": "Pakistan mein logon ke kanooni sulook ke hawale se unke kya haqooq hain?",
+  "keyword": "Pakistan individual legal rights treatment"
+ },
+ "uqa128_051": {
+  "layperson_en": "What can the President do if he thinks Pakistan's financial stability is in danger?",
+  "roman_urdu": "Agar President ko lagay ke Pakistan ki maali stability khatre mein hai, to woh kya kar sakta hai?",
+  "keyword": "President financial stability risk actions"
+ },
+ "uqa128_052": {
+  "layperson_en": "What is the status of taxes and fees that were imposed before the Constitution (Eighteenth Amendment) Act of 2010?",
+  "roman_urdu": "2010 ke Constitution (Eighteenth Amendment) se pehle lagaye gaye taxes aur fees ka kya status hai?",
+  "keyword": null
+ },
+ "uqa128_053": {
+  "layperson_en": "How long does a President's order stay in effect?",
+  "roman_urdu": "President ka order kitni der tak barqarar rehta hai?",
+  "keyword": "presidential order duration validity"
+ },
+ "uqa128_054": {
+  "layperson_en": "Who has to approve the list of approved spending?",
+  "roman_urdu": "Authorized expenditure ka schedule authenticate karne ki zimmedari kaun ki hai?",
+  "keyword": "authenticating schedule authorized expenditure responsible"
+ },
+ "uqa128_055": {
+  "layperson_en": "Can the Governor ask members of the Provincial Assembly to be present?",
+  "roman_urdu": "Kya Governor Provincial Assembly ke members ko hazir hone ki darkhwast kar sakta hai?",
+  "keyword": "Governor request Provincial Assembly members presence"
+ },
+ "uqa128_056": {
+  "layperson_en": "Were the tax actions taken by the authorities before the 1985 amendment on certain incomes legally valid?",
+  "roman_urdu": "1985 amendment se pehle authorities ke tax lagane ke actions valid hain?",
+  "keyword": "pre-1985 tax validity amendment"
+ },
+ "uqa128_057": {
+  "layperson_en": "When can the position of Speaker or Deputy Speaker become empty?",
+  "roman_urdu": "Speaker ya Deputy Speaker ka office kab khali ho sakta hai?",
+  "keyword": "Speaker Deputy Speaker vacancy conditions"
+ },
+ "uqa128_058": {
+  "layperson_en": "Can someone who holds a paid government position in Pakistan stay a member of the first Provincial Assembly forever?",
+  "roman_urdu": "Kya Pakistan ki service mein office of profit rakhne wala shakhs pehli Provincial Assembly ka member hamesha reh sakta hai?",
+  "keyword": "office of profit provincial assembly eligibility"
+ },
+ "uqa128_059": {
+  "layperson_en": "Can the President temporarily change how laws are applied at major ports or airports?",
+  "roman_urdu": "Kya President temporary tor par bara ports ya aerodromes par qanoon ki amal ko badal sakta hai?",
+  "keyword": "President temporarily change laws ports aerodromes"
+ },
+ "uqa128_060": {
+  "layperson_en": "What powers does the Court have when it carries out its duties?",
+  "roman_urdu": "Court jab apne kaam karta hai to uske paas kya powers hoti hain?",
+  "keyword": "court powers functions"
+ },
+ "uqa128_061": {
+  "layperson_en": "Who is allowed to make the rules for this chapter?",
+  "roman_urdu": "Is chapter ke liye rules banane ki authority kis ke paas hai?",
+  "keyword": "who can create rules chapter"
+ },
+ "uqa128_062": {
+  "layperson_en": "Can a court or the Supreme Court give a temporary order or injunction for a case that is already pending in another court?",
+  "roman_urdu": "Kya Court ya Supreme Court kisi doosri court mein chal rahe case ke liye injunction ya interim order de sakti hai?",
+  "keyword": "injunction Supreme Court other court pending case"
+ },
+ "uqa128_063": {
+  "layperson_en": "Can the Supreme Court of Pakistan look at or change its own past rulings?",
+  "roman_urdu": "Kya Supreme Court Pakistan apne faislay dobara dekh sakti hai?",
+  "keyword": "Supreme Court review own decisions"
+ },
+ "uqa128_064": {
+  "layperson_en": "What kind of government does Pakistan have?",
+  "roman_urdu": "Pakistan ki sarkar kis qism ki hai?",
+  "keyword": "Pakistan government type"
+ },
+ "uqa128_065": {
+  "layperson_en": "What was left out in S.R.O. No. 1278 (1) 85?",
+  "roman_urdu": "S.R.O. No. 1278 (1) 85 mein kya chhoda gaya?",
+  "keyword": "S.R.O. 1278 (1) 85 omission"
+ },
+ "uqa128_066": {
+  "layperson_en": "Can the government pass rules that are usually only allowed during an emergency?",
+  "roman_urdu": "Kya sarkar aise qawaneen bana sakti hai jo aam tor par emergency ke dauran hi limited hotay hain?",
+  "keyword": "government emergency law restrictions"
+ },
+ "uqa128_067": {
+  "layperson_en": "Are there any limits on the right to speak or express opinions in Pakistan?",
+  "roman_urdu": "Pakistan mein azaadi-e-bayan aur izhar par koi pabandiyan hain?",
+  "keyword": "freedom speech limitations Pakistan"
+ },
+ "uqa128_068": {
+  "layperson_en": "Are there any situations where lower courts don’t have to follow the Court’s decisions?",
+  "roman_urdu": "Kya koi istisnaat hain jahan lower courts ko Court ke faislay follow karna zaroori nahi?",
+  "keyword": "exceptions binding court decisions lower courts"
+ },
+ "uqa128_069": {
+  "layperson_en": "How long can the power to fix problems be used after the Eighteenth Amendment Act, 2010 began?",
+  "roman_urdu": "Eighteenth Amendment Act, 2010 ke shuru hone ke baad difficulties door karne ki power kitni der tak available hai?",
+  "keyword": "power remove difficulties duration Eighteenth Amendment 2010"
+ },
+ "uqa128_070": {
+  "layperson_en": "Who decides who will be the acting Chief Justice if the Chief Justice of Pakistan cannot perform his duties?",
+  "roman_urdu": "Agar Pakistan ka Chief Justice apna kaam nahi kar sakta to acting Chief Justice ko kaun appoint karta hai?",
+  "keyword": "appoint acting Chief Justice Pakistan"
+ },
+ "uqa128_071": {
+  "layperson_en": null,
+  "roman_urdu": null,
+  "keyword": null
+ },
+ "uqa128_072": {
+  "layperson_en": "What does the Election Commission do if the committee can't agree on a caretaker Prime Minister or Chief Minister?",
+  "roman_urdu": "Agar committee caretaker Prime Minister ya Chief Minister ka faisla na kar sake to Election Commission ka kya role hai?",
+  "keyword": "Election Commission caretaker Prime Minister role"
+ },
+ "uqa128_073": {
+  "layperson_en": "Can the federal government or a province give money for things they don’t have the power to make laws about?",
+  "roman_urdu": "Kya federation ya koi province apni legislative authority ke bahar ke maqsad ke liye financial support de sakti hai?",
+  "keyword": "federal province financial support outside authority"
+ },
+ "uqa128_074": {
+  "layperson_en": "What will happen to the laws that were passed between October 12, 1999 and December 31, 2003?",
+  "roman_urdu": "October 12, 1999 se le kar December 31, 2003 tak banaye gaye qanunon ka kya hoga?",
+  "keyword": "laws 1999 2003 status"
+ },
+ "uqa128_075": {
+  "layperson_en": "Can a Pakistani citizen buy and sell land or a house anywhere in Pakistan?",
+  "roman_urdu": "Kya Pakistan ke shehri mulk ke kisi bhi ilaqay mein zameen ya makaan khareed aur bech sakte hain?",
+  "keyword": "Pakistan property ownership sale"
+ },
+ "uqa128_076": {
+  "layperson_en": "Who decides who becomes a Federal Minister or a Minister of State in Pakistan?",
+  "roman_urdu": "Pakistan mein Federal Ministers aur Ministers of State ko kaun appoint karta hai?",
+  "keyword": "Pakistan Federal Ministers Ministers of State appointment"
+ },
+ "uqa128_077": {
+  "layperson_en": "What will the government do to help Muslims in Pakistan live according to Islamic teachings?",
+  "roman_urdu": "State kya qadam uthayegi taake Pakistan ke Musalman Islami usoolon ke mutabiq zindagi guzar saken?",
+  "keyword": "state measures help Muslims Islamic principles Pakistan"
+ },
+ "uqa128_078": {
+  "layperson_en": "Can any law remove the powers of the Election Commission?",
+  "roman_urdu": "Kya koi bhi qanoon Election Commission ki powers hata sakta hai?",
+  "keyword": "law remove Election Commission powers"
+ },
+ "uqa128_079": {
+  "layperson_en": "How are the Supreme Court's orders carried out in the different parts of Pakistan?",
+  "roman_urdu": "Supreme Court ke orders Pakistan ke mukhtalif ilaqon mein kaise enforce hote hain?",
+  "keyword": "Supreme Court order enforcement Pakistan regions"
+ },
+ "uqa128_080": {
+  "layperson_en": "Is the Governor allowed to speak to the Provincial Assembly?",
+  "roman_urdu": "Kya Governor Provincial Assembly ko bol sakta hai?",
+  "keyword": "Governor address Provincial Assembly"
+ },
+ "uqa128_081": {
+  "layperson_en": "Did judges who took the oath under the Oath of Office (Judges) Order, 2000, legally hold their positions?",
+  "roman_urdu": "Kya woh judges jo Oath of Office (Judges) Order, 2000 ke tehat qasam khate hain, unka position legally tha?",
+  "keyword": "judges oath of office 2000 legal position"
+ },
+ "uqa128_082": {
+  "layperson_en": "Can the rights given in this Chapter be put on hold?",
+  "roman_urdu": "Kya is Chapter ke rights suspend kiye ja sakte hain?",
+  "keyword": "suspend rights chapter"
+ },
+ "uqa128_083": {
+  "layperson_en": "Can the Supreme Court hear appeals of decisions made by a High Court?",
+  "roman_urdu": "Kya Supreme Court High Court ke faislon ke khilaf appeal sun sakti hai?",
+  "keyword": "Supreme Court appeal High Court decisions"
+ },
+ "uqa128_084": {
+  "layperson_en": "What language is officially recognized as the national language of Pakistan?",
+  "roman_urdu": "Pakistan ki qaumi zuban kaun si hai?",
+  "keyword": "Pakistan national language"
+ },
+ "uqa128_085": {
+  "layperson_en": "What rights does a person have when they are charged with a crime?",
+  "roman_urdu": "Jab koi shakhs jurm ka charge ka samna karta hai, usko kya guarantee milti hai?",
+  "keyword": "criminal charge guaranteed rights"
+ },
+ "uqa128_086": {
+  "layperson_en": "What happens if the judges on a bench are split evenly on a case?",
+  "roman_urdu": "Agar bench ke members case par barabar raaye rakhte hain to kya hota hai?",
+  "keyword": "bench equally divided decision"
+ },
+ "uqa128_087": {
+  "layperson_en": "Who can the President temporarily appoint to serve as a Supreme Court judge when a current judge can't perform their duties?",
+  "roman_urdu": "President temporarily kaun appoint kar sakta hai Supreme Court ka judge jab koi judge apna kaam nahi kar sakta?",
+  "keyword": "President temporary Supreme Court judge appointment"
+ },
+ "uqa128_088": {
+  "layperson_en": "Who makes sure the Principles of Policy are followed?",
+  "roman_urdu": "Principles of Policy ko follow karne ki zimmedari kaun uthata hai?",
+  "keyword": "who ensures Principles of Policy compliance"
+ },
+ "uqa128_089": {
+  "layperson_en": "What will happen to cases that are under Article 203B and are still pending in a High Court when the new chapter begins?",
+  "roman_urdu": "Jab naya chapter shuru ho, to Article 203B ke tehat jo cases High Court mein pending hain, unka kya hoga?",
+  "keyword": "Article 203B pending cases new chapter"
+ },
+ "uqa128_090": {
+  "layperson_en": "Who can set up separate High Courts for Balochistan and Sindh?",
+  "roman_urdu": "Balochistan aur Sindh ke liye alag High Courts banane ka ikhtiyar kis ke paas hai?",
+  "keyword": "establish separate High Courts Balochistan Sindh authority"
+ },
+ "uqa128_091": {
+  "layperson_en": "What happens to a member of Parliament or a Provincial Assembly if they become President?",
+  "roman_urdu": "Agar koi MP ya Provincial Assembly ka member President ban jaye to uske saath kya hota hai?",
+  "keyword": "MP President election consequence"
+ },
+ "uqa128_092": {
+  "layperson_en": "Can a case that's already in court be put on hold just because someone filed a petition to see if the law conflicts with Islamic teachings?",
+  "roman_urdu": "Kya chalti hui adalati case ko sirf is liye rok sakte hain ke koi petition daakhil ki gayi ho ke kya law Islami usoolon ke khilaaf hai?",
+  "keyword": "pause court case petition Islamic law"
+ },
+ "uqa128_093": {
+  "layperson_en": "Which area has the first right to use the natural gas that comes from a well-head located inside its boundaries?",
+  "roman_urdu": "Kaun si area ko us well-head se aane wali natural gas ka pehla haq milta hai jo uske hudood mein hai?",
+  "keyword": "natural gas priority area well-head"
+ },
+ "uqa128_094": {
+  "layperson_en": "Are there any situations where a law that goes against basic rights is still considered valid?",
+  "roman_urdu": "Kya koi istisnaat hain us rule ke jo fundamental rights ke khilaf qanun ko void karte hain?",
+  "keyword": "exceptions laws conflicting fundamental rights void"
+ },
+ "uqa128_095": {
+  "layperson_en": "What can a court's rules say about payments?",
+  "roman_urdu": "Court ke banaye hue rules payments ke hawale se kya shamil kar sakte hain?",
+  "keyword": "court rules payments include"
+ },
+ "uqa128_096": {
+  "layperson_en": "What can the President do if he wants to talk to either House about a bill or any other matter?",
+  "roman_urdu": "Agar President ko koi bill ya dusri baat ke liye kisi bhi house se raabta karna ho to wo kya kar sakta hai?",
+  "keyword": "President communicate House Bill"
+ },
+ "uqa128_097": {
+  "layperson_en": "How often does the National Economic Council have to meet?",
+  "roman_urdu": null,
+  "keyword": "National Economic Council meeting frequency"
+ },
+ "uqa128_098": {
+  "layperson_en": "What are the two kinds of spending that must be shown separately in the Annual Budget Statement?",
+  "roman_urdu": "Annual Budget Statement mein do kis tarah ke kharch alag alag dikhane zaroori hain?",
+  "keyword": "expenditure types separate Annual Budget Statement"
+ },
+ "uqa128_099": {
+  "layperson_en": "Who has to approve the Islamic Council's rules of procedure?",
+  "roman_urdu": "Islamic Council ke rules of procedure ko approve karne ki zimmedari kis ki hai?",
+  "keyword": "Islamic Council rules procedure approval"
+ },
+ "uqa128_100": {
+  "layperson_en": "What can the court do if it discovers problems with how a criminal trial was conducted?",
+  "roman_urdu": "Agar court ko criminal case ki proceedings mein irregularities milen to woh kya kar sakti hai?",
+  "keyword": "court irregularities criminal proceedings"
+ },
+ "uqa128_101": {
+  "layperson_en": "What happens to the laws that Parliament passes during a state of emergency after the emergency ends?",
+  "roman_urdu": "State of emergency ke dauran Parliament ke banaye gaye qanoon emergency khatam hone ke baad kya hotay hain?",
+  "keyword": "laws made during emergency after emergency ends"
+ },
+ "uqa128_102": {
+  "layperson_en": "Can a Pakistani citizen take an award from another country without any strings attached?",
+  "roman_urdu": "Kya Pakistani citizen foreign country ka award koi shart ke baghair accept kar sakta hai?",
+  "keyword": "Pakistani citizen foreign award acceptance"
+ },
+ "uqa128_103": {
+  "layperson_en": "Is it allowed to use English for official business in Pakistan?",
+  "roman_urdu": "Kya Pakistan mein official kaam ke liye English istemal ki ja sakti hai?",
+  "keyword": "English official use Pakistan"
+ },
+ "uqa128_104": {
+  "layperson_en": "What will happen if a person who isn’t allowed to be there takes part in a House’s proceedings?",
+  "roman_urdu": "Agar koi ghair haqdaar shakhs House ki proceedings mein shamil ho jaye to kya hoga?",
+  "keyword": "unauthorized participation House proceedings consequences"
+ },
+ "uqa128_105": {
+  "layperson_en": "How many people are in the Senate?",
+  "roman_urdu": "Senate mein kitne members hain?",
+  "keyword": "Senate members count"
+ },
+ "uqa128_106": {
+  "layperson_en": "When can someone who has been sentenced to death or life imprisonment by a High Court file an appeal to the Supreme Court?",
+  "roman_urdu": "Agar High Court ne kisi ko saza-e-maut ya zindagi ki saza di ho, to Supreme Court se appeal kab ki ja sakti hai?",
+  "keyword": "Supreme Court appeal death life sentence"
+ },
+ "uqa128_107": {
+  "layperson_en": "Do rules about the Quran and Sunnah affect the personal laws that apply to non‑Muslim citizens?",
+  "roman_urdu": "Kya Quran aur Sunnat ke provisions non-Muslim citizens ke personal laws ko affect karte hain?",
+  "keyword": "Quran Sunnah non-Muslim personal laws"
+ },
+ "uqa128_108": {
+  "layperson_en": "If a court decision goes against the law that lets Parliament tax certain kinds of income, what happens to that decision?",
+  "roman_urdu": "Agar koi adalat ka faisla us qanoon ke khilaf ho jo Parliament ko kuch aamdani par tax lagane ka haq deta hai, to us faislay ka kya hoga?",
+  "keyword": "court judgment tax provision Parliament conflict"
+ },
+ "uqa128_109": {
+  "layperson_en": "Which courts does the Constitution set up in Pakistan?",
+  "roman_urdu": "Pakistan ki Constitution ke mutabiq kaun se courts banaye gaye hain?",
+  "keyword": "Pakistan Constitution courts established"
+ },
+ "uqa128_110": {
+  "layperson_en": "Are there any situations where the courts can be involved with the government's executive functions, or are they always kept separate?",
+  "roman_urdu": "Kya judiciary aur executive ke separation mein koi exceptions hain?",
+  "keyword": "judiciary executive separation exceptions"
+ },
+ "uqa128_111": {
+  "layperson_en": "Can a court set its own rules for how it operates?",
+  "roman_urdu": "Kya court apni procedures ko regulate kar sakti hai?",
+  "keyword": "court regulate procedures"
+ },
+ "uqa128_112": {
+  "layperson_en": "Who were the members of the first Provincial Assembly after the Constitution came into effect?",
+  "roman_urdu": "Constitution ke tehat pehli Provincial Assembly ke members kaun hain?",
+  "keyword": "first Provincial Assembly members Constitution"
+ },
+ "uqa128_113": {
+  "layperson_en": "Who decides how the voting areas (constituencies) are drawn?",
+  "roman_urdu": "Constituencies ki delimitation ka zimma kaun ka hai?",
+  "keyword": "who responsible delimitation constituencies"
+ },
+ "uqa128_114": {
+  "layperson_en": "Who can tax the income of companies and other bodies created under federal or provincial law?",
+  "roman_urdu": "Kaun corporation aur doosri federal ya provincial qanoon se banay hui bodies ki aamdani par tax laga sakta hai?",
+  "keyword": "authority tax corporate income"
+ },
+ "uqa128_115": {
+  "layperson_en": "Can new provinces or territories be added to Pakistan?",
+  "roman_urdu": "Kya naye states ya ilaqay Pakistan ka hissa ban sakte hain?",
+  "keyword": "new states become part of Pakistan"
+ },
+ "uqa128_116": {
+  "layperson_en": "Who has to give the budget to the National Assembly every year?",
+  "roman_urdu": "Har saal budget National Assembly ko pesh karne ka zimma kaun sa hai?",
+  "keyword": "budget presentation National Assembly responsible"
+ },
+ "uqa128_117": {
+  "layperson_en": "Who can give out medals for bravery or good service in Pakistan?",
+  "roman_urdu": "Pakistan mein bahaduri ya khidmat ke liye tamgeeh dene ka ikhtiyar kis ke paas hai?",
+  "keyword": "Pakistan award decorations gallantry meritorious service authority"
+ },
+ "uqa128_118": {
+  "layperson_en": "What is done when the Chief Justice of Pakistan is not present or the post is empty?",
+  "roman_urdu": "Agar Pakistan ka Chief Justice maujood na ho ya post khali ho to kya hota hai?",
+  "keyword": "Chief Justice absent vacancy Pakistan"
+ },
+ "uqa128_119": {
+  "layperson_en": "Can someone in Pakistan be forced to do something that the law does not require?",
+  "roman_urdu": "Kya Pakistan mein koi shaks ko aisa kaam karne par majboor kiya ja sakta hai jo kanoon ke mutabiq zaroori nahi?",
+  "keyword": "force person non required action Pakistan law"
+ },
+ "uqa128_120": {
+  "layperson_en": "Do the rulings that the Court makes in this Chapter have to be followed by the lower courts?",
+  "roman_urdu": "Kya is Chapter ke tehat Court ke faislay lower courts par bhi lagu hotay hain?",
+  "keyword": "court decisions applicable lower courts"
+ },
+ "uqa128_121": {
+  "layperson_en": "How long does a Senate member serve?",
+  "roman_urdu": "Senate ke members ka term kitna hota hai?",
+  "keyword": "Senate members term length"
+ },
+ "uqa128_122": {
+  "layperson_en": "Can a legislative body keep operating even when some of its seats are empty?",
+  "roman_urdu": "Kya House apni kaam karte reh sakti hai agar uske members ki jagah khali ho?",
+  "keyword": "House vacancies continue functioning"
+ },
+ "uqa128_123": {
+  "layperson_en": "What things can a person do that would make them guilty of high treason?",
+  "roman_urdu": "Kaun se kaam karne se koi shaks high treason ka jurm kar sakta hai?",
+  "keyword": "high treason actions guilty"
+ },
+ "uqa128_124": {
+  "layperson_en": "What change has been made to the High Court for the provinces of Balochistan and Sindh?",
+  "roman_urdu": "Balochistan aur Sindh ke High Court mein kya tabdeeli aayi hai?",
+  "keyword": "High Court Balochistan Sindh change"
+ },
+ "uqa128_125": {
+  "layperson_en": "If the President declares an emergency because of internal unrest but the Provincial Assembly hasn't passed a resolution, what must happen?",
+  "roman_urdu": "Agar President internal disturbances ki wajah se emergency declare kare aur Provincial Assembly ka resolution na ho, to kya hona chahiye?",
+  "keyword": "President emergency internal disturbances Provincial Assembly resolution"
+ },
+ "uqa128_126": {
+  "layperson_en": "When does the President have to speak to both houses of Parliament together?",
+  "roman_urdu": "President ko dono houses of Parliament ko aik saath address kab karna hota hai?",
+  "keyword": "President address both houses Parliament"
+ },
+ "uqa128_127": {
+  "layperson_en": "How long does a temporary appointment of a Supreme Court judge last?",
+  "roman_urdu": "Supreme Court ke temporary judge ki appointment kitni der tak chalti hai?",
+  "keyword": "temporary Supreme Court judge appointment duration"
+ },
+ "uqa121_000": {
+  "layperson_en": "What duties should be given to the elected officials of local governments?",
+  "roman_urdu": "Local government ke elected representatives ko kaun si zimmedariyan devolve ki jayengi?",
+  "keyword": "devolved responsibilities local government elected representatives"
+ },
+ "uqa121_001": {
+  "layperson_en": "Who is in charge of running local government elections in Pakistan?",
+  "roman_urdu": "Pakistan mein local government elections ka zimma kaun rakhta hai?",
+  "keyword": "local government elections Pakistan responsible"
+ },
+ "uqa121_002": {
+  "layperson_en": "Whose name is used when the Provincial Government carries out any official action?",
+  "roman_urdu": "Provincial Government ke tamam executive actions kis ke naam se liye jate hain?",
+  "keyword": "executive actions provincial government name"
+ },
+ "uqa121_003": {
+  "layperson_en": "Can a court challenge whether an order or document issued in the Governor's name is valid?",
+  "roman_urdu": "Kya Governor ke naam se banaye gaye order ya document ki validity court mein challenge ki ja sakti hai?",
+  "keyword": "Governor order validity court"
+ },
+ "uqa121_004": {
+  "layperson_en": "Which courts can punish someone for contempt of court?",
+  "roman_urdu": "Kaun se adalatain contempt of court ki saza de sakti hain?",
+  "keyword": "courts authority contempt punishment"
+ },
+ "uqa121_005": {
+  "layperson_en": "What kinds of actions can be treated as contempt of court?",
+  "roman_urdu": "Court ki contempt kaun se kaam se hoti hai?",
+  "keyword": "contempt of court actions examples"
+ },
+ "uqa121_006": {
+  "layperson_en": "What is done with the Auditor‑General’s reports on the provinces’ accounts?",
+  "roman_urdu": "Auditor-General ki reports jo provincial accounts par hain, unka kya hota hai?",
+  "keyword": "Auditor-General provincial accounts reports"
+ },
+ "uqa121_007": {
+  "layperson_en": "Who receives the Auditor-General's reports about the Federation's accounts?",
+  "roman_urdu": "Auditor-General ki reports jo Federation ke accounts se mutalliq hain, woh kis ko milti hain?",
+  "keyword": "Auditor-General reports Federation accounts recipient"
+ },
+ "uqa121_008": {
+  "layperson_en": "Where is the main location of the High Court for Islamabad Capital Territory?",
+  "roman_urdu": "Islamabad Capital Territory ki High Court ka principal seat kahan hai?",
+  "keyword": "High Court principal seat Islamabad"
+ },
+ "uqa121_009": {
+  "layperson_en": "Can a High Court set up a circuit court in a place that's not its main location?",
+  "roman_urdu": "Kya High Court apni principal seat ke bahar circuit court rakh sakti hai?",
+  "keyword": "High Court circuit court outside principal seat"
+ },
+ "uqa121_010": {
+  "layperson_en": "Who decides where the extra benches of each High Court will be located?",
+  "roman_urdu": "Har High Court ke extra benches ke locations ka faisla kaun karta hai?",
+  "keyword": "determine locations additional benches high court"
+ },
+ "uqa121_011": {
+  "layperson_en": "Can the Provincial Assembly talk about or vote on the approved spending plan?",
+  "roman_urdu": "Kya Provincial Assembly authenticated schedule of authorized expenditure par discuss ya vote kar sakti hai?",
+  "keyword": "Provincial Assembly discuss vote authorized expenditure schedule"
+ },
+ "uqa121_012": {
+  "layperson_en": "Can members of Parliament talk about what Supreme Court or High Court judges are doing while they are on duty?",
+  "roman_urdu": "Kya Parliament ke members Supreme Court ya High Court ke judges ke kaam ke dauran unke actions discuss kar sakte hain?",
+  "keyword": "Parliament discuss judges actions while on duty"
+ },
+ "uqa121_013": {
+  "layperson_en": "Is it allowed for members of a provincial assembly to talk about what a Supreme Court or High Court judge does while they are doing their job?",
+  "roman_urdu": "Kya Provincial Assembly ke members Supreme Court ya High Court ke judge ke kaam ke baare mein baat kar sakte hain jab woh apna kaam kar rahe hon?",
+  "keyword": "Provincial Assembly judge discussion"
+ },
+ "uqa121_014": {
+  "layperson_en": "How does a Supreme Court or High Court judge resign from their job?",
+  "roman_urdu": "Supreme Court ya High Court ka judge kaise resign kar sakta hai?",
+  "keyword": "Supreme Court judge resignation process"
+ },
+ "uqa121_015": {
+  "layperson_en": "Can a former Supreme Court judge work in any court in Pakistan?",
+  "roman_urdu": "Kya ek former Supreme Court judge Pakistan ke kisi bhi court mein kaam kar sakta hai?",
+  "keyword": "former Supreme Court judge work courts Pakistan"
+ },
+ "uqa121_016": {
+  "layperson_en": "Can a Supreme Court or High Court judge take another job that would increase their salary?",
+  "roman_urdu": "Kya Supreme Court ya High Court ka judge koi dusra kaam kar sakta hai jo uski tankhwa barha de?",
+  "keyword": "judge extra job higher salary"
+ },
+ "uqa121_017": {
+  "layperson_en": "Can a commissioner or member have another paid job while they are serving in office?",
+  "roman_urdu": "Kya commissioner ya member office mein rehte hue koi aur paid job kar sakte hain?",
+  "keyword": "Commissioner hold paid job while in office"
+ },
+ "uqa121_018": {
+  "layperson_en": "Do Supreme Court judges and High Court judges have the same terms and conditions of service?",
+  "roman_urdu": "Supreme Court aur High Court ke judges ke service ke terms aur conditions same hain?",
+  "keyword": "Supreme Court High Court judges service terms"
+ },
+ "uqa121_019": {
+  "layperson_en": "What happens if a High Court judge refuses to accept an appointment to the Supreme Court?",
+  "roman_urdu": "Agar koi High Court ka judge Supreme Court ki appointment accept na kare to kya hoga?",
+  "keyword": "High Court judge reject Supreme Court appointment"
+ },
+ "uqa121_020": {
+  "layperson_en": "Is there a required waiting period before a former Commissioner or member can take another paid job in the Pakistani government?",
+  "roman_urdu": "Kya koi waiting period hai jo pehle Commissioner ya member ko Pakistan ki service mein koi aur paid position lene se pehle poora karna padta hai?",
+  "keyword": "waiting period former commissioner paid position Pakistan"
+ },
+ "uqa121_021": {
+  "layperson_en": "Can a former High Court judge work in any other court that is within the same jurisdiction?",
+  "roman_urdu": "Kya ek purana High Court ka judge usi jurisdiction ke andar kisi bhi court mein kaam kar sakta hai?",
+  "keyword": "former High Court judge employment jurisdiction"
+ },
+ "uqa121_022": {
+  "layperson_en": "Where can I find information about the salaries and service conditions of Supreme Court and High Court judges?",
+  "roman_urdu": "Supreme Court aur High Court ke judges ki tankhwah aur service conditions ki details kahan mil sakti hain?",
+  "keyword": "Supreme Court judges salary service conditions"
+ },
+ "uqa121_023": {
+  "layperson_en": "Who is allowed to represent a party in court proceedings?",
+  "roman_urdu": "Court ke proceedings mein party ki taraf se kaun represent kar sakta hai?",
+  "keyword": "represent party court proceedings"
+ },
+ "uqa121_024": {
+  "layperson_en": "What can the Court do when it carries out its duties?",
+  "roman_urdu": "Court apni zimmedariyan ada karte hue kis power ka istemal kar sakti hai?",
+  "keyword": "Court powers functions"
+ },
+ "uqa121_025": {
+  "layperson_en": "Can a court set its own rules for how it operates?",
+  "roman_urdu": "Kya court apni procedures ko regulate kar sakti hai?",
+  "keyword": "court regulate procedures"
+ },
+ "uqa121_026": {
+  "layperson_en": "What happens after the Speaker receives the notice to remove the President?",
+  "roman_urdu": "Speaker ko President ki removal ka notice milne ke baad kya hota hai?",
+  "keyword": "Speaker notice President removal process"
+ },
+ "uqa121_027": {
+  "layperson_en": "Who has to give notice to start the process of removing the President?",
+  "roman_urdu": "President ko hatane ka process shuru karne ke liye notice kis ko dena hota hai?",
+  "keyword": "notice remove president process"
+ },
+ "uqa121_028": {
+  "layperson_en": "When can the President be removed from office?",
+  "roman_urdu": "President ko office se kab hata sakte hain?",
+  "keyword": "President removal circumstances"
+ },
+ "uqa121_029": {
+  "layperson_en": "What will happen to the areas mentioned in paragraphs (b) and (c) when the Constitution (Twenty-fifth Amendment) Act, 2018 comes into effect?",
+  "roman_urdu": "Jab Constitution (Twenty-fifth Amendment) Act, 2018 shuru ho jaye, to paragraph (b) aur (c) mein zikr shuda ilaqay ka kya hoga?",
+  "keyword": "areas paragraph b c Constitution Twenty-fifth Amendment"
+ },
+ "uqa121_030": {
+  "layperson_en": "What does the term 'Provincially Administered Tribal Areas' refer to?",
+  "roman_urdu": "Provincially Administered Tribal Areas kya hain?",
+  "keyword": "Provincially Administered Tribal Areas definition"
+ },
+ "uqa121_031": {
+  "layperson_en": "Which regions were classified as Tribal Areas in Pakistan before the commencement day?",
+  "roman_urdu": "Pakistan mein shuruat ke din se pehle kaun se ilaqay Tribal Areas samjhay jate thay?",
+  "keyword": "Tribal Areas Pakistan before commencement"
+ },
+ "uqa121_032": {
+  "layperson_en": "What kinds of accounts does the Auditor-General look after?",
+  "roman_urdu": "Auditor-General kis kis tarah ke accounts ka oversight karta hai?",
+  "keyword": "Auditor-General account types oversight"
+ },
+ "uqa121_033": {
+  "layperson_en": "Who decides what the Auditor-General can do and what powers they have?",
+  "roman_urdu": "Auditor-General ke functions aur powers ka taayun kaun karta hai?",
+  "keyword": "determine auditor-general functions powers"
+ },
+ "uqa121_034": {
+  "layperson_en": "Can the Attorney-General of Pakistan do private legal work or take private clients while still holding the office?",
+  "roman_urdu": "Kya Attorney-General Pakistan private practice kar sakta hai jab woh office mein ho?",
+  "keyword": "Attorney General private practice Pakistan"
+ },
+ "uqa121_035": {
+  "layperson_en": "Who chooses the Attorney-General for Pakistan?",
+  "roman_urdu": "Attorney-General Pakistan ko kaun appoint karta hai?",
+  "keyword": "Attorney-General Pakistan appointment"
+ },
+ "uqa121_036": {
+  "layperson_en": "What is the government doing to raise people's standard of living?",
+  "roman_urdu": "State apne logon ki standard of living behtar karne ke liye kya kar raha hai?",
+  "keyword": "State improve standard of living"
+ },
+ "uqa121_037": {
+  "layperson_en": "What help does the government provide to people who can’t work because they’re sick, disabled, or unemployed?",
+  "roman_urdu": "Aise logon ke liye kya intazam hai jo bemari, kamzori ya berozgari ki wajah se rozi roti nahi kama sakte?",
+  "keyword": "citizen welfare infirmity sickness unemployment"
+ },
+ "uqa121_038": {
+  "layperson_en": "What does the government do to provide social security for workers in Pakistan?",
+  "roman_urdu": "Pakistan mein mulazimeen ke liye social security ke liye kya iqdamat liye jate hain?",
+  "keyword": "Pakistan social security workers measures"
+ },
+ "uqa121_039": {
+  "layperson_en": "Can the Governor ask members of the Provincial Assembly to be present?",
+  "roman_urdu": "Kya Governor Provincial Assembly ke members ko hazir hone ki darkhwast kar sakta hai?",
+  "keyword": "Governor request Provincial Assembly members presence"
+ },
+ "uqa121_040": {
+  "layperson_en": "Is the Governor allowed to speak to the Provincial Assembly?",
+  "roman_urdu": "Kya Governor Provincial Assembly se baat kar sakta hai?",
+  "keyword": "Governor address Provincial Assembly"
+ },
+ "uqa121_041": {
+  "layperson_en": "What can the President do if he wants to talk to either the Senate or the National Assembly about a bill or any other matter?",
+  "roman_urdu": "Agar President ko koi bill ya dusri baat ke liye kisi bhi house se rabta karna ho to wo kya kar sakta hai?",
+  "keyword": "President communicate with House bill"
+ },
+ "uqa121_042": {
+  "layperson_en": "When does the President have to speak to both houses of Parliament together?",
+  "roman_urdu": "President ko dono houses of Parliament ko aik saath address kab karna zaroori hai?",
+  "keyword": "President address both houses when"
+ },
+ "uqa121_043": {
+  "layperson_en": "If the Chief Justice of Pakistan isn’t available, who can the first President take the oath before?",
+  "roman_urdu": "Agar Chief Justice Pakistan maujood na ho, to pehle President ko kis ke samne oath lena chahiye?",
+  "keyword": "first President oath Chief Justice unavailable"
+ },
+ "uqa121_044": {
+  "layperson_en": "Who gives advice to the President when he carries out his duties?",
+  "roman_urdu": "President ko uske functions karte waqt mashwara kaun deta hai?",
+  "keyword": "President advice functions"
+ },
+ "uqa121_045": {
+  "layperson_en": "What will happen if the President dissolves the National Assembly?",
+  "roman_urdu": "Agar President National Assembly ko dissolve kare to kya hoga?",
+  "keyword": "President dissolves National Assembly consequences"
+ },
+ "uqa121_046": {
+  "layperson_en": "Can the President ask to review the advice that was given to him?",
+  "roman_urdu": "Kya President ko milay hue mashware ko dobara dekhne ki darkhwast kar sakta hai?",
+  "keyword": "President reconsider advice"
+ },
+ "uqa121_047": {
+  "layperson_en": "Can someone who holds a paid government position in Pakistan remain a member of the first Provincial Assembly forever?",
+  "roman_urdu": "Kya Pakistan ki service mein office of profit rakhne wala shakhs pehli Provincial Assembly ka member hamesha reh sakta hai?",
+  "keyword": "office of profit provincial assembly eligibility"
+ },
+ "uqa121_048": {
+  "layperson_en": null,
+  "roman_urdu": null,
+  "keyword": null
+ },
+ "uqa121_049": {
+  "layperson_en": "Who were the members of the first Provincial Assembly under the Constitution?",
+  "roman_urdu": "Constitution ke tehat pehli Provincial Assembly ke members kaun hain?",
+  "keyword": "first Provincial Assembly members Constitution"
+ },
+ "uqa121_050": {
+  "layperson_en": "Can the President quit his job?",
+  "roman_urdu": "Kya President apni position se resign kar sakta hai?",
+  "keyword": "President resign position"
+ },
+ "uqa121_051": {
+  "layperson_en": "How long does the National Assembly stay in power before it is dissolved?",
+  "roman_urdu": "National Assembly kitni der tak chalti hai pehle ke dissolve ho jaye?",
+  "keyword": "National Assembly term length dissolution"
+ },
+ "uqa121_052": {
+  "layperson_en": "What is the length of the President's term?",
+  "roman_urdu": "President ka term kitna lamba hota hai?",
+  "keyword": "President term length"
+ },
+ "uqa121_053": {
+  "layperson_en": "Who is allowed to ask the Chief Minister to stay in office until a new one takes over?",
+  "roman_urdu": "Kaun Chief Minister se request kar sakta hai ke wo naya aane tak office mein rahe?",
+  "keyword": "request Chief Minister stay until new"
+ },
+ "uqa121_054": {
+  "layperson_en": "Can the Prime Minister stay in office after a new Prime Minister has been selected?",
+  "roman_urdu": "Kya Prime Minister naya chunne ke baad bhi office mein reh sakta hai?",
+  "keyword": "Prime Minister stay after new chosen"
+ },
+ "uqa121_055": {
+  "layperson_en": "How many years does a Provincial Assembly serve before it is dissolved?",
+  "roman_urdu": "Provincial Assembly kitni der tak chalti hai pehle ke dissolve ho jaye?",
+  "keyword": "Provincial Assembly term length dissolution"
+ },
+ "uqa121_056": {
+  "layperson_en": "Who is in charge of setting up the National Finance Commission?",
+  "roman_urdu": "National Finance Commission banane ki zimmedari kaun ke paas hai?",
+  "keyword": "National Finance Commission formation responsibility"
+ },
+ "uqa121_057": {
+  "layperson_en": "What is one of the things the National Finance Commission has to do?",
+  "roman_urdu": "National Finance Commission ka ek duty kya hai?",
+  "keyword": "National Finance Commission duties"
+ },
+ "uqa121_058": {
+  "layperson_en": "How often does the National Finance Commission have to be set up?",
+  "roman_urdu": null,
+  "keyword": "National Finance Commission how often constituted"
+ },
+ "uqa121_059": {
+  "layperson_en": "Can citizens work in any profession or start any business they want?",
+  "roman_urdu": "Kya shehri koi bhi naukri ya karobar kar sakte hain?",
+  "keyword": "citizens choose job business law"
+ },
+ "uqa121_060": {
+  "layperson_en": "Can anyone start or run a business, or are there rules that limit who is allowed to do so?",
+  "roman_urdu": "Kya koi bhi business ya trade chala sakta hai, ya is ke liye koi restrictions hain?",
+  "keyword": "business ownership restrictions who can run trade"
+ },
+ "uqa121_061": {
+  "layperson_en": "Do elections that were held under the 1977 and 2002 orders count as being held under the Constitution?",
+  "roman_urdu": "Kya 1977 aur 2002 ke orders ke tehat hone wali elections ko Constitution ke tehat mana jata hai?",
+  "keyword": "1977 2002 elections under constitution"
+ },
+ "uqa121_062": {
+  "layperson_en": "Did the 2008 general elections take place under the Constitution?",
+  "roman_urdu": "Kya 2008 ke general elections constitution ke tehat munazzam ki gayi thi?",
+  "keyword": "2008 general elections constitution"
+ },
+ "uqa121_063": {
+  "layperson_en": "When did Pakistan hold its 2008 general elections?",
+  "roman_urdu": "Pakistan mein 2008 ke general elections kab hue?",
+  "keyword": "2008 Pakistan general elections date"
+ },
+ "uqa121_064": {
+  "layperson_en": "Do the elections that were held under the 1977 and 2002 orders have any legal effect?",
+  "roman_urdu": "1977 aur 2002 ke orders ke tehat hone wali elections ka koi kanooni asar hai?",
+  "keyword": "1977 2002 elections legal effect"
+ },
+ "uqa121_065": {
+  "layperson_en": "Can a provincial government hand over its duties to the federal government?",
+  "roman_urdu": "Kya provincial government apni zimmedariyan federal government ko de sakti hai?",
+  "keyword": "provincial assign responsibilities federal"
+ },
+ "uqa121_066": {
+  "layperson_en": "What does a provincial government have to do after it hands over its functions to the federal government?",
+  "roman_urdu": "Provincial government ne functions federal government ko de dene ke baad kya karna chahiye?",
+  "keyword": "provincial government entrust functions federal requirement"
+ },
+ "uqa121_067": {
+  "layperson_en": "Who are the members of the Supreme Judicial Council in Pakistan?",
+  "roman_urdu": "Pakistan ke Supreme Judicial Council ke members kaun hain?",
+  "keyword": "Supreme Judicial Council members Pakistan"
+ },
+ "uqa121_068": {
+  "layperson_en": "What happens if a member of the Supreme Judicial Council can’t perform their duties because they’re ill?",
+  "roman_urdu": "Agar Supreme Judicial Council ka member beemar ho kar kaam nahi kar sakta to kya hoga?",
+  "keyword": "Supreme Judicial Council member illness procedure"
+ },
+ "uqa121_069": {
+  "layperson_en": "Can a Supreme Court or High Court judge be removed from their position without an inquiry by the Supreme Judicial Council?",
+  "roman_urdu": "Kya Supreme Court ya High Court ka judge bina Supreme Judicial Council ki inquiry ke hataya ja sakta hai?",
+  "keyword": "remove judge without council inquiry"
+ },
+ "uqa121_070": {
+  "layperson_en": "Can a person be turned away from a public entertainment venue just because of their religion or race?",
+  "roman_urdu": "Kya logon ko unke mazhab ya nasl ki bunyaad par public entertainment places mein entry se mana kiya ja sakta hai?",
+  "keyword": "denied entry public entertainment religion race"
+ },
+ "uqa121_071": {
+  "layperson_en": "Can anyone be treated differently in public places under any circumstances?",
+  "roman_urdu": "Kya public places mein non-discrimination rule ke koi exceptions hain?",
+  "keyword": "exceptions non-discrimination public places"
+ },
+ "uqa121_072": {
+  "layperson_en": "Can the courts and officials that were working before the new constitution keep doing their jobs?",
+  "roman_urdu": "Kya wo courts aur authorities jo nayi constitution se pehle kaam kar rahe thay, ab bhi kaam kar sakte hain?",
+  "keyword": "courts continue after new constitution"
+ },
+ "uqa121_073": {
+  "layperson_en": "What will happen to the employment terms and conditions of people who were already working for Pakistan before the new constitution began?",
+  "roman_urdu": "Nayi constitution shuru hone se pehle Pakistan ki service mein rehne walon ke terms and conditions ka kya hoga?",
+  "keyword": "pre constitution employment terms Pakistan"
+ },
+ "uqa121_074": {
+  "layperson_en": "Is it allowed for someone who isn’t an elected member of Parliament or a Provincial Assembly to serve as a Federal Minister or Chief Minister for a while after the new constitution comes into effect?",
+  "roman_urdu": "Kya koi aisa shaks jo Parliament ya Provincial Assembly ka member nahi hai, nayi constitution ke baad kuch arsey ke liye Federal Minister ya Chief Minister ban sakta hai?",
+  "keyword": "non-member minister eligibility constitution"
+ },
+ "uqa121_075": {
+  "layperson_en": "According to the passage, what has been cancelled?",
+  "roman_urdu": "Matn ke mutabiq kya cancel hua hai?",
+  "keyword": "what annulled according to text"
+ },
+ "uqa121_076": {
+  "layperson_en": "Can the National Assembly decide how to spend money from the Federal Consolidated Fund?",
+  "roman_urdu": "Kya National Assembly Federal Consolidated Fund ke kharch par vote kar sakti hai?",
+  "keyword": "National Assembly vote Federal Consolidated Fund expenditure"
+ },
+ "uqa121_077": {
+  "layperson_en": "What happens to a request for a grant if the National Assembly doesn't vote on it within the allowed time?",
+  "roman_urdu": "Agar National Assembly specified period ke andar grant ki demand par vote nahi karti to kya hota hai?",
+  "keyword": "grant demand not voted within period"
+ },
+ "uqa121_078": {
+  "layperson_en": "Can the Provincial Assembly decide on spending money that comes from the Provincial Consolidated Fund?",
+  "roman_urdu": "Kya Provincial Assembly Provincial Consolidated Fund se kharcha karne par vote kar sakti hai?",
+  "keyword": "Provincial Assembly vote expenditure Provincial Consolidated Fund"
+ },
+ "uqa121_079": {
+  "layperson_en": "Who has to recommend a grant request before it can be submitted?",
+  "roman_urdu": "Grant ki demand banane se pehle kaun recommend karega?",
+  "keyword": "who recommend grant demand"
+ },
+ "uqa121_080": {
+  "layperson_en": "Does it matter whether the federal law was passed before or after the provincial law when they conflict?",
+  "roman_urdu": "Kya federal law ka provincial law se pehle ya baad pass hone ka koi farq padta hai jab dono mein takraar ho?",
+  "keyword": "federal law provincial law conflict timing"
+ },
+ "uqa121_081": {
+  "layperson_en": "What will happen if a law made by a province conflicts with a law made by the federal government in Pakistan?",
+  "roman_urdu": "Agar koi provincial law federal law ke saath conflict kare to kya hoga?",
+  "keyword": "provincial law federal law conflict Pakistan"
+ },
+ "uqa121_082": {
+  "layperson_en": "Can a constitutional amendment that changes a province's borders be sent to the President without any other approval?",
+  "roman_urdu": "Kya koi constitutional amendment jo province ki boundaries change karta hai, bina kisi extra approval ke President ko pesh ki ja sakti hai?",
+  "keyword": "province boundary amendment President approval"
+ },
+ "uqa121_083": {
+  "layperson_en": "What does a constitutional amendment bill need before it can be sent to the President for his approval?",
+  "roman_urdu": "Constitution ko amend karne wali bill ko President ko assent ke liye present karne se pehle kya zaroori hai?",
+  "keyword": "constitutional amendment bill president assent requirements"
+ },
+ "uqa121_084": {
+  "layperson_en": "How can a bill that changes the Constitution be started?",
+  "roman_urdu": "Constitution ka amendment bill kaise shuru kiya ja sakta hai?",
+  "keyword": "initiate constitutional amendment bill"
+ },
+ "uqa121_085": {
+  "layperson_en": "What language is officially recognized as the national language of Pakistan?",
+  "roman_urdu": "Pakistan ki qaumi zuban kaun si hai?",
+  "keyword": "Pakistan national language"
+ },
+ "uqa121_086": {
+  "layperson_en": "Is it allowed to use English for official work in Pakistan?",
+  "roman_urdu": "Kya Pakistan mein official kaam ke liye English istemal ki ja sakti hai?",
+  "keyword": "English official use Pakistan"
+ },
+ "uqa121_087": {
+  "layperson_en": "Who can the President temporarily appoint to serve as a Supreme Court judge when a current judge can't perform their duties?",
+  "roman_urdu": "President temporary Supreme Court judge ke liye kaun appoint kar sakta hai jab koi judge apna kaam nahi kar pa raha?",
+  "keyword": "President temporary Supreme Court judge appointment"
+ },
+ "uqa121_088": {
+  "layperson_en": "How long does a temporary appointment of a Supreme Court judge last?",
+  "roman_urdu": "Supreme Court ke judge ki temporary appointment kitni der tak chalti hai?",
+  "keyword": "temporary Supreme Court judge appointment duration"
+ },
+ "uqa121_089": {
+  "layperson_en": "If a piece of property in a province has no legal owner, who becomes the owner?",
+  "roman_urdu": "Agar kisi province mein koi property ka koi haqdar malik na ho, to uska malik kaun banega?",
+  "keyword": "owner property no rightful owner province"
+ },
+ "uqa121_090": {
+  "layperson_en": "Who owns the minerals and other valuable resources on the continental shelf that lies beyond Pakistan's territorial waters?",
+  "roman_urdu": "Pakistan ke territorial waters ke bahar continental shelf par jo minerals aur dusri qeemti cheezein hain, unka malik kaun hai?",
+  "keyword": "continental shelf mineral ownership Pakistan"
+ },
+ "uqa121_091": {
+  "layperson_en": "What can the Auditor-General do with accounts that are incomplete or not yet audited before the start date?",
+  "roman_urdu": "Auditor-General ke paas incomplete ya unaudited accounts ke liye kya powers hain start date se pehle?",
+  "keyword": "Auditor-General powers incomplete unaudited accounts"
+ },
+ "uqa121_092": {
+  "layperson_en": "Who is responsible for dealing with the accounts that weren’t audited before the deadline?",
+  "roman_urdu": "Kaun zimmedar hai un accounts ko handle karne ka jo kisi din se pehle audit nahi hue?",
+  "keyword": "responsible handling unaudited accounts deadline"
+ },
+ "uqa121_093": {
+  "layperson_en": "Which two kinds of spending have to be shown separately in the Annual Budget Statement?",
+  "roman_urdu": "Annual Budget Statement mein do kis tarah ke kharch alag se dikhane zaroori hain?",
+  "keyword": "annual budget statement separate expenditure types"
+ },
+ "uqa121_094": {
+  "layperson_en": "Who has to bring the yearly budget to the National Assembly?",
+  "roman_urdu": "Har saal budget National Assembly ko pesh karne ka zimmedar kaun hai?",
+  "keyword": "budget presentation National Assembly responsible"
+ },
+ "uqa121_095": {
+  "layperson_en": "Who can build hydro‑electric or thermal power plants in a province?",
+  "roman_urdu": "Ek province mein hydro‑electric ya thermal power installations banane ka ikhtiyar kis ke paas hai?",
+  "keyword": "authority construct hydroelectric thermal power province"
+ },
+ "uqa121_096": {
+  "layperson_en": "What does the federal government need to do before it can decide to build hydro‑electric power stations in a province?",
+  "roman_urdu": "Federal government ko province mein hydro‑electric power stations banane se pehle kya karna zaroori hai?",
+  "keyword": "federal government hydroelectric province requirement"
+ },
+ "uqa121_097": {
+  "layperson_en": "Can a province's assembly make its own laws?",
+  "roman_urdu": "Kya Provincial Assembly apne province ke liye kanoon bana sakti hai?",
+  "keyword": "Provincial Assembly law authority"
+ },
+ "uqa121_098": {
+  "layperson_en": "Who has the power to make laws for the whole country of Pakistan?",
+  "roman_urdu": "Pakistan ke poore mulk ke liye kanoon banane ka ikhtiyar kis ke paas hai?",
+  "keyword": "who makes laws Pakistan"
+ },
+ "uqa121_099": {
+  "layperson_en": "Can a provincial assembly set taxes on people in different jobs?",
+  "roman_urdu": "Kya provincial assembly logon par mukhtalif peshaon ke liye tax laga sakti hai?",
+  "keyword": "Provincial Assembly tax professions"
+ },
+ "uqa121_100": {
+  "layperson_en": "Do the taxes that the Provincial Assembly imposes count as income taxes?",
+  "roman_urdu": "Kya Provincial Assembly ke lagaye hue taxes ko income tax samjha jata hai?",
+  "keyword": "Provincial Assembly taxes income"
+ },
+ "uqa121_101": {
+  "layperson_en": "Who does the Governor have to swear an oath to before starting their duties?",
+  "roman_urdu": "Governor ko apni duties shuru karne se pehle kis ke samne oath lena hota hai?",
+  "keyword": "Governor oath before duties"
+ },
+ "uqa121_102": {
+  "layperson_en": "Can a temporary law (an ordinance) be kept in effect for a longer time than originally allowed?",
+  "roman_urdu": "Kya ordinance ko uski pehli muddat se zyada barhaya ja sakta hai?",
+  "keyword": "extend ordinance beyond initial period"
+ },
+ "uqa121_103": {
+  "layperson_en": "How long does an ordinance stay in effect before it is cancelled?",
+  "roman_urdu": "Ek ordinance kitni dair tak chalti hai pehle ke woh repealed ho jaye?",
+  "keyword": "Ordinance duration repeal"
+ },
+ "uqa121_104": {
+  "layperson_en": "When is the President allowed to issue an ordinance?",
+  "roman_urdu": "President kab ordinance issue kar sakta hai?",
+  "keyword": "President issue ordinance when"
+ },
+ "uqa121_105": {
+  "layperson_en": "Can a person be required to pay a tax that goes to a religion they don’t follow?",
+  "roman_urdu": "Kya koi insaan ko aisi tax dene par majboor kiya ja sakta hai jo uske mazhab ko support karti ho?",
+  "keyword": "forced tax religion support"
+ },
+ "uqa121_106": {
+  "layperson_en": "If we miss a deadline that the Constitution sets, does that make the action invalid?",
+  "roman_urdu": "Agar Constitution ki deadline miss kar dein to kya woh action invalid ho jata hai?",
+  "keyword": "Constitution deadline invalid action"
+ },
+ "uqa121_107": {
+  "layperson_en": "Does a law become ineffective if it isn’t completed within the time limit set by the Constitution?",
+  "roman_urdu": "Kya koi act bekaar ho jata hai agar woh Constitution ke mutabiq required time period ke andar complete na ho?",
+  "keyword": "act ineffective time limit constitution"
+ },
+ "uqa121_108": {
+  "layperson_en": "What happens if a person who isn’t allowed takes part in a House’s proceedings?",
+  "roman_urdu": "Agar koi ghair haqdaar shakhs House ki proceedings mein shamil ho jaye to kya hoga?",
+  "keyword": "unauthorized participation House proceedings consequences"
+ },
+ "uqa121_109": {
+  "layperson_en": "Can a legislative body keep operating even if some of its seats are vacant?",
+  "roman_urdu": "Kya House vacant seats ke bawajood kaam karte reh sakti hai?",
+  "keyword": "House vacancies continue function"
+ },
+ "uqa121_110": {
+  "layperson_en": "How long do the Commissioner and the members serve?",
+  "roman_urdu": "Commissioner aur members ka term kitna hota hai?",
+  "keyword": "Commissioner term length members"
+ },
+ "uqa121_111": {
+  "layperson_en": "What happens to the members after they've served for two and a half years?",
+  "roman_urdu": "Pehle do aur aadha saal ke baad members ko kya hota hai?",
+  "keyword": "members after two and a half years"
+ },
+ "uqa121_112": {
+  "layperson_en": "How is an empty position for a Commissioner or a member filled?",
+  "roman_urdu": "Commissioner ya member ki khali jagah kaise bharte hain?",
+  "keyword": "vacancy commissioner member appointment"
+ },
+ "uqa121_113": {
+  "layperson_en": "What will happen if a province has to spend extra money because the federal government gave it new powers and duties?",
+  "roman_urdu": "Agar koi province federation ki taraf se diye gaye powers aur duties ki wajah se extra kharcha uthaye, to kya hoga?",
+  "keyword": "province extra costs federation powers duties"
+ },
+ "uqa121_114": {
+  "layperson_en": "Can the central (federal) government hand over its duties to a provincial government?",
+  "roman_urdu": "Kya Federal Government apne functions Provincial Government ko assign kar sakti hai?",
+  "keyword": "federal assign functions provincial government"
+ },
+ "uqa121_115": {
+  "layperson_en": "Can you legally torture someone to get evidence from them?",
+  "roman_urdu": "Kya kisi se saboot hasil karne ke liye usko torture karna jaiz hai?",
+  "keyword": "torture evidence legality"
+ },
+ "uqa121_116": {
+  "layperson_en": "Can the Supreme Court transfer a case from one High Court to another High Court?",
+  "roman_urdu": "Kya Supreme Court ek case ko ek High Court se doosri High Court mein transfer kar sakti hai?",
+  "keyword": "Supreme Court transfer case High Court"
+ },
+ "uqa121_117": {
+  "layperson_en": "When was the proclamation that ended Martial Law issued?",
+  "roman_urdu": "Martial Law khatam karne ka proclamation kab issue hua?",
+  "keyword": "proclamation withdrawal martial law date"
+ },
+ "uqa121_118": {
+  "layperson_en": "What did S.R.O. No. 1278 (1) 85 leave out?",
+  "roman_urdu": "S.R.O. No. 1278 (1) 85 mein kya chhoda gaya?",
+  "keyword": "S.R.O. 1278 (1) 85 omitted"
+ },
+ "uqa121_119": {
+  "layperson_en": "Is the President of Pakistan allowed to take another job that pays them for their work?",
+  "roman_urdu": "Kya Pakistan ka President koi aur paid job kar sakta hai?",
+  "keyword": "President Pakistan second paid job"
+ },
+ "uqa121_120": {
+  "layperson_en": "What happens to a member of Parliament or a Provincial Assembly if they are elected as President?",
+  "roman_urdu": "Agar koi MP ya Provincial Assembly ka member President ban jaye to uska kya hota hai?",
+  "keyword": "MP elected President outcome"
+ },
+ "dev23_d004": {
+  "layperson_en": "My motorcycle was stolen from outside my house. What crime is that?",
+  "roman_urdu": "Mere ghar ke bahar se meri motorcycle chori ho gayi. Ye kis jurm ke andar aata hai?",
+  "keyword": "motorcycle theft offence",
+  "urdu": "میری گھر کے باہر سے میری موٹر سائیکل چوری ہو گئی۔ یہ کس جرم میں آتا ہے؟"
+ },
+ "dev23_d005": {
+  "layperson_en": "Someone stole my motorcycle from outside my house. What crime is that?",
+  "roman_urdu": "Kisi ne ghar ke bahar se meri motorcycle chori kar li, ye kaun sa jurm hai?",
+  "keyword": "motorcycle theft outside house",
+  "urdu": "کسی نے گھر کے باہر سے میری موٹر سائیکل چوری کر لی، یہ کون سا جرم ہے؟"
+ },
+ "dev23_d006": {
+  "layperson_en": "My brother got arrested. How can he get bail?",
+  "roman_urdu": "Mera bhai arrest ho gaya hai. Woh bail kaise le sakta hai?",
+  "keyword": "brother arrested bail application",
+  "urdu": "میرا بھائی گرفتار ہو گیا ہے۔ وہ ضمانت کیسے حاصل کر سکتا ہے؟"
+ },
+ "dev23_d007": {
+  "layperson_en": "My brother has been arrested. How can I get his bail?",
+  "roman_urdu": "Mere bhai ko giraftar kar liya gaya hai. Uski zamaanat kaise milegi?",
+  "keyword": "brother arrested bail process",
+  "urdu": "میرا بھائی گرفتار ہو گیا ہے۔ اس کی ضمانت کیسے حاصل کی جائے؟"
+ },
+ "dev23_d008": {
+  "layperson_en": "I haven't been arrested yet, but the police are threatening to arrest me on a false case. Can I get bail before I'm actually arrested?",
+  "roman_urdu": "Mujhe abhi tak giraftaar nahi kiya gaya, lekin police mujh par jhoota case bana kar giraftari ki dhamki de rahi hai. Kya main arrest se pehle bail le sakta/sakti hoon?",
+  "keyword": "bail before arrest false case",
+  "urdu": "مجھے ابھی تک گرفتار نہیں کیا گیا لیکن پولیس مجھے جھوٹے کیس میں گرفتار کرنے کی دھمکی دے رہی ہے۔ کیا میں گرفتاری سے پہلے ضمانت حاصل کر سکتا/سکتی ہوں؟"
+ },
+ "dev23_d010": {
+  "layperson_en": "The police station won't register my FIR. What should I do?",
+  "roman_urdu": "Police station meri FIR register karne se inkaar kar rahi hai. Main kya karoon?",
+  "keyword": "police FIR refusal help",
+  "urdu": "پولیس اسٹیشن میرا ایف آئی آر رجسٹر کرنے سے انکار کر رہی ہے۔ میں کیا کر سکتا ہوں؟"
+ },
+ "dev23_d019": {
+  "layperson_en": "I want to end my marriage, but my husband refuses to divorce me. How can I get a khula?",
+  "roman_urdu": "Mujhe shaadi khatam karni hai lekin mera husband divorce nahi de raha. Khula kaise le sakti hoon?",
+  "keyword": "khula how to get",
+  "urdu": "میں اپنی شادی ختم کرنا چاہتی ہوں لیکن میرا شوہر طلاق نہیں دے رہا۔ خلع کیسے حاصل کر سکتی ہوں؟"
+ },
+ "dev23_d020": {
+  "layperson_en": "I want to end my marriage, but my husband won't give me a divorce. How can I get a khula?",
+  "roman_urdu": "Main shadi khatam karna chahti hoon lekin shohar talaq nahi de raha. Khula kaise loon?",
+  "keyword": "khula divorce husband not giving",
+  "urdu": "میں شادی ختم کرنا چاہتی ہوں لیکن شوہر طلاق نہیں دے رہا۔ خلع کیسے لوں؟"
+ },
+ "dev23_d021": {
+  "layperson_en": "After we split up, who will get custody of our 5‑year‑old son?",
+  "roman_urdu": "Humari alag hone ke baad, hamare 5 saal ke bete ki hifazat ka haq kaun ko milega?",
+  "keyword": "custody 5 year old son separation",
+  "urdu": "ہماری علیحدگی کے بعد، ہمارے 5 سالہ بیٹے کی سرپرستی کون حاصل کرے گا؟"
+ },
+ "dev23_d025": {
+  "layperson_en": "My neighbor sold his land to someone else without offering it to me first. Can I claim a right to buy it before anyone else?",
+  "roman_urdu": "Mera neighbor ne apni zameen kisi outsider ko bina mujhe pehle offer kiye bech di. Kya main pre-emption claim kar sakta hoon?",
+  "keyword": "pre-emption claim neighbor land sale",
+  "urdu": "میرا پڑوسی نے اپنی زمین کسی غیر ملکی کو بغیر مجھے پہلے پیش کیے بیچ دی۔ کیا میں پیشگی خرید کا حق دعویٰ کر سکتا ہوں؟"
+ },
+ "dev23_d031": {
+  "layperson_en": "What does section 379 of the Pakistan Penal Code say?",
+  "roman_urdu": "Pakistan Penal Code ke section 379 mein kya likha hai?",
+  "keyword": "section 379 Pakistan Penal Code",
+  "urdu": "پاکستان پینل کوڈ کے سیکشن 379 میں کیا لکھا ہے؟"
+ },
+ "dev23_c003": {
+  "layperson_en": "How is information recorded under Section 154 of the CrPC in a cognizable case?",
+  "roman_urdu": "Section 154 CrPC ke mutabiq cognizable case mein information kaise darj ki jati hai?",
+  "keyword": "Section 154 cognizable case information",
+  "urdu": "سیکشن 154 سی آر پی سی کے تحت قابل گرفت کیس میں معلومات کیسے درج کی جاتی ہے؟"
+ },
+ "dev23_c004": {
+  "layperson_en": "Can bail be granted under Section 497 of the CrPC for a non‑bailable offence?",
+  "roman_urdu": "Kya Section 497 CrPC ke tehat non-bailable offence ke liye bail mil sakti hai?",
+  "keyword": "Section 497 bail non-bailable offence",
+  "urdu": "کیا سیکشن 497 سی آر پی سی کے تحت غیر قابل ضمانت جرم کے لیے ضمانت مل سکتی ہے؟"
+ },
+ "dev23_c007": {
+  "layperson_en": "What powers does a Justice of the Peace have according to Section 22-A of the Criminal Procedure Code?",
+  "roman_urdu": "Section 22-A CrPC ke mutabiq Justice of Peace ke kya powers hain?",
+  "keyword": "Section 22-A Justice of Peace powers",
+  "urdu": null
+ },
+ "dev23_c009": {
+  "layperson_en": "What does Section 379 of the Pakistan Penal Code say about theft?",
+  "roman_urdu": "PPC ki section 379 chori ke baare mein kya kehti hai?",
+  "keyword": "PPC Section 379 theft",
+  "urdu": null
+ },
+ "dev23_c012": {
+  "layperson_en": "What does Section 379 mean?",
+  "roman_urdu": "Section 379 ka matlab kya hai?",
+  "keyword": "Section 379 meaning",
+  "urdu": "سیکشن 379 کا مطلب کیا ہے؟"
+ },
+ "dev23_c013": {
+  "layperson_en": "What does section 497 say about bail?",
+  "roman_urdu": "s. 497 bail ke mutalliq kya kehta hai?",
+  "keyword": "section 497 bail",
+  "urdu": "سیکشن 497 میں ضمانت کے بارے میں کیا کہا گیا ہے؟"
+ },
+ "dev23_c015": {
+  "layperson_en": null,
+  "roman_urdu": null,
+  "keyword": null,
+  "urdu": null
+ },
+ "dev23_c018": {
+  "layperson_en": "How can I get bail under Section 497 of the Criminal Procedure Code?",
+  "roman_urdu": "Section 497 CRPC ke tehat bail kaise milti hai?",
+  "keyword": "Section 497 bail CRPC",
+  "urdu": "سیکشن 497 سی آر پی سی کے تحت بیل کیسے ملتی ہے؟"
+ },
+ "dev23_c020": {
+  "layperson_en": "What is anticipatory bail under Section 498 of the Criminal Procedure Code?",
+  "roman_urdu": "Section 498 CrPC ke mutabiq anticipatory bail kya hai?",
+  "keyword": "Section 498 anticipatory bail",
+  "urdu": "سیکشن 498 سی آر پی سی کے تحت anticipatory bail کیا ہے؟"
+ },
+ "dev23_l009": {
+  "layperson_en": "What authority does a Justice of the Peace have to arrest someone?",
+  "roman_urdu": "Justice of the Peace ko arrest karne ki kya powers hain?",
+  "keyword": "Justice of the Peace arrest powers",
+  "urdu": "جسٹس آف دی پیس کے پاس گرفتار کرنے کی کیا طاقتیں ہیں؟"
+ },
+ "dev23_v001": {
+  "layperson_en": "What punishment does theft get in Pakistan?",
+  "roman_urdu": "Pakistan mein chorri ki saza kya hai?",
+  "keyword": "punishment theft Pakistan",
+  "urdu": "پاکستان میں چوری کی سزا کیا ہے؟"
+ },
+ "dev23_m004": {
+  "layperson_en": "My bike was stolen from outside my house last night. What can I do legally?",
+  "roman_urdu": "Meri motorcycle kal raat mere ghar ke bahar se chori ho gayi. Ab mujhe kya karna chahiye?",
+  "keyword": "motorcycle theft legal steps",
+  "urdu": "میری موٹر سائیکل کل رات گھر کے باہر سے چوری ہو گئی۔ مجھے قانونی طور پر کیا کرنا چاہیے؟"
+ }
+}

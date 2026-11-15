@@ -100,10 +100,44 @@ test("a 422 with an array detail shows a readable message and does not crash", a
     await click(byText(view.container, "Civil Litigation"));
     await click(buttonWith(view.container, "Continue"));       // Step 1 -> 2
     await click(buttonWith(view.container, "Continue"));       // Step 2 -> 3
-    await click(buttonWith(view.container, "Submit for Verification"));
+    await click(buttonWith(view.container, "Finish profile"));
 
     assert.equal(api.__calls("updateLawyerProfile").length, 1, "the profile was never submitted");
     assert.deepEqual(view.errors, [], `onboarding crashed: ${view.errors[0]}`);
     assert.match(view.container.textContent, /Bar_number: String should match pattern/);
+    await view.unmount();
+});
+
+/* LAWYER_AUTO_APPROVE (2026-10-18). Nobody checks the Bar license, so the
+ * final screen reports what the server saved and never says "verified". */
+async function finishOnboarding(kycVerified) {
+    api.__respond("updateMe", { data: {}, error: null, status: 200 });
+    api.__respond("updateLawyerProfile", {
+        data: { _id: "l1", lawyer_profile: { kyc_verified: kycVerified } }, error: null, status: 200,
+    });
+    const view = await mount();
+    await type(licenseInput(view.container), "PBC/12345/2019");
+    await click(byText(view.container, "Civil Litigation"));
+    await click(buttonWith(view.container, "Continue"));
+    await click(buttonWith(view.container, "Continue"));
+    await click(buttonWith(view.container, "Finish profile"));
+    return view;
+}
+
+test("an approved account is told it is live, and nothing claims verification", async () => {
+    const view = await finishOnboarding(true);
+    const text = view.container.textContent;
+    assert.match(text, /Your profile is live/);
+    assert.match(text, /Registered lawyer/);
+    assert.doesNotMatch(text, /verif|in review/i);
+    await view.unmount();
+});
+
+test("an account still waiting for an admin is not told it is live", async () => {
+    const view = await finishOnboarding(false);
+    const text = view.container.textContent;
+    assert.match(text, /Profile saved/);
+    assert.match(text, /Admin approval/);
+    assert.doesNotMatch(text, /profile is live|Registered lawyer|verif/i);
     await view.unmount();
 });

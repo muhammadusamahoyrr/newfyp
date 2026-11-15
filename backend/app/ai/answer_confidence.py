@@ -35,6 +35,8 @@ as calibration.
 """
 from __future__ import annotations
 
+import logging
+
 from app.ai.threshold_manager import get_generation_floor
 
 # Arbitration verdicts that mean the Decision Engine actually ran. The state is
@@ -46,6 +48,7 @@ _DECIDED = frozenset({"answer", "defer", "refuse"})
 # second, silently-diverging threshold. The 2x upper boundary is a display
 # convention only: it selects a label, never an action, and changes no routing.
 _HIGH_MULTIPLE = 2.0
+logger = logging.getLogger(__name__)
 
 
 def _as_confidence(value: object) -> float | None:
@@ -68,12 +71,52 @@ def user_facing_confidence(state: dict) -> float | None:
       3. neither    — None.
     """
     if state.get("cache_hit"):
-        return _as_confidence(state.get("cache_confidence"))
+        measured = _as_confidence(state.get("cache_confidence"))
+    elif str(state.get("arbitration_output") or "") in _DECIDED:
+        measured = _as_confidence(state.get("arbitration_confidence"))
+    else:
+        return None
 
-    if str(state.get("arbitration_output") or "") in _DECIDED:
-        return _as_confidence(state.get("arbitration_confidence"))
+    if measured is None:
+        return None
 
-    return None
+    # Arbitration runs before the answer is written. Post-generation evidence
+    # checks must therefore be allowed to lower what the UI reports. Otherwise
+    # an answer explicitly marked unsupported/max-attempts can still wear a
+    # "High confidence" badge derived from the earlier retrieval score.
+    claims = state.get("claim_assessments") or []
+    unsupported = any(
+        c.get("support") in {"unsupported", "partial", "unassessed"}
+        for c in claims if isinstance(c, dict)
+    )
+    failed_grounding = state.get("is_grounded") is False
+    incomplete = state.get("convergence_status") == "max_attempts"
+    if unsupported or failed_grounding or incomplete or state.get("language_mismatch"):
+        floor = get_generation_floor()
+        if not floor or floor <= 0:
+            floor = 0.2
+        return min(measured, max(0.0, floor - 1e-6))
+
+    # Lexical issue relevance is imperfect, so it must not block the client
+    # answer or trigger another generation. It can, however, stop a clearly
+    # off-topic cited claim from being displayed as HIGH confidence.
+    if state.get("surface") == "client" and not state.get("cache_hit") and claims:
+        try:
+            from app.ai import issue_relevance
+            checked = issue_relevance.downgrade(
+                [dict(c) for c in claims], state.get("generation_evidence") or [],
+                state.get("query") or "", state.get("case_context"))
+            if any(
+                before.get("support") in {"supported", "partial"}
+                and after.get("support") == "unassessed"
+                for before, after in zip(claims, checked)
+                if isinstance(before, dict)
+            ):
+                floor = get_generation_floor() or 0.2
+                return min(measured, max(0.0, floor * _HIGH_MULTIPLE - 1e-6))
+        except Exception:
+            logger.warning("confidence: optional client issue-relevance check failed", exc_info=True)
+    return measured
 
 
 def confidence_band(value: float | None) -> str | None:

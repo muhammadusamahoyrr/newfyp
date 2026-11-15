@@ -7,9 +7,11 @@
  * catalogue is the server's (`GET /documents/templates`); nothing here invents
  * an entry, a risk level or a clause.
  *
- * The preview shows what the template ASKS FOR and what the law expects of it.
- * It does not show wording: the wording lives in the PDF builders, and a page
- * of made-up clauses presented as "the template" would be a fabrication.
+ * The preview shows the template's own wording, as its PDF builder writes it
+ * (`GET /documents/templates/{type}/text`), each detail as a marked blank, and
+ * what the law expects of it. Until 2026-10-19 it showed only the field names,
+ * which made every template look empty. A PDF-only template still shows that
+ * outline, and says why.
  *
  * The requirements list is `GET /documents/requirements/{type}` — what the
  * Code requires, for the user to CONFIRM. The server marks every item
@@ -21,7 +23,7 @@ import { useT } from "./theme.js";
 import { tint } from "./clientTheme.js";
 import { humanise } from "@/lib/fieldReview.js";
 import { pleadingRequirements } from "@/lib/api.js";
-import TemplateEditor from "./documents/TemplateEditor.jsx";
+import TemplateEditor, { loadTemplateText, realTextHtml } from "./documents/TemplateEditor.jsx";
 import { LIcon } from "./documents/icons.jsx";
 import {
     Btn, IconBtn, Chip, Pill, Label, Card, Paper, Icon, ModalPortal, BACKDROP,
@@ -30,8 +32,8 @@ import {
 
 /* What each drafting mode means to the person choosing, in their words. */
 const MODE_VIEW = {
-    ai: { pill: "AI reads your case", tone: "info", explain: "Link a case and the AI fills the details from it. You check every value before anything is drafted." },
-    manual: { pill: "You fill the details", tone: "muted", explain: "You enter the details yourself in a short form. Nothing is guessed for you." },
+    ai: { pill: "AI reads your case", tone: "info", explain: "Fill the details on the template's own text, or fill them from a linked case and check each one. The draft then opens in your drafting workspace." },
+    manual: { pill: "You fill the details", tone: "muted", explain: "You fill the details on the template's own text. Nothing is guessed for you. The draft then opens in your drafting workspace." },
     dedicated: { pill: "Calculator", tone: "medium", explain: "Built by a dedicated calculator, because it needs exact figures and tables rather than free text." },
 };
 
@@ -133,12 +135,64 @@ function Overlay({ children, onClose, pad = 26 }) {
     );
 }
 
-/* The paper for a template: its purpose and the details it will carry. */
+/* The builder's text on the page: its headings, paragraphs and tables, each
+ * blank a marked detail (the same look as the editor's placeholders). */
+const PAPER_TEXT_CSS = `[data-tpl-text]{font-size:14px;line-height:1.65}
+[data-tpl-text] h1{margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:.04em;text-align:center}
+[data-tpl-text] h2{margin:16px 0 6px;font-size:13.5px;font-weight:700;letter-spacing:.03em}
+[data-tpl-text] p{margin:0 0 8px}
+[data-tpl-text] hr{border:0;border-top:1px solid #d5dfdd;margin:12px 0}
+[data-tpl-text] table{border-collapse:collapse;width:100%;margin:6px 0 10px;font-size:13px}
+[data-tpl-text] td{border:1px solid #d5dfdd;padding:5px 8px;vertical-align:top}
+[data-tpl-text] [data-field]{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;background:#fdf0cf;color:#7a5200;border:1px solid #e9c46a;border-radius:5px;padding:0 5px;white-space:nowrap}`;
+
+/* undefined while loading, then `{ html, failed }` (see loadTemplateText). */
+function useTemplateText(type) {
+    const [text, setText] = useState(undefined);
+    const [attempt, setAttempt] = useState(0);
+    useEffect(() => {
+        let live = true;
+        setText(undefined);
+        loadTemplateText(type).then(res => { if (live) setText(res); });
+        return () => { live = false; };
+    }, [type, attempt]);
+    return [text, () => setAttempt(a => a + 1)];
+}
+
+/* The paper for a template: its real wording, or (PDF-only) its outline. */
 function TemplatePaper({ spec, values = {} }) {
     const fields = textFields(spec);
+    const [text, retry] = useTemplateText(spec.template_type);
+    const paperStyle = { padding: "30px 40px", lineHeight: 1.6, minHeight: "100%" };
+    if (text === undefined) {
+        return <Paper width={2000} style={paperStyle}><p style={{ color: "#5b6b6f", margin: 0 }}>Loading the template…</p></Paper>;
+    }
+    if (text.html) {
+        return (
+            <Paper width={2000} style={paperStyle}>
+                <style>{PAPER_TEXT_CSS}</style>
+                <div data-tpl-text dangerouslySetInnerHTML={{ __html: realTextHtml(text.html) }} />
+            </Paper>
+        );
+    }
+    if (text.failed) {
+        return (
+            <Paper width={2000} style={paperStyle}>
+                <div role="alert" data-tpl-text-failed style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+                    <b>Could not load this template's wording.</b>
+                    <span style={{ fontSize: 13.5, color: "#5b6b6f" }}>The server did not answer. Its text is not missing; try again.</span>
+                    <button type="button" onClick={retry} style={{ height: 36, padding: "0 16px", borderRadius: 9, border: "1px solid #9fd3cb", background: "#eaf7f5", color: "#12343a", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Try again</button>
+                </div>
+            </Paper>
+        );
+    }
     return (
-        <Paper title={(spec.label || "").toUpperCase()} width={580}>
-            <p style={{ margin: "0 0 14px" }}>{spec.description}</p>
+        <Paper title={(spec.label || "").toUpperCase()} width={2000} style={paperStyle}>
+            <p style={{ margin: "0 0 12px", fontSize: 13, color: "#5b6b6f" }}>
+                This document is built straight as a PDF from its details, so its full
+                wording appears once they are filled in. Below: what it carries.
+            </p>
+            <p style={{ margin: "0 0 12px" }}>{spec.description}</p>
             {fields.length > 0 && (
                 <>
                     <p style={{ margin: "0 0 8px", fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: "#5b6b6f" }}>
@@ -147,7 +201,7 @@ function TemplatePaper({ spec, values = {} }) {
                     {fields.map(f => {
                         const v = (values[f] || "").trim();
                         return (
-                            <p key={f} style={{ margin: "0 0 8px" }}>
+                            <p key={f} style={{ margin: "0 0 4px" }}>
                                 <b>{humanise(f)}: </b>
                                 {v ? <span style={VALUE_STYLE}>{v}</span> : <span style={TOKEN_STYLE}>{humanise(f)}</span>}
                             </p>
@@ -159,6 +213,16 @@ function TemplatePaper({ spec, values = {} }) {
     );
 }
 
+/* The preview header's controls: prev / count / next as one segmented group,
+ * and a plain close button. Theme vars, so light and dark both read. */
+const PREVIEW_CSS = `[data-tpl-preview] .tp-nav{display:inline-flex;align-items:center;height:34px;border:1px solid;border-radius:10px;overflow:hidden;flex:none}
+[data-tpl-preview] .tp-nav span{padding:0 10px;font-size:12.5px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+[data-tpl-preview] .tp-nav button,[data-tpl-preview] .tp-close{display:inline-grid;place-items:center;border:0;background:none;color:var(--ink,currentColor);cursor:pointer;transition:background .15s,color .15s}
+[data-tpl-preview] .tp-nav button{width:34px;height:100%}
+[data-tpl-preview] .tp-close{width:34px;height:34px;border-radius:10px;flex:none}
+[data-tpl-preview] .tp-nav button:hover,[data-tpl-preview] .tp-close:hover{background:var(--hover-tint,rgba(255,255,255,.08));color:var(--brand-text,inherit)}
+[data-tpl-preview] .tp-nav button:focus-visible,[data-tpl-preview] .tp-close:focus-visible{outline:2px solid var(--brand-text,#3fd6c6);outline-offset:-2px}`;
+
 function PreviewDialog({ t, list, index, onIndex, onClose, onUse, onCustomize, dedicatedHref }) {
     const closeRef = useDialog(onClose);
     const spec = list[index];
@@ -167,46 +231,55 @@ function PreviewDialog({ t, list, index, onIndex, onClose, onUse, onCustomize, d
     const go = d => onIndex((index + d + list.length) % list.length);
     const dedicated = spec.drafting_mode === "dedicated";
     return (
-        <Overlay onClose={onClose} pad={60}>
-            <div role="dialog" aria-modal="true" aria-label="Template preview" onClick={e => e.stopPropagation()}
-                style={{ width: "min(1120px, 100%)", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 20, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 30px 80px rgba(0,0,0,.5)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "14px 18px", borderBottom: `1px solid ${t.border}` }}>
-                    <IconBtn label="Previous template" onClick={() => go(-1)}>‹</IconBtn>
-                    <IconBtn label="Next template" onClick={() => go(1)}>›</IconBtn>
-                    <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, color: t.text, marginLeft: 4 }}>{spec.label}</div>
-                    <Pill tone="info">{spec.category}</Pill>
-                    <Pill tone={mode.tone}>{mode.pill}</Pill>
-                    <div style={{ flex: 1 }} />
-                    <span style={{ fontSize: 12.5, color: t.textMuted }}>{index + 1} of {list.length}</span>
-                    <IconBtn label="Close preview" onClick={onClose} ref={closeRef}>×</IconBtn>
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", minHeight: 0 }}>
-                    <div style={{ flex: "1 1 460px", display: "flex", justifyContent: "center", padding: 24, background: t.bg }}>
+        <Overlay onClose={onClose} pad={24}>
+            {/* Layout (2026-10-19): the paper fills its column (no empty band
+                beside it) and scrolls inside; the side panel's actions are a
+                footer pinned to its bottom, never floating mid-panel. */}
+            <style>{PREVIEW_CSS}</style>
+            <div role="dialog" aria-modal="true" aria-label="Template preview" data-tpl-preview onClick={e => e.stopPropagation()}
+                style={{ width: "min(1080px, 100%)", height: "min(780px, calc(100vh - 48px))", margin: "auto 0", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 18, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 30px 80px rgba(0,0,0,.5)" }}>
+                <header style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px 12px 22px", borderBottom: `1px solid ${t.border}` }}>
+                    <div style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
+                        <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 20, fontWeight: 600, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{spec.label}</h2>
+                        <Pill tone="info">{spec.category}</Pill>
+                        <Pill tone={mode.tone}>{mode.pill}</Pill>
+                    </div>
+                    <div className="tp-nav" style={{ borderColor: t.border }}>
+                        <button type="button" aria-label="Previous template" title="Previous template" onClick={() => go(-1)}><LIcon name="chevronLeft" size={18} stroke={2.2} /></button>
+                        <span style={{ color: t.textMuted }}>{index + 1} of {list.length}</span>
+                        <button type="button" aria-label="Next template" title="Next template" onClick={() => go(1)}><LIcon name="chevronRight" size={18} stroke={2.2} /></button>
+                    </div>
+                    <button type="button" className="tp-close" aria-label="Close preview" title="Close preview" onClick={onClose} ref={closeRef}><LIcon name="x" size={19} stroke={2.2} /></button>
+                </header>
+                <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr) 350px" }}>
+                    <div data-lenis-prevent className="hide-scrollbar" style={{ minHeight: 0, overflowY: "auto", padding: 18 }}>
                         <TemplatePaper spec={spec} />
                     </div>
-                    <div style={{ flex: "0 1 360px", borderLeft: `1px solid ${t.border}`, padding: 20, boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 18 }}>
-                        <div><Label>Use this when</Label><div style={{ fontSize: 14, lineHeight: 1.6, marginTop: 6, color: t.text }}>{spec.description}</div></div>
-                        {!dedicated && fields.length > 0 && (
-                            <div>
-                                <Label>You'll fill {fields.length} details</Label>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                                    {fields.map(f => <Pill key={f} tone="medium" style={{ fontSize: 12.5, fontWeight: 500 }}>{humanise(f)}</Pill>)}
+                    <aside style={{ minHeight: 0, display: "flex", flexDirection: "column", borderLeft: `1px solid ${t.border}` }}>
+                        <div data-lenis-prevent className="hide-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 18 }}>
+                            <div><Label>Use this when</Label><div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 6, color: t.text }}>{spec.description}</div></div>
+                            {!dedicated && fields.length > 0 && (
+                                <div>
+                                    <Label>You'll fill {fields.length} details</Label>
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                                        {fields.map(f => <Pill key={f} tone="medium" style={{ fontSize: 12, fontWeight: 500, padding: "3px 9px" }}>{humanise(f)}</Pill>)}
+                                    </div>
                                 </div>
+                            )}
+                            <RequirementsList t={t} templateType={spec.template_type} />
+                        </div>
+                        <footer style={{ flex: "none", padding: "14px 20px 18px", borderTop: `1px solid ${t.border}`, display: "flex", flexDirection: "column", gap: 12 }}>
+                            <div style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: t.textMuted }}>
+                                <LIcon name="info" size={15} style={{ marginTop: 2 }} />
+                                <span>{mode.explain}</span>
                             </div>
-                        )}
-                        <RequirementsList t={t} templateType={spec.template_type} />
-                        <div style={{ padding: "12px 14px", borderRadius: 12, background: t.card, border: `1px solid ${t.border}`, fontSize: 13, lineHeight: 1.55, color: t.text }}>{mode.explain}</div>
-                        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
                             {dedicated ? (
                                 <Btn kind="primary" href={dedicatedHref(spec)}>Open dedicated calculator</Btn>
                             ) : (
-                                <>
-                                    <Btn kind="primary" onClick={() => onUse(spec)}>Use this template</Btn>
-                                    <Btn onClick={() => onCustomize(spec)}>Edit wording first</Btn>
-                                </>
+                                <Btn kind="primary" onClick={() => onUse(spec)}>Use this template <LIcon name="arrowRight" size={16} stroke={2.2} /></Btn>
                             )}
-                        </div>
-                    </div>
+                        </footer>
+                    </aside>
                 </div>
             </div>
         </Overlay>
@@ -480,7 +553,16 @@ export default function DocumentsHome({
     // surface and soft accents; otherwise the original colours stay.
     const onTokens = !!t.onTokens;
 
-    const use = (spec, prefill) => { setPreview(null); setCustomize(null); onUse(spec, prefill); };
+    // "Use template" opens the template's own text to fill in (2026-10-19).
+    // The separate guided flow is gone from here: "Create draft" in the editor
+    // makes the document and opens it in the drafting workspace, the same place
+    // an AI draft opens. `onUse` resolves to { ok, message }.
+    const use = spec => { setPreview(null); setCustomize(spec); };
+    const create = async (spec, values, edited, caseId) => {
+        const r = await onUse(spec, values, edited, caseId);
+        if (r?.ok) setCustomize(null);
+        return r;
+    };
     // The cards' round icon buttons.
     const roundBtn = { width: 40, height: 40, borderRadius: "50%", color: t.primary };
 
@@ -624,7 +706,7 @@ export default function DocumentsHome({
             )}
             {customize && (
                 <TemplateEditor spec={customize} onClose={() => setCustomize(null)}
-                    onUse={(spec, values) => use(spec, values)} />
+                    cases={cases} onUse={create} />
             )}
         </div>
     );

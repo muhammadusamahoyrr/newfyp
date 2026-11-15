@@ -23,8 +23,9 @@ def test_the_production_mislabel_is_corrected():
 
 
 def test_latin_text_can_never_be_labelled_urdu_script():
-    for text in (ROMAN_URDU, ENGLISH, "theek hai", "shukria"):
-        assert _reconcile_language(text, "ur") == "roman_urdu"
+    assert _reconcile_language(ROMAN_URDU, "ur") == "roman_urdu"
+    for text in (ENGLISH, "thank you", "What is talaq?"):
+        assert _reconcile_language(text, "ur") == "en"
 
 
 def test_urdu_script_is_not_mislabelled_as_roman():
@@ -42,11 +43,16 @@ def test_correct_labels_pass_through_unchanged(text, label):
     assert _reconcile_language(text, label) == label
 
 
-def test_english_label_is_never_overridden():
-    """The check only arbitrates between ur and roman_urdu. An English label on
-    Urdu-script text is a different problem and is left to the model."""
-    assert _reconcile_language(URDU_SCRIPT, "en") == "en"
+def test_current_message_overrides_the_models_history_influenced_label():
+    """The model sees history; the current message is the language authority."""
+    assert _reconcile_language(URDU_SCRIPT, "en") == "ur"
     assert _reconcile_language(ENGLISH, "en") == "en"
+
+
+def test_an_earlier_urdu_turn_cannot_make_an_english_legal_question_urdu():
+    question = ("Under the Muslim Family Laws Ordinance 1961, what is the "
+                "procedure and timeline for a husband sending a divorce notice?")
+    assert _reconcile_language(question, "ur") == "en"
 
 
 # ── the script detector itself ────────────────────────────────────────────────
@@ -65,3 +71,34 @@ def test_mixed_script_counts_as_urdu_script():
     """A query mixing scripts still contains Urdu, so transliteration is not
     needed and 'ur' is the right label."""
     assert _reconcile_language("PPC 302 کے تحت سزا کیا ہے؟", "roman_urdu") == "ur"
+
+
+def test_english_answer_is_repaired_once_without_losing_source_markers():
+    import asyncio
+    from app.ai.nodes.generation_node import _repair_english_script
+
+    class _LLM:
+        calls = 0
+
+        def invoke(self, _messages):
+            self.calls += 1
+            return type("Response", (), {"content": "A husband must send notice to the Chairman [1].\n"
+                                                    '{"confidence": 0.8}'})()
+
+    llm = _LLM()
+    repaired, mismatch = asyncio.run(_repair_english_script(
+        llm, "شوہر کو چیئرمین کے پاس تحریری نوٹس بھیجنا ہوگا [1]."))
+    assert repaired == "A husband must send notice to the Chairman [1]."
+    assert mismatch is False and llm.calls == 1
+
+
+def test_failed_language_repair_keeps_the_answer_instead_of_refusing():
+    import asyncio
+    from app.ai.nodes.generation_node import _repair_english_script
+
+    class _LLM:
+        def invoke(self, _messages):
+            return type("Response", (), {"content": "English answer with a lost marker."})()
+
+    original = "شوہر کو چیئرمین کے پاس تحریری نوٹس بھیجنا ہوگا [1]."
+    assert asyncio.run(_repair_english_script(_LLM(), original)) == (original, True)

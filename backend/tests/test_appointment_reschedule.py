@@ -2262,3 +2262,68 @@ async def test_the_slot_guards_still_hold_for_a_short_notice_move(parties):
         await appointment_service.reschedule_appointment(
             appt_id=appt["id"], client_id=parties["client_id"],
             scheduled_at=taken, expected_version=row["schedule_version"])
+
+
+# ── The lawyer's own schedule (2026-10-20) ───────────────────────────────────
+#
+# Booking refuses an hour outside the lawyer's working hours (when enforced);
+# a move used not to, so a request booked at a valid hour could be moved onto
+# one booking would have refused.
+
+@pytest.fixture
+async def enforced_hours(parties):
+    from app.core.config import settings
+    from app.db.collections import get_lawyer_availability_col
+    from app.services import lawyer_availability_service as avail
+
+    await avail.replace_own(
+        actor_id=parties["lawyer_id"], actor_role="lawyer", lawyer_id=parties["lawyer_id"],
+        working_hours=[{"weekday": d, "start": "09:00", "end": "17:00"} for d in range(7)],
+        exceptions=[])
+    original = settings.appointment_working_hours_enforced
+    yield
+    settings.appointment_working_hours_enforced = original
+    await get_lawyer_availability_col().delete_many({"_id": parties["lawyer_id"]})
+
+
+def _pkt_in_days(days: int, hh: int) -> datetime:
+    from app.services import lawyer_availability as policy
+    day = (datetime.now(policy.SCHEDULE_TZ) + timedelta(days=days)).date()
+    return datetime(day.year, day.month, day.day, hh, 0,
+                    tzinfo=policy.SCHEDULE_TZ).astimezone(timezone.utc)
+
+
+async def test_a_move_outside_the_lawyers_hours_is_refused_when_enforced(parties, enforced_hours):
+    from app.core.config import settings
+    settings.appointment_working_hours_enforced = True
+    appt = await _book(parties, _pkt_in_days(10, 10))
+    before = await _row(appt["id"])
+
+    with pytest.raises(AppValidationError, match="outside this lawyer's working hours"):
+        await _move(parties, appt["id"], _pkt_in_days(11, 20))
+
+    after = await _row(appt["id"])
+    assert after["scheduled_at"] == before["scheduled_at"]
+    assert after.get("schedule_version") == before.get("schedule_version")
+
+
+async def test_a_move_inside_the_lawyers_hours_still_works_when_enforced(parties, enforced_hours):
+    from app.core.config import settings
+    settings.appointment_working_hours_enforced = True
+    appt = await _book(parties, _pkt_in_days(10, 10))
+    later = _pkt_in_days(11, 14)
+
+    out = await _move(parties, appt["id"], later)
+
+    assert out["scheduled_at"].replace(tzinfo=timezone.utc) == later
+
+
+async def test_hours_are_not_checked_on_a_move_when_not_enforced(parties, enforced_hours):
+    from app.core.config import settings
+    settings.appointment_working_hours_enforced = False
+    appt = await _book(parties, _pkt_in_days(10, 10))
+    late = _pkt_in_days(11, 20)
+
+    out = await _move(parties, appt["id"], late)
+
+    assert out["scheduled_at"].replace(tzinfo=timezone.utc) == late

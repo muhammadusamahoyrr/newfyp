@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { DARK } from "./theme.js";
 import { getMe, updateMe, updateLawyerProfile, listMyKycDocuments, uploadKycDocument } from "@/lib/api.js";
+import { toPkPhone } from "@/lib/phone.js";
 
 // localStorage cache ONLY — never the source of truth. See isLawyerOnboarded.
 export const ONBOARDED_KEY = "lawyer_onboarded";
@@ -39,525 +39,492 @@ export function stepOneProblem({ license, specs }) {
   return null;
 }
 
-// ─── Theme ────────────────────────────────────────────────────────────────────
-const T = {
-  bg: DARK.bg,
-  sidebar: DARK.surface,
-  card: DARK.card,
-  cardBorder: DARK.border,
-  primary: DARK.primary,
-  primaryLight: DARK.secondary,
-  primaryGlow: DARK.primaryGlow,
-  primaryGlow2: DARK.primaryGlow2,
-  accent: DARK.primaryDim,
-  text: DARK.text,
-  textMuted: DARK.textMuted,
-  textFaint: DARK.textFaint,
-  border: DARK.border,
-  inputBg: DARK.inputBg,
-  inputBorder: DARK.border,
-  success: DARK.success,
-  warning: DARK.warn,
-  danger: DARK.danger,
-  r: { ...DARK.r, xl: 20 },
-};
+// ─── Styles ───────────────────────────────────────────────────────────────────
+// Same tokens as the auth pages (components/auth/AuthShell.jsx), which are the
+// refined client theme. The mode follows the lawyer app's own toggle (t.mode).
+const CSS = `@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500;7..72,600&display=swap');
+.aai-ob{--bg:#0B1B1F;--card:#183840;--input:#16323A;--line:rgba(150,215,220,.11);--line-strong:rgba(150,215,220,.22);
+  --ink:#F1F5F6;--muted:#BFCACC;--faint:#A7B6BA;--brand:linear-gradient(135deg,#3EE0A1,#2EC4D6);--on-brand:#04212A;--brand-text:#5EE6B0;
+  --brand-soft:rgba(62,224,161,.13);--focus:rgba(62,224,161,.28);--danger:#FF9090;--danger-soft:rgba(255,120,120,.10);--warn:#F2C35B;--warn-soft:rgba(242,195,91,.13);
+  --shadow:0 1px 0 rgba(255,255,255,.05) inset,0 20px 36px -18px rgba(0,0,0,.7);
+  --body:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;--display:'Literata',Georgia,serif;
+  height:100%;min-height:0;flex:1;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  display:grid;grid-template-columns:380px minmax(0,1fr);gap:20px;padding:20px;box-sizing:border-box;overflow:hidden}
+.aai-ob[data-mode="light"]{--bg:#EEF3F1;--card:#FFFFFF;--input:#FFFFFF;--line:#DFDCE3;--line-strong:#C9C5CE;--ink:#1E1C21;--muted:#5A5660;--faint:#625E68;
+  --brand:linear-gradient(135deg,#0E8A5F,#0B7A8C);--on-brand:#FFFFFF;--brand-text:#0E7A55;--brand-soft:rgba(14,138,95,.10);--focus:rgba(14,138,95,.22);
+  --danger:#B42318;--danger-soft:rgba(180,35,24,.07);--warn:#8A5A00;--warn-soft:rgba(196,140,20,.12);
+  --shadow:0 2px 4px rgba(10,30,40,.04),0 18px 34px -16px rgba(10,40,50,.28)}
+:where(.aai-ob) *,:where(.aai-ob) *::before,:where(.aai-ob) *::after{box-sizing:border-box}
+:where(.aai-ob) :where(button){font:inherit;color:inherit}
+:where(.aai-ob) :focus-visible{outline:2px solid var(--brand-text);outline-offset:2px}
+.ob-card{border-radius:28px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.ob-left{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:20px;min-height:0}
+.ob-steps{padding:26px 24px;display:grid;grid-template-rows:auto auto 1fr auto;gap:22px;min-height:0;overflow:auto}
+.ob-brand{display:flex;align-items:center;gap:12px}
+.ob-brand img{width:40px;height:40px;object-fit:contain}
+.ob-brand b{font-family:var(--display);font-weight:600;font-size:22px}
+.ob-brand em{font-style:normal;color:var(--brand-text)}
+.ob-ring{display:flex;gap:14px;align-items:center}
+.ob-ring svg{flex:none;color:var(--ink)}
+.ob-ring b{display:block;font-size:16px}
+.ob-ring small{color:var(--muted);font-size:13px}
+.ob-list{display:grid;align-content:start;gap:2px;list-style:none;margin:0;padding:0}
+.ob-st{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center;padding:10px 12px;border-radius:16px;position:relative}
+.ob-st .c{width:40px;height:40px;border-radius:13px;border:1px solid var(--line-strong);display:grid;place-items:center;color:var(--faint)}
+.ob-st.on{background:var(--brand-soft)}
+.ob-st.on::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--brand)}
+.ob-st.on .c,.ob-st.done .c{background:var(--brand);border-color:transparent;color:var(--on-brand)}
+.ob-st b{display:block;font-size:14.5px}
+.ob-st small{font-size:12.5px;color:var(--faint)}
+.ob-help{font-size:13px;color:var(--muted);padding:14px;border-radius:16px;border:1px dashed var(--line-strong)}
+.ob-help b{display:block;color:var(--ink)}
+.ob-pv{overflow:hidden}
+.ob-pv .cover{height:76px;background:url('/auth/lahore-high-court.jpg') center 35%/cover no-repeat;position:relative}
+.ob-pv .cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(6,24,27,.45))}
+.ob-pv .cap{position:absolute;left:12px;top:10px;z-index:1;color:#F1F5F6;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:rgba(5,20,22,.62);padding:4px 10px;border-radius:999px}
+.ob-pv .cred{position:absolute;right:10px;bottom:6px;z-index:1;color:rgba(241,245,246,.8);font-size:9.5px}
+.ob-pv .body{padding:0 20px 18px;display:grid;gap:10px}
+.ob-pv .top{display:flex;justify-content:space-between;align-items:flex-end}
+.ob-av{width:58px;height:58px;margin-top:-29px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-weight:700;font-size:18px;border:3px solid var(--card);position:relative;z-index:1}
+.ob-pend{font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);padding:4px 10px;border-radius:999px}
+.ob-pv b{display:block;font-size:16px}
+.ob-pv small{color:var(--muted);font-size:13px}
+.ob-tags{display:flex;gap:8px;flex-wrap:wrap;min-height:24px}
+.ob-tags span{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--brand-soft);color:var(--brand-text)}
+.ob-tags em{font-style:normal;font-size:13px;color:var(--faint)}
+.ob-main{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:20px;padding:30px 36px 24px;min-height:0;overflow:hidden}
+.ob-eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-text)}
+.ob-main h1{font-family:var(--display);font-weight:600;font-size:clamp(26px,2.4vw,34px);line-height:1.12;letter-spacing:-.015em;margin:6px 0 6px}
+.ob-main .lead{margin:0;color:var(--muted);max-width:66ch}
+.ob-body{overflow:auto;min-height:0;padding:2px 4px 6px 2px}
+.ob-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-content:start}
+.ob-full{grid-column:1/-1}
+.ob-fl{display:grid;gap:8px}
+.ob-fl>label,.ob-lab{font-size:13.5px;font-weight:600;display:flex;justify-content:space-between;gap:12px}
+.ob-fl>label span,.ob-lab span{font-weight:500;color:var(--faint)}
+.ob-pill{height:50px;border-radius:999px;background:var(--input);border:1px solid var(--line-strong);display:flex;align-items:center;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.ob-pill:focus-within{border-color:var(--brand-text);box-shadow:0 0 0 4px var(--focus)}
+.ob-pill .ic{width:54px;height:100%;display:grid;place-items:center;color:var(--faint);border-right:1px solid var(--line-strong);flex:none;font-weight:700;font-size:14px}
+.ob-pill input{all:unset;flex:1;min-width:0;height:100%;padding:0 18px;font:inherit;font-size:15px;color:var(--ink)}
+.ob-pill input::placeholder{color:var(--faint)}
+.ob-area{all:unset;box-sizing:border-box;display:block;width:100%;min-height:86px;border-radius:18px;background:var(--input);border:1px solid var(--line-strong);padding:12px 16px;font:inherit;font-size:15px;color:var(--ink);white-space:pre-wrap}
+.ob-area:focus{border-color:var(--brand-text);box-shadow:0 0 0 4px var(--focus)}
+.ob-hint{font-size:13px;color:var(--faint);display:flex;gap:6px;align-items:center}
+.ob-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ob-tile{all:unset;box-sizing:border-box;cursor:pointer;border:1px solid var(--line-strong);border-radius:18px;padding:13px 16px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;background:var(--input);text-align:left}
+.ob-tile .t{font-size:15px;font-weight:700}
+.ob-tile small{grid-column:1;font-size:12.5px;color:var(--muted)}
+.ob-tile .bx{grid-row:1/3;grid-column:2;align-self:center;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);display:grid;place-items:center;color:var(--on-brand)}
+.ob-tile[aria-pressed="true"]{border-color:var(--brand-text);box-shadow:0 0 0 1px var(--brand-text) inset;background:var(--brand-soft)}
+.ob-tile[aria-pressed="true"] .bx{background:var(--brand);border-color:transparent}
+.ob-up{display:grid;grid-template-columns:48px 1fr auto;gap:16px;align-items:center;padding:16px 18px;border-radius:20px;border:1.5px dashed var(--line-strong)}
+.ob-up.done{border-style:solid;border-color:var(--line);background:var(--brand-soft)}
+.ob-up .ic{width:48px;height:48px;border-radius:14px;background:var(--brand-soft);color:var(--brand-text);display:grid;place-items:center;overflow:hidden}
+.ob-up .ic img{width:100%;height:100%;object-fit:cover}
+.ob-up b{display:block;font-size:15px}
+.ob-up small{font-size:13px;color:var(--faint);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ob-up small.ok{color:var(--brand-text);font-weight:600}
+.ob-up small.bad{color:var(--danger);font-weight:600;white-space:normal}
+.ob-up .acts{display:flex;gap:8px}
+.ob-stack{display:grid;gap:12px}
+.ob-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:var(--brand-soft);font-size:13.5px;line-height:1.5}
+.ob-note.warn{background:var(--warn-soft)}
+.ob-note svg{flex:none;margin-top:2px;color:var(--brand-text)}
+.ob-note.warn svg{color:var(--warn)}
+.ob-fee{font-family:var(--display);font-size:28px;font-weight:600}
+.ob-range{width:100%;accent-color:#2EC4D6}
+.ob-foot{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-top:18px;border-top:1px solid var(--line)}
+.ob-foot .r{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+.ob-btn{all:unset;box-sizing:border-box;cursor:pointer;height:50px;padding:0 26px;border-radius:999px;background:var(--brand);color:var(--on-brand);font-weight:700;font-size:15.5px;display:inline-flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 14px 28px -14px rgba(46,196,214,.65);white-space:nowrap}
+.ob-btn:hover{filter:brightness(1.06)}
+.ob-btn[disabled]{opacity:.65;cursor:progress}
+.ob-btn.sm{height:40px;padding:0 18px;font-size:14px}
+.ob-ghost{all:unset;box-sizing:border-box;cursor:pointer;height:50px;padding:0 22px;border-radius:999px;border:1px solid var(--line-strong);display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.ob-ghost.sm{height:40px;padding:0 16px;font-size:14px}
+.ob-ghost[disabled]{opacity:.45;cursor:not-allowed}
+.ob-link{all:unset;cursor:pointer;color:var(--brand-text);font-weight:700}
+.ob-err{color:var(--danger);font-weight:600;font-size:13.5px;max-width:52ch}
+.ob-tl{display:grid;gap:0;list-style:none;margin:0;padding:0}
+.ob-tl li{display:grid;grid-template-columns:38px 1fr;gap:16px;padding-bottom:24px;position:relative}
+.ob-tl li:not(:last-child)::after{content:"";position:absolute;left:18px;top:40px;bottom:4px;width:2px;background:var(--line-strong)}
+.ob-tl .tc{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line-strong);display:grid;place-items:center;font-weight:700;color:var(--faint);background:var(--card);position:relative;z-index:1}
+.ob-tl .ok .tc{background:var(--brand);border-color:transparent;color:var(--on-brand)}
+.ob-tl .now .tc{border-color:var(--brand-text);color:var(--brand-text);box-shadow:0 0 0 5px var(--focus)}
+.ob-tl b{display:block;font-size:16.5px}
+.ob-tl small{font-size:14px;color:var(--muted)}
+.ob-spin{width:16px;height:16px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:ob-sp .8s linear infinite}
+@keyframes ob-sp{to{transform:rotate(360deg)}}
+/* Compact layout (2026-10-19): narrower sidebar so all four steps show, smaller
+   preview, 42px fields and footer button. Overrides the sizes above. */
+.aai-ob{grid-template-columns:300px minmax(0,1fr);gap:16px;padding:16px}
+.ob-left{gap:16px}
+.ob-card{border-radius:24px}
+.ob-steps{padding:18px 16px;gap:14px}
+.ob-help{font-size:12px;padding:10px 12px;border-radius:12px;align-self:end}
+.ob-brand img{width:32px;height:32px}
+.ob-brand b{font-size:19px}
+.ob-ring svg{width:52px;height:52px}
+.ob-ring b{font-size:15px}
+.ob-ring small{font-size:12px}
+.ob-st{grid-template-columns:32px 1fr;gap:10px;padding:7px 10px;border-radius:13px}
+.ob-st .c{width:32px;height:32px;border-radius:10px}
+.ob-st .c svg{width:16px;height:16px}
+.ob-st.on::before{top:8px;bottom:8px}
+.ob-st b{font-size:13.5px}
+.ob-st small{font-size:11.5px}
+.ob-pv .cover{height:54px}
+.ob-pv .cap{font-size:9.5px;padding:3px 8px;top:8px;left:10px}
+.ob-pv .cred{font-size:8.5px;bottom:4px}
+.ob-pv .body{padding:0 16px 14px;gap:6px}
+.ob-av{width:44px;height:44px;margin-top:-22px;font-size:15px;border-width:2px}
+.ob-pend{font-size:11px;padding:3px 8px}
+.ob-pv b{font-size:14.5px}
+.ob-pv small{font-size:12px}
+.ob-tags{min-height:20px;gap:6px}
+.ob-tags span{font-size:11.5px;padding:3px 8px}
+.ob-tags em{font-size:12px}
+.ob-main{gap:14px;padding:22px 28px 16px}
+.ob-eyebrow{font-size:11.5px}
+.ob-main h1{font-size:clamp(22px,2vw,28px);margin:4px 0}
+.ob-main .lead{font-size:14px;max-width:none}
+.ob-grid{gap:14px}
+.ob-fl{gap:6px}
+.ob-fl>label,.ob-lab{font-size:13px}
+.ob-pill{height:42px}
+.ob-pill .ic{width:44px}
+.ob-pill .ic svg{width:16px;height:16px}
+.ob-pill input{padding:0 14px;font-size:14px}
+.ob-area{min-height:70px;border-radius:14px;padding:10px 14px;font-size:14px}
+.ob-hint{font-size:12.5px}
+.ob-tiles{gap:10px}
+.ob-tile{padding:10px 14px;border-radius:14px}
+.ob-tile .t{font-size:14px}
+.ob-tile small{font-size:12px}
+.ob-up{grid-template-columns:40px 1fr auto;gap:12px;padding:12px 14px;border-radius:16px}
+.ob-up .ic{width:40px;height:40px;border-radius:12px}
+.ob-up b{font-size:14px}
+.ob-up small{font-size:12px}
+.ob-note{padding:10px 12px;font-size:13px;border-radius:14px}
+.ob-fee{font-size:24px}
+.ob-foot{padding-top:12px;gap:12px}
+.ob-btn{height:42px;padding:0 20px;font-size:14.5px}
+.ob-ghost{height:42px;padding:0 18px;font-size:14px}
+.ob-btn.sm,.ob-ghost.sm{height:36px}
+.ob-tl li{grid-template-columns:32px 1fr;gap:12px;padding-bottom:18px}
+.ob-tl li:not(:last-child)::after{left:15px;top:34px}
+.ob-tl .tc{width:32px;height:32px}
+.ob-tl b{font-size:15px}
+.ob-tl small{font-size:13px}
+.ob-pvwrap{position:relative}
+.ob-chip{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 14px;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.ob-chip:hover{border-color:var(--line-strong)}
+.ob-chip .who b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ob-chip .who .st{font-size:11.5px;font-weight:700;color:var(--warn)}
+.ob-chip .lk{font-size:12px;font-weight:700;color:var(--brand-text)}
+.ob-av.sm{width:36px;height:36px;margin-top:0;font-size:13px;border:0}
+.ob-pop{position:absolute;left:0;right:0;bottom:calc(100% + 10px);z-index:5;box-shadow:0 24px 50px -16px rgba(0,0,0,.7)}
+/* Step icons without the tile around them (2026-10-19). */
+.ob-st .c{border:0;background:none!important;border-radius:0;color:var(--faint)}
+.ob-st.on .c,.ob-st.done .c{color:var(--brand-text)}
+.ob-st .c svg{width:19px;height:19px}
+/* Last step (2026-10-19). */
+.ob-done{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(260px,.85fr);gap:22px;align-items:start}
+.ob-sub{font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+.ob-next{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.ob-next li{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--input);border:1px solid var(--line)}
+.ob-next .i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--faint);border:1.5px solid var(--line-strong)}
+.ob-next .ok .i{background:var(--brand);border-color:transparent;color:var(--on-brand)}
+.ob-next .now{border-color:color-mix(in srgb,var(--brand-text) 55%,transparent);background:var(--brand-soft)}
+.ob-next .now .i{border-color:var(--brand-text);color:var(--brand-text)}
+.ob-next b{display:block;font-size:14.5px}
+.ob-next small{font-size:12.5px;color:var(--muted)}
+.ob-next .tag{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-text)}
+.ob-pub{border-radius:20px;background:var(--input);border:1px solid var(--line);overflow:hidden}
+.ob-pub .cover{height:64px;background:url('/auth/lahore-high-court.jpg') center 35%/cover no-repeat}
+.ob-pub .ob-av{border-color:var(--input)}
+.ob-bar{font-size:12.5px;color:var(--muted)}
+.ob-bar b{display:inline;font-size:12.5px;color:var(--ink)}
+.ob-pend.ok{color:var(--brand-text);background:var(--brand-soft)}
+.ob-chip .who .st.ok{color:var(--brand-text)}
+@media (max-width:1300px){.ob-done{grid-template-columns:1fr}}
+/* Glass (2026-10-19): the court photo behind the page, frosted cards over it,
+   translucent fields inside. Tints keep text at full contrast. */
+.aai-ob{background:radial-gradient(700px 500px at 85% 0%,rgba(62,224,161,.10),transparent 60%),radial-gradient(600px 500px at 0% 100%,rgba(46,196,214,.08),transparent 60%),linear-gradient(160deg,rgba(7,28,32,.66),rgba(5,18,22,.84)),url('/auth/lahore-high-court.jpg') center 30%/cover no-repeat}
+.ob-card,.ob-chip{background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.02) 45%,rgba(255,255,255,.04)),rgba(14,44,50,.55);-webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%);border:1px solid rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 30px 60px -28px rgba(0,0,0,.75)}
+.ob-pop{background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.03)),rgba(12,38,44,.86)}
+.ob-pill,.ob-area,.ob-tile,.ob-up,.ob-next li,.ob-pub{background:rgba(4,20,24,.42);border-color:rgba(255,255,255,.12)}
+.ob-pill .ic{border-right-color:rgba(255,255,255,.10)}
+.ob-tile[aria-pressed="true"],.ob-next .now,.ob-up.done{background:rgba(62,224,161,.14)}
+.ob-st.on{background:rgba(62,224,161,.12)}
+.ob-help{border-color:rgba(255,255,255,.14)}
+.ob-av{border-color:rgba(14,44,50,.9)}
+.aai-ob[data-mode="light"]{background:radial-gradient(700px 500px at 85% 0%,rgba(14,138,95,.10),transparent 60%),linear-gradient(160deg,rgba(238,243,241,.70),rgba(232,240,238,.86)),url('/auth/lahore-high-court.jpg') center 30%/cover no-repeat}
+.aai-ob[data-mode="light"] .ob-card,.aai-ob[data-mode="light"] .ob-chip{background:linear-gradient(160deg,rgba(255,255,255,.82),rgba(255,255,255,.60));border-color:rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff,0 30px 60px -28px rgba(10,40,50,.35)}
+.aai-ob[data-mode="light"] .ob-pop{background:rgba(255,255,255,.94)}
+.aai-ob[data-mode="light"] .ob-pill,.aai-ob[data-mode="light"] .ob-area,.aai-ob[data-mode="light"] .ob-tile,.aai-ob[data-mode="light"] .ob-up,.aai-ob[data-mode="light"] .ob-next li,.aai-ob[data-mode="light"] .ob-pub{background:rgba(255,255,255,.72);border-color:rgba(10,40,50,.12)}
+.aai-ob[data-mode="light"] .ob-pill .ic{border-right-color:rgba(10,40,50,.10)}
+.aai-ob[data-mode="light"] .ob-tile[aria-pressed="true"],.aai-ob[data-mode="light"] .ob-next .now,.aai-ob[data-mode="light"] .ob-up.done{background:rgba(14,138,95,.10)}
+.aai-ob[data-mode="light"] .ob-av{border-color:#fff}
+@media (max-width:1100px){.aai-ob{grid-template-columns:1fr;overflow:auto;height:auto}.ob-left{display:none}.ob-main{overflow:visible}.ob-body{overflow:visible}}
+@media (max-width:700px){.ob-grid,.ob-tiles{grid-template-columns:1fr}.ob-main{padding:22px 18px}}
+@media (prefers-reduced-motion:reduce){.aai-ob *{animation:none!important;transition:none!important}}
+`;
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
+// ─── Icons (currentColor) ─────────────────────────────────────────────────────
+const Svg = ({ s = 18, w = 2, children }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w}
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
+);
 const Ic = {
-  shield: (c = T.primary) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
-  user: (c = T.primary) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>,
-  cert: (c = T.primary) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><rect x="3" y="4" width="18" height="14" rx="2" /><path d="M8 10h8M8 14h5" /></svg>,
-  clock: (c = T.primary) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>,
-  camera: (c = T.primary) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></svg>,
-  map: (c = T.primary) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>,
-  phone: (c = T.primary) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.13 6.13l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>,
-  money: (c = T.primary) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2" /><path d="M1 10h22" /></svg>,
-  check: (c = T.success, s = 16) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" /></svg>,
-  upload: (c = T.primary) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>,
-  download: (c = T.primary) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>,
-  arrow: (dir = "right", c = "#fff") => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round">{dir === "right" ? <path d="M5 12h14M12 5l7 7-7 7" /> : <path d="M19 12H5M12 19l-7-7 7-7" />}</svg>,
-  home: (c = T.primary) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
-  star: (c = T.textMuted) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
-  target: (c = T.primary) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>,
-  doc: (c = T.primary) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>,
-  rocket: (c = T.primary) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09zM12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M15 12v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></svg>,
-  lock: (c = T.primary) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg>,
-  briefcase: (c = T.textMuted) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M12 12v4M8 12v4" /></svg>,
-  hammer: (c = T.textMuted) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M15 12l-8.5 8.5a2.12 2.12 0 01-3-3L12 9" /><path d="M17.64 15L22 10.64" /><path d="M20.91 11.7l-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 00-3.94-1.64H9l.92.82A6.18 6.18 0 0112 8.4v1.56l2 2h2.47l2.26 1.91z" /></svg>,
+  user: (s) => <Svg s={s}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></Svg>,
+  shield: (s) => <Svg s={s}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></Svg>,
+  pin: (s) => <Svg s={s}><path d="M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z" /><circle cx="12" cy="10" r="2.5" /></Svg>,
+  clock: (s) => <Svg s={s}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>,
+  doc: (s) => <Svg s={s}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></Svg>,
+  cap: (s) => <Svg s={s}><path d="M2 10 12 5l10 5-10 5z" /><path d="M6 12v5c3 2 9 2 12 0v-5" /></Svg>,
+  award: (s) => <Svg s={s}><circle cx="12" cy="9" r="6" /><path d="m8.5 14.5-1.5 7 5-3 5 3-1.5-7" /></Svg>,
+  camera: (s) => <Svg s={s}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></Svg>,
+  upload: (s) => <Svg s={s}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></Svg>,
+  info: (s = 16) => <Svg s={s}><circle cx="12" cy="12" r="10" /><path d="M12 16v-5M12 8h.01" /></Svg>,
+  check: (s = 14) => <Svg s={s} w={3}><path d="m5 12 4.5 4.5L19 7" /></Svg>,
+  send: (s) => <Svg s={s}><path d="m22 2-7 20-4-9-9-4z" /><path d="M22 2 11 13" /></Svg>,
+  arrow: (s = 17) => <Svg s={s} w={2.4}><path d="M5 12h14M13 6l6 6-6 6" /></Svg>,
+  back: (s = 16) => <Svg s={s} w={2.4}><path d="M19 12H5M11 18l-6-6 6-6" /></Svg>,
 };
 
-// ─── Sidebar Steps ─────────────────────────────────────────────────────────────
+// ─── Steps / data ─────────────────────────────────────────────────────────────
 const STEPS = [
-  { label: "Professional Profile", sub: "Name, license & specialization", icon: Ic.hammer },
-  { label: "Credentials & Photo", sub: "Documents & profile picture", icon: Ic.doc },
-  { label: "Office & Availability", sub: "Location, fees & working hours", icon: Ic.map },
-  { label: "Workspace Ready", sub: "Your profile is complete", icon: Ic.star },
+  { label: "Professional profile", sub: "Name, license, practice areas", icon: Ic.user },
+  { label: "Credentials and photo", sub: "Optional · never shown to clients", icon: Ic.shield },
+  { label: "Office and fees", sub: "City, address, consultation fee", icon: Ic.pin },
+  { label: "Finished", sub: "Your profile goes live", icon: Ic.send },
 ];
 
 // Labels map to the platform's case types — matching runs on these values
-const SPECS_CORE = ["Civil Litigation", "Criminal", "Family", "Constitutional"];
+const SPECS_CORE = [
+  ["Civil Litigation", "Property, contracts, recovery suits"],
+  ["Criminal", "Bail, trials, FIR matters"],
+  ["Family", "Divorce, khula, custody, maintenance"],
+  ["Constitutional", "Writ petitions, fundamental rights"],
+];
 const SPEC_VALUE = { "Civil Litigation": "civil", Criminal: "criminal", Family: "family", Constitutional: "constitutional" };
-const CONTENT_PAD = 18;
 
-// ─── Shared UI Atoms ──────────────────────────────────────────────────────────
-const Label = ({ children }) => (
-  <p style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 6 }}>
-    {children}
-  </p>
-);
+const EMPTY_FORM = { name: "", exp: "", license: "", specLabels: [], address: "", city: "", phone: "", minFee: 5000, bio: "" };
 
-const Input = ({ placeholder, icon, type = "text", value, onChange }) => (
-  <div style={{ position: "relative", marginBottom: 2 }}>
-    {icon && <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", opacity: .7 }}>{icon}</span>}
-    <input
-      type={type}
-      placeholder={placeholder}
-      value={value || ""}
-      onChange={e => onChange && onChange(e.target.value)}
-      style={{
-        width: "100%", boxSizing: "border-box",
-        background: T.inputBg, border: `1.5px solid ${T.inputBorder}`, borderRadius: T.r.md,
-        color: T.text, fontSize: 13.5, padding: icon ? "10px 12px 10px 38px" : "10px 14px",
-        outline: "none", fontFamily: "inherit",
-        transition: "border-color .2s",
-      }}
-      onFocus={e => (e.target.style.borderColor = T.primary)}
-      onBlur={e => (e.target.style.borderColor = T.inputBorder)}
-    />
-  </div>
-);
+const initialsOf = (name) => (name || "").replace(/^adv\.?\s*/i, "").trim().split(/\s+/).filter(Boolean)
+  .slice(0, 2).map(w => w[0].toUpperCase()).join("") || "?";
 
-const Textarea = ({ placeholder, rows = 4, value, onChange }) => (
-  <textarea
-    rows={rows}
-    placeholder={placeholder}
-    value={value || ""}
-    onChange={e => onChange && onChange(e.target.value)}
-    style={{
-      width: "100%", boxSizing: "border-box", resize: "vertical",
-      background: T.inputBg, border: `1.5px solid ${T.inputBorder}`, borderRadius: T.r.md,
-      color: T.text, fontSize: 13, padding: "10px 14px",
-      outline: "none", fontFamily: "inherit",
-    }}
-    onFocus={e => (e.target.style.borderColor = T.primary)}
-    onBlur={e => (e.target.style.borderColor = T.inputBorder)}
-  />
-);
-
-const CardPanel = ({ title, icon, children, style = {} }) => (
-  <div style={{
-    background: T.card, border: `1.5px solid ${T.cardBorder}`, borderRadius: T.r.lg,
-    padding: "18px 20px", flex: 1, display: "flex", flexDirection: "column", gap: 14, ...style
-  }}>
-    {title && (
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-        {icon && <span>{icon}</span>}
-        <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{title}</span>
-      </div>
-    )}
-    {children}
-  </div>
-);
-
-const Chip = ({ label, selected, onClick }) => (
-  <span onClick={onClick} style={{
-    display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer",
-    fontSize: 12, fontWeight: 500, padding: "7px 14px", borderRadius: 99,
-    border: `1.5px solid ${selected ? T.primary : T.cardBorder}`,
-    background: selected ? T.primaryGlow : "transparent",
-    color: selected ? T.primaryLight : T.textMuted,
-    transition: "all .18s",
-  }}>
-    {selected && Ic.check(T.primary, 10)}
-    {label}
-  </span>
-);
-
-const GlowBtn = ({ children, onClick, disabled, style = {} }) => (
-  <button onClick={onClick} disabled={disabled} style={{
-    background: `linear-gradient(135deg, ${T.primary}, ${T.primaryLight})`,
-    border: "none", borderRadius: T.r.md, color: "#fff",
-    fontSize: 14, fontWeight: 700, padding: "11px 28px",
-    cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? .5 : 1,
-    display: "inline-flex", alignItems: "center", gap: 8,
-    boxShadow: `0 0 20px rgba(13,148,136,0.35)`,
-    transition: "all .2s", ...style,
-  }}>
-    {children}
-  </button>
-);
-
-const OutlineBtn = ({ children, onClick }) => (
-  <button onClick={onClick} style={{
-    background: "transparent", border: `1.5px solid ${T.cardBorder}`,
-    borderRadius: T.r.md, color: T.textMuted, fontSize: 14, fontWeight: 600,
-    padding: "11px 22px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
-  }}>
-    {children}
-  </button>
-);
-
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
-function Sidebar({ step, submitted }) {
+// ─── Atoms ────────────────────────────────────────────────────────────────────
+function Pill({ icon, prefix, value, onChange, ...input }) {
   return (
-    <div style={{
-      width: 236, minWidth: 220, background: T.sidebar,
-      borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", flexShrink: 0,
-    }}>
-      {/* Header */}
-      <div style={{ padding: "20px 18px 16px", borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <img src="/logo.png" alt="AttorneyAI"
-            style={{ width: 42, height: 42, objectFit: "contain", filter: `drop-shadow(0 1px 8px ${T.primaryGlow})`, flexShrink: 0 }} />
-          <span style={{ fontSize: 16, fontWeight: 800, color: T.text, letterSpacing: "-.02em", fontFamily: "Georgia, serif" }}>
-            Attorney<span style={{ color: T.primary }}>AI</span>
-          </span>
-        </div>
-        <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Profile Setup</p>
-        <p style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>Complete your profile to go live</p>
-      </div>
-
-      {/* Steps */}
-      <div style={{ padding: "22px 18px 0", flex: 1 }}>
-        {STEPS.map((s, i) => {
-          const done = submitted ? true : i < step;
-          const active = !submitted && i === step;
-          const isLast = i === STEPS.length - 1;
-          const iconColor = done ? "#fff" : active ? T.primary : T.textMuted;
-
-          return (
-            <div key={i} style={{ display: "flex", gap: 14 }}>
-              {/* Left column: indicator + connector */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, width: 36 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: done
-                    ? `linear-gradient(135deg, ${T.primary}, ${T.primaryLight})`
-                    : active ? T.primaryGlow2 : T.inputBg,
-                  border: done ? "none" : `1.5px solid ${active ? T.primary : T.border}`,
-                  boxShadow: done ? `0 2px 12px ${T.primary}50` : active ? `0 0 14px ${T.primary}30` : "none",
-                  transition: "all .25s",
-                }}>
-                  {done ? Ic.check("#fff", 14) : s.icon(iconColor)}
-                </div>
-                {!isLast && (
-                  <div style={{
-                    width: 2, height: 24, borderRadius: 1,
-                    background: done ? T.primary : T.border,
-                    opacity: done ? 0.45 : 0.3,
-                    margin: "5px 0",
-                    transition: "background .25s",
-                  }} />
-                )}
-              </div>
-
-              {/* Right column: text */}
-              <div style={{ paddingBottom: isLast ? 0 : 16, paddingTop: 5, minWidth: 0 }}>
-                <p style={{
-                  fontSize: 13, fontWeight: 700,
-                  color: done || active ? T.text : T.textMuted,
-                  letterSpacing: "-.01em", lineHeight: 1.15,
-                }}>
-                  {s.label}
-                </p>
-                <p style={{
-                  marginTop: 4, fontSize: 11,
-                  color: active ? T.textMuted : T.textFaint,
-                  lineHeight: 1.3,
-                }}>
-                  {s.sub}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="ob-pill">
+      <span className="ic">{prefix || icon}</span>
+      <input value={value ?? ""} onChange={e => onChange(e.target.value)} {...input} />
     </div>
   );
 }
 
-// ─── Spec icon SVGs ───────────────────────────────────────────────────────────
-const SpecIcons = {
-  Corporate: (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>,
-  Criminal: (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" /></svg>,
-  Family: (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
-  "Civil Litigation": (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>,
-  "Real Estate": (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><rect x="2" y="7" width="20" height="14" rx="1" /><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" /><line x1="12" y1="12" x2="12" y2="16" /><line x1="10" y1="14" x2="14" y2="14" /></svg>,
-  Immigration: (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4" /></svg>,
-  "Environment Law": (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><path d="M17 8C8 10 5.9 16.17 3.82 19.15A2 2 0 005.49 22h13a2 2 0 001.92-2.56C19 16 19 8 17 8z" /><path d="M17 8C17 8 17 2 12 2c0 0 0 6-5 8" /></svg>,
-  "Intellectual Property": (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01" /></svg>,
-  Arbitration: (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><path d="M15 12l-8.5 8.5a2.12 2.12 0 01-3-3L12 9M18 9l3-3M17 3l4 4M3 14l4 4" /></svg>,
-  Constitutional: (c) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8"><path d="M12 3v18M5 6h14M7 6l-2 5a3 3 0 006 0L9 6M17 6l-2 5a3 3 0 006 0l-2-5" /></svg>,
-};
+function Ring({ step, submitted, live }) {
+  const pct = submitted ? 100 : [25, 50, 75, 100][step];
+  const C = 2 * Math.PI * 26;
+  return (
+    <div className="ob-ring">
+      <svg width="62" height="62" viewBox="0 0 62 62" aria-hidden="true">
+        <defs><linearGradient id="ob-rg"><stop offset="0" stopColor="#3EE0A1" /><stop offset="1" stopColor="#2EC4D6" /></linearGradient></defs>
+        <circle cx="31" cy="31" r="26" fill="none" stroke="var(--line-strong)" strokeWidth="6" />
+        <circle cx="31" cy="31" r="26" fill="none" stroke="url(#ob-rg)" strokeWidth="6" strokeLinecap="round"
+          strokeDasharray={`${(pct / 100) * C} ${C}`} transform="rotate(-90 31 31)" />
+        <text x="31" y="36" textAnchor="middle" fontSize="15" fontWeight="700" fill="currentColor">{pct}%</text>
+      </svg>
+      <span>
+        <b>{submitted ? "Profile complete" : "Profile setup"}</b>
+        <small>{submitted ? (live ? "Clients can find you" : "Waiting for admin approval") : `Step ${step + 1} of ${STEPS.length} · about 5 minutes`}</small>
+      </span>
+    </div>
+  );
+}
+
+function StepsCard({ step, submitted, live }) {
+  return (
+    <nav className="ob-card ob-steps" aria-label="Onboarding steps">
+      <div className="ob-brand"><img src="/logo.png" alt="" /><b>Attorney<em>.AI</em></b></div>
+      <Ring step={step} submitted={submitted} live={live} />
+      <ol className="ob-list">
+        {STEPS.map((s, i) => {
+          const done = submitted || i < step;
+          const on = !submitted && i === step;
+          return (
+            <li key={s.label} className={`ob-st${on ? " on" : ""}${done ? " done" : ""}`} aria-current={on ? "step" : undefined}>
+              <span className="c">{done ? Ic.check(16) : s.icon(19)}</span>
+              <span><b>{s.label}</b><small>{s.sub}</small></span>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="ob-help"><b>Need help?</b>You can go back to any finished step and change it before you submit.</div>
+    </nav>
+  );
+}
+
+// A small profile chip at the foot of the sidebar (2026-10-19); clicking it
+// opens the full "What clients will see" card above it.
+function PreviewCard({ form, step, submitted, live }) {
+  const [open, setOpen] = useState(false);
+  const specs = form.specLabels;
+  const showFee = step >= 2 && form.minFee > 0;
+  // "Registered", never "verified": nobody checks the Bar license
+  // (LAWYER_AUTO_APPROVE). `live` comes from the saved profile.
+  const status = submitted && live ? "Registered lawyer" : submitted ? "Awaiting approval" : "Not listed yet";
+  const name = form.name.trim() || "Your name";
+  return (
+    <div className="ob-pvwrap">
+      {open && (
+        <aside className="ob-card ob-pv ob-pop" aria-label="What clients will see">
+          <div className="cover"><span className="cap">What clients will see</span><span className="cred">Photo: MariyamAftab, CC BY-SA 4.0</span></div>
+          <div className="body">
+            <div className="top">
+              {/* Initials, not the uploaded photo: the photo is private and never shown to clients. */}
+              <span className="ob-av">{initialsOf(form.name)}</span>
+              <span className={`ob-pend${submitted && live ? " ok" : ""}`}>{status}</span>
+            </div>
+            <div>
+              <b>{name}</b>
+              <small>
+                {form.exp ? `${form.exp} years` : "Experience not set"} · {form.city.trim() || "City not set"}
+                {showFee ? ` · From PKR ${Number(form.minFee).toLocaleString("en-US")}` : ""}
+              </small>
+            </div>
+            <div className="ob-tags">{specs.length ? specs.map(s => <span key={s}>{s}</span>) : <em>No practice areas yet</em>}</div>
+          </div>
+        </aside>
+      )}
+      <button type="button" className="ob-card ob-chip" aria-expanded={open} onClick={() => setOpen(o => !o)}
+        title={open ? "Hide the preview" : "See how clients will see your profile"}>
+        <span className="ob-av sm">{initialsOf(form.name)}</span>
+        <span className="who"><b>{name}</b><small className={`st${submitted && live ? " ok" : ""}`}>{status}</small></span>
+        <span className="lk">{open ? "Hide" : "Preview"}</span>
+      </button>
+    </div>
+  );
+}
+
+function StepFrame({ eyebrow, title, lead, children, foot }) {
+  return (
+    <section className="ob-card ob-main">
+      <header>
+        <div className="ob-eyebrow">{eyebrow}</div>
+        <h1>{title}</h1>
+        <p className="lead">{lead}</p>
+      </header>
+      <div className="ob-body">{children}</div>
+      <footer className="ob-foot">{foot}</footer>
+    </section>
+  );
+}
 
 // ─── Step 1: Professional Profile ─────────────────────────────────────────────
-function StepProfessional({ onNext }) {
-  const [name, setName] = useState("");
-  const [exp, setExp] = useState("");
-  const [license, setLicense] = useState("");
-  const [coreSpecs, setCoreSpecs] = useState([]);
+function StepProfessional({ form, set, onNext }) {
   const [problem, setProblem] = useState(null);
-
-  const cont = () => {
-    const specs = coreSpecs.map(s => SPEC_VALUE[s]).filter(Boolean);
-    const p = stepOneProblem({ license, specs });
-    setProblem(p);
-    if (!p) onNext({ name, exp, license: license.trim(), specs });
-  };
 
   useEffect(() => {
     getMe().then(({ data }) => {
-      if (data?.full_name) setName(prev => prev || data.full_name);
-      if (data?.lawyer_profile?.bar_number) setLicense(prev => prev || data.lawyer_profile.bar_number);
+      if (data?.full_name) set("name", prev => prev || data.full_name);
+      if (data?.lawyer_profile?.bar_number) set("license", prev => prev || data.lawyer_profile.bar_number);
     }).catch(() => { });
   }, []);
 
-  const togCore = (s) => setCoreSpecs(p => p.includes(s) ? p.filter(x => x !== s) : p.length < 3 ? [...p, s] : p);
-
-  // Icon grid card for specializations
-  const SpecCard = ({ label, selected, onClick, size = "core" }) => {
-    const IconFn = SpecIcons[label];
-    const iconColor = selected ? T.primaryLight : T.textMuted;
-    return (
-      <div onClick={onClick} style={{
-        background: selected ? T.primaryGlow : T.inputBg,
-        border: `1.5px solid ${selected ? T.primary : T.cardBorder}`,
-        borderRadius: T.r.md, cursor: "pointer",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        gap: 6, padding: "10px 6px", position: "relative",
-        transition: "all .18s",
-        minHeight: size === "core" ? 72 : 68,
-      }}>
-        {selected && (
-          <div style={{
-            position: "absolute", top: 4, right: 4, width: 16, height: 16,
-            borderRadius: "50%", background: T.primary,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {Ic.check("#fff", 10)}
-          </div>
-        )}
-        {IconFn && IconFn(iconColor)}
-        <span style={{ fontSize: 11, fontWeight: 600, color: selected ? T.primaryLight : T.textMuted, textAlign: "center", lineHeight: 1.3 }}>{label}</span>
-      </div>
-    );
+  const cont = () => {
+    const specs = form.specLabels.map(s => SPEC_VALUE[s]).filter(Boolean);
+    const p = stepOneProblem({ license: form.license, specs });
+    setProblem(p);
+    if (!p) onNext();
   };
+  const togCore = (s) => set("specLabels", p => p.includes(s) ? p.filter(x => x !== s) : p.length < 3 ? [...p, s] : p);
+  const full = form.specLabels.length >= 3;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
-      <div style={{ padding: `${CONTENT_PAD}px ${CONTENT_PAD}px 0`, flex: 1, minHeight: 0, overflow: "auto", display: "flex", flexDirection: "column" }}>
-
-        {/* ── Step header ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: `linear-gradient(135deg, ${T.primary}, ${T.primaryLight})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: `0 0 14px ${T.primaryGlow}`,
-              }}>
-                {Ic.user(T.bg)}
-              </div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: T.text, margin: 0, letterSpacing: "-.02em" }}>
-                Professional Profile
-              </h2>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 5,
-                background: T.primaryGlow2, border: `1px solid ${T.primary}40`,
-                borderRadius: 99, padding: "4px 12px",
-              }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.primary, display: "inline-block" }} />
-                <span style={{ fontSize: 11, fontWeight: 600, color: T.primaryLight }}>Step 1 of 4</span>
-              </div>
-            </div>
-            <p style={{ fontSize: 12.5, color: T.textMuted, margin: 0, lineHeight: 1.5 }}>
-              Tell clients who you are — your name, bar license, and areas of practice.
-            </p>
-          </div>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: T.card, border: `1.5px solid ${T.cardBorder}`,
-            borderRadius: T.r.lg, padding: "8px 14px",
-          }}>
-            <svg width="32" height="32" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="14" fill="none" stroke={T.border} strokeWidth="3" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke={T.primary} strokeWidth="3"
-                strokeDasharray={`${(1 / 4) * 88} 88`} strokeLinecap="round" transform="rotate(-90 18 18)" />
-              <text x="18" y="22" textAnchor="middle" fill={T.text} fontSize="9" fontWeight="700">1/4</text>
-            </svg>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: T.text, margin: 0 }}>25% Done</p>
-              <p style={{ fontSize: 10, color: T.textFaint, margin: 0 }}>3 steps remaining</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rgrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "1fr", gap: 14, flex: 1 }}>
-
-          {/* ── Identity Details ── */}
-          <div style={{
-            background: T.card, border: `1.5px solid ${T.cardBorder}`, borderRadius: T.r.lg,
-            padding: "20px 20px", display: "flex", flexDirection: "column", gap: 16,
-          }}>
-            {/* Card header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: T.primaryGlow, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.primary} strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-              </div>
-              <span style={{ fontSize: 17, fontWeight: 800, color: T.text }}>Identity Details</span>
-            </div>
-            <div>
-              <Label>Full Name</Label>
-              <Input placeholder="Adv. Ahmad Khan" icon={Ic.user(T.textFaint)} value={name} onChange={setName} />
-            </div>
-            <div>
-              <Label>Years of Experience</Label>
-              <Input type="number" placeholder="e.g. 8" icon={Ic.clock(T.textFaint)} value={exp} onChange={setExp} />
-              <p style={{ fontSize: 11, color: T.textFaint, marginTop: 6 }}>This information is used for matching.</p>
-            </div>
-          </div>
-
-          {/* ── License Information ── */}
-          <div style={{
-            background: T.card, border: `1.5px solid ${T.cardBorder}`, borderRadius: T.r.lg,
-            padding: "20px 20px", display: "flex", flexDirection: "column", gap: 14,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: T.primaryGlow, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {Ic.shield(T.primary)}
-              </div>
-              <span style={{ fontSize: 17, fontWeight: 800, color: T.text }}>License Information</span>
-            </div>
-            <div>
-              <div style={{ marginBottom: 6 }}>
-                <Label>Bar License No.</Label>
-              </div>
-              <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textFaint} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                </span>
-                <input value={license} onChange={e => setLicense(e.target.value)} placeholder="e.g. PBC/12345/2019" style={{
-                  width: "100%", boxSizing: "border-box", background: T.inputBg,
-                  border: `1.5px solid ${T.inputBorder}`, borderRadius: T.r.md,
-                  color: T.text, fontSize: 13, padding: "10px 12px 10px 36px",
-                  outline: "none", fontFamily: "inherit",
-                }} />
-              </div>
-            </div>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: "rgba(13,148,136,0.06)", border: `1px solid rgba(13,148,136,0.2)`,
-              borderRadius: T.r.sm, padding: "9px 12px",
-            }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-              <span style={{ fontSize: 11.5, color: T.primaryLight, fontWeight: 600 }}>SUBMITTED FOR ADMIN VERIFICATION AFTER ONBOARDING</span>
-            </div>
-          </div>
-
-          {/* ── Primary Specializations ── */}
-          <div style={{
-            background: T.card, border: `1.5px solid ${T.cardBorder}`, borderRadius: T.r.lg,
-            padding: "20px 20px", display: "flex", flexDirection: "column", gap: 14,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: T.primaryGlow, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {Ic.target(T.primary)}
-              </div>
-              <span style={{ fontSize: 17, fontWeight: 800, color: T.text }}>Primary Specializations</span>
-            </div>
-
-            {/* Core — grid */}
-            <div>
-              <Label>Core Specializations (Select up to 3)</Label>
-              <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginTop: 8 }}>
-                {SPECS_CORE.map(s => (
-                  <SpecCard key={s} label={s} selected={coreSpecs.includes(s)} onClick={() => togCore(s)} size="core" />
-                ))}
-              </div>
-              <p style={{ fontSize: 11, color: T.textFaint, marginTop: 8 }}>Clients are matched to you by these practice areas.</p>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Inline nav — compact, no wasted space */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `6px ${CONTENT_PAD}px 10px` }}>
-        <span style={{ fontSize: 11, color: T.textFaint, fontWeight: 700 }}>1/4</span>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {/* Step 1 is the first step — there is nothing to go back to. It was
-              wired to () => {} , i.e. a button that looked live and did nothing. */}
-          <button disabled title="This is the first step" style={{
-            background: "transparent", border: `1px solid ${T.border}`, borderRadius: T.r.sm,
-            color: T.textFaint, fontSize: 11, padding: "5px 10px", cursor: "not-allowed",
-            opacity: 0.45, display: "flex", alignItems: "center", gap: 4,
-          }}>{Ic.arrow("left", T.textFaint)} Back</button>
+    <StepFrame eyebrow="Step 1 of 4" title="Your professional profile"
+      lead="Clients are matched to you using these details. You can change them later from Settings."
+      foot={<>
+        <span className="ob-hint">Bar license and at least one practice area are required</span>
+        <div className="r">
           {/* No Skip on this step, deliberately. It collects the bar number and
               specializations — the two fields onboarding is CONSIDERED COMPLETE by
               (see isLawyerOnboarded). A "Skip" here would let a lawyer finish the
               wizard with a profile the gate then rejects, dropping them straight
-              back into onboarding: a loop, just a different one. Step 2 (photo and
-              credential uploads) is genuinely optional and keeps its Skip. */}
-          {problem && <span role="alert" style={{ fontSize: 12, color: "#e8526a", fontWeight: 600 }}>{problem}</span>}
-          <GlowBtn onClick={cont} style={{ padding: "7px 16px", fontSize: 12 }}>Continue {Ic.arrow("right")}</GlowBtn>
+              back into onboarding. Step 2 (uploads) is genuinely optional. */}
+          {problem && <span role="alert" className="ob-err">{problem}</span>}
+          <button type="button" className="ob-btn" onClick={cont}>Continue {Ic.arrow()}</button>
+        </div>
+      </>}>
+      <div className="ob-grid">
+        <div className="ob-fl">
+          <label htmlFor="ob-name">Full name</label>
+          <Pill icon={Ic.user()} id="ob-name" placeholder="Adv. Ahmad Khan" autoComplete="name"
+            value={form.name} onChange={v => set("name", v)} />
+        </div>
+        <div className="ob-fl">
+          <label htmlFor="ob-exp">Years of experience</label>
+          <Pill icon={Ic.clock()} id="ob-exp" type="number" min="0" max="60" placeholder="e.g. 8"
+            value={form.exp} onChange={v => set("exp", v)} />
+        </div>
+        <div className="ob-fl ob-full">
+          <label htmlFor="ob-bar">Bar license number</label>
+          <Pill icon={Ic.shield()} id="ob-bar" placeholder="e.g. PBC/12345/2019"
+            value={form.license} onChange={v => set("license", v)} />
+          <div className="ob-hint">{Ic.info()}Shown to clients on your profile. Attorney.AI does not check it with the Bar Council.</div>
+        </div>
+        <div className="ob-fl ob-full">
+          <div className="ob-lab"><span style={{ color: "var(--ink)", fontWeight: 600 }}>Practice areas</span><span>{form.specLabels.length} of 3 chosen</span></div>
+          <div className="ob-tiles" role="group" aria-label="Practice areas">
+            {SPECS_CORE.map(([label, sub]) => {
+              const on = form.specLabels.includes(label);
+              return (
+                <button type="button" key={label} className="ob-tile" aria-pressed={on} onClick={() => togCore(label)}>
+                  <span className="t">{label}</span><small>{sub}</small>
+                  <span className="bx">{on && Ic.check(12)}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="ob-hint">{Ic.info()}{full ? "You can choose up to 3. Remove one to pick another." : "Clients are matched to you by these practice areas."}</div>
         </div>
       </div>
-    </div>
+    </StepFrame>
   );
 }
 
 // ─── Step 2: Credentials & Photo ──────────────────────────────────────────────
 // Real uploads (POST /users/me/kyc/documents). Every file goes up as soon as it
-// is chosen; the card then shows what the SERVER holds, or why it refused. The
+// is chosen; the row then shows what the SERVER holds, or why it refused. The
 // step stays optional (Skip), and an admin reviews whatever was sent.
 const CRED_ACCEPT = "application/pdf,image/jpeg,image/png";
 
-function CredCard({ kind, svgIcon, title, sub1, sub2, doc, busy, issue, onPick }) {
+function UploadRow({ kind, icon, title, hint, doc, busy, issue, onPick, accept = CRED_ACCEPT, preview, extra, doneLabel = "Uploaded" }) {
   const inputRef = useRef();
   return (
-    <div style={{
-      flex: 1, background: T.card, border: `1.5px solid ${T.cardBorder}`,
-      borderRadius: T.r.lg, padding: "18px 16px 16px",
-      display: "flex", flexDirection: "column",
-    }}>
-      <div style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
-        {svgIcon}
-      </div>
-      <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
-        <p style={{ fontSize: 14, fontWeight: 700, color: T.text, textAlign: "center", lineHeight: 1.3 }}>{title}</p>
-      </div>
-      <div style={{ height: 48, display: "flex", alignItems: "flex-start", justifyContent: "center", marginBottom: 12 }}>
-        <p style={{ fontSize: 11, color: T.textFaint, textAlign: "center", lineHeight: 1.55 }}>{sub1} ·<br />{sub2}</p>
-      </div>
-      <input type="file" ref={inputRef} accept={CRED_ACCEPT} data-kind={kind} style={{ display: "none" }}
-        onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) onPick(kind, f); }} />
-      <GlowBtn onClick={() => !busy && inputRef.current?.click()}
-        style={{ width: "100%", justifyContent: "center", fontSize: 13, padding: "8px", opacity: busy ? 0.6 : 1 }}>
-        {busy ? "Uploading…" : doc ? "Replace" : "Upload"}
-      </GlowBtn>
-      <div style={{ marginTop: 8 }}>
-        {issue ? (
-          <p role="alert" style={{ fontSize: 11.5, color: "#e8526a", fontWeight: 600 }}>{issue}</p>
-        ) : doc ? (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "8px 12px",
-            background: "rgba(13,148,136,0.08)", border: `1px solid rgba(13,148,136,0.25)`, borderRadius: T.r.sm,
-          }}>
-            {Ic.check(T.primary, 14)}
-            <span style={{ fontSize: 12, fontWeight: 600, color: T.primaryLight, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              Uploaded · {doc.filename}
-            </span>
-          </div>
-        ) : null}
-      </div>
+    <div className={`ob-up${doc ? " done" : ""}`}>
+      <span className="ic">{preview ? <img src={preview} alt="" /> : icon}</span>
+      <span style={{ minWidth: 0 }}>
+        <b>{title}</b>
+        {issue ? <small role="alert" className="bad">{issue}</small>
+          : doc ? <small className="ok">{doneLabel} · {doc.filename}</small>
+            : <small>{hint}</small>}
+      </span>
+      <span className="acts">
+        <input type="file" ref={inputRef} accept={accept} data-kind={kind} style={{ display: "none" }}
+          onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) onPick(kind, f); }} />
+        {extra}
+        <button type="button" className={doc ? "ob-ghost sm" : "ob-btn sm"} disabled={busy}
+          onClick={() => !busy && inputRef.current?.click()}>
+          {busy ? <><span className="ob-spin" aria-hidden="true" />Uploading…</> : doc ? "Replace" : <>{Ic.upload(16)}Upload</>}
+        </button>
+      </span>
     </div>
   );
 }
 
-function StepCredentials({ onNext, onBack, name }) {
-  const photoRef = useRef();
+function StepCredentials({ onNext, onBack }) {
   const cameraRef = useRef();
   const [docs, setDocs] = useState({});          // kind -> server metadata
   const [busy, setBusy] = useState(null);         // kind being uploaded
@@ -588,476 +555,187 @@ function StepCredentials({ onNext, onBack, name }) {
     setDocs(p => ({ ...p, ...data }));
     if (kind === "photo") setPhotoUrl(URL.createObjectURL(file));
   };
-  const onPhoto = (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) pick("photo", f); };
 
-  const initials = (name || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || "?";
   const credCount = ["bar_certificate", "education", "professional"].filter(k => docs[k]).length;
 
-  // Decorative SVG icons matching screenshot style
-  const CertIcon = () => (
-    <svg width="52" height="52" viewBox="0 0 64 64" fill="none">
-      <rect x="6" y="10" width="44" height="36" rx="3" fill="#c8972a" opacity=".9" />
-      <rect x="10" y="14" width="36" height="28" rx="2" fill="#e8b84b" />
-      <rect x="14" y="20" width="24" height="3" rx="1" fill="#c8972a" />
-      <rect x="14" y="26" width="18" height="2" rx="1" fill="#c8972a" opacity=".6" />
-      <circle cx="32" cy="48" r="8" fill="#d4a835" stroke="#f0c040" strokeWidth="2" />
-      <path d="M28 48l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-  const EduIcon = () => (
-    <svg width="52" height="52" viewBox="0 0 64 64" fill="none">
-      <path d="M8 28l24-14 24 14-24 14-24-14z" fill="#1a9aaa" opacity=".9" />
-      <path d="M20 35v12l12 6 12-6V35" fill="#0e7a88" />
-      <path d="M52 28v10" stroke="#1a9aaa" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="52" cy="41" r="3" fill="#1a9aaa" />
-    </svg>
-  );
-  const AwardIcon = () => (
-    <svg width="52" height="52" viewBox="0 0 64 64" fill="none">
-      <circle cx="32" cy="26" r="18" fill="none" stroke="#9b6dd4" strokeWidth="3" />
-      <circle cx="32" cy="26" r="12" fill="none" stroke="#7c4daa" strokeWidth="2" />
-      <path d="M32 14l2.47 7.6H42l-6.18 4.49 2.36 7.25L32 29l-6.18 4.34 2.36-7.25L22 21.6h7.53z" fill="#9b6dd4" />
-      <path d="M24 44l-4 8M40 44l4 8" stroke="#9b6dd4" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  );
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
-      {/* Scrollable content */}
-      <div style={{ padding: `${CONTENT_PAD}px ${CONTENT_PAD}px 0`, flex: 1, minHeight: 0, overflow: "auto", display: "flex", flexDirection: "column" }}>
-        {/* ── Step header ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: `linear-gradient(135deg, ${T.primary}, ${T.primaryLight})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: `0 0 14px ${T.primaryGlow}`,
-              }}>
-                {Ic.camera(T.bg)}
-              </div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: T.text, margin: 0, letterSpacing: "-.02em" }}>
-                Credentials & Photo
-              </h2>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 5,
-                background: T.primaryGlow2, border: `1px solid ${T.primary}40`,
-                borderRadius: 99, padding: "4px 12px",
-              }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.primary, display: "inline-block" }} />
-                <span style={{ fontSize: 11, fontWeight: 600, color: T.primaryLight }}>Step 2 of 4</span>
-              </div>
-            </div>
-            <p style={{ fontSize: 12.5, color: T.textMuted, margin: 0, lineHeight: 1.5 }}>
-              Upload a verification photo and your credentials. Only the admin reviewing your verification sees them; they are not shown to clients.
-            </p>
-          </div>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: T.card, border: `1.5px solid ${T.cardBorder}`,
-            borderRadius: T.r.lg, padding: "8px 14px",
-          }}>
-            <svg width="32" height="32" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="14" fill="none" stroke={T.border} strokeWidth="3" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke={T.primary} strokeWidth="3"
-                strokeDasharray={`${(2 / 4) * 88} 88`} strokeLinecap="round" transform="rotate(-90 18 18)" />
-              <text x="18" y="22" textAnchor="middle" fill={T.text} fontSize="9" fontWeight="700">2/4</text>
-            </svg>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: T.text, margin: 0 }}>50% Done</p>
-              <p style={{ fontSize: 10, color: T.textFaint, margin: 0 }}>2 steps remaining</p>
-            </div>
-          </div>
+    <StepFrame eyebrow="Step 2 of 4" title="Credentials and photo"
+      lead="Optional. Keep your certificates on file with us. Files upload as soon as you pick them. Only you and the Attorney.AI admin team can open them; they are not shown to clients."
+      foot={<>
+        <button type="button" className="ob-ghost" onClick={onBack}>{Ic.back()}Back</button>
+        <div className="r">
+          {/* Uploads only, so skipping and continuing both advance without data.
+              onNext() is called with no argument on purpose: passing the click
+              event used to merge its fields into the form payload. */}
+          <button type="button" className="ob-link" onClick={() => onNext()}>Skip for now</button>
+          <button type="button" className="ob-btn" onClick={() => onNext()}>Continue {Ic.arrow()}</button>
         </div>
-
-        {/* Warning banner + cards row */}
-        <div style={{ display: "flex", gap: 14, marginTop: 18, flex: 1, minHeight: 0 }}>
-          {/* Photo card */}
-          <div style={{
-            width: 240, flexShrink: 0, background: T.card, border: `1.5px solid ${T.cardBorder}`,
-            borderRadius: T.r.lg, padding: "22px 18px",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-          }}>
-            {/* Avatar */}
-            <div style={{
-              width: 88, height: 88, borderRadius: "50%",
-              background: photoUrl ? "transparent" : `linear-gradient(135deg, ${T.primary}60, ${T.accent})`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              overflow: "hidden", border: `3px solid ${T.primary}60`,
-            }}>
-              {photoUrl
-                ? <img src={photoUrl} alt="profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <span style={{ fontSize: 28, fontWeight: 800, color: T.primaryLight }}>{initials}</span>
-              }
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Profile Photo</p>
-              <p style={{ fontSize: 11, color: T.textFaint, marginTop: 2 }}>JPG or PNG · Max 5MB</p>
-            </div>
-            <input type="file" ref={photoRef} onChange={onPhoto} accept="image/jpeg,image/png" data-kind="photo" style={{ display: "none" }} />
-            {/* capture="user" opens the front camera on phones; elsewhere it is a file picker. */}
-            <input type="file" ref={cameraRef} onChange={onPhoto} accept="image/jpeg,image/png" capture="user" data-kind="photo-camera" style={{ display: "none" }} />
-            <GlowBtn onClick={() => busy !== "photo" && photoRef.current?.click()} style={{ width: "100%", justifyContent: "center", fontSize: 13, padding: "10px" }}>
-              {Ic.camera("#fff")} {busy === "photo" ? "Uploading…" : docs.photo ? "Replace Photo" : "Upload Photo"}
-            </GlowBtn>
-            <button onClick={() => busy !== "photo" && cameraRef.current?.click()} style={{
-              width: "100%", background: "transparent", border: `1.5px solid ${T.border}`,
-              borderRadius: T.r.md, color: T.textMuted, fontSize: 13, padding: "9px",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            }}>
-              {Ic.camera(T.textMuted)} Take Photo
-            </button>
-            {issues.photo ? (
-              <p role="alert" style={{ fontSize: 11.5, color: "#e8526a", fontWeight: 600, textAlign: "center" }}>{issues.photo}</p>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", border: `1.5px solid ${docs.photo ? T.primary : T.textFaint}`, background: docs.photo ? T.primary : "transparent" }} />
-                <span style={{ fontSize: 11, color: docs.photo ? T.primaryLight : T.textFaint }}>
-                  {docs.photo ? "Photo uploaded" : "No image uploaded yet"}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Right: verification banner + 3 cred cards */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Verification banner */}
-            <div style={{
-              background: "rgba(255,200,87,0.07)", border: `1px solid rgba(255,200,87,0.25)`,
-              borderRadius: T.r.md, padding: "9px 14px",
-              display: "flex", gap: 10, alignItems: "center", alignSelf: "stretch",
-            }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,200,87,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.warning} strokeWidth="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-              </div>
-              <div>
-                {docsError ? (
-                  <p role="alert" style={{ fontSize: 12, fontWeight: 700, color: T.warning, margin: 0 }}>
-                    Couldn't load your uploads: {docsError}{" "}
-                    <button onClick={loadDocs} style={{ background: "none", border: "none", color: T.primaryLight, fontWeight: 700, cursor: "pointer", padding: 0 }}>Retry</button>
-                  </p>
-                ) : (
-                  <p style={{ fontSize: 12, fontWeight: 700, color: T.warning, margin: 0 }}>
-                    {credCount === 0 ? "No credentials uploaded yet" : `${credCount} of 3 credentials uploaded`}
-                  </p>
-                )}
-                <p style={{ fontSize: 10.5, color: T.textFaint, margin: "2px 0 0" }}>Uploaded files are reviewed by an admin as part of verification.</p>
-              </div>
-            </div>
-            {/* 3 cards */}
-            <div style={{ display: "flex", gap: 12, flex: 1 }}>
-              <CredCard kind="bar_certificate" doc={docs.bar_certificate} busy={busy === "bar_certificate"} issue={issues.bar_certificate} onPick={pick} svgIcon={<CertIcon />} title="Bar Council Certificate" sub1="Official bar membership certificate" sub2="PDF, JPG or PNG · Max 5MB" />
-              <CredCard kind="education" doc={docs.education} busy={busy === "education"} issue={issues.education} onPick={pick} svgIcon={<EduIcon />} title="Educational Credentials" sub1="LLB or equivalent law degree" sub2="PDF, JPG or PNG · Max 5MB" />
-              <CredCard kind="professional" doc={docs.professional} busy={busy === "professional"} issue={issues.professional} onPick={pick} svgIcon={<AwardIcon />} title="Professional Certificates" sub1="Additional certifications or awards" sub2="PDF, JPG or PNG · Max 5MB" />
-            </div>
-          </div>
+      </>}>
+      <div className="ob-stack">
+        <div className={`ob-note${docsError || credCount === 0 ? " warn" : ""}`}>
+          {Ic.info(17)}
+          {docsError ? (
+            <span role="alert">Couldn&apos;t load your uploads: {docsError}{" "}
+              <button type="button" className="ob-link" onClick={loadDocs}>Retry</button></span>
+          ) : (
+            <span><b>{credCount === 0 ? "No credentials uploaded yet" : `${credCount} of 3 credentials uploaded`}</b>
+              {" "}· Optional · PDF, JPG or PNG, up to 5 MB each.</span>
+          )}
         </div>
+        <input type="file" ref={cameraRef} accept="image/jpeg,image/png" capture="user" data-kind="photo-camera" style={{ display: "none" }}
+          onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) pick("photo", f); }} />
+        <UploadRow kind="photo" icon={Ic.camera(22)} title="Your photo" hint="Private · JPG or PNG" doneLabel="Photo uploaded"
+          accept="image/jpeg,image/png" preview={photoUrl} doc={docs.photo} busy={busy === "photo"} issue={issues.photo} onPick={pick}
+          extra={/* capture="user" opens the front camera on phones; elsewhere it is a file picker. */
+            <button type="button" className="ob-ghost sm" disabled={busy === "photo"} onClick={() => cameraRef.current?.click()}>{Ic.camera(16)}Take photo</button>} />
+        <UploadRow kind="bar_certificate" icon={Ic.shield(22)} title="Bar Council Certificate" hint="Official bar membership certificate"
+          doc={docs.bar_certificate} busy={busy === "bar_certificate"} issue={issues.bar_certificate} onPick={pick} />
+        <UploadRow kind="education" icon={Ic.cap(22)} title="Educational credentials" hint="LLB or equivalent law degree"
+          doc={docs.education} busy={busy === "education"} issue={issues.education} onPick={pick} />
+        <UploadRow kind="professional" icon={Ic.award(22)} title="Professional certificates" hint="Additional certifications or awards · optional"
+          doc={docs.professional} busy={busy === "professional"} issue={issues.professional} onPick={pick} />
       </div>
-
-      {/* Inline nav */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `8px ${CONTENT_PAD}px 14px` }}>
-        <button onClick={onBack} style={{
-          background: "transparent", border: `1px solid ${T.border}`, borderRadius: T.r.sm,
-          color: T.textMuted, fontSize: 11, padding: "5px 10px", cursor: "pointer",
-          display: "flex", alignItems: "center", gap: 4,
-        }}>{Ic.arrow("left", T.textFaint)} Back</button>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <svg width="34" height="34" viewBox="0 0 44 44" style={{ flexShrink: 0 }}>
-            <circle cx="22" cy="22" r="18" fill="none" stroke={T.border} strokeWidth="3.5" />
-            <circle cx="22" cy="22" r="18" fill="none" stroke={T.primary} strokeWidth="3.5"
-              strokeDasharray={`${(2 / 4) * 113} 113`} strokeLinecap="round" transform="rotate(-90 22 22)" />
-            <text x="22" y="27" textAnchor="middle" fill={T.text} fontSize="10" fontWeight="700">2/4</text>
-          </svg>
-          {/* Skip had no onClick — inert. This step is uploads only, so skipping
-              and continuing are the same thing: advance without adding data. */}
-          <button onClick={() => onNext()} style={{ background: "transparent", border: "none", color: T.textMuted, fontSize: 12, cursor: "pointer" }}>Skip</button>
-          {/* Was onClick={onNext} — which handed the React click EVENT to next(data),
-              and next() does Object.assign(formRef.current, data). That merged the
-              synthetic event's fields into the form payload. */}
-          <GlowBtn onClick={() => onNext()} style={{ padding: "8px 22px", fontSize: 13 }}>Continue {Ic.arrow("right")}</GlowBtn>
-        </div>
-      </div>
-    </div>
+    </StepFrame>
   );
 }
 
-// ─── Step 3: Office & Availability ────────────────────────────────────────────
-function StepOffice({ onNext, onBack, saving, error }) {
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("Lahore, 54000");
-  const [phone, setPhone] = useState("");
-  const [minFee, setMinFee] = useState(5000);
-  const [feeNote, setFeeNote] = useState("");
-
-
+// ─── Step 3: Office & Fees ────────────────────────────────────────────────────
+function StepOffice({ form, set, onNext, onBack, saving, error }) {
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: `${CONTENT_PAD}px ${CONTENT_PAD}px 0`, display: "flex", flexDirection: "column" }}>
-        {/* ── Step header ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: `linear-gradient(135deg, ${T.primary}, ${T.primaryLight})`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: `0 0 14px ${T.primaryGlow}`,
-              }}>
-                {Ic.map(T.bg)}
-              </div>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: T.text, margin: 0, letterSpacing: "-.02em" }}>
-                Office & Availability
-              </h2>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 5,
-                background: T.primaryGlow2, border: `1px solid ${T.primary}40`,
-                borderRadius: 99, padding: "4px 12px",
-              }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.primary, display: "inline-block" }} />
-                <span style={{ fontSize: 11, fontWeight: 600, color: T.primaryLight }}>Step 3 of 4</span>
-              </div>
-            </div>
-            <p style={{ fontSize: 12.5, color: T.textMuted, margin: 0, lineHeight: 1.5 }}>
-              Help clients find your office and know when they can book a consultation.
-            </p>
-          </div>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: T.card, border: `1.5px solid ${T.cardBorder}`,
-            borderRadius: T.r.lg, padding: "8px 14px",
-          }}>
-            <svg width="32" height="32" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="14" fill="none" stroke={T.border} strokeWidth="3" />
-              <circle cx="18" cy="18" r="14" fill="none" stroke={T.primary} strokeWidth="3"
-                strokeDasharray={`${(3 / 4) * 88} 88`} strokeLinecap="round" transform="rotate(-90 18 18)" />
-              <text x="18" y="22" textAnchor="middle" fill={T.text} fontSize="9" fontWeight="700">3/4</text>
-            </svg>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: T.text, margin: 0 }}>75% Done</p>
-              <p style={{ fontSize: 10, color: T.textFaint, margin: 0 }}>1 step remaining</p>
-            </div>
-          </div>
+    <StepFrame eyebrow="Step 3 of 4" title="Office and fees"
+      lead="Where clients can meet you, and what a first consultation costs. Working hours are set later in Appointments."
+      foot={<>
+        <button type="button" className="ob-ghost" onClick={onBack}>{Ic.back()}Back</button>
+        <div className="r">
+          {error && <span role="alert" className="ob-err">{error}</span>}
+          <button type="button" className="ob-btn" disabled={saving} onClick={() => !saving && onNext()}>
+            {saving ? <><span className="ob-spin" aria-hidden="true" />Saving…</> : <>Finish profile {Ic.arrow()}</>}
+          </button>
         </div>
-
-        <div className="rgrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr", gap: 12, flex: 1 }}>
-          {/* Location & Contact */}
-          <CardPanel>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: T.primaryGlow, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {Ic.map(T.primary)}
-              </div>
-              <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Location & Contact</span>
-            </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <Label>Office address</Label>
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                <div style={{ flex: 1 }}>
-                  <Input placeholder="Street Address (e.g., 14..." icon={Ic.map(T.textFaint)} value={address} onChange={setAddress} />
-                </div>
-                {/* Mini map thumb */}
-                <div style={{
-                  width: 60, height: 42, borderRadius: 8, overflow: "hidden",
-                  border: `1px solid ${T.border}`, flexShrink: 0,
-                  background: "linear-gradient(135deg, #1a3a2e, #0d2a22)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <span style={{ fontSize: 18 }}>📍</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <Label>City & Postal Code</Label>
-              <Input placeholder="Lahore, 54000" value={city} onChange={setCity} />
-            </div>
-            <div>
-              <Label>Office phone</Label>
-              <div style={{ display: "flex", gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <Input placeholder="+92" icon={Ic.phone(T.textFaint)} value={phone} onChange={setPhone} />
-                </div>
-              </div>
-            </div>
-          </CardPanel>
-
-          {/* Consultation Fee */}
-          <CardPanel>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: T.primaryGlow, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {Ic.money(T.primary)}
-              </div>
-              <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Consultation Fee (PKR)</span>
-            </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <Label>Min: PKR {minFee.toLocaleString()}</Label>
-                <Label>Max: PKR 50,000</Label>
-              </div>
-              <input type="range" min="0" max="50000" step="1000" value={minFee}
-                onChange={e => setMinFee(+e.target.value)}
-                style={{ width: "100%", accentColor: T.primary }} />
-            </div>
-            <div>
-              <Label>Explain your fees <span style={{ color: T.textFaint }}>(optional)</span></Label>
-              <Textarea placeholder="" rows={3} value={feeNote} onChange={setFeeNote} />
-            </div>
-          </CardPanel>
-
-          {/* A "Working Schedule" card sat here: days, office hours and a holiday
-              schedule that were never sent. Working hours are set, and enforced,
-              in Appointments. */}
+      </>}>
+      <div className="ob-grid">
+        <div className="ob-fl">
+          <label htmlFor="ob-city">City <span>e.g. Lahore, 54000</span></label>
+          <Pill icon={Ic.pin()} id="ob-city" placeholder="Lahore, 54000" autoComplete="address-level2"
+            value={form.city} onChange={v => set("city", v)} />
+        </div>
+        <div className="ob-fl">
+          <label htmlFor="ob-phone">Office phone <span>Optional</span></label>
+          <Pill prefix="+92" id="ob-phone" type="tel" placeholder="42 1234567" autoComplete="tel-national"
+            value={form.phone} onChange={v => set("phone", v)} />
+        </div>
+        <div className="ob-fl ob-full">
+          <label htmlFor="ob-addr">Office address <span>Optional</span></label>
+          <Pill icon={Ic.pin()} id="ob-addr" placeholder="e.g. 14 Fane Road, near Lahore High Court" autoComplete="street-address"
+            value={form.address} onChange={v => set("address", v)} />
+        </div>
+        <div className="ob-fl ob-full">
+          <div className="ob-lab"><span style={{ color: "var(--ink)", fontWeight: 600 }}>Starting consultation fee</span><span>PKR 0 – 50,000</span></div>
+          <div className="ob-fee" aria-live="polite">PKR {Number(form.minFee).toLocaleString("en-US")}</div>
+          <input className="ob-range" type="range" min="0" max="50000" step="1000" value={form.minFee}
+            aria-label="Starting consultation fee in PKR" onChange={e => set("minFee", +e.target.value)} />
+        </div>
+        <div className="ob-fl ob-full">
+          <label htmlFor="ob-bio">Explain your fees <span>Optional</span></label>
+          <textarea id="ob-bio" className="ob-area" rows={3} placeholder="e.g. First consultation includes a review of your documents."
+            value={form.bio} onChange={e => set("bio", e.target.value)} />
         </div>
       </div>
-
-      {/* Inline nav */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `12px ${CONTENT_PAD}px 16px` }}>
-        <OutlineBtn onClick={onBack}>{Ic.arrow("left", T.textMuted)} Back</OutlineBtn>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <svg width="32" height="32" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="14" fill="none" stroke={T.border} strokeWidth="3" />
-            <circle cx="18" cy="18" r="14" fill="none" stroke={T.primary} strokeWidth="3"
-              strokeDasharray={`${(3 / 4) * 88} 88`} strokeLinecap="round" transform="rotate(-90 18 18)" />
-            <text x="18" y="22" textAnchor="middle" fill={T.text} fontSize="9" fontWeight="700">3/4</text>
-          </svg>
-          {error && <span style={{ fontSize: 12, color: "#e8526a", fontWeight: 600 }}>{error}</span>}
-          <GlowBtn onClick={() => !saving && onNext({ address, city, phone, minFee, bio: feeNote })} style={{ padding: "9px 20px", fontSize: 13, opacity: saving ? 0.6 : 1 }}>
-            {saving ? "Submitting…" : "Submit for Verification"} {Ic.arrow("right")}
-          </GlowBtn>
-        </div>
-      </div>
-    </div>
+    </StepFrame>
   );
 }
 
 // ─── Step 4: Submitted ────────────────────────────────────────────────────────
-function StepSubmitted({ onBack, onComplete }) {
+function StepSubmitted({ live, form, onBack, onComplete }) {
+  // `live` is what the server saved (lawyer_profile.kyc_verified), not a
+  // promise: with LAWYER_AUTO_APPROVE off the account still waits for an admin.
+  const next = live
+    ? [["ok", "Profile saved", "Your name, Bar license number and practice areas."],
+       ["ok", "Listed in the directory", "Clients find you by practice area and city."],
+       ["now", "Set your working hours", "In Appointments, so clients can book a time."]]
+    : [["ok", "Profile saved", "Your name, Bar license number and practice areas."],
+       ["now", "Admin approval", "An admin approves the account."],
+       ["", "You go live", "Clients can find you and request consultations."]];
+  const specs = form.specLabels;
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-      <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: `${CONTENT_PAD}px ${CONTENT_PAD}px 0` }}>
-        {/* Hero */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, paddingBottom: 20, borderBottom: `1px solid ${T.border}` }}>
-          <div style={{
-            width: "100%", height: 170, background: `linear-gradient(135deg, ${T.accent} 0%, #0a1a17 100%)`,
-            borderRadius: T.r.xl, display: "flex", alignItems: "center", justifyContent: "center",
-            position: "relative", overflow: "hidden", boxShadow: `0 0 60px rgba(13,148,136,0.2)`,
-          }}>
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "flex-start", paddingLeft: 28 }}>
-              {[T.primary, T.primaryLight, T.accent].map((c, i) => (
-                <div key={i} style={{ width: 14, height: 60 + i * 12, background: c, borderRadius: 3, marginRight: 4, opacity: .7 + i * .1 }} />
-              ))}
-              <div style={{ width: 36, height: 85, background: T.card, borderRadius: 4, marginRight: 4, border: `1px solid ${T.primary}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 18 }}>⚖️</span>
+    <StepFrame eyebrow="All steps complete" title={live ? "Your profile is live" : "Profile saved"}
+      lead={live ? "Clients can now find you in the lawyer directory." : "An admin approves new lawyer accounts before they are listed."}
+      foot={<>
+        <button type="button" className="ob-ghost" onClick={onBack}>{Ic.back()}Back</button>
+        <div className="r">
+          <button type="button" className="ob-btn" onClick={onComplete}>Go to my workspace {Ic.arrow()}</button>
+        </div>
+      </>}>
+      {/* Two columns (2026-10-19): what happens next, and the public profile as
+          clients will see it, built from what was just saved. */}
+      <div className="ob-done">
+        <section>
+          <div className="ob-sub">What happens next</div>
+          <ol className="ob-next">
+            {next.map(([state, title, text], i) => (
+              <li key={title} className={state}>
+                <span className="i">{state === "ok" ? Ic.check(16) : i + 1}</span>
+                <span><b>{title}</b><small>{text}</small></span>
+                {state === "now" && <span className="tag">Next</span>}
+              </li>
+            ))}
+          </ol>
+        </section>
+        <section>
+          <div className="ob-sub">Your public profile</div>
+          <article className="ob-pv ob-pub">
+            <div className="cover" />
+            <div className="body">
+              <div className="top">
+                <span className="ob-av">{initialsOf(form.name)}</span>
+                <span className={`ob-pend${live ? " ok" : ""}`}>{live ? "Registered lawyer" : "Awaiting approval"}</span>
               </div>
-            </div>
-            <div style={{
-              position: "absolute", right: 72, width: 100, height: 100, borderRadius: "50%",
-              border: `2px solid ${T.primary}`, boxShadow: `0 0 40px ${T.primary}40, inset 0 0 30px ${T.primary}20`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <span style={{ fontSize: 30 }}>⚖️</span>
-            </div>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, fontStyle: "italic", marginBottom: 10 }}>
-              Your Profile is Complete & Submitted
-            </h1>
-            <p style={{ fontSize: 12.5, color: T.textMuted, maxWidth: 560, lineHeight: 1.7, margin: "0 auto" }}>
-              Your complete profile has been securely submitted for verification. Admin review is underway, ensuring the highest level of professional standard. This check typically takes 24–48 hours.
-            </p>
-          </div>
-        </div>
-
-        {/* Status cards */}
-        <div className="rgrid-3" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 12, margin: "16px 0" }}>
-          {[
-            { icon: "📤", title: "Profile Submitted", sub: "Verification pending", iconRight: Ic.check(T.success, 18) },
-            // A "Security Active - AES-256 protected" card used to sit here and
-            // has been REMOVED rather than reworded, because there turned out to
-            // be nothing true and distinct for it to say.
-            //
-            // It sat under "Your complete profile has been securely submitted",
-            // so it was a claim about the WHOLE profile: name, bar number and
-            // specializations are all stored in plaintext, and only the CNIC is
-            // encrypted (Fernet, not the cipher that was named). Naming the
-            // correct cipher would have traded a false claim for a misleading
-            // one.
-            //
-            // A second attempt said "Sent over an encrypted connection", still
-            // broader than the evidence: production config requires an HTTPS
-            // frontend URL, but the application enforces neither TLS nor HSTS
-            // itself, so that is a deployment property this screen cannot
-            // promise. A third attempt restated "Profile Submitted /
-            // Verification pending" -- already the card immediately above.
-            //
-            // Three tries produced nothing this screen actually knows. Two
-            // honest cards beat three where one is filler.
-            { icon: "🚀", title: "Waiting to Launch", sub: "Awaiting Approval", iconRight: null },
-          ].map((card, i) => (
-            <div key={i} style={{ background: T.card, border: `1.5px solid ${T.cardBorder}`, borderRadius: T.r.lg, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 22 }}>{card.icon}</span>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{card.title}</p>
-                <p style={{ fontSize: 11, color: T.textFaint }}>{card.sub}</p>
+              <div>
+                <b>{form.name.trim() || "Your name"}</b>
+                <small>
+                  {form.exp ? `${form.exp} years` : "Experience not set"} · {form.city.trim() || "City not set"}
+                  {form.minFee > 0 ? ` · From PKR ${Number(form.minFee).toLocaleString("en-US")}` : ""}
+                </small>
               </div>
-              {card.iconRight && card.iconRight}
+              {form.license.trim() && <div className="ob-bar">Bar license: <b>{form.license.trim()}</b></div>}
+              <div className="ob-tags">{specs.length ? specs.map(x => <span key={x}>{x}</span>) : <em>No practice areas yet</em>}</div>
             </div>
-          ))}
-        </div>
-
-        {/* Approval progress */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 0 }}>
-          <div style={{ flex: "1 1 280px", minWidth: 0, background: T.card, border: `1.5px solid ${T.cardBorder}`, borderRadius: T.r.lg, padding: "14px 16px" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 10 }}>Approval Status: Reviewing Your Details.</p>
-            <div style={{ background: T.inputBg, borderRadius: 99, height: 7, overflow: "hidden", marginBottom: 7 }}>
-              <div style={{ width: "15%", height: "100%", background: `linear-gradient(90deg, ${T.primary}, ${T.primaryLight})`, borderRadius: 99 }} />
-            </div>
-            <p style={{ fontSize: 11, color: T.textFaint }}>15% Admin verification (Step 1/2) in progress.</p>
-          </div>
-        </div>
-
+          </article>
+        </section>
       </div>
-
-      {/* Inline nav */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `14px ${CONTENT_PAD}px 16px` }}>
-        <OutlineBtn onClick={onBack}>{Ic.arrow("left", T.textMuted)} Back</OutlineBtn>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ textAlign: "right" }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: T.text }}>4/4 Step Complete</p>
-            <p style={{ fontSize: 10, color: T.warning }}>Pending Approval</p>
-          </div>
-          <GlowBtn onClick={onComplete} style={{ padding: "9px 20px", fontSize: 13 }}>Monitor Progress {Ic.arrow("right")}</GlowBtn>
-        </div>
-      </div>
-    </div>
+    </StepFrame>
   );
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export function OnboardingPage({ onComplete }) {
+export function OnboardingPage({ onComplete, t }) {
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [live, setLive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const formRef = useRef({});
+  // One copy of the form for every step, so going Back keeps what was typed
+  // (each step used to hold its own state and reset on return).
+  const [form, setForm] = useState(EMPTY_FORM);
+  const set = (key, v) => setForm(f => ({ ...f, [key]: typeof v === "function" ? v(f[key]) : v }));
 
   const submit = async () => {
     setSaving(true);
     setError(null);
-    const f = formRef.current;
+    const f = form;
+    const specs = f.specLabels.map(s => SPEC_VALUE[s]).filter(Boolean);
     const [r1, r2] = await Promise.all([
       updateMe({
-        full_name: f.name || null,
-        phone: f.phone || null,
+        full_name: f.name.trim() || null,
+        phone: toPkPhone(f.phone),
       }),
       updateLawyerProfile({
-        bar_number: f.license || null,
-        specializations: f.specs?.length ? f.specs : null,
+        bar_number: f.license.trim() || null,
+        specializations: specs.length ? specs : null,
         experience_years: f.exp ? parseInt(f.exp) : null,
         hourly_rate: f.minFee ? parseInt(f.minFee) : null,
-        address: [f.address, f.city].filter(Boolean).join(", ") || null,
-        bio: f.bio || null,
+        address: [f.address.trim(), f.city.trim()].filter(Boolean).join(", ") || null,
+        bio: f.bio.trim() || null,
         availability: true,
       }),
     ]);
@@ -1069,12 +747,12 @@ export function OnboardingPage({ onComplete }) {
       setError(err?.message || "Submission failed — please try again.");
       return;
     }
+    setLive(r2.data?.lawyer_profile?.kyc_verified === true);
     setSubmitted(true);
     setStep(3);
   };
 
-  const next = (data) => {
-    if (data) Object.assign(formRef.current, data);
+  const next = () => {
     if (step === 2) submit();
     else setStep(s => Math.min(s + 1, 3));
   };
@@ -1084,17 +762,19 @@ export function OnboardingPage({ onComplete }) {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: T.bg, fontFamily: "'Segoe UI', system-ui, sans-serif", color: T.text, overflow: "hidden" }}>
-      <Sidebar step={step} submitted={submitted} />
-
-      {/* Main content */}
-      <div style={{ flex: 1, overflow: "hidden", minWidth: 0, display: "flex", flexDirection: "column" }}>
-        {step === 0 && <StepProfessional onNext={next} />}
-        {step === 1 && <StepCredentials onNext={next} onBack={back} name={formRef.current.name} />}
-        {step === 2 && <StepOffice onNext={next} onBack={back} saving={saving} error={error} />}
-        {step === 3 && <StepSubmitted onBack={back} onComplete={onComplete} />}
+    <>
+      <style>{CSS}</style>
+      <div className="aai-ob" data-mode={t?.mode === "light" ? "light" : "dark"}>
+        <div className="ob-left">
+          <StepsCard step={step} submitted={submitted} live={live} />
+          <PreviewCard form={form} step={step} submitted={submitted} live={live} />
+        </div>
+        {step === 0 && <StepProfessional form={form} set={set} onNext={next} />}
+        {step === 1 && <StepCredentials onNext={next} onBack={back} />}
+        {step === 2 && <StepOffice form={form} set={set} onNext={next} onBack={back} saving={saving} error={error} />}
+        {step === 3 && <StepSubmitted live={live} form={form} onBack={back} onComplete={onComplete} />}
       </div>
-    </div>
+    </>
   );
 }
 

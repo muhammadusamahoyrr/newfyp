@@ -1,13 +1,33 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { DARK, LIGHT, useT } from "./theme.js";
 import { clientThemeOnTokens } from "./clientTheme.js";
 import { useLang, useIsMobile } from "@/lib/i18n.jsx";
 import { useCase } from "./CaseContext.jsx";
+import VideoJoin, { useVideoConfigured } from "@/components/shared/VideoJoin.jsx";
+import { PreJoinModal } from "@/components/shared/PreJoin.jsx";
+import ReviewLawyerDialog from "./ReviewLawyerDialog.jsx";
+import HireDialog from "./HireDialog.jsx";
+import { getReviewEligibility } from "@/lib/api.js";
+
+// The hire steps that open on this page (2026-10-20) instead of the Lawyers page.
+const HIRE_HERE = new Set(["none", "requested", "terms_proposed"]);
+// The front of the page is a TO-DO list, not a second history: a finished
+// consultation is shown there only while the CLIENT has a step to take (hire
+// not decided yet, or terms to answer), and only for this long after it.
+const NEXT_STEP_DAYS = 30;
+// The lawyer side's Meeting colour: a meeting on a case already with a lawyer.
+const CASE_MEETING_BLUE = "#5ab3ff";
+const NEXT_STEP_STATES = new Set(["none", "terms_proposed"]);
+const isRecentCompleted = (a, now = Date.now()) => a.status === "completed"
+    && a.scheduled_at && now - new Date(a.scheduled_at).getTime() <= NEXT_STEP_DAYS * 864e5;
 import { confirmedCases, caseStatusLabel } from "@/lib/caseStatus.js";
-import { listCases, getCaseTimeline, listAppointments, cancelAppointment as apiCancelAppointment, getAppointment as apiGetAppointment, rescheduleAppointment as apiRescheduleAppointment, listMessages as apiListMessages, sendMessage as apiSendMessage, listDocuments as apiListDocuments, downloadDocument as apiDownloadDocument, fetchDocumentPreviewUrl, myDocumentsV2, fetchRevisionPreview, downloadDocumentFile, listPayments, startCheckout, mockPay, downloadReceipt, openAppointmentDispute, listAppointmentDisputes, getBookableSlots } from "@/lib/api.js";
+import { listCases, getCaseTimeline, listAppointments, cancelAppointment as apiCancelAppointment, getAppointment as apiGetAppointment, rescheduleAppointment as apiRescheduleAppointment, listMessages as apiListMessages, sendMessage as apiSendMessage, listDocuments as apiListDocuments, downloadDocument as apiDownloadDocument, fetchDocumentPreviewUrl, myDocumentsV2, fetchRevisionPreview, downloadDocumentFile, listPayments, startCheckout, mockPay, downloadReceipt, openAppointmentDispute, listAppointmentDisputes, getBookableSlots, listMeetingProposals, acceptMeetingProposal, declineMeetingProposal, listEngagements, listAppointmentFiles as apiListAppointmentFiles, uploadAppointmentFile as apiUploadAppointmentFile, openAppointmentFile as apiOpenAppointmentFile, deleteAppointmentFile as apiDeleteAppointmentFile, acceptAppointmentSuggestion as apiAcceptAppointmentSuggestion, proposeNewTime as apiProposeNewTime, withdrawNewTime as apiWithdrawNewTime, declineNewTime as apiDeclineNewTime, acceptNewTime as apiAcceptNewTime, getSummaryDraft as apiGetSummaryDraft, readSharedSummary as apiReadSharedSummary, shareSummary as apiShareSummary, revokeSummary as apiRevokeSummary } from "@/lib/api.js";
 import { formatPkt, pktToday, pktDayKey, pktHourMinute, pktSlotToUtcISO, isPktSlotPast } from "@/lib/bookingTime.js";
 import { onNotification } from "@/lib/notificationTarget.js";
+import { AppointmentThread } from "@/components/shared/AppointmentThread.jsx";
+import { useAuth } from "@/context/AuthContext.jsx";
 import { documentStatusView } from "@/lib/documentStatus.js";
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
@@ -123,8 +143,8 @@ const Badge = ({ variant = "primary", children, t, sm }) => {
     );
 };
 
-const Card = ({ children, t, style = {}, onClick }) => (
-    <div onClick={onClick} style={{
+const Card = ({ children, t, style = {}, onClick, ...rest }) => (
+    <div {...rest} onClick={onClick} style={{
         background: t.card, borderRadius: 16, border: `1px solid ${t.border}`,
         boxShadow: t.shadowCard, overflow: "hidden", position: "relative", cursor: onClick ? "pointer" : "default", transition: "all 0.2s", ...style
     }}
@@ -365,7 +385,11 @@ const Sidebar = ({ page, onNavigate, collapsed, onToggle }) => {
 };
 
 // ─── TOP HEADER ───────────────────────────────────────────────────────────────
-const TopHeader = ({ t, onBack, activeCaseId, cases, onCaseSwitch, unreadCount }) => {
+const TopHeader = ({ t, onBack, activeCaseId, cases, onCaseSwitch, unreadCount, onBell = null }) => {
+    // The signed-in client, not a hardcoded "MU" (2026-10-19).
+    // Outside an AuthProvider (a test, a preview) there is no user: fall back.
+    let user = null;
+    try { user = useAuth()?.user || null; } catch { user = null; }
     const { T } = useLang();
     const [caseOpen, setCaseOpen] = useState(false);
     const activeCase = cases.find(c => c.id === activeCaseId) || cases[0];
@@ -437,7 +461,7 @@ const TopHeader = ({ t, onBack, activeCaseId, cases, onCaseSwitch, unreadCount }
 
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ position: "relative" }}>
-                    <button style={{
+                    <button type="button" aria-label="Notifications" title="Notifications" onClick={onBell || undefined} style={{
                         width: 34, height: 34, borderRadius: 8, background: "transparent", border: `1px solid ${t.border}`,
                         display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: t.textMuted, transition: "all 0.15s"
                     }}
@@ -459,7 +483,7 @@ const TopHeader = ({ t, onBack, activeCaseId, cases, onCaseSwitch, unreadCount }
                     width: 34, height: 34, borderRadius: "50%", background: `linear-gradient(135deg,${t.primary},${t.secondary})`,
                     display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800,
                     color: t.mode === "dark" ? "#1A2E35" : "#fff", cursor: "pointer", flexShrink: 0, boxShadow: `0 2px 8px ${t.primaryGlow}`
-                }}>MU</div>
+                }} title={user?.full_name || undefined}>{initialsOf(user?.full_name || "You")}</div>
             </div>
         </div>
     );
@@ -579,7 +603,7 @@ function HearingUpdates({ hearings, caseTitle, court }) {
     );
 }
 
-function PageOverview({ setPage, activeCase, feed, hearings, milestones = [] }) {
+function PageOverview({ setPage, activeCase, feed, hearings, milestones = [], casesState = "ready", onRetryCases = null }) {
     const t = useT();
     const { T } = useLang();
     const uc = urgencyConfig(t);
@@ -591,6 +615,19 @@ function PageOverview({ setPage, activeCase, feed, hearings, milestones = [] }) 
     // removed this was never undefined; on a real account with no cases it is,
     // and dereferencing it threw.
     if (!activeCase) {
+        // A failed or unfinished read is not "you have no cases" (2026-10-19):
+        // it said so on any network hiccup, and a client believed their case
+        // had gone.
+        if (casesState === "loading") return <Card t={t}><div style={{ padding: 24, color: t.textMuted, fontSize: 13.5 }}>Loading your cases…</div></Card>;
+        if (casesState === "error") return (
+            <Card t={t}>
+                <div role="alert" data-cases-error style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
+                    <b style={{ color: t.text }}>Could not load your cases</b>
+                    <span style={{ fontSize: 13, color: t.textMuted }}>Check your connection and try again.</span>
+                    {onRetryCases && <button type="button" onClick={onRetryCases} style={{ ...hubBtn("ghost", t), height: 36 }}>Try again</button>}
+                </div>
+            </Card>
+        );
         return (
             <Card t={t}>
                 <Empty t={t} icon="🗂" title="No cases yet"
@@ -1688,6 +1725,12 @@ const CLIENT_CANCELLABLE = new Set(["pending", "confirmed"]);
 // rather than discovered through a 422: a client who reads it can ring the
 // lawyer instead, and one who does not just meets a refusal they cannot act on.
 const CANCEL_CUTOFF_HOURS = 2;
+// Times a client may ASK for when the lawyer has published no hours and the
+// server does not enforce hours -- the same grid the booking dialog offers.
+const REQUEST_DAY_TIMES = Array.from({ length: 24 }, (_, i) => {
+    const m = 9 * 60 + i * 30;
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${m % 60 ? "30" : "00"}`;
+});
 
 
 // Stored statuses in words. `no_show` in particular must not reach a client as
@@ -1720,6 +1763,124 @@ const CLIENT_RESCHEDULABLE = new Set(["pending"]);
  * may be taken, the cutoff may have passed, the lawyer may have confirmed — so
  * the new time appears only after a successful reload.
  */
+/* The lawyer offered other times for this pending request (2026-10-19). Picking
+ * one moves the request there AND confirms it -- the lawyer already agreed to
+ * every time they offered (services/appointment_suggestions.py). */
+function ApptSuggestion({ appt, t, onReload, first }) {
+    const tint = (col, pct) => `color-mix(in srgb, ${col} ${pct}%, transparent)`;
+    const s = appt.time_suggestion;
+    const [busy, setBusy] = useState(null);
+    const [error, setError] = useState(null);
+    if (appt.status !== "pending" || !s?.options?.length) return null;
+    const pick = async (when) => {
+        if (busy) return;
+        setBusy(when); setError(null);
+        const { data, error: err, status } = await apiAcceptAppointmentSuggestion(appt._id || appt.id, {
+            scheduledAt: when, scheduleVersion: appt.schedule_version ?? 0,
+        });
+        setBusy(null);
+        if (err) {
+            setError(err.message || "Could not book that time.");
+            if ((status === 409 || status === 422) && onReload) await onReload();
+            return;
+        }
+        if (data && data.suggestion_confirmed === false) setError("Moved to that time — it is waiting for your lawyer to confirm.");
+        if (onReload) await onReload();
+    };
+    return (
+        <section aria-label="Suggested times" data-appt-suggestion style={{ padding: "16px 18px", borderRadius: 16, background: tint(t.primary, 8), border: `1px solid ${tint(t.primary, 40)}`, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <span aria-hidden="true" style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 12, display: "grid", placeItems: "center", background: tint(t.primary, 16), color: t.primary }}><DtIcon name="repeat" size={20} /></span>
+                <div>
+                    <b style={{ fontSize: 14.5, color: t.text }}>{first} suggested other times</b>
+                    <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>Pick one and your appointment is confirmed at that time.</div>
+                </div>
+            </div>
+            {s.note && <div style={{ fontSize: 13, color: t.text, fontStyle: "italic", padding: "8px 12px", borderRadius: 10, background: t.inputBg }}>“{s.note}”</div>}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {s.options.map(o => (
+                    <button key={o} type="button" data-suggested-time={o} disabled={Boolean(busy)} onClick={() => pick(o)}
+                        style={{ ...hubBtn("ghost", t), borderColor: tint(t.primary, 55), opacity: busy && busy !== o ? 0.5 : 1 }}>
+                        {busy === o ? "Booking…" : formatPkt(o, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                    </button>
+                ))}
+            </div>
+            <div style={{ fontSize: 12, color: t.textMuted }}>None of these work? Keep your time and wait, change it below, or cancel the request.</div>
+            {error && <div role="alert" style={{ fontSize: 12.5, color: t.danger }}>{error}</div>}
+        </section>
+    );
+}
+
+/* Moving a CONFIRMED appointment by agreement (2026-10-19,
+ * APPOINTMENT_FLOW_PLAN.md). Either side proposes one new time; the other
+ * accepts or declines; the current time stands until it is accepted. */
+function ApptMoveProposal({ appt, t, onReload, first }) {
+    const id = appt._id || appt.id;
+    const p = appt.reschedule_proposal && (!appt.reschedule_proposal.expires_at || new Date(appt.reschedule_proposal.expires_at) > new Date())
+        ? appt.reschedule_proposal : null;
+    const [open, setOpen] = useState(false);
+    const [date, setDate] = useState("");
+    const [time, setTime] = useState("10:00");
+    const [note, setNote] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState(null);
+    const started = new Date(appt.scheduled_at) <= new Date();
+    if (appt.status !== "confirmed" || started) return null;
+    const when = v => formatPkt(v, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+    const run = async (fn, okMsg) => {
+        if (busy) return;
+        setBusy(true); setError(null);
+        const { error: err } = await fn();
+        setBusy(false);
+        if (err) { setError(err.message || "That didn't go through."); if (onReload) await onReload(); return; }
+        setOpen(false); setDate(""); setNote("");
+        if (onReload) await onReload();
+    };
+    const slots = Array.from({ length: 28 }, (_, i) => `${String(8 + Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
+    const field = { height: 40, width: "100%", boxSizing: "border-box", padding: "0 10px", borderRadius: 9, border: "1px solid " + t.border, background: t.inputBg, color: t.text, fontSize: 13, fontFamily: "inherit" };
+    if (p) return (
+        <div data-move-proposal={p.by} style={{ marginTop: 10, padding: "12px 14px", borderRadius: 12, border: `1px solid ${t.primary}55`, background: `${t.primary}12`, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 13, color: t.text, lineHeight: 1.5 }}>
+                <b>{p.by === "client" ? "You proposed" : `${first} proposed`}</b> moving it to <b>{when(p.scheduled_at)}</b>{p.note ? ` — “${p.note}”` : ""}.
+                <div style={{ fontSize: 12, color: t.textMuted }}>The current time stands until it is accepted.</div>
+            </div>
+            {/* Wraps in the narrow side column instead of running past its edge. */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {p.by === "client"
+                    ? <button type="button" data-withdraw-move disabled={busy} onClick={() => run(() => apiWithdrawNewTime(id))} style={{ ...hubBtn("ghost", t), height: 38, flex: "1 1 140px", minWidth: 0, padding: "0 12px" }}>Withdraw</button>
+                    : <>
+                        <button type="button" data-accept-move disabled={busy} onClick={() => run(() => apiAcceptNewTime(id, p.id))} style={{ ...hubBtn("prim", t), height: 38, flex: "1 1 140px", minWidth: 0, padding: "0 12px", background: "var(--brand-solid)", color: "var(--on-brand)" }}>{busy ? "Saving…" : "Accept new time"}</button>
+                        <button type="button" data-decline-move disabled={busy} onClick={() => run(() => apiDeclineNewTime(id))} style={{ ...hubBtn("ghost", t), height: 38, flex: "1 1 140px", minWidth: 0, padding: "0 12px" }}>Keep current time</button>
+                    </>}
+            </div>
+            {error && <div role="alert" style={{ fontSize: 12, color: t.danger }}>{error}</div>}
+        </div>
+    );
+    if (!open) return (
+        <button type="button" data-propose-move onClick={() => setOpen(true)} style={{ ...hubBtn("ghost", t), marginTop: 10, height: 42, width: "100%" }}>Propose a new time</button>
+    );
+    return (
+        <div data-propose-move-form style={{ marginTop: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid " + t.border, background: t.inputBg, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Propose a new time</div>
+            <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>{first} accepts or declines. Until then your appointment stays at its current time.</div>
+            <div style={{ display: "flex", gap: 8 }}>
+                <input type="date" aria-label="New date (PKT)" value={date} min={pktToday()} onChange={e => setDate(e.target.value)} style={field} />
+                <select aria-label="New time (PKT)" value={time} onChange={e => setTime(e.target.value)} style={{ ...field, width: 110 }}>
+                    {slots.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+            </div>
+            <input aria-label="Reason (optional)" value={note} maxLength={300} onChange={e => setNote(e.target.value)} placeholder="Why (optional)" style={field} />
+            {error && <div role="alert" style={{ fontSize: 12, color: t.danger }}>{error}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" onClick={() => { setOpen(false); setError(null); }} style={{ ...hubBtn("ghost", t), height: 38, flex: 1 }}>Cancel</button>
+                <button type="button" data-send-move disabled={busy || !date || isPktSlotPast(date, time)}
+                    onClick={() => run(() => apiProposeNewTime(id, { scheduledAt: pktSlotToUtcISO(date, time), note: note.trim() }))}
+                    style={{ ...hubBtn("prim", t), height: 38, flex: 1, background: "var(--brand-solid)", color: "var(--on-brand)", opacity: !date ? 0.6 : 1 }}>{busy ? "Sending…" : "Send proposal"}</button>
+            </div>
+        </div>
+    );
+}
+
 function RescheduleAppointment({ appt, t, onReload, error, setError }) {
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -1741,7 +1902,18 @@ function RescheduleAppointment({ appt, t, onReload, error, setError }) {
             .then(({ data, error: err }) => {
                 if (off) return;
                 if (err || !data || !Array.isArray(data.days)) { setSlots({ state: "error", times: [] }); return; }
-                if (!data.configured) { setSlots({ state: "unconfigured", times: [] }); return; }
+                if (!data.configured) {
+                    // Only while hours are NOT enforced (`enforced === false`):
+                    // then the lawyer can be asked for any time and confirms or
+                    // declines, exactly as when booking. Enforced, or not said,
+                    // there is no time to offer.
+                    if (data.enforced === false) {
+                        setSlots({ state: "ready", requestable: true, times: REQUEST_DAY_TIMES.filter(x => !isPktSlotPast(date, x)) });
+                    } else {
+                        setSlots({ state: "unconfigured", times: [] });
+                    }
+                    return;
+                }
                 const day = data.days.find(d => d.date === date) || data.days[0];
                 setSlots({ state: "ready", times: (day?.slots || []).map(x => x.local_time).filter(Boolean) });
             })
@@ -1878,6 +2050,7 @@ function RescheduleAppointment({ appt, t, onReload, error, setError }) {
             <div style={{ marginTop: 10 }}>
                 <button
                     type="button"
+                    data-reschedule-start
                     onClick={begin}
                     style={{
                         minHeight: 44, padding: "10px 16px", width: "100%", maxWidth: 280,
@@ -1896,10 +2069,13 @@ function RescheduleAppointment({ appt, t, onReload, error, setError }) {
         );
     }
 
+    // No `flex` here: the field sits in a COLUMN label, where a 150px flex
+    // basis became its HEIGHT -- the date and time boxes stood ~200px tall
+    // (2026-10-19). The label carries the row sizing instead.
     const field = {
-        minHeight: 44, padding: "10px 12px", borderRadius: 9,
+        height: 42, width: "100%", boxSizing: "border-box", padding: "0 12px", borderRadius: 9,
         border: "1px solid " + t.border, background: t.inputBg,
-        color: t.text, fontSize: 13, fontFamily: "inherit", flex: "1 1 150px",
+        color: t.text, fontSize: 13, fontFamily: "inherit",
     };
 
     return (
@@ -1940,11 +2116,14 @@ function RescheduleAppointment({ appt, t, onReload, error, setError }) {
                     </select>
                 </label>
             </div>
+            {slots.state === "ready" && slots.requestable && (
+                <div style={{ marginBottom: 10, fontSize: 12, color: t.textMuted }}>This lawyer has not set their working hours — pick a time that suits you and they will confirm or decline.</div>
+            )}
             {slots.state === "ready" && offered.length === 0 && (
                 <div style={{ marginBottom: 10, fontSize: 12, color: t.textMuted }}>No free times on this day. Try another date.</div>
             )}
             {slots.state === "unconfigured" && (
-                <div style={{ marginBottom: 10, fontSize: 12, color: t.textMuted }}>This lawyer has not set their working hours, so a new time cannot be chosen here. Cancel the request and contact them.</div>
+                <div style={{ marginBottom: 10, fontSize: 12, color: t.textMuted }}>This lawyer has not set their working hours, so a new time cannot be chosen here. You can cancel this request and book again.</div>
             )}
             {slots.state === "error" && (
                 <div role="alert" style={{ marginBottom: 10, fontSize: 12, color: t.danger }}>Could not load this lawyer's free times. Change the date to try again.</div>
@@ -1957,8 +2136,9 @@ function RescheduleAppointment({ appt, t, onReload, error, setError }) {
                     aria-busy={busy}
                     style={{
                         minHeight: 44, padding: "10px 16px", flex: "1 1 160px",
-                        borderRadius: 10, border: "none", background: t.primary,
-                        color: "#08202a", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+                        // The client theme's brand gradient, not a fixed mint (2026-10-19).
+                        borderRadius: 10, border: "none", background: "var(--brand-solid)",
+                        color: "var(--on-brand)", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
                         cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1,
                     }}>
                     {busy ? "Changing…" : "Confirm new time"}
@@ -1997,6 +2177,18 @@ const CANCELLED_BY_LABEL = {
     lawyer: "Your lawyer cancelled this appointment.",
     admin: "This appointment was cancelled by Attorney.AI support.",
 };
+
+// A REQUEST turned down or withdrawn before it was confirmed is not a
+// cancelled appointment. The server records the status a cancellation ended
+// (`cancelled_from`, 2026-10-12); older rows lack it and keep the words above.
+const isDeclinedRequest = a => a.status === "cancelled" && a.cancelled_from === "pending" && a.cancelled_by === "lawyer";
+function cancelledWho(appt) {
+    if (appt.cancelled_from === "pending") {
+        if (appt.cancelled_by === "lawyer") return "Your lawyer declined this request.";
+        if (appt.cancelled_by === "client") return "You withdrew this request.";
+    }
+    return CANCELLED_BY_LABEL[appt.cancelled_by] || null;
+}
 
 // Which appointments a client may report, and which report each one supports.
 //
@@ -2042,6 +2234,191 @@ const MAX_STATEMENT = 2000;
  * network error into a silent success — the client would believe a complaint
  * had been filed that nobody ever received.
  */
+/* A short case summary the client CHOOSES to share (2026-10-19,
+ * APPOINTMENT_FLOW_PLAN.md). Nothing is shared until they press Share; they
+ * see and edit the exact text first, identifiers come pre-hidden, and what the
+ * lawyer gets is that snapshot. Separate from the documents below. */
+function ApptSummaryShare({ appt, t, first }) {
+    const id = appt._id || appt.id;
+    const [state, setState] = useState(null);         // { shared, text, shared_at }
+    const [editing, setEditing] = useState(null);     // text being prepared
+    const [hidden, setHidden] = useState(0);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState(null);
+    const [confirmStop, setConfirmStop] = useState(false);
+    useEffect(() => {
+        let alive = true;
+        apiReadSharedSummary(id).then(({ data }) => { if (alive) setState(data || { shared: false }); });
+        return () => { alive = false; };
+    }, [id]);
+    const prepare = async () => {
+        setBusy(true); setError(null);
+        const { data, error: err } = await apiGetSummaryDraft(id);
+        setBusy(false);
+        if (err) { setError(err.message || "Could not prepare a summary."); return; }
+        setEditing(state?.shared ? state.text : (data?.text || "")); setHidden(state?.shared ? 0 : (data?.hidden || 0));
+    };
+    const share = async () => {
+        if (!editing?.trim()) return;
+        setBusy(true); setError(null);
+        const { data, error: err } = await apiShareSummary(id, editing.trim());
+        setBusy(false);
+        if (err) { setError(err.message || "Could not share the summary."); return; }
+        setState(data); setEditing(null);
+    };
+    const stop = async () => {
+        setBusy(true); setError(null);
+        const { error: err } = await apiRevokeSummary(id);
+        setBusy(false);
+        if (err) { setError(err.message || "Could not stop sharing."); return; }
+        setState({ shared: false }); setConfirmStop(false);
+    };
+    const box = { marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.border}` };
+    const small = { ...hubBtn("ghost", t), height: 34, padding: "0 12px", fontSize: 12.5 };
+    if (state === null) return null;
+    return (
+        <div data-summary-share style={box}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Case summary for {first}</div>
+            {editing !== null ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                    <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.5 }}>
+                        This is exactly what {first} will see. Edit it as you like.{hidden ? ` We hid ${hidden} identifier${hidden === 1 ? "" : "s"} (CNIC, phone or email).` : ""} Check that your home address isn't in it.
+                    </div>
+                    <textarea aria-label="Summary to share" data-summary-text rows={6} maxLength={3000} value={editing} onChange={e => setEditing(e.target.value)}
+                        style={{ padding: 10, borderRadius: 10, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, fontFamily: "inherit", lineHeight: 1.5, resize: "vertical" }} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                        <button type="button" onClick={() => setEditing(null)} disabled={busy} style={small}>Cancel</button>
+                        <button type="button" data-summary-send onClick={share} disabled={busy || !editing.trim()} style={{ ...small, borderColor: t.primary, color: t.primary }}>{busy ? "Sharing…" : `Share with ${first}`}</button>
+                    </div>
+                </div>
+            ) : state.shared ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                    <div style={{ fontSize: 12.5, color: t.primary }}>Shared {state.shared_at ? formatPkt(state.shared_at, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : ""} — {first} can read it.</div>
+                    <div data-summary-shared style={{ fontSize: 13, color: t.text, whiteSpace: "pre-wrap", padding: "10px 12px", borderRadius: 10, background: t.inputBg, border: `1px solid ${t.border}`, maxHeight: 180, overflowY: "auto" }}>{state.text}</div>
+                    {confirmStop ? (
+                        <div role="alert" style={{ fontSize: 12.5, color: t.text, lineHeight: 1.5 }}>
+                            {first} loses access in the app right away. If they have already read it, that copy can't be taken back.
+                            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                                <button type="button" onClick={() => setConfirmStop(false)} style={small}>Keep sharing</button>
+                                <button type="button" data-summary-stop-confirm onClick={stop} disabled={busy} style={{ ...small, color: t.danger }}>{busy ? "Stopping…" : "Stop sharing"}</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ display: "flex", gap: 8 }}>
+                            <button type="button" onClick={prepare} disabled={busy} style={small}>Edit</button>
+                            <button type="button" data-summary-stop onClick={() => setConfirmStop(true)} style={{ ...small, color: t.danger }}>Stop sharing</button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
+                    <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.5 }}>Help {first} prepare: share a short summary of your matter. Nothing is shared until you press Share, and you can stop sharing any time.</div>
+                    <button type="button" data-summary-prepare onClick={prepare} disabled={busy} style={{ ...hubBtn("ghost", t), alignSelf: "flex-start" }}>{busy ? "Preparing…" : "Prepare a summary"}</button>
+                </div>
+            )}
+            {error && <div role="alert" style={{ marginTop: 6, fontSize: 12.5, color: t.danger }}>{error}</div>}
+        </div>
+    );
+}
+
+/* Documents for this appointment (2026-10-19), in place of a "Share a document"
+ * link that only went to /documents. The server decides who sees what: while
+ * the request is pending the lawyer sees only the name and note (a file opens
+ * for them only if the client chose to show it early); once accepted, all of
+ * them; after a decline, cancel or expiry, nothing. */
+function ApptFiles({ appt, t }) {
+    const id = appt._id || appt.id;
+    const editable = appt.status === "pending" || appt.status === "confirmed";
+    const [rows, setRows] = useState(null);
+    const [note, setNote] = useState("");
+    const [early, setEarly] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const [msg, setMsg] = useState(null);          // { kind: "ok" | "err", text }
+    const input = useRef(null);
+
+    const load = useCallback(async () => {
+        const { data, error } = await apiListAppointmentFiles(id);
+        setRows(error ? [] : (data?.items || []));
+    }, [id]);
+    useEffect(() => { load(); }, [load]);
+
+    const pick = async (file) => {
+        if (!file || busy) return;
+        if (file.size > 10 * 1024 * 1024) { setMsg({ kind: "err", text: "The file is larger than 10 MB." }); return; }
+        setBusy(true); setMsg(null);
+        const { error } = await apiUploadAppointmentFile(id, file, { note: note.trim(), shareBeforeAccept: early });
+        setBusy(false);
+        if (error) { setMsg({ kind: "err", text: error.message || "Could not upload the file." }); return; }
+        setNote(""); setEarly(false);
+        setMsg({ kind: "ok", text: appt.status === "pending" && !early
+            ? "File uploaded privately. Lawyer can view it after accepting."
+            : "File uploaded. Your lawyer can view it." });
+        load();
+    };
+    const open = async (row) => {
+        const { data, error } = await apiOpenAppointmentFile(id, row.id);
+        if (error) { setMsg({ kind: "err", text: error }); return; }
+        window.open(data, "_blank", "noopener");
+        setTimeout(() => URL.revokeObjectURL(data), 60000);
+    };
+    const remove = async (row) => {
+        const { error } = await apiDeleteAppointmentFile(id, row.id);
+        if (error) { setMsg({ kind: "err", text: error.message || "Could not remove the file." }); return; }
+        load();
+    };
+
+    const full = (rows?.length || 0) >= 5;
+    const kb = n => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+    return (
+        <div data-appt-files style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.border}` }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Documents for this appointment</div>
+            <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 2, lineHeight: 1.5 }}>
+                PDF, PNG or JPEG, up to 10 MB, at most 5 files. Private: your lawyer sees them only after accepting — unless you choose to show one earlier.
+            </div>
+            {rows?.length > 0 && (
+                <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {rows.map(r => (
+                        <li key={r.id} data-appt-file={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 12, background: t.inputBg, border: `1px solid ${t.border}` }}>
+                            <span style={{ color: t.textMuted, display: "flex" }}><DtIcon name="file" size={17} /></span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
+                                <div style={{ fontSize: 11.5, color: t.textMuted }}>
+                                    {kb(r.size)} · {r.lawyer_can_open ? "Your lawyer can view it" : "Private until your lawyer accepts"}
+                                    {r.note ? ` · “${r.note}”` : ""}
+                                </div>
+                            </div>
+                            <button type="button" className="dt-ghost" onClick={() => open(r)} style={{ ...hubBtn("ghost", t), height: 32, padding: "0 12px", fontSize: 12.5 }}>Open</button>
+                            {editable && <button type="button" className="dt-ghost" aria-label={`Remove ${r.name}`} onClick={() => remove(r)} style={{ ...hubBtn("ghost", t), height: 32, padding: "0 12px", fontSize: 12.5, color: t.danger }}>Remove</button>}
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {editable && !full && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                    <input aria-label="Note for your lawyer (optional)" value={note} maxLength={300} onChange={e => setNote(e.target.value)}
+                        placeholder="Optional note, e.g. the rent agreement we discussed"
+                        style={{ height: 40, padding: "0 12px", borderRadius: 10, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+                    {appt.status === "pending" && (
+                        <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: t.textMuted, cursor: "pointer", lineHeight: 1.45 }}>
+                            <input type="checkbox" checked={early} onChange={e => setEarly(e.target.checked)} style={{ marginTop: 2 }} />
+                            <span>Show this file to the lawyer before they accept
+                                {early && <span style={{ display: "block", color: t.warn || "#E8B04A" }}>They can open it even if they later decline.</span>}
+                            </span>
+                        </label>
+                    )}
+                    <input ref={input} type="file" accept="application/pdf,image/png,image/jpeg" hidden
+                        onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; pick(f); }} />
+                    <button type="button" className="dt-ghost" data-appt-upload disabled={busy} onClick={() => input.current?.click()}
+                        style={{ ...hubBtn("ghost", t), alignSelf: "flex-start", opacity: busy ? 0.6 : 1 }}>
+                        <DtIcon name="file" size={17} /> {busy ? "Uploading…" : "Upload a document"}
+                    </button>
+                </div>
+            )}
+            {msg && <div role={msg.kind === "err" ? "alert" : "status"} style={{ marginTop: 8, fontSize: 12.5, color: msg.kind === "err" ? t.danger : t.primary }}>{msg.text}</div>}
+        </div>
+    );
+}
+
 function ReportIssue({ appt, t }) {
     const category = reportableCategory(appt);
     const [open, setOpen] = useState(false);
@@ -2250,7 +2627,7 @@ function ExpiryDetail({ appt, t }) {
 function CancellationDetail({ appt, t }) {
     if (appt.status !== "cancelled") return null;
 
-    const who = CANCELLED_BY_LABEL[appt.cancelled_by] || null;
+    const who = cancelledWho(appt);
     const reason = (appt.cancel_reason || "").trim();
     if (!who && !reason) return null;
 
@@ -2285,7 +2662,41 @@ function CancellationDetail({ appt, t }) {
  * most obviously when the request is refused, but also when the lawyer
  * cancelled first and the real row says `cancelled_by: "lawyer"`.
  */
-function CancelAppointment({ appt, t, onReload, error, setError }) {
+/* AN APPOINTMENT'S MESSAGES (2026-10-12), one entry for both renderers -- the
+ * Appointments page and Tracking's cards -- so they cannot drift. Whether the
+ * thread can be written is the SERVER's answer, shown by AppointmentThread;
+ * here only: a pending request has no thread yet, anything else opens it. */
+const clientThreadPalette = (t) => ({
+    text: t.text, muted: t.textMuted, faint: t.textFaint, border: t.border, surface: t.card,
+    input: t.inputBg, primary: t.primary, onPrimary: "#06211a", danger: t.danger, mine: `${t.primary}22`,
+});
+function ApptMessages({ appt, t, open, onOpenChange }) {
+    const name = appt.lawyer_name || "your lawyer";
+    const first = String(name).split(" ")[0];
+    if (appt.status === "pending") {
+        return (
+            <div data-thread-pending style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.5 }}>
+                Messages with {first} open once they confirm this request.
+            </div>
+        );
+    }
+    if (!open) {
+        return (
+            <button type="button" data-open-thread onClick={() => onOpenChange(true)}
+                style={{ alignSelf: "flex-start", minHeight: 40, padding: "0 16px", borderRadius: 10, cursor: "pointer",
+                    border: `1px solid ${t.border}`, background: "transparent", color: t.text,
+                    fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>
+                {appt.status === "confirmed" ? `Message ${first}` : "View messages"}
+            </button>
+        );
+    }
+    return (
+        <AppointmentThread appointmentId={appt.id} palette={clientThreadPalette(t)} counterpart={first}
+            title={`Messages with ${name}`} onClose={() => onOpenChange(false)} />
+    );
+}
+
+function CancelAppointment({ appt, t, onReload, error, setError, onMessage = null }) {
     const [confirming, setConfirming] = useState(false);
     const [busy, setBusy] = useState(false);
     // `error` is NOT local state. A reload re-creates the page component, which
@@ -2436,11 +2847,51 @@ function CancelAppointment({ appt, t, onReload, error, setError }) {
         }
     };
 
+    // A CONFIRMED appointment can be cancelled only up to the cutoff before it
+    // starts; the server refuses later. A pending request may be withdrawn at
+    // any time, so it is never blocked here.
+    const tooLate = appt.status === "confirmed" && appt.scheduled_at
+        && Date.now() >= new Date(appt.scheduled_at).getTime() - CANCEL_CUTOFF_HOURS * 3600e3;
+    if (!confirming && tooLate) {
+        return (
+            <div style={{ marginTop: 12 }} data-cancel-closed>
+                <button type="button" disabled
+                    style={{
+                        minHeight: 44, padding: "10px 16px", width: "100%", maxWidth: 280,
+                        borderRadius: 10, cursor: "not-allowed", opacity: 0.55,
+                        border: "1px solid " + t.border, background: "transparent",
+                        color: t.textMuted, fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+                    }}>
+                    Cancel appointment
+                </button>
+                <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>
+                    It can no longer be cancelled: confirmed appointments close for
+                    changes {CANCEL_CUTOFF_HOURS} hours before they start.
+                    {onMessage ? " If you cannot make it, tell your lawyer." : ""}
+                </div>
+                {onMessage && (
+                    <button type="button" data-cutoff-message onClick={onMessage}
+                        style={{ marginTop: 8, minHeight: 40, padding: "0 16px", borderRadius: 10, cursor: "pointer",
+                            border: `1px solid ${t.primary}66`, background: "transparent", color: t.primary,
+                            fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>
+                        Message lawyer
+                    </button>
+                )}
+                {error && (
+                    <div role="alert" style={{ marginTop: 8, fontSize: 12, color: t.danger }}>
+                        {error}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     if (!confirming) {
         return (
             <div style={{ marginTop: 12 }}>
                 <button
                     type="button"
+                    data-cancel-start
                     onClick={() => { setError(appt.id, null); setConfirming(true); }}
                     style={{
                         // 44px min target, full width up to a cap: this is a
@@ -2482,6 +2933,7 @@ function CancelAppointment({ appt, t, onReload, error, setError }) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
                     type="button"
+                    data-cancel-yes
                     onClick={run}
                     disabled={busy}
                     aria-busy={busy}
@@ -2495,6 +2947,7 @@ function CancelAppointment({ appt, t, onReload, error, setError }) {
                 </button>
                 <button
                     type="button"
+                    data-cancel-keep
                     onClick={() => { setConfirming(false); setError(appt.id, null); }}
                     disabled={busy}
                     style={{
@@ -2521,48 +2974,1170 @@ function CancelAppointment({ appt, t, onReload, error, setError }) {
  * link carries the lawyer, their name and THIS consultation, so the form opens
  * with the right consultation already chosen. The server re-checks all three.
  */
-function HireAfterConsultation({ appt, t }) {
-    if (appt.status !== "completed" || !appt.lawyer_id) return null;
+/* ONE HIRE RULE (2026-10-12) for every place a completed consultation is
+ * shown: the Appointments page (hub row and detail) and Tracking's cards.
+ * They were two renderers, and Tracking kept offering "Hire" after a request
+ * had been sent, which the server refuses (one attempt per consultation). */
+function useHireRequests(dep) {
+    const [byAppt, setByAppt] = useState({});
+    useEffect(() => {
+        let off = false;
+        const load = () => Promise.resolve().then(() => listEngagements()).then(res => {
+            if (off || !res || res.error || !Array.isArray(res.data)) return;
+            const map = {};
+            for (const e of res.data) if (e.appointment_id) map[e.appointment_id] = e;
+            setByAppt(map);
+        }).catch(() => {});
+        load();
+        const stop = onNotification((n) => {
+            const ty = String(n.type || "");
+            if (ty.startsWith("engagement_") || ty === "lawyer_assigned") load();
+        });
+        return () => { off = true; stop(); };
+    }, [dep]);
+    return byAppt;
+}
 
-    const href = "/lawyers?hire=" + encodeURIComponent(appt.lawyer_id)
-        + "&hire_name=" + encodeURIComponent(appt.lawyer_name || "")
-        + "&appointment=" + encodeURIComponent(appt.id);
+/** [title, sub, href, cta, kind] for the hire step of a completed consultation. */
+function hireAction(appt, e) {
+    const first = String(appt.lawyer_name || "your lawyer").split(" ")[0];
+    if (!e) return ["Hire " + first + " for a case", "They send their fee and scope; nothing is agreed until you accept.", hireHref(appt), "Request to hire", "prim"];
+    if (e.status === "requested") return ["Hire request sent", `Waiting for ${first} to send their fee and scope. You'll be notified.`, "/lawyers", "View request", "ghost"];
+    if (e.status === "terms_proposed") return [`${first} sent you terms`, `${e.fee_amount != null ? `Fee Rs ${Number(e.fee_amount).toLocaleString()}` : "Their fee and scope"} — accept or decline them.`, "/lawyers", "Review terms", "prim"];
+    if (e.status === "accepted" || e.status === "completed") return [`${first} is your lawyer`, `${e.case_title || "Your case"} — follow it on Tracking.`, "/tracking", "Open case", "prim"];
+    return ["Hire request closed", `It was ${String(e.status).replace(/_/g, " ")}. This consultation was used for it; book a follow-up to ask again.`, lawyerHref(appt, "book"), "Book a follow-up", "ghost"];
+}
+
+function HireAfterConsultation({ appt, t, engagement = null }) {
+    if (appt.status !== "completed" || !appt.lawyer_id) return null;
+    const [title, sub, href, cta] = hireAction(appt, engagement);
+    // The first offer keeps its familiar words; every later state says where it stands.
+    const label = engagement ? `${cta} →` : "Hire this lawyer →";
 
     return (
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 10 }} data-hire-state={engagement?.status || "none"}>
             <a href={href} style={{
                 display: "inline-block", minHeight: 44, lineHeight: "28px",
                 padding: "8px 16px", borderRadius: 9, textDecoration: "none",
                 border: "1px solid " + t.primary + "55", background: t.primary + "12",
                 color: t.primary, fontSize: 12.5, fontWeight: 700,
             }}>
-                Hire this lawyer →
+                {label}
             </a>
             <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 6 }}>
-                Ask {appt.lawyer_name || "this lawyer"} to take one of your cases.
-                You will agree the fee before anything is assigned.
+                {engagement ? `${title}. ${sub}` : <>Ask {appt.lawyer_name || "this lawyer"} to take one of your cases.
+                You will agree the fee before anything is assigned.</>}
             </div>
         </div>
     );
 }
 
 
+
+/* ── APPOINTMENTS, REDESIGNED (2026-10-12) ─────────────────────────────────
+ * One card is the whole appointment: where it stands (a progress strip), what
+ * to do now (join, wait, next step), and the actions that already existed
+ * below it. The same component serves Tracking's tab and the Appointments
+ * page, so there is one list and one set of rules. */
+const APPT_STEPS = ["Requested", "Confirmed", "Meeting", "Next step"];
+
+function apptEnded(appt, now = Date.now()) {
+    return Boolean(appt.end_at && new Date(appt.end_at).getTime() <= now);
+}
+
+/** Which step is current: 1 = waiting for the lawyer, 2 = meeting ahead,
+ * 3 = after the meeting. -1 for an appointment that ended without one. */
+function apptStep(appt) {
+    if (appt.status === "pending") return 1;
+    if (appt.status === "confirmed") return 2;
+    if (appt.status === "completed") return 3;
+    return -1;
+}
+
+function untilWords(iso, now = Date.now()) {
+    const mins = Math.round((new Date(iso).getTime() - now) / 60000);
+    if (!Number.isFinite(mins)) return "";
+    if (mins <= 0) return "now";
+    if (mins < 60) return `in ${mins} min`;
+    if (mins < 1440) return `in ${Math.floor(mins / 60)} h ${mins % 60} min`;
+    const d = Math.floor(mins / 1440);
+    return `in ${d} day${d === 1 ? "" : "s"}`;
+}
+
+/** A calendar file for a confirmed appointment, made in the browser. */
+function downloadIcs(appt) {
+    const stamp = iso => new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const end = appt.end_at || new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString();
+    const esc = v => String(v || "").replace(/[\\,;]/g, m => "\\" + m).replace(/\n/g, "\\n");
+    const lines = [
+        "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//AttorneyAI//Appointments//EN", "BEGIN:VEVENT",
+        `UID:${appt.id}@attorney.ai`, `DTSTAMP:${stamp(new Date().toISOString())}`,
+        `DTSTART:${stamp(appt.scheduled_at)}`, `DTEND:${stamp(end)}`,
+        `SUMMARY:${esc(`Consultation${appt.lawyer_name ? " with " + appt.lawyer_name : ""}`)}`,
+        appt.meeting_link ? `URL:${appt.meeting_link}` : null,
+        `DESCRIPTION:${esc(appt.meeting_link ? `Join: ${appt.meeting_link}` : "AttorneyAI consultation")}`,
+        "END:VEVENT", "END:VCALENDAR",
+    ].filter(Boolean);
+    const url = URL.createObjectURL(new Blob([lines.join("\r\n")], { type: "text/calendar" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = "consultation.ics";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function googleCalendarHref(appt) {
+    const stamp = iso => new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const end = appt.end_at || new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString();
+    const where = appt.meeting_link || appt.lawyer_card?.office_address || "";
+    const q = new URLSearchParams({
+        action: "TEMPLATE",
+        text: `Consultation${appt.lawyer_name ? " with " + appt.lawyer_name : ""}`,
+        dates: `${stamp(appt.scheduled_at)}/${stamp(end)}`,
+        details: appt.meeting_link ? `Join: ${appt.meeting_link}` : "AttorneyAI consultation",
+        ...(where ? { location: where } : {}),
+    });
+    return "https://calendar.google.com/calendar/render?" + q.toString();
+}
+
+function ApptProgress({ appt, t }) {
+    const step = apptStep(appt);
+    if (step < 0) return null;
+    return (
+        <ol aria-label="Progress" data-appt-progress style={{ listStyle: "none", margin: "14px 0 0", padding: 0, display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 8 }}>
+            {APPT_STEPS.map((label, i) => {
+                const done = i < step, now = i === step;
+                return (
+                    <li key={label} aria-current={now ? "step" : undefined} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        <span style={{ height: 4, borderRadius: 3, background: done ? t.primary : now ? t.warn : t.border }} />
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: done ? t.text : now ? t.warn : t.textFaint }}>{done ? "✓ " : ""}{label}</span>
+                    </li>
+                );
+            })}
+        </ol>
+    );
+}
+
+/* Join in-app video (2026-10-20): the client gets the same join screen as the
+ * lawyer -- blurred page, camera check, a big Join -- before the call itself.
+ * "Message" opens this appointment's thread when the page has one. */
+function ClientJoinVideo({ appt, t, onMessage = null }) {
+    const [open, setOpen] = useState(false);
+    const lawyer = appt.lawyer_name || "your lawyer";
+    const first = String(lawyer).split(" ")[0];
+    const start = new Date(appt.scheduled_at);
+    const end = appt.end_at ? new Date(appt.end_at) : new Date(+start + (appt.duration_minutes || 60) * 60000);
+    const now = Date.now();
+    const live = +start <= now && now < +end;
+    return (<>
+        <VideoJoin apptId={appt._id || appt.id} status={appt.status} mode={appt.mode} accent="#13806b" muted={t.textMuted} danger={t.danger}
+            dark={t.mode !== "light"} otherName={first} onPreJoin={() => setOpen(true)} />
+        {open && (
+            <PreJoinModal
+                apt={{ id: appt._id || appt.id, client: lawyer, duration: `${appt.duration_minutes || 60} min`, at: start,
+                       note: appt.notes || null, meetingLink: appt.meeting_link || null,
+                       initials: String(lawyer).split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() }}
+                day={formatPkt(start, { weekday: "short", day: "numeric", month: "short" })}
+                span={`${hhmm(start)}–${hhmm(end)}`}
+                when={live ? "Happening now" : `Starts ${untilWords(appt.scheduled_at)}`} live={live}
+                dark={t.mode !== "light"} onClose={() => setOpen(false)}
+                onMessage={onMessage} />
+        )}
+    </>);
+}
+
+/** What the client does now: the meeting's how and when, or the next step. */
+function ApptNow({ appt, t }) {
+    const video = useVideoConfigured();
+    const box = { marginTop: 12, padding: "12px 14px", borderRadius: 12, background: t.inputBg, border: `1px solid ${t.border}` };
+    const btn = { display: "inline-flex", alignItems: "center", justifyContent: "center", height: 38, padding: "0 14px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", cursor: "pointer", fontFamily: "inherit" };
+    if (appt.status === "pending") {
+        return (
+            <div style={box} data-appt-now="waiting">
+                <div style={{ fontSize: 13, color: t.text, fontWeight: 700 }}>Waiting for {appt.lawyer_name || "the lawyer"} to confirm</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>You'll be notified when they answer. You can change the time or cancel below until then.</div>
+            </div>
+        );
+    }
+    if (appt.status === "confirmed" && !apptEnded(appt)) {
+        const live = appt.meeting_link;
+        return (
+            <div style={{ ...box, borderColor: `${t.primary}55` }} data-appt-now="meeting">
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ flex: "1 1 200px" }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", color: t.textMuted }}>Starts</div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: t.text }}>{untilWords(appt.scheduled_at)}</div>
+                    </div>
+                    {live && (
+                        <a href={appt.meeting_link} target="_blank" rel="noreferrer"
+                            style={{ ...btn, border: "none", color: "#fff", background: "linear-gradient(135deg,#12897f,#1c9c66)" }}>
+                            🔗 Join Meeting →
+                        </a>
+                    )}
+                    <button type="button" onClick={() => downloadIcs(appt)} style={{ ...btn, border: `1px solid ${t.border}`, background: "transparent", color: t.text }}>Add to calendar</button>
+                </div>
+                {!live && appt.mode === "video" && (video ? (
+                    <div style={{ marginTop: 10 }}><ClientJoinVideo appt={appt} t={t} /></div>
+                ) : (
+                    <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted }}>Joining link not shared yet — your lawyer will add it.</div>
+                ))}
+                {appt.mode === "phone" && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted }}>Phone consultation — confirm the number with your lawyer before the time.</div>
+                )}
+                {appt.mode === "in_person" && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted }}>In person — the office address is on your lawyer's profile.</div>
+                )}
+            </div>
+        );
+    }
+    if (appt.status === "confirmed") {
+        return (
+            <div style={box} data-appt-now="ended">
+                <div style={{ fontSize: 13, color: t.text, fontWeight: 700 }}>This consultation has ended</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>Your lawyer marks it complete; then you can hire them, book a follow-up or leave a review.</div>
+            </div>
+        );
+    }
+    if (appt.status === "completed") {
+        return (
+            <div style={box} data-appt-now="next">
+                <div style={{ fontSize: 13, color: t.text, fontWeight: 700 }}>What would you like to do next?</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                    <a href="/documents" style={{ ...btn, border: `1px solid ${t.border}`, color: t.text }}>Get a document reviewed</a>
+                    <a href={lawyerHref(appt, "book")} style={{ ...btn, border: `1px solid ${t.border}`, color: t.text }}>Book a follow-up</a>
+                </div>
+            </div>
+        );
+    }
+    if (appt.status === "cancelled" || appt.status === "expired") {
+        return (
+            <div style={{ marginTop: 10 }}>
+                <a href={lawyerHref(appt, "book")} style={{ fontSize: 12.5, color: t.primary, fontWeight: 700, textDecoration: "none" }}>Book a new time →</a>
+            </div>
+        );
+    }
+    return null;
+}
+
+/* ── THE APPOINTMENTS PAGE (2026-10-12) ─────────────────────────────────────
+ * The sidebar's Appointments page, as designed: a hub of compact rows (one
+ * action each) and, on opening one, its own page. The actions themselves are
+ * the components above -- Reschedule, Cancel, Report, Hire -- so the rules
+ * live in one place. Tracking's tab keeps its expanded cards. */
+// Headings in the Documents module typeface too (2026-10-12), at a heavier weight.
+const HUB_SERIF = "'Nunito Sans', 'Avenir Next', Avenir, system-ui, sans-serif";
+const GRAD = "linear-gradient(135deg,#12897f,#1c9c66)";
+
+function hubChip(appt, t) {
+    const ended = apptEnded(appt);
+    switch (appt.status) {
+        case "pending": return { text: "Waiting for lawyer", bg: `${t.warn}24`, color: t.warn };
+        case "confirmed": return ended
+            ? { text: "Ended · to be closed", bg: t.inputBg, color: t.textMuted }
+            : { text: `✓ Confirmed · ${untilWords(appt.scheduled_at)}`, bg: `${t.primary}24`, color: t.primary };
+        case "completed": return { text: "Completed", bg: t.inputBg, color: t.text };
+        case "cancelled": return { text: isDeclinedRequest(appt) ? "Declined" : "Cancelled", bg: `${t.danger}1f`, color: t.danger };
+        case "expired": return { text: "Expired", bg: t.inputBg, color: t.textMuted };
+        case "no_show": return { text: "No show", bg: t.inputBg, color: t.textMuted };
+        default: return { text: statusWord(appt.status), bg: t.inputBg, color: t.textMuted };
+    }
+}
+
+function dayTag(iso) {
+    const key = pktDayKey(iso);
+    if (key === pktToday()) return "TODAY";
+    if (key === pktDayKey(new Date(Date.now() + 86400000).toISOString())) return "TOMORROW";
+    return String(formatPkt(iso, { weekday: "short", day: "numeric" })).toUpperCase();
+}
+const hhmm = iso => formatPkt(iso, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const MODE_WORDS = { video: "Video call", in_person: "In person", phone: "Phone" };
+const aboutOf = (appt, caseTitles) => appt.case_id ? (caseTitles[appt.case_id] || `Case ${appt.case_id.slice(-8)}`) : "General consultation";
+const needsAction = a => (a.status === "confirmed" && !apptEnded(a)
+    && new Date(a.scheduled_at).getTime() - Date.now() < 24 * 3600000) || a.status === "completed";
+const isUpcomingAppt = a => (a.status === "pending" || a.status === "confirmed") && !apptEnded(a);
+
+function hubBtn(kind, t) {
+    return {
+        height: 40, padding: "0 16px", borderRadius: 12, fontSize: 14, fontWeight: 700, fontFamily: "inherit",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, whiteSpace: "nowrap",
+        cursor: "pointer", textDecoration: "none", boxSizing: "border-box",
+        ...(kind === "prim" ? { border: "none", color: "#fff", background: GRAD }
+            : { border: `1px solid ${t.border}`, background: "transparent", color: t.text }),
+    };
+}
+
+/** That lawyer's page with one action open: "book" or "review". */
+function lawyerHref(appt, action) {
+    return "/lawyers?lawyer=" + encodeURIComponent(appt.lawyer_id || "")
+        + "&lawyer_name=" + encodeURIComponent(appt.lawyer_name || "")
+        + "&action=" + action;
+}
+
+function hireHref(appt) {
+    return "/lawyers?hire=" + encodeURIComponent(appt.lawyer_id || "")
+        + "&hire_name=" + encodeURIComponent(appt.lawyer_name || "")
+        + "&appointment=" + encodeURIComponent(appt.id);
+}
+
+const cardOf = appt => appt.lawyer_card || {};
+const titleCase = x => String(x || "").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+function lawyerLine(appt) {
+    const c = cardOf(appt);
+    const specs = (c.specializations || []).map(titleCase).slice(0, 2).join(", ");
+    const place = c.office_address || (c.province ? (c.province === "kpk" ? "KPK" : titleCase(c.province)) : "");
+    return [specs, place].filter(Boolean).join(" · ");
+}
+function initialsOf(name) {
+    return String(name || "L").split(" ").filter(Boolean).map(w => w[0]).join("").slice(0, 2).toUpperCase();
+}
+const MODE_LONG = { video: "Video consultation", in_person: "In-person consultation", phone: "Phone consultation" };
+const MODE_GLYPH = { video: "▣", in_person: "⌖", phone: "☎" };
+function mapsHref(appt, directions) {
+    const c = cardOf(appt);
+    const q = (c.lat != null && c.lng != null) ? `${c.lat},${c.lng}` : c.office_address;
+    if (!q) return null;
+    return directions
+        ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
+}
+
+/* A small month calendar: days with appointments are ringed (green when
+ * confirmed, gold while waiting); picking one narrows the list to that day. */
+function MiniCalendar({ t, appointments, picked, onPick, bare = false }) {
+    const [month, setMonth] = useState(() => pktToday().slice(0, 7));
+    const [y, m] = month.split("-").map(Number);
+    const first = new Date(Date.UTC(y, m - 1, 1));
+    const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const lead = (first.getUTCDay() + 6) % 7;
+    const byDay = {};
+    for (const a of appointments) {
+        const k = pktDayKey(a.scheduled_at);
+        if (a.status === "confirmed") byDay[k] = "confirmed";
+        else if (a.status === "pending" && byDay[k] !== "confirmed") byDay[k] = "pending";
+        else if (!byDay[k]) byDay[k] = "other";
+    }
+    const today = pktToday();
+    const step = d => { const n = new Date(Date.UTC(y, m - 1 + d, 1)); setMonth(n.toISOString().slice(0, 7)); };
+    const label = first.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+    const navBtn = { width: 28, height: 28, borderRadius: 8, border: `1px solid ${t.border}`, background: "transparent", color: t.text, cursor: "pointer", fontFamily: "inherit" };
+    return (
+        <div data-mini-calendar style={bare ? {} : { padding: 16, borderRadius: 16, background: t.card, border: `1px solid ${t.border}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <b style={{ flex: 1, color: t.text }}>{label}</b>
+                <button type="button" aria-label="Previous month" onClick={() => step(-1)} style={navBtn}>‹</button>
+                <button type="button" aria-label="Next month" onClick={() => step(1)} style={navBtn}>›</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 4, textAlign: "center", fontSize: 11, fontWeight: 800, color: t.textMuted }}>
+                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <span key={i}>{d}</span>)}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 4, marginTop: 4 }}>
+                {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
+                {Array.from({ length: days }, (_, i) => {
+                    const key = `${month}-${String(i + 1).padStart(2, "0")}`;
+                    const kind = byDay[key];
+                    const isToday = key === today, on = picked === key;
+                    const ring = kind === "confirmed" ? t.primary : kind === "pending" ? t.warn : kind ? t.textMuted : null;
+                    return (
+                        <button key={key} type="button" data-cal-day={key} disabled={!kind}
+                            aria-pressed={on} aria-label={`${key}${kind ? " — has appointments" : ""}`}
+                            onClick={() => onPick(on ? null : key)}
+                            style={{ height: 30, borderRadius: "50%", border: "none", fontFamily: "inherit", fontSize: 12.5, fontWeight: isToday || on ? 800 : 600,
+                                cursor: kind ? "pointer" : "default",
+                                background: on ? t.primary : isToday ? `${t.primary}26` : "transparent",
+                                color: on ? "#06211a" : kind ? t.text : t.textMuted,
+                                boxShadow: ring && !on ? `inset 0 0 0 1.5px ${ring}` : "none" }}>{i + 1}</button>
+                    );
+                })}
+            </div>
+            <div style={{ display: "flex", gap: 12, fontSize: 11.5, color: t.textMuted, marginTop: 10 }}>
+                <span><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: t.primary, marginRight: 5 }} />Confirmed</span>
+                <span><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: t.warn, marginRight: 5 }} />Waiting</span>
+            </div>
+        </div>
+    );
+}
+
+/* MEETINGS YOUR LAWYER PROPOSED (2026-10-12). After hiring, the lawyer can
+ * ask to meet: they propose up to three times on the case, and choosing one
+ * here makes it a confirmed appointment. Nothing is booked before that. */
+function MeetingProposals({ t, onChosen }) {
+    const [items, setItems] = useState([]);
+    const [busy, setBusy] = useState(null);
+    const [error, setError] = useState({});
+    const [declining, setDeclining] = useState(null);
+    const [reason, setReason] = useState("");
+    const load = useCallback(() => Promise.resolve().then(() => listMeetingProposals({ status: "open" }))
+        .then(res => { if (res && !res.error && Array.isArray(res.data)) setItems(res.data.filter(p => p.status === "open")); })
+        .catch(() => {}), []);
+    useEffect(() => { load(); }, [load]);
+    useEffect(() => onNotification((n) => {
+        if (String(n.type || "").startsWith("appointment_propos")) load();
+    }), [load]);
+    // Arriving from "Choose a time" (?section=proposals): bring them into view.
+    useEffect(() => {
+        if (!items.length) return;
+        try {
+            if (new URLSearchParams(window.location.search).get("section") !== "proposals") return;
+            document.querySelector("[data-proposals]")?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+        } catch { /* not in a browser */ }
+    }, [items.length]);
+    if (!items.length) return null;
+
+    const choose = async (p, i) => {
+        if (busy) return;
+        setBusy(`${p.id}:${i}`);
+        setError(e => ({ ...e, [p.id]: null }));
+        const { data, error: err } = await acceptMeetingProposal(p.id, i);
+        setBusy(null);
+        if (err) {
+            setError(e => ({ ...e, [p.id]: err.message || "Could not confirm that time. Please choose another." }));
+            load();
+            return;
+        }
+        setItems(list => list.filter(x => x.id !== p.id));
+        onChosen && onChosen(data?.appointment?.id || null);
+    };
+    const decline = async (p) => {
+        if (busy) return;
+        setBusy(`${p.id}:decline`);
+        const { error: err } = await declineMeetingProposal(p.id, reason.trim() || null);
+        setBusy(null);
+        if (err) { setError(e => ({ ...e, [p.id]: err.message || "Could not send that. Please try again." })); return; }
+        setDeclining(null);
+        setReason("");
+        setItems(list => list.filter(x => x.id !== p.id));
+    };
+
+    return (
+        <section aria-label="Meetings your lawyer proposed" data-proposals style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 6 }}>
+            {items.map(p => {
+                const word = MODE_WORDS[p.mode] || p.mode;
+                const mins = p.duration_minutes || 60;
+                return (
+                    <article key={p.id} data-proposal={p.id} style={{ padding: "18px 20px", borderRadius: 18, border: `1px solid ${t.primary}66`,
+                        background: `linear-gradient(120deg, color-mix(in srgb, ${t.primary} 12%, ${t.card}) 0%, ${t.card} 60%)` }}>
+                        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.primary }}>Meeting proposed</div>
+                        <div style={{ font: `800 18px/1.3 ${HUB_SERIF}`, color: t.text, marginTop: 4 }}>
+                            {p.lawyer_name || "Your lawyer"} would like to meet about “{p.case_title || "your case"}”
+                        </div>
+                        <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 4 }}>{p.agenda} · {word} · {mins} minutes</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: t.text, marginTop: 14 }}>Choose a time</div>
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
+                            {p.options.map((iso, i) => {
+                                const passed = p.option_passed?.[i];
+                                return (
+                                    <button key={iso} type="button" data-proposal-option={i} disabled={passed || !!busy}
+                                        onClick={() => choose(p, i)}
+                                        title={passed ? "This time has passed" : undefined}
+                                        style={{ ...hubBtn(passed ? "ghost" : "prim", t), height: 42, padding: "0 16px", opacity: passed ? 0.5 : 1,
+                                            textDecoration: passed ? "line-through" : "none", cursor: passed ? "not-allowed" : busy ? "wait" : "pointer" }}>
+                                        {busy === `${p.id}:${i}` ? "Confirming…"
+                                            : `${formatPkt(iso, { weekday: "short", day: "numeric", month: "short" })} · ${hhmm(iso)}`}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {error[p.id] && <div role="alert" style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: t.danger }}>{error[p.id]}</div>}
+                        {declining === p.id ? (
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 12 }}>
+                                <input aria-label="Message to your lawyer (optional)" value={reason} maxLength={500} onChange={e => setReason(e.target.value)}
+                                    placeholder="Optional: when would suit you instead?"
+                                    style={{ flex: "1 1 260px", height: 40, padding: "0 12px", borderRadius: 10, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13.5, fontFamily: "inherit", outline: "none" }} />
+                                <button type="button" onClick={() => { setDeclining(null); setReason(""); }} style={hubBtn("ghost", t)}>Back</button>
+                                <button type="button" data-proposal-decline onClick={() => decline(p)} disabled={!!busy} style={{ ...hubBtn("ghost", t), color: t.danger, borderColor: `${t.danger}66` }}>Send</button>
+                            </div>
+                        ) : (
+                            <button type="button" onClick={() => setDeclining(p.id)}
+                                style={{ marginTop: 12, border: 0, background: "none", padding: 0, color: t.textMuted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                None of these work for me
+                            </button>
+                        )}
+                    </article>
+                );
+            })}
+        </section>
+    );
+}
+
+function AppointmentsHub(props) {
+    const { appointments, loading, t, refreshError, onReload, onLoadMore, loadingMore, moreError, total, complete,
+        caseTitles = {}, focusId = null } = props;
+    const video = useVideoConfigured();
+    const [openId, setOpenId] = useState(focusId);
+    // A new ?appointment= (another booking, a notification) opens that one.
+    useEffect(() => { if (focusId) setOpenId(focusId); }, [focusId]);
+    const [tab, setTab] = useState("upcoming");
+    const [day, setDay] = useState(null);
+    // "Review" opens the review dialog on this page (2026-10-20); it used to
+    // send the client to the Lawyers page to find the form.
+    const [reviewFor, setReviewFor] = useState(null);
+    // Request to hire / View request / Review terms open HERE (2026-10-20).
+    const [hireFor, setHireFor] = useState(null);
+    const [hireVersion, setHireVersion] = useState(0);
+    // Hire requests by the consultation they follow (2026-10-12): a completed
+    // consultation shows where its request stands instead of offering "Hire"
+    // again, which the server would refuse (one attempt per consultation).
+    const engByAppt = useHireRequests(`${appointments.length}:${hireVersion}`);
+    // Lawyers this client has already reviewed: their front card drops the
+    // Review button. Unknown (not asked yet, or the check failed) keeps it --
+    // the dialog itself then says "already reviewed".
+    const [reviewed, setReviewed] = useState({});
+    const reviewIds = [...new Set(appointments.filter(a => isRecentCompleted(a)).map(a => a.lawyer_id).filter(Boolean))].slice(0, 6);
+    const reviewKey = reviewIds.join(",");
+    useEffect(() => {
+        let off = false;
+        reviewIds.filter(id => !(id in reviewed)).forEach(id => {
+            Promise.resolve().then(() => getReviewEligibility(id)).then(res => {
+                if (off || !res || res.error || !res.data) return;
+                setReviewed(r => ({ ...r, [id]: res.data.already_reviewed === true }));
+            }).catch(() => {});
+        });
+        return () => { off = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reviewKey]);
+    const hireDialog = hireFor && (
+        <HireDialog appt={hireFor} engagement={engByAppt[hireFor.id] || null} t={t}
+            onClose={() => setHireFor(null)} onChanged={() => setHireVersion(v => v + 1)} />
+    );
+    const opened = openId ? appointments.find(a => a.id === openId) : null;
+    if (opened) return (<>
+        <AppointmentDetail {...props} appt={opened} engagement={engByAppt[opened.id] || null}
+            openThread={props.openThreadId === opened.id} onBack={() => setOpenId(null)} onHire={a => setHireFor(a)} />
+        {hireDialog}
+    </>);
+
+    const at = a => new Date(a.scheduled_at).getTime();
+    const upcoming = appointments.filter(isUpcomingAppt).sort((a, b) => at(a) - at(b));
+    const cancelled = appointments.filter(a => a.status === "cancelled").sort((a, b) => at(b) - at(a));
+    const past = appointments.filter(a => !isUpcomingAppt(a) && a.status !== "cancelled").sort((a, b) => at(b) - at(a));
+    const lists = { upcoming, past, cancelled };
+    const shown = (lists[tab] || upcoming).filter(a => !day || pktDayKey(a.scheduled_at) === day);
+    const next = upcoming[0] || null;
+    const pendingCount = upcoming.filter(a => a.status === "pending").length;
+    // A finished consultation's next step, on the page's FRONT (2026-10-20):
+    // it lived only under "Past", so a client never saw "Hire" or "Review"
+    // after the meeting. Shown while the hire is not settled either way.
+    // Only what the client must act on (2026-10-20): hire not yet asked, or
+    // terms to answer. "Hire request sent" waits on the lawyer, so it stays in
+    // Past (its row button opens the request), not here.
+    const nextSteps = past.filter(a => isRecentCompleted(a)
+        && NEXT_STEP_STATES.has(engByAppt[a.id]?.status || "none")).slice(0, 2);
+    const tabBtn = on => ({ height: 36, padding: "0 14px", borderRadius: 999, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", gap: 8,
+        border: `1px solid ${on ? t.primary : t.border}`, background: on ? t.primary : "transparent", color: on ? "#06211a" : t.text });
+
+    return (
+        <div data-appointments-hub style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <header style={{ display: "flex", alignItems: "flex-end", gap: 14, flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 260px" }}>
+                    <h1 style={{ margin: 0, font: `800 30px/1.15 ${HUB_SERIF}`, color: t.text }}>Appointments</h1>
+                    <div style={{ fontSize: 14, color: t.textMuted, marginTop: 4 }}>Manage your consultations, view details and join your meetings.</div>
+                </div>
+                <a href="/lawyers" style={hubBtn("prim", t)}>+ Book a consultation</a>
+            </header>
+
+            {refreshError && (
+                <div role="alert" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${t.warn}55`, background: `${t.warn}12`, fontSize: 13, color: t.text, display: "flex", gap: 10, alignItems: "center" }}>
+                    <span style={{ flex: 1 }}>{refreshError} {appointments.length ? "These may be out of date." : ""}</span>
+                    <button type="button" onClick={() => onReload && onReload()} style={hubBtn("ghost", t)}>Try again</button>
+                </div>
+            )}
+
+            <MeetingProposals t={t} onChosen={async (id) => { if (onReload) await onReload(); if (id) setOpenId(id); }} />
+
+            {hireDialog}
+            {reviewFor && <ReviewLawyerDialog lawyerId={reviewFor.lawyer_id} lawyerName={reviewFor.lawyer_name} t={t} onClose={() => setReviewFor(null)}
+                onDone={() => setReviewed(r => ({ ...r, [reviewFor.lawyer_id]: true }))} />}
+
+            {nextSteps.length > 0 && (
+                <section aria-label="After your consultation" data-next-steps style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {nextSteps.map(appt => {
+                        const e = engByAppt[appt.id] || null;
+                        const [title, sub, href, cta, kind] = hireAction(appt, e);
+                        const first = String(appt.lawyer_name || "your lawyer").split(" ")[0];
+                        return (
+                            <article key={appt.id} data-next-step={appt.id} data-hire-state={e?.status || "none"}
+                                style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", padding: "16px 18px", borderRadius: 16,
+                                    background: t.card, border: `1px solid ${kind === "prim" ? `${t.primary}80` : t.border}` }}>
+                                <span aria-hidden="true" style={{ width: 46, height: 46, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, color: "#fff", background: GRAD, flex: "none" }}>{initialsOf(appt.lawyer_name)}</span>
+                                <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+                                    <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase", color: t.primary }}>
+                                        Consultation completed · {formatPkt(appt.scheduled_at, { weekday: "short", day: "numeric", month: "short" })}
+                                    </div>
+                                    <b style={{ display: "block", fontSize: 16, color: t.text, marginTop: 2 }}>{title}</b>
+                                    <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>{sub}</div>
+                                </div>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                    {HIRE_HERE.has(e?.status || "none")
+                                        ? <button type="button" data-next-hire onClick={() => setHireFor(appt)} style={{ ...hubBtn(kind, t), fontFamily: "inherit" }}>{cta}</button>
+                                        : <a href={href} data-next-hire style={hubBtn(kind, t)}>{cta}</a>}
+                                    {!reviewed[appt.lawyer_id] && <button type="button" data-next-review onClick={() => setReviewFor(appt)} style={{ ...hubBtn("ghost", t), fontFamily: "inherit" }}>Review {first}</button>}
+                                </div>
+                            </article>
+                        );
+                    })}
+                </section>
+            )}
+
+            <nav aria-label="Filter appointments" data-hub-stats style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 14, margin: "14px 0 10px" }}>
+                {[["upcoming", "Upcoming", t.primary, <><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M8 3v4M16 3v4M3.5 10h17" /></>],
+                  ["past", "Past", "#6ADDEB", <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>],
+                  ["cancelled", "Cancelled", t.danger, <><circle cx="12" cy="12" r="8.5" /><path d="m9.2 9.2 5.6 5.6M14.8 9.2l-5.6 5.6" /></>]].map(([k, label, tone, icon]) => {
+                    const on = tab === k;
+                    return (
+                        <button key={k} type="button" aria-pressed={on} data-hub-tab={k} onClick={() => setTab(k)} className="hub-stat"
+                            style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 16, textAlign: "left", cursor: "pointer", fontFamily: "inherit",
+                                border: `1px solid ${on ? `color-mix(in srgb, ${tone} 65%, transparent)` : t.border}`, background: on ? `color-mix(in srgb, ${tone} 11%, ${t.card})` : t.card, color: t.text,
+                                boxShadow: on ? `0 0 0 3px color-mix(in srgb, ${tone} 9%, transparent)` : "none", transition: "border-color .15s, background .15s, transform .15s" }}>
+                            <span aria-hidden="true" style={{ width: 42, height: 42, flexShrink: 0, borderRadius: 12, display: "grid", placeItems: "center", color: tone, background: `color-mix(in srgb, ${tone} ${on ? 30 : 16}%, transparent)` }}>
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
+                            </span>
+                            <span style={{ flex: 1 }}>
+                                <span style={{ display: "block", fontSize: 13, color: t.textMuted, fontWeight: 700 }}>{label}</span>
+                                <span style={{ display: "block", fontSize: 26, fontWeight: 800, lineHeight: 1.1 }}>{lists[k].length}</span>
+                            </span>
+                            <span aria-hidden="true" style={{ color: on ? tone : t.textMuted, fontSize: 18 }}>→</span>
+                        </button>
+                    );
+                })}
+            </nav>
+            {day && <button type="button" onClick={() => setDay(null)} style={{ ...hubBtn("ghost", t), height: 32, alignSelf: "flex-end" }}>Showing {formatPkt(`${day}T12:00:00+05:00`, { weekday: "short", day: "numeric", month: "short" })} · Show all</button>}
+
+            <div style={{ display: "grid", gridTemplateColumns: "290px minmax(0,1fr)", gap: 18, alignItems: "start" }}>
+                <aside data-hub-panel style={{ display: "flex", flexDirection: "column", gap: 12, padding: 14, borderRadius: 22,
+                    border: `1px solid ${t.primary}55`, background: `linear-gradient(180deg, color-mix(in srgb, ${t.primary} 18%, ${t.card}) 0%, ${t.card} 70%)` }}>
+                    <div style={{ padding: 14, borderRadius: 16, background: t.inputBg }}>
+                        <MiniCalendar bare t={t} appointments={appointments} picked={day} onPick={setDay} />
+                    </div>
+                    {[next ? {
+                        key: "next", dot: t.primary, title: "Next appointment",
+                        sub: `${dayTag(next.scheduled_at) === "TODAY" ? "Today" : dayTag(next.scheduled_at) === "TOMORROW" ? "Tomorrow" : formatPkt(next.scheduled_at, { weekday: "short", day: "numeric", month: "short" })} · ${hhmm(next.scheduled_at)} PKT`,
+                        sub2: `${next.lawyer_name || "Your lawyer"} · ${MODE_WORDS[next.mode] || next.mode}`, open: () => setOpenId(next.id), attr: { "data-next-appointment": "" },
+                    } : null,
+                    pendingCount ? {
+                        key: "waiting", dot: t.warn, title: "Waiting for a lawyer",
+                        sub: `${pendingCount} request${pendingCount === 1 ? "" : "s"} not confirmed yet`,
+                        open: () => setOpenId(upcoming.find(a => a.status === "pending").id), attr: {},
+                    } : null].filter(Boolean).map(item => (
+                        <button key={item.key} type="button" onClick={item.open} {...item.attr}
+                            style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, border: `1px solid ${t.border}`, background: t.card, color: t.text, textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}>
+                            <span aria-hidden="true" style={{ width: 10, height: 10, flexShrink: 0, borderRadius: "50%", background: item.dot }} />
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                                <b style={{ display: "block", fontSize: 14 }}>{item.title}</b>
+                                <span style={{ display: "block", fontSize: 12.5, color: t.textMuted }}>{item.sub}</span>
+                                {item.sub2 && <span style={{ display: "block", fontSize: 12.5, color: t.textMuted }}>{item.sub2}</span>}
+                            </span>
+                            <span aria-hidden="true" style={{ color: t.textMuted }}>›</span>
+                        </button>
+                    ))}
+                    {!next && <div style={{ padding: "12px 14px", borderRadius: 14, background: t.card, fontSize: 13, color: t.textMuted }}>Nothing booked yet. <a href="/lawyers" style={{ color: t.primary, fontWeight: 700 }}>Find a lawyer</a></div>}
+                    <div data-prepare-ai style={{ marginTop: 6, padding: "16px 14px 14px", borderRadius: 16, background: `color-mix(in srgb, ${t.primary} 12%, transparent)` }}>
+                        <span aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 12, display: "grid", placeItems: "center", background: GRAD, color: "#fff" }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z" /><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" /></svg>
+                        </span>
+                        <div style={{ fontSize: 17, fontWeight: 800, color: t.text, marginTop: 10, lineHeight: 1.3 }}>Not sure what to ask?</div>
+                        <div style={{ fontSize: 13, color: t.textMuted, marginTop: 4, lineHeight: 1.5 }}>Prepare with AI Chat before you meet: the questions to ask and the documents to bring.</div>
+                        <a href="/chat" style={{ ...hubBtn("prim", t), marginTop: 12, height: 38 }}>Prepare with AI</a>
+                    </div>
+                </aside>
+
+                <section aria-label={tab} data-hub-list style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, padding: 14, borderRadius: 22,
+                    border: `1px solid ${t.border}`, background: `color-mix(in srgb, ${t.card} 55%, ${t.bg})` }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "4px 6px 2px" }}>
+                        <b style={{ fontSize: 16, color: t.text }}>{{ upcoming: "Upcoming appointments", past: "Past appointments", cancelled: "Cancelled appointments" }[tab]}</b>
+                        <span style={{ fontSize: 12.5, color: t.textMuted }}>{shown.length} · {tab === "upcoming" ? "soonest first" : "most recent first"}</span>
+                    </div>
+                    {loading && !appointments.length && <div style={{ fontSize: 13, color: t.textMuted }}>Loading your appointments…</div>}
+                    {!loading && !shown.length && !refreshError && (
+                        <div style={{ padding: "40px 20px", textAlign: "center", borderRadius: 16, background: t.card, border: `1px solid ${t.border}` }}>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: t.text }}>
+                                {day ? "Nothing on this day in this list" : tab === "upcoming" ? "Nothing coming up" : tab === "past" ? "No past appointments yet" : "Nothing cancelled"}
+                            </div>
+                            {tab === "upcoming" && !day && <a href="/lawyers" style={{ ...hubBtn("prim", t), marginTop: 14 }}>Find a lawyer</a>}
+                        </div>
+                    )}
+                    {shown.map(appt => {
+                        const chip = hubChip(appt, t);
+                        const isToday = dayTag(appt.scheduled_at) === "TODAY";
+                        const joinable = appt.status === "confirmed" && !apptEnded(appt) && appt.meeting_link;
+                        // No pasted link, but in-app video is on: Join opens the appointment, where the call starts.
+                        const videoJoinable = !joinable && video && appt.status === "confirmed" && appt.mode === "video" && !apptEnded(appt);
+                        const end = appt.end_at || new Date(at(appt) + (appt.duration_minutes || 60) * 60000).toISOString();
+                        const line = lawyerLine(appt);
+                        return (
+                            <article key={appt.id} data-hub-row={appt.id} data-case-meeting={appt.case_meeting || undefined}
+                                style={{ display: "grid", gridTemplateColumns: "104px 52px minmax(0,1fr) auto", gap: 16, alignItems: "center", padding: "16px 18px", borderRadius: 16,
+                                    background: t.card, border: `1px solid ${isToday && appt.status === "confirmed" ? `${t.primary}80` : t.border}`,
+                                    // A meeting on a case your lawyer is handling (2026-10-20), marked apart from a consultation.
+                                    ...(appt.case_meeting ? { borderLeft: `4px solid ${CASE_MEETING_BLUE}`, paddingLeft: 15 } : {}) }}>
+                                <div>
+                                    {isToday && <span style={{ display: "inline-flex", height: 22, alignItems: "center", padding: "0 8px", borderRadius: 999, background: `${t.primary}24`, color: t.primary, fontSize: 11, fontWeight: 800, marginBottom: 6 }}>Today</span>}
+                                    <div style={{ fontSize: 11, fontWeight: 800, color: t.textMuted }}>{String(formatPkt(appt.scheduled_at, { weekday: "short" })).toUpperCase()}</div>
+                                    <b style={{ fontSize: 19, color: t.text }}>{formatPkt(appt.scheduled_at, { day: "numeric", month: "short" })}</b>
+                                    <div style={{ fontSize: 12.5, color: t.textMuted }}>{hhmm(appt.scheduled_at)} – {hhmm(end)}</div>
+                                </div>
+                                <span aria-hidden="true" style={{ width: 52, height: 52, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, color: "#fff", background: GRAD }}>{initialsOf(appt.lawyer_name)}</span>
+                                <div style={{ minWidth: 0 }}>
+                                    <b style={{ fontSize: 16, color: t.text }}>{appt.lawyer_name || "Your lawyer"}</b>
+                                    {appt.case_meeting && <span data-case-meeting-chip style={{ display: "inline-flex", alignItems: "center", height: 22, padding: "0 9px", marginLeft: 8, borderRadius: 999, fontSize: 11.5, fontWeight: 800, color: CASE_MEETING_BLUE, background: `${CASE_MEETING_BLUE}1f`, border: `1px solid ${CASE_MEETING_BLUE}66`, verticalAlign: "middle" }}>Case meeting{appt.case_number ? ` · ${appt.case_number}` : ""}</span>}
+                                    <div style={{ fontSize: 12.5, color: t.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{line || "Lawyer"} · {aboutOf(appt, caseTitles)}</div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: t.textMuted, marginTop: 6 }}><span style={{ color: t.primary }}>{MODE_GLYPH[appt.mode]}</span>{MODE_LONG[appt.mode] || appt.mode}</div>
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                                    <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 999, fontSize: 12, fontWeight: 800, background: chip.bg, color: chip.color, whiteSpace: "nowrap" }}>{chip.text}</span>
+                                    <div style={{ display: "flex", gap: 6 }}>
+                                        <button type="button" data-open-appt onClick={() => setOpenId(appt.id)} style={hubBtn(joinable || videoJoinable ? "ghost" : appt.status === "completed" ? "ghost" : "prim", t)}>View details</button>
+                                        {joinable && <a href={appt.meeting_link} target="_blank" rel="noreferrer" style={hubBtn("prim", t)}>Join meeting</a>}
+                                        {videoJoinable && <button type="button" data-join-video-card onClick={() => setOpenId(appt.id)} style={hubBtn("prim", t)}>Join video</button>}
+                                        {appt.status === "completed" && !engByAppt[appt.id] && <button type="button" data-row-hire onClick={() => setHireFor(appt)} style={{ ...hubBtn("prim", t), fontFamily: "inherit" }}>Hire</button>}
+                                        {appt.status === "completed" && <button type="button" data-row-review onClick={() => setReviewFor(appt)} style={{ ...hubBtn("ghost", t), fontFamily: "inherit" }}>Review</button>}
+                                        {appt.status === "completed" && engByAppt[appt.id] && (() => {
+                                            const st = engByAppt[appt.id].status;
+                                            const [label, href, kind] = st === "terms_proposed" ? ["Review terms", "/lawyers", "prim"]
+                                                : st === "requested" ? ["Hire requested", "/lawyers", "ghost"]
+                                                : (st === "accepted" || st === "completed") ? ["Open case", "/tracking", "ghost"] : [null];
+                                            if (!label) return null;
+                                            return HIRE_HERE.has(st)
+                                                ? <button type="button" data-hire-state={st} onClick={() => setHireFor(appt)} style={{ ...hubBtn(kind, t), fontFamily: "inherit" }}>{label}</button>
+                                                : <a href={href} data-hire-state={st} style={hubBtn(kind, t)}>{label}</a>;
+                                        })()}
+                                    </div>
+                                </div>
+                            </article>
+                        );
+                    })}
+                    {moreError && <div role="alert" style={{ fontSize: 12.5, color: t.danger }}>{moreError} The appointments already shown are unaffected.</div>}
+                    <div style={{ textAlign: "center" }}>
+                        {!complete && appointments.length > 0 && (
+                            <button type="button" onClick={onLoadMore} disabled={loadingMore} style={hubBtn("ghost", t)}>{loadingMore ? "Loading…" : "Load more appointments"}</button>
+                        )}
+                        {appointments.length > 0 && (
+                            <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8 }}>
+                                {Number.isInteger(total) ? `Showing ${appointments.length} of ${total}` : `Showing ${appointments.length}`}{complete ? " — that is all of them." : ""}
+                            </div>
+                        )}
+                    </div>
+                </section>
+            </div>
+        </div>
+    );
+}
+
+/* Line icons for the appointment page (24-unit grid, stroked). */
+const DT_ICON = {
+    cal: <><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M8 3v4M16 3v4M3.5 10h17" /></>,
+    clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
+    video: <><rect x="3" y="6.5" width="12.5" height="11" rx="2.5" /><path d="m15.5 10.5 5-3v9l-5-3z" /></>,
+    phone: <path d="M6.5 3.5h3l1.6 4.4-2 1.3a11 11 0 0 0 5.7 5.7l1.3-2 4.4 1.6v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z" />,
+    in_person: <><path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.4" /></>,
+    file: <><path d="M7 3h7l5 5v13H7z" /><path d="M14 3v5h5M10 13h6M10 17h4" /></>,
+    link: <><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></>,
+    hourglass: <path d="M7 3.5h10M7 20.5h10M8 3.5c0 4.5 8 5 8 8.5s-8 4-8 8.5M16 3.5c0 4.5-8 5-8 8.5s8 4 8 8.5" />,
+    check: <><circle cx="12" cy="12" r="8.5" /><path d="m8.3 12.2 2.5 2.5 4.9-5" /></>,
+    x: <><circle cx="12" cy="12" r="8.5" /><path d="m9.2 9.2 5.6 5.6M14.8 9.2l-5.6 5.6" /></>,
+    calPlus: <><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M8 3v4M16 3v4M3.5 10h17M12 13v5M9.5 15.5h5" /></>,
+    info: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5M12 8h.01" /></>,
+    hire: <><rect x="3.5" y="7.5" width="17" height="12" rx="2.5" /><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5M3.5 13h17" /></>,
+    star: <path d="m12 4 2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z" />,
+    search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></>,
+    download: <><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" /><path d="M5 19.5h14" /></>,
+    copy: <><rect x="8.5" y="8.5" width="11" height="11" rx="2.5" /><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5" /></>,
+    spark: <><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z" /><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" /></>,
+    repeat: <><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5" /><path d="M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5" /><path d="M4 20v-4.5h4.5" /></>,
+};
+function DtIcon({ name, size = 20 }) {
+    return (
+        <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            {DT_ICON[name]}
+        </svg>
+    );
+}
+const DT_CSS = `
+[data-appointment-detail] .dt-check{transition:background .15s, border-color .15s}
+[data-appointment-detail] .dt-check-input:focus-visible + .dt-check{outline:2px solid var(--dt-accent);outline-offset:2px}
+[data-appointment-detail] .dt-opt{transition:border-color .15s, transform .15s}
+[data-appointment-detail] .dt-opt:hover{border-color:var(--dt-accent);transform:translateY(-2px)}
+[data-appointment-detail] [data-detail-actions] button{max-width:none!important;border-radius:12px!important;transition:background .15s, border-color .15s, filter .15s}
+[data-appointment-detail] [data-cancel-start]{background:color-mix(in srgb, var(--dt-danger) 10%, transparent)!important;border-color:color-mix(in srgb, var(--dt-danger) 35%, transparent)!important}
+[data-appointment-detail] [data-cancel-start]:hover{background:color-mix(in srgb, var(--dt-danger) 18%, transparent)!important;border-color:color-mix(in srgb, var(--dt-danger) 65%, transparent)!important}
+[data-appointment-detail] [data-cancel-yes]:hover:not(:disabled){filter:brightness(.9)}
+[data-appointment-detail] [data-cancel-keep]:hover:not(:disabled){border-color:var(--dt-accent)!important;color:var(--dt-accent)!important}
+[data-appointment-detail] [data-reschedule-start]:hover{border-color:var(--dt-accent)!important;color:var(--dt-accent)!important}
+[data-appointment-detail] .dt-join{transition:background .15s}
+[data-appointment-detail] .dt-join:hover{background:#0f6b5b!important}
+[data-appointment-detail] .dt-gcal{transition:background .15s, border-color .15s}
+[data-appointment-detail] .dt-gcal.solid:hover{background:#1765cc!important}
+[data-appointment-detail] .dt-gcal.line:hover{background:rgba(138,180,248,.10)!important;border-color:#8ab4f8!important}
+[data-appointment-detail] .dt-ghost:hover{border-color:var(--dt-accent)!important;color:var(--dt-accent)!important}
+`;
+
+function AppointmentDetail({ appt, t, onBack, onReload, cancelErrors, setCancelError, caseTitles = {}, engagement = null, openThread = false, onHire = null }) {
+    const [reviewOpen, setReviewOpen] = useState(false);
+    const video = useVideoConfigured();
+    // The thread opens from "Message lawyer", the cutoff note or a message notification.
+    const [threadOpen, setThreadOpen] = useState(Boolean(openThread));
+    useEffect(() => { if (openThread) setThreadOpen(true); }, [openThread]);
+    const openMessages = () => {
+        setThreadOpen(true);
+        setTimeout(() => {
+            try { document.querySelector("[data-detail-messages]")?.scrollIntoView?.({ block: "center", behavior: "smooth" }); } catch { /* not in a browser */ }
+        }, 50);
+    };
+    const [ready, setReady] = useState({});
+    const [copied, setCopied] = useState(null);
+    const chip = hubChip(appt, t);
+    const c = cardOf(appt);
+    const name = appt.lawyer_name || "your lawyer";
+    const first = String(name).split(" ")[0];
+    const live = appt.status === "pending" || (appt.status === "confirmed" && !apptEnded(appt));
+    const upcomingConfirmed = appt.status === "confirmed" && !apptEnded(appt);
+    const box = { borderRadius: 18, background: t.card, border: `1px solid ${t.border}` };
+    const endIso = appt.end_at || new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString();
+    const err = (cancelErrors || {})[appt.id] || null;
+    const specs = (c.specializations || []).map(titleCase).slice(0, 2).join(", ");
+    const lastItem = { video: "Test your camera and microphone", phone: "Be somewhere quiet with your documents in hand", in_person: "Bring the related documents and your CNIC" }[appt.mode] || "Keep the related documents ready";
+    const checks = [["dates", "Write down the key dates (notices, hearings)"], ["questions", "List the questions you want answered"], ["last", lastItem]];
+    const doneCount = Object.values(ready).filter(Boolean).length + (appt.notes ? 1 : 0);
+    const totalChecks = checks.length + (appt.notes ? 1 : 0);
+    const copy = async (what, text) => { if (await copyText(text)) { setCopied(what); setTimeout(() => setCopied(null), 1600); } };
+    // One colour per state, carried by the header, the panels and the timeline.
+    const tone = appt.status === "pending" ? t.warn
+        : appt.status === "cancelled" ? t.danger
+        : upcomingConfirmed || appt.status === "completed" ? t.primary : t.textMuted;
+    const tint = (col, pct) => `color-mix(in srgb, ${col} ${pct}%, transparent)`;
+    // A plain line icon, no tile behind it: the tinted box read as decoration.
+    const iconTile = (icon, col, size = 44) => (
+        <span aria-hidden="true" style={{ display: "flex", flexShrink: 0, color: col }}>
+            <DtIcon name={icon} size={Math.round(size * 0.55)} />
+        </span>
+    );
+    const sectionTitle = (text, extra) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h2 style={{ margin: 0, flex: 1, font: `800 17px/1.3 ${HUB_SERIF}`, color: t.text }}>{text}</h2>{extra}
+        </div>
+    );
+    const rel = dayTag(appt.scheduled_at);
+    const hiddenInput = { position: "absolute", left: 0, top: "50%", width: 1, height: 1, margin: 0, opacity: 0 };
+    const tick = on => (
+        <span aria-hidden="true" className="dt-check" style={{ width: 22, height: 22, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", boxSizing: "border-box",
+            border: on ? "none" : `1.8px solid ${t.textFaint}`, background: on ? t.primary : "transparent", color: "#06211a" }}>
+            {on && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>}
+        </span>
+    );
+    const timeline = [
+        ["Request sent", appt.created_at ? formatPkt(appt.created_at, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) : null, "done"],
+        ...(appt.status === "cancelled" ? [[isDeclinedRequest(appt) ? "Declined" : "Cancelled", cancelledWho(appt), "end"]]
+            : appt.status === "expired" ? [["Expired — not answered in time", null, "end"]]
+            : [
+                [appt.status === "pending" ? "Pending confirmation" : `Confirmed by ${first}`, appt.status === "pending" ? `${first} answers soon` : null, appt.status === "pending" ? "now" : "done"],
+                // Each accepted move, and an open proposal (2026-10-19).
+                ...(appt.reschedule_history || []).map((h, i) => [
+                    i === 0 ? "Time changed" : `Time changed (${i + 1})`,
+                    `${formatPkt(h.from, { day: "numeric", month: "short" })} ${hhmm(h.from)} → ${formatPkt(h.to, { day: "numeric", month: "short" })} ${hhmm(h.to)} · proposed by ${h.proposed_by === "client" ? "you" : first}`,
+                    "done"]),
+                ...(appt.status === "confirmed" && appt.reschedule_proposal && (!appt.reschedule_proposal.expires_at || new Date(appt.reschedule_proposal.expires_at) > new Date())
+                    ? [["New time proposed", `${formatPkt(appt.reschedule_proposal.scheduled_at, { weekday: "short", day: "numeric", month: "short" })} · ${hhmm(appt.reschedule_proposal.scheduled_at)} — ${appt.reschedule_proposal.by === "client" ? `waiting for ${first}` : "waiting for you"}`, "now"]]
+                    : []),
+                ["Meeting", formatPkt(appt.scheduled_at, { weekday: "short", day: "numeric", month: "short" }) + " · " + hhmm(appt.scheduled_at),
+                    appt.status === "completed" || appt.status === "no_show" ? "done" : appt.status === "confirmed" ? "now" : "next"],
+                [appt.status === "no_show" ? "Recorded as a no-show" : "Summary & next step", null, appt.status === "completed" ? "now" : appt.status === "no_show" ? "end" : "next"],
+            ]),
+    ];
+    const dot = state => state === "done" ? { background: t.primary } : state === "now" ? { border: `2.5px solid ${t.warn}`, background: t.card }
+        : state === "end" ? { background: t.danger } : { border: `1.5px solid ${t.border}`, background: t.card };
+    const panelHead = (icon, title, sub, col, right) => (
+        <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+            {iconTile(icon, col)}
+            <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+                <div style={{ font: `800 16.5px/1.3 ${HUB_SERIF}`, color: t.text }}>{title}</div>
+                <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 2 }}>{sub}</div>
+            </div>
+            {right}
+        </div>
+    );
+    // A value the client may need to copy (the link, the number), shown as a field.
+    const field = (icon, label, value, copyKey, extra) => (
+        <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 10px 10px 14px", borderRadius: 14, background: t.inputBg, border: `1px solid ${t.border}` }}>
+            <span style={{ color: t.textMuted, display: "flex" }}><DtIcon name={icon} size={18} /></span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase", color: t.textFaint }}>{label}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
+            </div>
+            {extra}
+            <button type="button" className="dt-ghost" onClick={() => copy(copyKey, value)} style={{ ...hubBtn("ghost", t), height: 36 }}><DtIcon name="copy" size={16} />{copied === copyKey ? "Copied" : "Copy"}</button>
+        </div>
+    );
+    const meta = [
+        ["cal", "Date", formatPkt(appt.scheduled_at, { weekday: "short", day: "numeric", month: "short", year: "numeric" }),
+            rel === "TODAY" ? "Today" : rel === "TOMORROW" ? "Tomorrow" : null],
+        ["clock", "Time", `${hhmm(appt.scheduled_at)} – ${hhmm(endIso)} PKT`, `${appt.duration_minutes || 60} minutes`],
+        [appt.mode in DT_ICON ? appt.mode : "video", "How", MODE_LONG[appt.mode] || appt.mode,
+            { video: video && !appt.meeting_link ? "Online, in the app" : "Online, by a video link", phone: `${first} calls you`, in_person: "At the lawyer's office" }[appt.mode] || null],
+        ["file", "About", aboutOf(appt, caseTitles), appt.case_id ? "Linked case" : "Not tied to a case"],
+    ];
+
+    return (
+        <div data-appointment-detail={appt.id} style={{ display: "flex", flexDirection: "column", gap: 16, "--dt-hover": tint(t.text, 4), "--dt-accent": t.primary, "--dt-danger": t.danger }}>
+            <style>{DT_CSS}</style>
+            <button type="button" data-back-to-hub onClick={onBack} style={{ alignSelf: "flex-start", border: "none", background: "transparent", padding: 0, color: t.primary, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>← Back to appointments</button>
+
+            {/* Who, and when: the state's colour washes the header. */}
+            <section data-detail-head style={{ ...box, overflow: "hidden", borderColor: `color-mix(in srgb, ${tone} 35%, ${t.border})`,
+                background: `linear-gradient(120deg, color-mix(in srgb, ${tone} 14%, ${t.card}) 0%, ${t.card} 55%)` }}>
+                <div style={{ display: "flex", gap: 18, alignItems: "center", padding: "22px 24px" }}>
+                    <span aria-hidden="true" style={{ width: 68, height: 68, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 21, color: "#fff", background: GRAD,
+                        boxShadow: `0 0 0 4px ${t.card}, 0 0 0 6px ${tint(tone, 45)}` }}>{initialsOf(appt.lawyer_name)}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h1 style={{ margin: 0, font: `800 25px/1.2 ${HUB_SERIF}`, color: t.text }}>{appt.lawyer_name || "Your lawyer"}</h1>
+                        <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 3 }}>{["Lawyer", specs, c.experience_years ? `${c.experience_years} years experience` : null].filter(Boolean).join(" · ")}</div>
+                        {c.total_reviews > 0 && <div style={{ fontSize: 13, marginTop: 4, color: t.text, display: "flex", alignItems: "center", gap: 5 }}><span style={{ color: "#F2C35E" }}>★</span> <b>{Number(c.rating).toFixed(1)}</b> <span style={{ color: t.textMuted }}>({c.total_reviews} reviews)</span></div>}
+                    </div>
+                    <span style={{ height: 34, display: "inline-flex", alignItems: "center", padding: "0 15px", borderRadius: 999, background: chip.bg, color: chip.color, fontSize: 13, fontWeight: 800, whiteSpace: "nowrap", border: `1px solid ${tint(chip.color, 30)}` }}>{chip.text}</span>
+                </div>
+                <div data-detail-meta style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", borderTop: `1px solid ${t.border}`, background: tint(t.bg, 35) }}>
+                    {meta.map(([icon, label, value, sub], i) => (
+                        <div key={label} style={{ display: "flex", gap: 12, alignItems: "center", padding: "14px 20px", minWidth: 0, borderLeft: i ? `1px solid ${t.border}` : "none" }}>
+                            {iconTile(icon, i === 2 ? tone : t.textMuted, 36)}
+                            <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", color: t.textFaint }}>{label}</div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
+                                {sub && <div style={{ fontSize: 12, color: t.textMuted }}>{sub}</div>}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 16, alignItems: "start" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+                    {appt.status === "pending" && !appt.time_suggestion?.options?.length && (
+                        <div role="note" data-waiting-note style={{ display: "flex", gap: 14, alignItems: "center", padding: "14px 18px", borderRadius: 16, background: tint(t.warn, 9), border: `1px solid ${tint(t.warn, 38)}` }}>
+                            {iconTile("hourglass", t.warn, 40)}
+                            <div>
+                                <b style={{ fontSize: 14.5, color: t.text }}>Waiting for {first} to confirm</b>
+                                <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>You'll be notified once they answer{appt.mode === "in_person" ? " — please don't travel until it's confirmed" : ""}.</div>
+                            </div>
+                        </div>
+                    )}
+
+                    <ApptSuggestion appt={appt} t={t} onReload={onReload} first={first} />
+
+                    {/* How the meeting happens, by mode */}
+                    {live && appt.mode === "video" && (
+                        <section aria-label="Join" data-mode-panel="video" style={{ ...box, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16, borderColor: upcomingConfirmed ? tint(t.primary, 45) : t.border }}>
+                            {panelHead("video", upcomingConfirmed ? `Video consultation · starts ${untilWords(appt.scheduled_at)}` : "Video consultation",
+                                upcomingConfirmed ? (appt.meeting_link ? "Your meeting link is ready. Join at the scheduled time." : video ? "Join the video call right here in the app — it opens a day before the start." : "Joining link not shared yet — your lawyer will add it.")
+                                    : "The joining link appears here once the lawyer confirms.", t.primary,
+                                upcomingConfirmed && appt.meeting_link ? <a href={appt.meeting_link} target="_blank" rel="noreferrer" className="dt-join" style={{ ...hubBtn("prim", t), height: 44, minWidth: 180, padding: "0 22px", borderRadius: 999, background: "#13806b" }}><DtIcon name="video" size={19} />Join meeting</a> : null)}
+                            {upcomingConfirmed && appt.meeting_link && (<>
+                                {field("link", "Meeting link", appt.meeting_link.replace(/^https:\/\//, ""), "link")}
+                                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12.5, color: t.textFaint }}><DtIcon name="info" size={15} /> You can join a few minutes before the meeting time.</div>
+                            </>)}
+                            {/* In-app video; renders nothing unless it is set up. */}
+                            {upcomingConfirmed && <ClientJoinVideo appt={appt} t={t} onMessage={openMessages} />}
+                        </section>
+                    )}
+                    {live && appt.mode === "phone" && (
+                        <section aria-label="Phone" data-mode-panel="phone" style={{ ...box, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16, borderColor: upcomingConfirmed ? tint("#6ADDEB", 40) : t.border }}>
+                            {panelHead("phone", upcomingConfirmed ? `Phone consultation · starts ${untilWords(appt.scheduled_at)}` : "Phone consultation",
+                                upcomingConfirmed ? `${first} will call you at the scheduled time. Keep your phone free.` : "The lawyer's number appears here once they confirm.", "#6ADDEB")}
+                            {upcomingConfirmed && (c.phone ? (<>
+                                {field("phone", "Lawyer's number", c.phone, "phone",
+                                    <a href={`tel:${c.phone.replace(/[^\d+]/g, "")}`} style={{ ...hubBtn("prim", t), height: 36 }}>Call</a>)}
+                                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12.5, color: t.textFaint }}><DtIcon name="info" size={15} /> Shown only for a confirmed phone consultation.</div>
+                            </>) : <div style={{ fontSize: 13, color: t.textMuted }}>Confirm the number with your lawyer before the time.</div>)}
+                        </section>
+                    )}
+                    {live && appt.mode === "in_person" && (
+                        <section aria-label="Meeting location" data-mode-panel="in_person" style={{ ...box, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16, borderColor: upcomingConfirmed ? tint(t.primary, 45) : t.border }}>
+                            {panelHead("in_person", "Meeting location", c.office_address ? "Lawyer's office" : "Ask your lawyer for the office address.", t.primary,
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    {mapsHref(appt, false) && <a href={mapsHref(appt, false)} target="_blank" rel="noreferrer" className="dt-ghost" style={hubBtn("ghost", t)}>View on map</a>}
+                                    {mapsHref(appt, true) && <a href={mapsHref(appt, true)} target="_blank" rel="noreferrer" style={hubBtn("prim", t)}>Directions</a>}
+                                </div>)}
+                            {c.office_address && (
+                                <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 14, background: t.inputBg, border: `1px solid ${t.border}` }}>
+                                    <span style={{ color: t.primary, display: "flex" }}><DtIcon name="in_person" size={18} /></span>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase", color: t.textFaint }}>Address</div>
+                                        <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>{c.office_address}</div>
+                                    </div>
+                                </div>
+                            )}
+                        </section>
+                    )}
+                    <section aria-label="Messages" data-detail-messages style={{ ...box, padding: "18px 20px", display: "flex", flexDirection: "column" }}>
+                        <ApptMessages appt={appt} t={t} open={threadOpen} onOpenChange={setThreadOpen} />
+                    </section>
+                    {appt.status === "confirmed" && apptEnded(appt) && (
+                        <section aria-label="Ended" style={{ ...box, padding: "20px 22px" }}>
+                            {panelHead("clock", "This consultation has ended", `${first} marks it complete; then you can hire them, book a follow-up or leave a review.`, t.textMuted)}
+                        </section>
+                    )}
+                    {appt.status === "completed" && (
+                        <section aria-label="Next step" style={{ ...box, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
+                            {panelHead("check", "Consultation completed", `You met ${first} on ${formatPkt(appt.scheduled_at, { weekday: "short", day: "numeric", month: "short" })}. Here is what you can do next.`, t.primary)}
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>
+                                {[(() => {
+                                    // Where the hire request from THIS consultation stands (one rule: hireAction).
+                                    const [title, sub, href, cta, kind] = hireAction(appt, engagement);
+                                    return ["hire", title, sub, href, kind, cta];
+                                })(),
+                                  ["file", "Get a document reviewed", "Send one draft for a quick review.", "/documents", "ghost", "Choose a document"],
+                                  ["repeat", "Book a follow-up", "Same lawyer — pick a new time.", lawyerHref(appt, "book"), "ghost", "Pick a time"],
+                                  ["star", "Rate this consultation", "Helps other clients choose.", lawyerHref(appt, "review"), "ghost", "Write a review"]].map(([icon, title, sub, href, kind, cta]) => (
+                                    <div key={title} className="dt-opt" style={{ padding: 16, borderRadius: 16, background: t.inputBg, border: `1px solid ${kind === "prim" ? tint(t.primary, 50) : t.border}`, display: "flex", flexDirection: "column", gap: 10 }}>
+                                        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                                            {iconTile(icon, kind === "prim" ? t.primary : t.textMuted, 38)}
+                                            <b style={{ fontSize: 15, color: t.text }}>{title}</b>
+                                        </div>
+                                        <div style={{ fontSize: 12.5, color: t.textMuted, flex: 1, lineHeight: 1.5 }}>{sub}</div>
+                                        {icon === "star"
+                                            ? <button type="button" data-detail-review className="dt-ghost" onClick={() => setReviewOpen(true)} style={{ ...hubBtn(kind, t), fontFamily: "inherit" }}>{cta}</button>
+                                            : icon === "hire" && onHire && HIRE_HERE.has(engagement?.status || "none")
+                                            ? <button type="button" data-detail-hire className={kind === "prim" ? undefined : "dt-ghost"} onClick={() => onHire(appt)} style={{ ...hubBtn(kind, t), fontFamily: "inherit" }}>{cta}</button>
+                                            : <a href={href} className={kind === "prim" ? undefined : "dt-ghost"} style={hubBtn(kind, t)}>{cta}</a>}
+                                    </div>
+                                ))}
+                                {reviewOpen && <ReviewLawyerDialog lawyerId={appt.lawyer_id} lawyerName={appt.lawyer_name} t={t} onClose={() => setReviewOpen(false)} />}
+                            </div>
+                        </section>
+                    )}
+                    {(appt.status === "cancelled" || appt.status === "expired" || appt.status === "no_show") && (
+                        <section aria-label="Closed" style={{ ...box, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 4 }}>
+                            {panelHead(appt.status === "expired" ? "hourglass" : "x",
+                                appt.status === "cancelled" ? (appt.outcome_code === "lawyer_no_show" ? "Your lawyer couldn't attend" : appt.outcome_code === "did_not_take_place" ? "This appointment didn't take place" : isDeclinedRequest(appt) ? "Your request was declined" : "This appointment was cancelled") : appt.status === "expired" ? "This request expired" : "Recorded as a no-show",
+                                appt.status === "no_show" ? "The meeting did not take place." : (appt.status === "expired" ? "The lawyer did not answer before the time." : "It will not take place at this time."), tone)}
+                            <CancellationDetail appt={appt} t={t} />
+                            <ExpiryDetail appt={appt} t={t} />
+                            <div style={{ font: `800 15px/1.3 ${HUB_SERIF}`, color: t.text, marginTop: 16 }}>What you can do now</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 12, marginTop: 8 }}>
+                                {[["repeat", "Book a new time", `Pick another time with ${first}.`, lawyerHref(appt, "book"), "prim", "Book a new time"],
+                                  ["search", "Try another lawyer", "Compare lawyers by practice area, city and fee.", "/lawyers", "ghost", "Browse lawyers"],
+                                  ["spark", "Ask AI meanwhile", "Get a first view of your issue while you rebook.", "/chat", "ghost", "Open AI Chat"]].map(([icon, title, sub, href, kind, cta]) => (
+                                    <div key={title} className="dt-opt" style={{ padding: 16, borderRadius: 16, background: t.inputBg, border: `1px solid ${kind === "prim" ? tint(t.primary, 50) : t.border}`, display: "flex", flexDirection: "column", gap: 10 }}>
+                                        {iconTile(icon, kind === "prim" ? t.primary : t.textMuted, 38)}
+                                        <b style={{ fontSize: 14.5, color: t.text }}>{title}</b>
+                                        <div style={{ fontSize: 12.5, color: t.textMuted, flex: 1, lineHeight: 1.5 }}>{sub}</div>
+                                        {icon === "star"
+                                            ? <button type="button" data-detail-review className="dt-ghost" onClick={() => setReviewOpen(true)} style={{ ...hubBtn(kind, t), fontFamily: "inherit" }}>{cta}</button>
+                                            : icon === "hire" && onHire && HIRE_HERE.has(engagement?.status || "none")
+                                            ? <button type="button" data-detail-hire className={kind === "prim" ? undefined : "dt-ghost"} onClick={() => onHire(appt)} style={{ ...hubBtn(kind, t), fontFamily: "inherit" }}>{cta}</button>
+                                            : <a href={href} className={kind === "prim" ? undefined : "dt-ghost"} style={hubBtn(kind, t)}>{cta}</a>}
+                                    </div>
+                                ))}
+                                {reviewOpen && <ReviewLawyerDialog lawyerId={appt.lawyer_id} lawyerName={appt.lawyer_name} t={t} onClose={() => setReviewOpen(false)} />}
+                            </div>
+                        </section>
+                    )}
+
+                    {live && (
+                        <section aria-label="Preparation checklist" style={{ ...box, padding: "20px 22px" }}>
+                            {sectionTitle("Preparation checklist",
+                                <span style={{ fontSize: 12.5, fontWeight: 700, color: doneCount === totalChecks ? t.primary : t.textMuted }}>{doneCount} of {totalChecks} completed</span>)}
+                            <div style={{ height: 6, borderRadius: 99, background: tint(t.text, 10), margin: "12px 0 8px", overflow: "hidden" }}>
+                                <div style={{ width: `${Math.round(doneCount / totalChecks * 100)}%`, height: "100%", borderRadius: 99, background: GRAD, transition: "width .2s" }} />
+                            </div>
+                            {appt.notes && <label style={{ position: "relative", display: "flex", gap: 12, alignItems: "center", padding: "11px 0", fontSize: 14, color: t.text }}><input type="checkbox" checked readOnly className="dt-check-input" style={hiddenInput} />{tick(true)} {appt.from_proposal ? `Agenda from ${first}` : "Your note"}: “{appt.notes}”</label>}
+                            {checks.map(([k, text]) => (
+                                <label key={k} style={{ position: "relative", display: "flex", gap: 12, alignItems: "center", padding: "11px 0", fontSize: 14, color: ready[k] ? t.textMuted : t.text, cursor: "pointer" }}>
+                                    <input type="checkbox" checked={!!ready[k]} onChange={e => setReady(r => ({ ...r, [k]: e.target.checked }))} className="dt-check-input" style={hiddenInput} />{tick(!!ready[k])} {text}
+                                </label>
+                            ))}
+                            <ApptSummaryShare appt={appt} t={t} first={first} />
+                            <ApptFiles appt={appt} t={t} />
+                        </section>
+                    )}
+                    <ReportIssue appt={appt} t={t} />
+                </div>
+
+                <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {live && (
+                        <section aria-label="Manage appointment" data-detail-manage style={{ ...box, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 4 }}>
+                            {sectionTitle("Manage appointment")}
+                            {upcomingConfirmed && (
+                                <div data-add-calendar style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted }}>Add to calendar <span style={{ fontWeight: 600, color: t.textFaint }}>(optional)</span></div>
+                                    <a href={googleCalendarHref(appt)} target="_blank" rel="noreferrer" data-google-calendar className="dt-gcal solid"
+                                        style={{ ...hubBtn("prim", t), width: "100%", height: 44, background: "#1a73e8" }}>
+                                        <DtIcon name="calPlus" size={18} /> Google Calendar
+                                    </a>
+                                    {/* Outlook / Apple Calendar users still need the file, but it
+                                        does not need a second big button. */}
+                                    <button type="button" data-ics onClick={() => downloadIcs(appt)}
+                                        style={{ alignSelf: "center", background: "none", border: "none", padding: "2px 4px", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 600, color: t.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                        <DtIcon name="download" size={14} /> Outlook / Apple Calendar (.ics)
+                                    </button>
+                                </div>
+                            )}
+                            <div data-detail-actions style={{ display: "flex", flexDirection: "column" }}>
+                                <RescheduleAppointment appt={appt} t={t} onReload={onReload} error={err} setError={setCancelError} />
+                                <ApptMoveProposal appt={appt} t={t} onReload={onReload} first={first} />
+                                <CancelAppointment appt={appt} t={t} onReload={onReload} error={err} setError={setCancelError} onMessage={openMessages} />
+                            </div>
+                            <div style={{ display: "flex", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.border}`, fontSize: 12.5, color: t.textMuted, lineHeight: 1.5 }}>
+                                <span style={{ color: t.primary, display: "flex", marginTop: 1 }}><DtIcon name="info" size={16} /></span>
+                                <div><b style={{ color: t.text }}>Need to make a change?</b><br />{appt.status === "pending"
+                                    ? "You can change the time or cancel while it's waiting."
+                                    : `Propose a new time and your lawyer accepts or declines — or cancel up to ${CANCEL_CUTOFF_HOURS} hours before.`}</div>
+                            </div>
+                        </section>
+                    )}
+                    <section aria-label="Appointment timeline" style={{ ...box, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                        {sectionTitle("Appointment timeline")}
+                        <div>
+                            {timeline.map(([title, sub, state], i) => (
+                                <div key={title} style={{ display: "flex", gap: 14, fontSize: 13.5 }}>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                                        <i aria-hidden="true" style={{ width: 14, height: 14, borderRadius: "50%", marginTop: 3, boxSizing: "border-box", ...dot(state) }} />
+                                        {i < timeline.length - 1 && <span aria-hidden="true" style={{ flex: 1, width: 2, minHeight: 18, margin: "4px 0", borderRadius: 2, background: state === "done" ? tint(t.primary, 55) : t.border }} />}
+                                    </div>
+                                    <div style={{ paddingBottom: i < timeline.length - 1 ? 16 : 0 }}>
+                                        <b style={{ color: state === "now" ? t.warn : state === "next" ? t.textMuted : state === "end" ? t.danger : t.text }}>{title}</b>
+                                        {sub && <div style={{ color: t.textMuted, fontSize: 12.5, marginTop: 2 }}>{sub}</div>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </div>
+    );
+}
+
 function PageAppointments({ appointments, loading, t, onReload, cancelErrors, setCancelError, refreshError,
-                            onLoadMore, loadingMore, moreError, total, complete }) {
+                            onLoadMore, loadingMore, moreError, total, complete, caseTitles = {}, standalone = false, focusId = null }) {
     const { T } = useLang();
+    // Hire requests by consultation, so a completed card shows where its request stands.
+    const hireRequests = useHireRequests(appointments.length);
+    // The one card whose message thread is open.
+    const [threadFor, setThreadFor] = useState(null);
     const statusStyle = {
-        pending: { bg: `${t.warn}18`, color: t.warn, label: "⏳ Pending Confirmation" },
-        confirmed: { bg: `${t.primary}18`, color: t.primary, label: "✅ Confirmed" },
-        cancelled: { bg: "rgba(255,107,122,0.12)", color: t.danger, label: "❌ Cancelled" },
-        completed: { bg: `${t.info}14`, color: t.info, label: "🏁 Completed" },
-        no_show: { bg: t.cardHi, color: t.textMuted, label: "👻 No Show" },
+        pending: { bg: `${t.warn}18`, color: t.warn, label: "Pending Confirmation" },
+        confirmed: { bg: `${t.primary}18`, color: t.primary, label: "Confirmed" },
+        cancelled: { bg: "rgba(255,107,122,0.12)", color: t.danger, label: "Cancelled" },
+        completed: { bg: `${t.info}14`, color: t.info, label: "Completed" },
+        no_show: { bg: t.cardHi, color: t.textMuted, label: "No Show" },
         // A request that was never answered and has stopped holding its slot.
         // Its own entry because it is its own outcome — and because without
         // one the fallback below would have shown it as still pending, which
         // is the one thing it definitely is not.
-        expired: { bg: t.cardHi, color: t.textMuted, label: "⌛ Expired" },
+        expired: { bg: t.cardHi, color: t.textMuted, label: "Expired" },
     };
-    const modeIcon = { video: "📹", in_person: "🏛", phone: "📞" };
+    const modeWords = { video: "Video call", in_person: "In person", phone: "Phone" };
+    // Upcoming first, then everything that is over -- each in the server's order.
+    const isUpcoming = a => (a.status === "pending" || a.status === "confirmed") && !apptEnded(a);
+    const upcoming = appointments.filter(isUpcoming);
+    const past = appointments.filter(a => !isUpcoming(a));
+    // Opened from a link to one appointment (after booking): bring it into view.
+    useEffect(() => {
+        if (!focusId) return;
+        const el = typeof document !== "undefined" && document.querySelector(`[data-appt="${CSS.escape(focusId)}"]`);
+        if (el && el.scrollIntoView) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, [focusId, appointments.length]);
 
     // The spinner is for the FIRST read only. Re-reads (after a cancel, a
     // reschedule, a live notification) used to swap the whole list for it,
@@ -2604,12 +4179,19 @@ function PageAppointments({ appointments, loading, t, onReload, cancelErrors, se
             <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: t.text, marginBottom: 8 }}>{T("No appointments yet", "ابھی کوئی ملاقات نہیں")}</div>
             <div style={{ fontSize: 13, color: t.textMuted }}>Book a consultation with a lawyer to get started.</div>
+            <a href="/lawyers" style={{ display: "inline-flex", marginTop: 16, height: 42, alignItems: "center", padding: "0 18px", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none", background: "linear-gradient(135deg,#12897f,#1c9c66)" }}>Find a lawyer</a>
         </div>
     );
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: t.text, marginBottom: 4 }}>{T("Your Appointments", "آپ کی ملاقاتیں")}</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, flexWrap: "wrap", marginBottom: 4 }}>
+                <div style={{ flex: "1 1 240px" }}>
+                    <div style={{ fontSize: standalone ? 26 : 20, fontWeight: 800, color: t.text }}>{T("Your Appointments", "آپ کی ملاقاتیں")}</div>
+                    <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>Every consultation, what it needs from you, and what comes next.</div>
+                </div>
+                <a href="/lawyers" style={{ display: "inline-flex", height: 40, alignItems: "center", padding: "0 16px", borderRadius: 12, color: "#fff", fontSize: 13.5, fontWeight: 700, textDecoration: "none", background: "linear-gradient(135deg,#12897f,#1c9c66)" }}>+ Book a consultation</a>
+            </div>
             {refreshError && (
                 // Rows are still shown — they are the last thing the server
                 // actually said — but they are labelled as possibly out of
@@ -2635,7 +4217,10 @@ function PageAppointments({ appointments, loading, t, onReload, cancelErrors, se
             {loading && (
                 <div aria-live="polite" style={{ fontSize: 12, color: t.textMuted }}>Refreshing…</div>
             )}
-            {appointments.map(appt => {
+            {[["Upcoming", upcoming], ["Past & closed", past]].filter(([, list]) => list.length).map(([heading, list]) => (
+            <section key={heading} aria-label={heading} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted, marginTop: 6 }}>{heading}</div>
+            {list.map(appt => {
                 // NOT `|| statusStyle.pending`. Defaulting an unrecognised
                 // status to "Pending Confirmation" told the client their
                 // request was still live when it was not — including, before
@@ -2650,75 +4235,56 @@ function PageAppointments({ appointments, loading, t, onReload, cancelErrors, se
                 const dateStr = formatPkt(appt.scheduled_at, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
                 const timeStr = formatPkt(appt.scheduled_at, { hour: "2-digit", minute: "2-digit" });
                 return (
-                    <Card key={appt.id} t={t} style={{ padding: 0 }}>
+                    <Card key={appt.id} t={t} style={{ padding: 0, ...(focusId === appt.id ? { boxShadow: `0 0 0 2px ${t.primary}` } : {}) }} data-appt={appt.id}>
                         {/* Status strip */}
                         <div style={{ height: 4, borderRadius: "16px 16px 0 0", background: s.color, opacity: 0.7 }} />
                         <div style={{ padding: "16px 20px" }}>
-                            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
-                                <div>
-                                    <div style={{ fontSize: 15, fontWeight: 700, color: t.text }}>
-                                        {modeIcon[appt.mode] || "📅"} Consultation{appt.lawyer_name ? ` — ${appt.lawyer_name}` : ""}
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
+                                <div aria-hidden="true" style={{ width: 64, height: 64, flexShrink: 0, borderRadius: 14, background: t.inputBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                                    <span style={{ fontSize: 10.5, fontWeight: 800, color: t.textMuted, textTransform: "uppercase" }}>{formatPkt(appt.scheduled_at, { weekday: "short", day: "numeric" })}</span>
+                                    <b style={{ fontSize: 17, color: t.text }}>{formatPkt(appt.scheduled_at, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })}</b>
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 15.5, fontWeight: 800, color: t.text }}>
+                                        Consultation{appt.lawyer_name ? ` — ${appt.lawyer_name}` : ""}
                                     </div>
-                                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>{dateStr} · {timeStr}</div>
+                                    <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 3 }}>{dateStr} · {timeStr} PKT</div>
+                                    <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 2 }}>
+                                        {[modeWords[appt.mode] || appt.mode, appt.duration_minutes ? `${appt.duration_minutes} min` : null,
+                                          appt.case_id ? (caseTitles[appt.case_id] || `Case ${appt.case_id.slice(-8)}`) : "General consultation"].filter(Boolean).join(" · ")}
+                                    </div>
                                 </div>
                                 <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: s.bg, color: s.color, whiteSpace: "nowrap", flexShrink: 0 }}>
                                     {s.label}
                                 </span>
                             </div>
-                            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                                {appt.duration_minutes && (
-                                    <div style={{ fontSize: 12, color: t.textMuted }}>
-                                        <span style={{ fontWeight: 600, color: t.textDim }}>Duration</span> · {appt.duration_minutes} min
-                                    </div>
-                                )}
-                                {appt.mode && (
-                                    <div style={{ fontSize: 12, color: t.textMuted }}>
-                                        <span style={{ fontWeight: 600, color: t.textDim }}>Mode</span> · {appt.mode.replace("_", " ")}
-                                    </div>
-                                )}
-                                {appt.case_id && (
-                                    <div style={{ fontSize: 12, color: t.textMuted }}>
-                                        <span style={{ fontWeight: 600, color: t.textDim }}>Case</span> · {appt.case_id.slice(-8)}
-                                    </div>
-                                )}
-                            </div>
+                            <ApptProgress appt={appt} t={t} />
+                            <ApptNow appt={appt} t={t} />
                             {appt.notes && (
                                 <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: t.inputBg, border: `1px solid ${t.border}`, fontSize: 12, color: t.textMuted, fontStyle: "italic" }}>
                                     "{appt.notes}"
                                 </div>
                             )}
-                            <HireAfterConsultation appt={appt} t={t} />
+                            <HireAfterConsultation appt={appt} t={t} engagement={hireRequests[appt.id] || null} />
                             <CancellationDetail appt={appt} t={t} />
                             <ExpiryDetail appt={appt} t={t} />
                             <ReportIssue appt={appt} t={t} />
-                            {/* Only a confirmed consultation that has not ended can be joined.
-                                The link used to stay on cancelled, expired, no-show and finished
-                                ones, sending the client into an empty room. */}
-                            {appt.meeting_link && appt.status === "confirmed" && !(appt.end_at && new Date(appt.end_at).getTime() <= Date.now()) ? (
-                                <div style={{ marginTop: 10 }}>
-                                    <a href={appt.meeting_link} target="_blank" rel="noreferrer"
-                                        style={{ fontSize: 12, color: t.primary, fontWeight: 700, textDecoration: "none" }}>
-                                        🔗 Join Meeting →
-                                    </a>
-                                </div>
-                            ) : appt.mode === "video" && CLIENT_CANCELLABLE.has(appt.status) ? (
-                                // A VIDEO APPOINTMENT WITH NO LINK IS NOT JOINABLE, and silence
-                                // reads as "the link is somewhere else". Said plainly instead, so
-                                // the client knows to expect one rather than hunting for it.
-                                <div style={{ marginTop: 10, fontSize: 12, color: t.textMuted }}>
-                                    Joining link not shared yet — your lawyer will add it.
-                                </div>
-                            ) : null}
                             <RescheduleAppointment appt={appt} t={t} onReload={onReload}
                                 error={(cancelErrors || {})[appt.id] || null}
                                 setError={setCancelError} />
                             <CancelAppointment appt={appt} t={t} onReload={onReload}
                                 error={(cancelErrors || {})[appt.id] || null}
-                                setError={setCancelError} />
+                                setError={setCancelError} onMessage={() => setThreadFor(appt.id)} />
+                            <div data-card-messages style={{ marginTop: 12, display: "flex", flexDirection: "column" }}>
+                                <ApptMessages appt={appt} t={t} open={threadFor === appt.id}
+                                    onOpenChange={o => setThreadFor(o ? appt.id : null)} />
+                            </div>
                         </div>
                     </Card>
                 );
             })}
+            </section>
+            ))}
 
             {/* LATER-PAGE FAILURE. The appointments above were read
                 successfully and stay exactly where they are — a client
@@ -2763,20 +4329,37 @@ function PageAppointments({ appointments, loading, t, onReload, cancelErrors, se
     );
 }
 
+// The sidebar page gets the hub; Tracking's tab keeps its cards.
+const AppointmentsPage = ({ standalone, ...props }) => standalone ? <AppointmentsHub {...props} /> : <PageAppointments {...props} />;
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 // Fix #2: accepts isDark from Dashboard — no longer owns its own theme state.
 // Fix #5: reads appointmentMilestones from CaseContext so booked appointments
 //         appear on the timeline immediately.
-export default function Module7({ isDark }) {
+export default function Module7({ isDark, standalone = null }) {
     const t = clientThemeOnTokens(isDark ? DARK : LIGHT);
     const isMobile = useIsMobile();
     const { notifications, markNotificationDone, markAllNotificationsDone, appointmentMilestones } = useCase();
-    const [page, setPage] = useState("overview");
+    const [page, setPage] = useState(standalone || "overview");
+    // Opened on one appointment (?appointment=<id>, after booking). Read
+    // through the router: after router.push from the booking dialog,
+    // window.location still holds the previous URL during the first render,
+    // so reading only that missed the id and left the client on the hub.
+    // window.location stays as the fallback for a direct page load.
+    const searchParams = useSearchParams();
+    const focusAppt = searchParams?.get("appointment") || (() => {
+        try { return new URLSearchParams(window.location.search).get("appointment"); } catch { return null; }
+    })();
+    const threadParam = searchParams?.get("thread") || (() => {
+        try { return new URLSearchParams(window.location.search).get("thread"); } catch { return null; }
+    })();
+    const openThreadId = threadParam === "open" ? focusAppt : null;
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     // Icon-only inner nav on phones
     useEffect(() => { if (isMobile) setSidebarCollapsed(true); }, [isMobile]);
     const [activeCaseId, setActiveCaseId] = useState(null);
     const [apiCases, setApiCases] = useState([]);
+    const [casesState, setCasesState] = useState("loading");   // loading | ready | error
     const [apiMilestones, setApiMilestones] = useState([]);
     const [apiHearings, setApiHearings] = useState([]);
     const [apiAppointments, setApiAppointments] = useState([]);
@@ -2804,9 +4387,12 @@ export default function Module7({ isDark }) {
         setCancelErrors(prev => ({ ...prev, [id]: message }));
     }, []);
 
-    // Load cases from API on mount
-    useEffect(() => {
-        listCases({ page_size: 20 }).then(({ data }) => {
+    // Load cases from API on mount (and again from "Try again").
+    const loadCases = useCallback(() => {
+        setCasesState("loading");
+        return listCases({ page_size: 20 }).then(({ data, error }) => {
+            if (error) { setCasesState("error"); return; }
+            setCasesState("ready");
             // Drafts are filtered out BEFORE mapping. `mapApiCase` stamps a
             // "Filed" date from `created_at`, and a draft has not been filed
             // anywhere — it has not even been confirmed. Worse, cases arrive
@@ -2821,6 +4407,7 @@ export default function Module7({ isDark }) {
             }
         });
     }, []);
+    useEffect(() => { loadCases(); }, [loadCases]);
 
     // One loader, reused.
     //
@@ -2985,12 +4572,14 @@ export default function Module7({ isDark }) {
     const unreadCount = feed.filter(f => !f.done).length;
 
     const pages = {
-        overview: (props) => <PageOverview      {...props} activeCase={activeCase} feed={feed} hearings={apiHearings} milestones={allMilestones} />,
-        appointments: (props) => <PageAppointments  {...props} appointments={apiAppointments} loading={apptLoading} onReload={reloadAppointments} cancelErrors={cancelErrors} setCancelError={setCancelError}
+        overview: (props) => <PageOverview      {...props} activeCase={activeCase} feed={feed} hearings={apiHearings} milestones={allMilestones} casesState={casesState} onRetryCases={loadCases} />,
+        appointments: (props) => <AppointmentsPage standalone={Boolean(standalone)} {...props} appointments={apiAppointments} loading={apptLoading} onReload={reloadAppointments} cancelErrors={cancelErrors} setCancelError={setCancelError}
             refreshError={apptRefreshError}
             onLoadMore={loadMoreAppointments} loadingMore={apptLoadingMore}
             moreError={apptMoreError} total={apptTotal}
-            complete={apptPages !== null && apptPage >= apptPages} />,
+            complete={apptPages !== null && apptPage >= apptPages}
+            caseTitles={Object.fromEntries(displayCases.map(c => [c.id, c.title]))}
+            standalone={Boolean(standalone)} focusId={focusAppt} openThreadId={openThreadId} />,
         timeline: (props) => <PageTimeline      {...props} milestones={allMilestones} hearings={apiHearings} />,
         documents: (props) => <PageDocuments     {...props} activeCaseId={activeCaseId} />,
         payments: (props) => <PagePayments      {...props} />,
@@ -3027,16 +4616,26 @@ export default function Module7({ isDark }) {
         }
         select option{background:${t.card};}
       `}</style>
+            {standalone ? (
+            <div className="tracking-root" data-appointments-page data-lenis-prevent style={{ position: "absolute", inset: 0, background: t.bg, fontFamily: "'Nunito Sans', 'Avenir Next', Avenir, system-ui, sans-serif", color: t.text, overflowY: "auto", scrollbarWidth: "none" }}>
+                <style>{`[data-appointments-page]::-webkit-scrollbar{display:none}[data-appointments-page] .hub-stat:hover{transform:translateY(-2px)}`}</style>
+                <div style={{ maxWidth: 1240, margin: "0 auto", padding: isMobile ? 12 : "28px 32px" }}>
+                    {renderPage({ setPage, t })}
+                </div>
+            </div>
+            ) : (
             <div className="tracking-root" style={{ display: "flex", position: "absolute", inset: 0, background: t.bg, fontFamily: "'Inter',sans-serif", color: t.text, overflow: "hidden" }}>
                 <Sidebar page={page} onNavigate={setPage} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(p => !p)} t={t} />
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                     <TopHeader t={t} onBack={() => setPage("overview")}
-                        activeCaseId={activeCaseId} cases={displayCases} onCaseSwitch={setActiveCaseId} unreadCount={unreadCount} />
+                        activeCaseId={activeCaseId} cases={displayCases} onCaseSwitch={setActiveCaseId} unreadCount={unreadCount}
+                        onBell={() => setPage("notifications")} />
                     <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? 12 : 24 }}>
                         {renderPage({ setPage, t })}
                     </div>
                 </div>
             </div>
+            )}
         </>
     );
 }

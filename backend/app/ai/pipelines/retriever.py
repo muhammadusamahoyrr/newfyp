@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 from typing import List
 
@@ -16,6 +17,8 @@ from nltk.tokenize import word_tokenize
 # became a filter term that matched nothing.
 from app.ai.jurisdiction import is_known as province_is_known
 from app.db.chroma import get_chroma
+
+logger = logging.getLogger(__name__)
 
 
 try:
@@ -149,9 +152,46 @@ class _FilteredBM25Retriever(BaseRetriever):
         return kept[:self.k]
 
 
-def build_retriever(case_type: str, province: str):
+# criminal: lettered sections relabelled, CrPC schedule rows de-sectioned
+# (section-split-v2); civil: CPC Order/Rule and Limitation Schedule/Article
+# identities (scripts/build_ident_index.py).
+_RESEARCH_IDENT = {"criminal_collection": "sec_v2", "civil_collection": "ident_v2"}   # 2026-10-15 (rollback: ident_v1)
+
+
+def _index_collection(base_name: str, variant: str | None) -> str:
+    """The collection for the requested index variant, or the base one when the
+    variant was never built (logged, never silent)."""
+    from app.ai.contextual_index import collection_for
+    from app.core.config import settings
+    # Lawyer research with safeguards on (ai/answer_safeguards.py): a variant
+    # PER collection -- the versioned identity indexes, base elsewhere. Both
+    # exist alongside the base collections (rollback = flag off).
+    if variant == "research_ident":
+        variant = _RESEARCH_IDENT.get(base_name, "base")
+        if variant != "base":
+            # The drafter and lawyer research REQUIRE the verified identity
+            # index (2026-10-16): missing / unreadable / not the verified build
+            # raises IdentityIndexUnavailable -- never the base collection,
+            # whose CPC labels the identity build exists to repair. Retrieval
+            # then reports a retrieval error ("try again"), not law.
+            from app.ai import index_health
+            return index_health.require(collection_for(base_name, variant))
+        return base_name                 # family / constitutional: base IS the policy
+    name = collection_for(base_name, variant if variant is not None else settings.retrieval_index_variant)
+    if name == base_name:
+        return base_name
+    try:
+        get_chroma().get_collection(name)
+        return name
+    except Exception:  # noqa: BLE001
+        logger.warning("retrieval: index %s not built — using %s", name, base_name)
+        return base_name
+
+
+def build_retriever(case_type: str, province: str, index_variant: str | None = None):
     province = (province or "").lower()  # "Punjab" == "punjab" == metadata value
-    collection_name = CASE_TYPE_TO_COLLECTION.get(case_type, "civil_collection")
+    collection_name = _index_collection(
+        CASE_TYPE_TO_COLLECTION.get(case_type, "civil_collection"), index_variant)
 
     # UNKNOWN JURISDICTION IS NOT FEDERAL JURISDICTION.
     #

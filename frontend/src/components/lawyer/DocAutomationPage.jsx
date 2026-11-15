@@ -19,6 +19,8 @@ import DraftingHome from "./DraftingHome.jsx";
 import { DRAFTING_TOKENS_CSS, draftingMode } from "./draftingTheme.js";
 import { ModalPortal } from "./ui.jsx";
 import { TEMPLATES, buildContent } from "@/lib/lawyerDraftTemplates.js";
+import { MODES, quickActionsFor, modeFor, proposalToHtml, tidyFullDraft, findPlaceholders, draftTitle } from "@/lib/draftAssist.js";
+import { PROVINCES, NEUTRAL, provinceLabel, coverageNote } from "@/lib/jurisdictions.js";
 import {
     NO_CASE, bindingForNewDocument, pendingBindingForDraft, bindingForDraft,
     caseActionsBlocked, boundCaseId,
@@ -106,7 +108,56 @@ export const EDITOR_CSS = `[data-drafter-editor]{flex:1;min-height:0;overflow:hi
 [data-drafter-editor] .de-scroll::-webkit-scrollbar{width:6px}
 [data-drafter-editor] .de-scroll::-webkit-scrollbar-thumb{border-radius:6px;background:color-mix(in srgb,var(--ink) 22%,transparent)}
 [data-drafter-editor] .de-scroll::-webkit-scrollbar-track{background:transparent}
+[data-drafter-editor] .de-ph-btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 10px 0 12px;margin-left:4px;border-radius:10px;border:1px dashed var(--brand-text);background:var(--brand-soft);color:var(--brand-text);font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex:none}
+[data-drafter-editor] .de-ph-btn b{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#e8b84b;color:#1d1a12;font-size:11.5px;display:grid;place-items:center}
+[data-drafter-editor] .de-ph-btn[aria-expanded=true]{border-style:solid}
+[data-drafter-editor] .de-assist.big{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);z-index:60;border-radius:0;border-width:0 0 0 1px;border-color:var(--line-strong);box-shadow:-18px 0 50px -20px rgba(0,0,0,.6);animation:deSlide .18s ease}
+[data-drafter-editor] .de-scrim{position:fixed;inset:0;z-index:59;background:rgba(4,12,14,.45);animation:deFade .18s ease}
+@keyframes deSlide{from{transform:translateX(24px);opacity:.5}to{transform:none;opacity:1}}
+@keyframes deFade{from{opacity:0}to{opacity:1}}
+[data-drafter-editor] .de-assist-head{display:flex;align-items:center;gap:10px}
+[data-drafter-editor] .de-big-btn{margin-left:auto;width:32px;height:32px;border-radius:9px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;flex:none}
+[data-drafter-editor] .de-big-btn:hover{background:var(--chip-n);color:var(--ink)}
+[data-drafter-editor] .de-fill-head .de-big-btn{margin-left:auto}
+[data-drafter-editor] .de-fill-head .de-big-btn + .de-fill-x{margin-left:0}
+[data-drafter-editor] .de-fill-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+[data-drafter-editor] .de-fill-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand-text);flex:none}
+[data-drafter-editor] .de-fill-head b{display:block;font-size:16px}
+[data-drafter-editor] .de-fill-head small{font-size:12.5px;color:var(--muted)}
+[data-drafter-editor] .de-fill-x{margin-left:auto;width:32px;height:32px;border-radius:9px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:16px}
+[data-drafter-editor] .de-fill-x:hover{background:var(--chip-n);color:var(--ink)}
+[data-drafter-editor] .de-fill-bar{height:5px;margin:12px 16px 4px;border-radius:999px;background:var(--line);overflow:hidden}
+[data-drafter-editor] .de-fill-bar i{display:block;height:100%;background:linear-gradient(90deg,#1c9c66,#40f0dc);transition:width .2s}
+[data-drafter-editor] .de-fill-tabs{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line)}
+[data-drafter-editor] .de-fill-tabs div{display:inline-flex;padding:3px;border-radius:12px;border:1px solid var(--line);gap:2px}
+[data-drafter-editor] .de-fill-tabs button{height:30px;padding:0 12px;border-radius:9px;border:none;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+[data-drafter-editor] .de-fill-tabs button[aria-pressed=true]{background:var(--chip-n);color:var(--ink)}
+[data-drafter-editor] .de-fill-tabs span{font-size:12.5px;font-weight:700;color:#e8b84b}
+[data-drafter-editor] .de-fill-list{flex:1;min-height:0;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:2px}
+[data-drafter-editor] .de-fill-row{padding:7px 10px;border-radius:12px;border:1px solid transparent}
+[data-drafter-editor] .de-fill-row:focus-within{border-color:var(--line-strong);background:var(--surface-2)}
+[data-drafter-editor] .de-fill-row header{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13.5px;font-weight:700;color:var(--ink)}
+[data-drafter-editor] .de-fill-row header i{width:9px;height:9px;border-radius:50%;border:2px solid #e8b84b;flex:none}
+[data-drafter-editor] .de-fill-row.done header i{border-color:#3ec99a;background:#3ec99a}
+[data-drafter-editor] .de-fill-row header em{margin-left:auto;font-style:normal;font-size:12px;color:#e8b84b}
+[data-drafter-editor] .de-fill-row.done header em{color:#3ec99a}
+[data-drafter-editor] .de-fill-row header button{border:none;background:transparent;color:var(--brand-text);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:0}
+[data-drafter-editor] .de-fill-row textarea{display:block;width:100%;box-sizing:border-box;height:38px;min-height:38px;max-height:120px;padding:8px 11px;border-radius:10px;border:1px solid var(--line-strong);background:var(--input);color:var(--ink);font:inherit;font-size:13.5px;line-height:1.45;resize:none;overflow-y:auto}
+[data-drafter-editor] .de-fill-row textarea:focus{outline:none;border-color:var(--brand-text)}
+[data-drafter-editor] .de-fill-foot{padding:12px 14px 14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+[data-drafter-editor] .de-fill-go{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:46px;border-radius:12px;border:none;background:linear-gradient(135deg,#12897f 0%,#1c9c66 55%,#1f8f9c 100%);color:#fff;font:inherit;font-size:14.5px;font-weight:700;cursor:pointer;box-shadow:0 8px 22px -12px rgba(28,156,102,.7);transition:filter .15s}
+[data-drafter-editor] .de-fill-go:hover:not(:disabled){filter:brightness(1.08)}
+[data-drafter-editor] .de-fill-go:disabled{opacity:.72;cursor:not-allowed;box-shadow:none}
+[data-drafter-editor] .de-fill-foot small{font-size:12px;color:var(--muted);text-align:center;line-height:1.45}
+[data-drafter-editor] .de-paper:empty::before{content:attr(data-empty);color:#8a9aa0;font-style:italic;pointer-events:none}
 [data-drafter-editor] .de-paper{max-width:820px;margin:0 auto;min-height:640px;background:var(--paper);color:var(--paper-ink);border-radius:6px;padding:64px 76px;line-height:1.95;font-size:15px;outline:none;white-space:pre-wrap;box-shadow:0 18px 40px -22px rgba(0,0,0,.65)}
+/* Tailwind's preflight strips list markers and paragraph margins; a pleading's numbered "That ..."
+   paragraphs and its prayer list need them back (template library, 2026-10-14). Scoped to the paper. */
+[data-drafter-editor] .de-paper ol{list-style:decimal;padding-left:2.1em;margin:.15em 0 .6em}
+[data-drafter-editor] .de-paper ul{list-style:disc;padding-left:2.1em;margin:.15em 0 .6em}
+[data-drafter-editor] .de-paper li{margin:.1em 0 .35em;padding-left:.25em}
+[data-drafter-editor] .de-paper li > ul,[data-drafter-editor] .de-paper li > ol{margin:.2em 0 .2em}
+[data-drafter-editor] .de-paper p{margin:0 0 .45em}
 [data-drafter-editor] .de-assist{width:400px;flex:none;display:flex;flex-direction:column;border-radius:18px;border:1px solid var(--line);background:var(--surface);overflow:hidden}
 [data-drafter-editor] .de-assist-head{padding:14px 22px;background:var(--surface-2);border-bottom:1px solid var(--line)}
 [data-drafter-editor] .de-assist-head b{display:block;font-size:17px}
@@ -132,6 +183,30 @@ export const EDITOR_CSS = `[data-drafter-editor]{flex:1;min-height:0;overflow:hi
 [data-drafter-editor] .de-assist-body::-webkit-scrollbar-track{background:transparent}
 [data-drafter-editor] .de-quick button{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);text-align:left;font-size:13px;cursor:pointer}
 [data-drafter-editor] .de-quick button:hover{border-color:var(--hover-line);background:var(--hover-tint);color:var(--hover-ink)}
+/* Draft Assistant proposals (2026-10-14): a reply is shown, never applied by itself. */
+[data-drafter-editor] .de-prop{display:flex;flex-direction:column;gap:8px;max-width:100%}
+[data-drafter-editor] .de-prop-kind{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+[data-drafter-editor] .de-prop-text{white-space:pre-wrap;max-height:260px;overflow-y:auto;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);font-family:Georgia,'Times New Roman',serif;font-size:13.5px;line-height:1.6;color:var(--ink)}
+[data-drafter-editor] .de-prop-actions{display:flex;flex-wrap:wrap;gap:6px}
+[data-drafter-editor] .de-prop-actions button{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:12.5px;font-weight:600;cursor:pointer}
+[data-drafter-editor] .de-prop-actions button.primary{background:var(--brand,#2bd4a8);border-color:transparent;color:#05261d}
+[data-drafter-editor] .de-prop-actions button:hover{border-color:var(--hover-line)}
+[data-drafter-editor] .de-prop-done{font-size:12.5px;font-weight:700;color:var(--brand-text,#2bd4a8)}
+[data-drafter-editor] .de-guard{font-size:12.5px;line-height:1.5;padding:8px 10px;border-radius:8px;border:1px solid var(--warn-line,#d9a43a);background:var(--warn-tint,rgba(217,164,58,.10));color:var(--ink)}
+[data-drafter-editor] .de-guard ul{margin:4px 0 0;padding-left:18px;list-style:disc}
+[data-drafter-editor] .de-check-scope{font-size:11.5px;line-height:1.45;color:var(--muted)}
+[data-drafter-editor] .de-prop-actions button:disabled{opacity:.5;cursor:not-allowed}
+[data-drafter-editor] .de-retry{margin-top:8px;padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:12.5px;font-weight:600;cursor:pointer}
+[data-drafter-editor] .de-juris{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:0 0 8px;font-size:12.5px;color:var(--muted)}
+[data-drafter-editor] .de-juris select{padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:12.5px}
+[data-drafter-editor] .de-juris small{flex-basis:100%;font-size:11.5px}
+[data-drafter-editor] .de-modes{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}
+[data-drafter-editor] .de-modes button{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;cursor:pointer}
+[data-drafter-editor] .de-modes button[aria-pressed="true"]{background:var(--hover-tint);border-color:var(--hover-line);color:var(--ink);font-weight:700}
+[data-drafter-editor] .de-modes button:disabled{opacity:.45;cursor:not-allowed}
+[data-drafter-editor] .de-selchip{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding:6px 10px;border-radius:8px;background:var(--surface-2);border:1px dashed var(--line-strong,var(--line));font-size:12px;color:var(--muted)}
+[data-drafter-editor] .de-selchip span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-drafter-editor] .de-selchip button{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1}
 [data-drafter-editor] .de-msg{max-width:92%;padding:10px 13px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
 [data-drafter-editor] .de-msg.user{align-self:flex-end;border-radius:14px 14px 4px 14px;background:var(--teal);color:var(--on-teal)}
 [data-drafter-editor] .de-msg.ai{align-self:flex-start;border-radius:4px 14px 14px 14px;background:var(--surface-2);border:1px solid var(--line)}
@@ -193,6 +268,67 @@ function CitationWarning({ draftCheck, stale }) {
     );
 }
 
+/* Asked again when the check withheld the whole reply: a paragraph with no
+   authority in it, for the lawyer to complete. */
+const PLACEHOLDER_ASK = "Do not cite any provision or case. Where the law would be cited, write [PROVISION] for me to fill in.";
+
+/* What the server's legal-authority check took out of an AI reply, and why
+   (2026-10-14). Removed text never reaches the draft. A reply whose check did
+   not run is never a proposal at all (sendToAI). */
+function GuardNote({ withheld = [] }) {
+    if (!withheld.length) return null;
+    return (
+        <div className="de-guard" data-guard-withheld>
+            <b>Withheld by the legal check ({withheld.length}):</b>
+            <ul>{withheld.map((w, k) => (
+                <li key={k}><q>{w.text}</q> — {(w.reasons || []).join(" ")}</li>
+            ))}</ul>
+        </div>
+    );
+}
+
+/* What the check covered -- and what it did not. It looks at the statute
+   provisions the reply cites and at provincial Acts outside the chosen
+   jurisdiction; it is not a review of the facts, the remedy or case law. */
+function CheckScope({ check, onChooseJurisdiction }) {
+    if (!check) return null;
+    // Counts describe THIS proposal's final text (draft_guard): a provision
+    // cited only in a withheld sentence is in none of them, and "found and
+    // consistent" is never phrased as "legally correct".
+    const supported = check.supported || [];
+    const missing = check.notChecked || [];
+    const n = supported.length;
+    const j = check.jurisdiction;
+    const where = !j ? "" : j.basis === "neutral" ? "Jurisdiction-neutral (federal law only)"
+        : `${provinceLabel(j.province) || j.province}${j.basis === "case" ? " (from the case)" : ""}`;
+    const c = check.clarify;
+    return (
+        <div className="de-check-scope" data-check-scope>
+            <span data-check-supported={n}>
+                {n ? `Legal check: ${n} cited provision${n === 1 ? "" : "s"} found in the library and consistent with ${n === 1 ? "its" : "their"} subject (${supported.join(", ")}).`
+                    : missing.length ? "Legal check: none of the cited provisions could be checked against the library."
+                    : "Legal check: no statute provision cited in this proposal."}
+            </span>
+            {" "}This does not confirm the claim is right; facts, remedies and case law are not checked.{where ? ` ${where}.` : ""}
+            {missing.length > 0 && (
+                // Each entry carries its reason (not in our copy, several provisions
+                // under one number, subject does not match, personal law unknown).
+                <div data-check-unverified>Not verified — check these yourself: {missing.join("; ")}.</div>
+            )}
+            {c && (
+                <div className="de-guard" data-clarify={c.topic}>
+                    {c.message}{c.placeholder ? "" : " This proposal has no placeholder for it — add one before using it."}
+                    {onChooseJurisdiction && (
+                        <> <button type="button" className="de-retry" onClick={onChooseJurisdiction}>Choose jurisdiction</button></>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+const _norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
+
 function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], onRebind }) {
     // The case this document is bound to — fixed when the editor opened, never
     // the page selector's current value. See lib/draftCaseBinding.js.
@@ -218,10 +354,71 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
     // The lawyer's own choice of case -- the only way the binding changes.
     const pickCase = (c) => { setCaseOpen(false); onRebind?.(bindingForNewDocument(c)); };
     // A saved draft stores editor HTML; a fresh template is plain text
-    const initialHtml = draft ? draft.content : buildContent(tmpl, caseObj).replace(/\n/g, "<br>");
+    // "Draft with AI" (2026-10-19) starts on an EMPTY page: the AI writes the
+    // whole draft from the lawyer's description, as on the client side.
+    const aiFirst = Boolean(tmpl?.aiFirst && !draft);
+    const initialHtml = draft ? draft.content : aiFirst ? "" : buildContent(tmpl, caseObj).replace(/\n/g, "<br>");
+    // ONE object for the editor's lifetime. React 19 re-applies
+    // dangerouslySetInnerHTML whenever the prop OBJECT changes, and an inline
+    // `{{ __html }}` is a new object every render: any re-render (a word-count
+    // change while typing, an AI reply arriving) reset the paper to the
+    // template and threw away the lawyer's work. The content is the DOM's from
+    // mount on; opening another template or draft mounts a new editor.
+    const [paperHtml] = useState(() => ({ __html: initialHtml }));
     const [aiMessages, setAiMessages] = useState([]);
     const [aiInput, setAiInput] = useState("");
     const [aiLoading, setAiLoading] = useState(false);
+    // Draft Assistant (2026-10-14): what the reply should be (null = decided by
+    // whether text is selected), the lawyer's last cursor/selection INSIDE the
+    // draft (kept while focus is in the panel), and the selected text itself.
+    const [assistMode, setAssistMode] = useState(aiFirst ? "full" : null);
+    // The document's title: a saved draft's, else the AI draft's own heading.
+    const [docTitle, setDocTitle] = useState(draft?.title || (aiFirst ? "AI draft" : tmpl.name));
+    // Blanks still to fill ([Address], ___), read from the live text.
+    const [fields, setFields] = useState([]);
+    // The "Fill placeholders" panel (2026-10-20) takes the Draft Assistant's
+    // place on the right while it is open.
+    const [fieldsOpen, setFieldsOpen] = useState(false);
+    const [fillValues, setFillValues] = useState({});
+    const [fillStart, setFillStart] = useState([]);      // the labels when the panel opened
+    const [fillTab, setFillTab] = useState("all");
+    // Either right-hand panel can be expanded to the full height (2026-10-20),
+    // over the page, like the chat panel. Esc or a click on the page shrinks it.
+    const [panelBig, setPanelBig] = useState(false);
+    useEffect(() => {
+        if (!panelBig) return undefined;
+        const esc = (e) => { if (e.key === "Escape") { e.stopPropagation(); setPanelBig(false); } };
+        window.addEventListener("keydown", esc, true);
+        return () => window.removeEventListener("keydown", esc, true);
+    }, [panelBig]);
+    const bigBtn = (
+        <button type="button" className="de-big-btn" data-panel-expand aria-pressed={panelBig}
+            aria-label={panelBig ? "Shrink the panel" : "Expand the panel to full height"}
+            title={panelBig ? "Shrink (Esc)" : "Expand to full height"} onClick={() => setPanelBig(b => !b)}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {panelBig ? <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" /> : <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />}
+            </svg>
+        </button>
+    );
+    const openFill = () => {
+        setFillStart(findPlaceholders(editorRef.current?.innerText || "").map(f => f.label).filter(l => l !== "___"));
+        setFillTab("all");
+        setFieldsOpen(true);
+    };
+    // "Edit" in the template preview opens straight onto the Fill panel.
+    useEffect(() => {
+        if (tmpl?.openFill && !draft && findPlaceholders(editorRef.current?.innerText || "").length) openFill();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    useEffect(() => {
+        if (!fieldsOpen) return undefined;
+        const esc = (e) => { if (e.key === "Escape") setFieldsOpen(false); };
+        window.addEventListener("keydown", esc);
+        return () => window.removeEventListener("keydown", esc);
+    }, [fieldsOpen]);
+    const fieldCursor = useRef({});
+    const [selectedText, setSelectedText] = useState("");
+    const savedRangeRef = useRef(null);
     const [draftId, setDraftId] = useState(draft?.id || null);
     const [saving, setSaving] = useState(false);
     const [saveErr, setSaveErr] = useState("");
@@ -262,7 +459,13 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
     const [savedCheck, setSavedCheck] = useState(draft?.verification ?? null);
     const [checkStale, setCheckStale] = useState(false);
     const editSeq = useRef(0);
-    const markEdited = () => { editSeq.current += 1; setCheckStale(true); };
+    // Re-render on every edit: a pending rewrite's "Replace selected text" is
+    // enabled only while its passage is still there, unchanged.
+    const [, setEditTick] = useState(0);
+    const markEdited = () => { editSeq.current += 1; setCheckStale(true); setEditTick(n => n + 1); };
+    // The jurisdiction of a caseless draft, chosen by the lawyer before the
+    // first request ("" = not yet). A case-bound draft uses the case's own.
+    const [jurisdiction, setJurisdiction] = useState("");
     const editorRef = useRef(null);
     const aiEndRef = useRef(null);
     const aiInputRef = useRef(null);
@@ -295,13 +498,151 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
     const exec = (cmd, val = null) => { editorRef.current?.focus(); document.execCommand(cmd, false, val); };
     const queryState = (cmd) => document.queryCommandState(cmd);
 
+    /* ── Draft Assistant: where a proposal goes ──────────────────────────
+       The cursor or selection is remembered while the lawyer types a prompt
+       in the panel (focus leaves the paper, and the browser forgets it). */
+    const captureSelection = () => {
+        const sel = window.getSelection?.();
+        const ed = editorRef.current;
+        if (!sel || !sel.rangeCount || !ed) return;
+        const range = sel.getRangeAt(0);
+        if (!ed.contains(range.commonAncestorContainer)) return;
+        savedRangeRef.current = range.cloneRange();
+        setSelectedText(sel.toString().trim());
+    };
+    const refreshFields = () => setFields(findPlaceholders(editorRef.current?.innerText || ""));
+    useEffect(() => { refreshFields(); }, []);
+    // Select the next occurrence of a blank in the paper, so the lawyer can type over it.
+    const selectField = (label) => {
+        const ed = editorRef.current;
+        if (!ed) return;
+        const re = label === "___" ? /_{3,}/g : new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+        const hits = [];
+        const walker = document.createTreeWalker(ed, 4 /* NodeFilter.SHOW_TEXT */);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            re.lastIndex = 0;
+            for (let m = re.exec(n.data); m; m = re.exec(n.data)) hits.push([n, m.index, m[0].length]);
+        }
+        if (!hits.length) { refreshFields(); return; }
+        const i = ((fieldCursor.current[label] ?? -1) + 1) % hits.length;
+        fieldCursor.current[label] = i;
+        const [node, at, len] = hits[i];
+        ed.focus();
+        const r = document.createRange();
+        r.setStart(node, at); r.setEnd(node, at + len);
+        const sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(r);
+        node.parentElement?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+        captureSelection();
+    };
+    // Write each value over every copy of its placeholder. Through
+    // insertText, so Ctrl+Z takes it back; nothing is saved until Save Draft.
+    const fillAll = () => {
+        const ed = editorRef.current;
+        if (!ed) return;
+        const entries = Object.entries(fillValues).filter(([label, v]) => v.trim() && label !== "___");
+        if (!entries.length) return;
+        ed.focus();
+        for (const [label, value] of entries) {
+            const re = new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+            for (let guard = 0; guard < 200; guard++) {
+                let hit = null;
+                const walker = document.createTreeWalker(ed, 4 /* SHOW_TEXT */);
+                for (let n = walker.nextNode(); n && !hit; n = walker.nextNode()) {
+                    const m = re.exec(n.data);
+                    if (m) hit = [n, m.index, m[0].length];
+                }
+                if (!hit) break;
+                const r = document.createRange();
+                r.setStart(hit[0], hit[1]); r.setEnd(hit[0], hit[1] + hit[2]);
+                const sel = window.getSelection();
+                sel.removeAllRanges(); sel.addRange(r);
+                const before = hit[0].data;
+                const ok = document.execCommand("insertText", false, value.trim());
+                // Some editors report success without writing: then write directly.
+                if (!ok || (hit[0].isConnected && hit[0].data === before)) { r.deleteContents(); r.insertNode(document.createTextNode(value.trim())); }
+            }
+        }
+        setFillValues({});
+        afterChange();
+    };
+    const afterChange = () => {
+        refreshFields();
+        markEdited();
+        setWordCount((editorRef.current?.innerText || "").trim().split(/\s+/).filter(Boolean).length);
+    };
+    // Put `html` where `range` is (replacing what it covers), or at the end of
+    // the draft. insertHTML keeps the browser's undo (Ctrl+Z) working.
+    const placeHtml = (html, range, { newBlock = false } = {}) => {
+        const ed = editorRef.current;
+        if (!ed || !html) return false;
+        ed.focus();
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        if (range && ed.contains(range.commonAncestorContainer)) {
+            sel.addRange(range);
+        } else {
+            const end = document.createRange();
+            end.selectNodeContents(ed);
+            end.collapse(false);
+            sel.addRange(end);
+        }
+        // A new clause starts its own paragraph. Without this the browser merged
+        // the first inserted block into the line the cursor was on ("Witness 2"
+        // + "10. CONFIDENTIALITY" on one line, heading unbolded -- live check).
+        if (newBlock) document.execCommand("insertParagraph", false, null);
+        document.execCommand("insertHTML", false, html);
+        afterChange();
+        captureSelection();
+        return true;
+    };
+    const chooseJurisdiction = () => document.getElementById("de-juris")?.focus();
+    const markApplied = (i, how) => setAiMessages(prev => prev.map((m, k) => (k === i ? { ...m, applied: how } : m)));
+    // The passage a rewrite was asked for, IF it is still in this editor and
+    // still reads as it did: the range was saved before a slow request, and the
+    // lawyer may have edited, deleted or replaced it since. A live Range follows
+    // edits elsewhere; one inside the passage changes its text, and a removal
+    // collapses it. null = do not replace anything.
+    const rewriteTarget = (p) => {
+        const ed = editorRef.current;
+        const r = p?.range;
+        if (!r || !ed || p.editor !== ed || !ed.isConnected || r.collapsed) return null;
+        if (!ed.contains(r.startContainer) || !ed.contains(r.endContainer)) return null;
+        return _norm(r.toString()) === _norm(p.original) ? r : null;
+    };
+    const applyProposal = (i, how) => {
+        const msg = aiMessages[i];
+        const p = msg?.proposal;
+        if (!p) return;
+        if (how === "insert") {
+            const at = savedRangeRef.current ? savedRangeRef.current.cloneRange() : null;
+            at?.collapse(false);                     // after the selection, never over it
+            if (placeHtml(p.html, at, { newBlock: true })) markApplied(i, "Inserted into the draft");
+        } else if (how === "replace-selection") {
+            const target = rewriteTarget(p);
+            if (!target) return;                     // stale: the button says why
+            if (placeHtml(p.html, target.cloneRange())) markApplied(i, "Replaced the selected text");
+        } else if (how === "replace-all") {
+            if (!window.confirm("Replace the whole draft with this version? Its formatting is simplified; Undo (Ctrl+Z) restores the previous draft.")) return;
+            const ed = editorRef.current;
+            if (!ed) return;
+            ed.focus();
+            document.execCommand("selectAll", false, null);
+            document.execCommand("insertHTML", false, p.html);
+            afterChange();
+            markApplied(i, "Replaced the whole draft");
+        } else if (how === "copy") {
+            navigator.clipboard?.writeText(p.text).then(() => markApplied(i, "Copied"), () => {});
+        }
+    };
+
     const handleSave = async () => {
         if (saving || caseBlocked) return;
         setSaving(true); setSaveErr("");
         const seqAtSave = editSeq.current;
         const { data, error } = await saveDocDraft({
             draft_id: draftId,
-            title: draft?.title || tmpl.name,
+            title: docTitle,
             content: editorRef.current?.innerHTML || "",
             template_name: tmpl.name,
             template_icon: tmpl.icon,
@@ -344,7 +685,7 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
         publishKeyRef.current = publishKeyRef.current || idempotencyKey();
 
         const res = await publishDraftAsDocumentV2({
-            title: draft?.title || tmpl.name,
+            title: docTitle,
             bodyHtml,
             authorName: user?.full_name || "",
             caseId,
@@ -372,48 +713,153 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${(draft?.title || tmpl.name).replace(/[^\w\s-]/g, "").trim() || "document"}.doc`;
+        a.download = `${docTitle.replace(/[^\w\s-]/g, "").trim() || "document"}.doc`;
         document.body.appendChild(a);
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
     };
 
-    const sendToAI = async () => {
-        const q = aiInput.trim();
+    const sendToAI = async (again = null) => {
+        const q = again ? again.q : aiInput.trim();
         if (!q || aiLoading || caseBlocked) return;
-        setAiInput("");
-        setAiMessages(prev => [...prev, { role: "user", text: q }]);
+        if (!caseId && !jurisdiction) return;        // chosen first: the control says so
+        // What comes back, and for a rewrite, the exact passage it replaces.
+        const selection = again ? again.selection : selectedText;
+        const mode = again ? again.mode : modeFor({ chosen: assistMode, hasSelection: !!selection });
+        const range = again ? again.range
+            : (mode === "rewrite" && savedRangeRef.current ? savedRangeRef.current.cloneRange() : null);
+        const target = { q, mode, selection, range };
+        // A whole draft asked for on an EMPTY page goes straight onto it (there
+        // is nothing to overwrite), as on the client side. Measured now, before
+        // the reply: typing meanwhile makes it a proposal again.
+        const pageWasEmpty = mode === "full" && !(editorRef.current?.innerText || "").trim();
+        // Not a proposal: what went wrong, and a Retry of the same request.
+        const failed = (text) => setAiMessages(prev => [...prev, { role: "assistant", text, retry: target }]);
+        if (!again) setAiInput("");
+        setAiMessages(prev => [...prev, { role: "user", text: q, mode }]);
         setAiLoading(true);
         try {
-            const history = aiMessages.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text }));
+            const history = aiMessages.filter(m => !m.retry)
+                .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text }));
             let reply = "";
             // RAG-grounded: the backend retrieves real Pakistani law for this template
             // and instructs the model to cite only genuine sections/precedents.
             let verif = null;
+            // The server checks the finished text against the law it can see
+            // (omitted / absent / mispaired sections) and sends what survives.
+            let guard = null;
             await aiDraftStream(
                 {
                     instruction: q,
                     document: editorRef.current?.innerText || "",
-                    template: tmpl.name,
+                    // An AI-first draft has no template: "legal document" on the server.
+                    template: aiFirst ? "" : tmpl.name,
                     // CASE-BOUND when a case is selected: the server authorises it
                     // and derives jurisdiction from it (so a Punjab matter no
                     // longer retrieves federal law). case_type is the fallback.
                     case_id: caseId,
                     case_type: templateCaseType(tmpl.name),
+                    // Caseless: the lawyer's choice (NEUTRAL = jurisdiction-neutral).
+                    // Case-bound: the server reads the case and ignores this.
+                    province: caseId ? "" : jurisdiction,
                     history,
+                    mode,
+                    selection: mode === "rewrite" ? selection : "",
                 },
                 (token) => { reply += token; },
-                (evt) => { if (evt?.verification) verif = evt.verification; },
+                (evt) => {
+                    if (evt?.verification) verif = evt.verification;
+                    if (evt?.guard) guard = evt.guard;
+                },
             );
-            if (!reply) reply = "Sorry, I couldn't process that.";
-            const looksLikeDoc = reply.length > 300 && (reply.includes("\n\n") || reply.includes("PRAYER") || reply.includes("Respectfully") || reply.includes("IN THE COURT") || reply.includes("PETITION") || reply.includes("AGREEMENT"));
-            if (looksLikeDoc && editorRef.current) {
-                editorRef.current.innerText = reply;
-                markEdited();
-                setWordCount(reply.trim().split(/\s+/).filter(Boolean).length);
+            // FAIL-CLOSED (2026-10-14). The streamed tokens are the UNCHECKED
+            // draft; only the guard's text may become something to insert. No
+            // guard result, or a check that did not run, is a Retry -- never a
+            // proposal, never text to copy. (A stream cut short already threw.)
+            if (!guard && !reply.trim()) {
+                failed("No text came back. Please try again.");
+                return;
             }
-            setAiMessages(prev => [...prev, { role: "assistant", text: looksLikeDoc ? "✅ Document updated. Review the changes in the editor." : reply }]);
+            if (!guard) {
+                failed("The legal check's result did not arrive, so this reply is not shown. Nothing was added to the draft.");
+                return;
+            }
+            if (!guard.ran) {
+                failed(guard.reason === "corpus_unavailable"
+                    ? "The statute library could not be read, so the legal check could not run. This reply is not shown and nothing was added to the draft."
+                    : "The legal check could not run, so this reply is not shown. Nothing was added to the draft.");
+                return;
+            }
+            // A whole draft is tidied (a lone jurisdiction line, a numbering gap a
+            // withheld paragraph left) -- layout only, never the guard's wording.
+            const tidy = (x) => (mode === "full" ? tidyFullDraft(x || "") : (x || ""));
+            reply = tidy(guard.text);
+            const withheld = guard.withheld || [];
+            const check = { supported: guard.supported || [], notChecked: guard.not_checked || [],
+                            jurisdiction: guard.jurisdiction || null, clarify: guard.clarify || null };
+            if (!reply.trim() && withheld.length) {
+                // NOTHING to insert -- never "insert it anyway". What to do next
+                // depends on why (draft_guard.next_step); the one action offered
+                // asks again WITHOUT citations, and that reply is checked like any
+                // other (eval v2 dev: 5 of 44 replies were withheld whole).
+                const next = guard.next_step?.text || "Rephrase the request or name the provision you mean.";
+                setAiMessages(prev => [...prev, { role: "assistant", withheld,
+                    placeholderAsk: q.includes(PLACEHOLDER_ASK) ? null : { ...target, q: `${q}\n\n${PLACEHOLDER_ASK}` },
+                    text: `The legal check withheld the whole reply, so there is nothing to insert. ${next}` }]);
+            } else if (!reply.trim()) {
+                failed("No text came back. Please try again.");
+            } else if (mode === "answer") {
+                setAiMessages(prev => [...prev, { role: "assistant", text: reply, withheld, check }]);
+            }
+            // A PROPOSAL, never applied by itself: the template's formatting
+            // stays until the lawyer chooses where this goes. A rewrite keeps
+            // the passage it was asked for and the editor it lives in, so a
+            // later edit can be detected before anything is replaced.
+            const proposals = [];
+            if (mode !== "answer" && reply.trim()) {
+                proposals.push({
+                    role: "assistant", text: reply,
+                    proposal: { mode, text: reply, html: proposalToHtml(reply), range,
+                                original: selection, editor: editorRef.current },
+                    withheld, check,
+                });
+            }
+            // A sentence stating a fact the lawyer did not give is never insertable
+            // (draft_claims S3). The server's version with [placeholders] for those
+            // facts -- checked again in full -- is a SEPARATE proposal to choose.
+            const alt = guard.placeholder_alternative;
+            if (mode !== "answer" && alt && (alt.text || "").trim()) {
+                const altText = tidy(alt.text);
+                proposals.push({
+                    role: "assistant", text: altText,
+                    proposal: { mode, text: altText, html: proposalToHtml(altText), range,
+                                original: selection, editor: editorRef.current,
+                                // The server says what the placeholders stand for:
+                                // facts not given and/or a CPC provision to verify
+                                // outside Punjab (draft_guard, 2026-10-16).
+                                kindLabel: alt.label || "With [placeholders] for facts you did not give" },
+                    withheld: alt.withheld || [],
+                    check: { supported: alt.supported || [], notChecked: alt.not_checked || [],
+                             jurisdiction: guard.jurisdiction || null, clarify: null },
+                });
+            }
+            // ON AN EMPTY PAGE the whole draft is placed at once -- the version
+            // with [placeholders] when there is one, since it keeps every
+            // paragraph and marks the facts still to give. Still empty now?
+            // (The lawyer may have typed while it was being written.)
+            const auto = pageWasEmpty && !(editorRef.current?.innerText || "").trim()
+                ? (proposals.length > 1 ? proposals[1] : proposals[0]) : null;
+            if (auto) {
+                const ed = editorRef.current;
+                ed.focus();
+                document.execCommand("selectAll", false, null);
+                document.execCommand("insertHTML", false, auto.proposal.html);
+                auto.applied = "Placed in the draft — edit it on the page";
+                afterChange();
+                setDocTitle(cur => (cur === "AI draft" ? (draftTitle(auto.text) || cur) : cur));
+            }
+            if (proposals.length) setAiMessages(prev => [...prev, ...proposals]);
             // Surface the citation check the backend runs on the finished draft.
             // It used to be computed, streamed, and silently dropped by the client.
             if (verif) {
@@ -424,8 +870,11 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
                 const note = `${v.tone === "ok" ? "⚖️" : "⚠️"} Citation check: ${v.headline}.${v.detail ? " " + v.detail : ""}`;
                 setAiMessages(prev => [...prev, { role: "assistant", text: note }]);
             }
-        } catch {
-            setAiMessages(prev => [...prev, { role: "assistant", text: "Connection error. Please try again." }]);
+        } catch (e) {
+            // The server's own reason when there is one (403 case access, 409 a
+            // draft case, 422 nothing selected); "Connection error" hid them all.
+            const msg = e?.message && !/^HTTP \d+$/.test(e.message) ? e.message : "Connection error. Please try again.";
+            failed(msg);
         } finally {
             setAiLoading(false);
         }
@@ -449,7 +898,7 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
         setUrduPdfBusy(true);
         setUrduIssue("");
 
-        const filename = ((draft?.title || tmpl.name) + "-urdu")
+        const filename = (docTitle + "-urdu")
             .replace(/[^\w\s-]/g, "").trim() || "pleading-urdu";
         const payload = {
             urdu_text: urduText, title_ur: urduMeta.title_ur,
@@ -499,7 +948,7 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
     const FONT_OPTIONS = ["Default Font", "Georgia", "Times New Roman", "Courier New", "Arial"];
     const SIZE_OPTIONS = ["10", "11", "12", "13", "14", "16", "18", "20"];
     const mode = draftingMode(t);
-    const docFile = (draft?.title || tmpl.name).replace(/[^\w\s-]/g, "").trim() || "document";
+    const docFile = docTitle.replace(/[^\w\s-]/g, "").trim() || "document";
     const lineIcon = d => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
 
     return (
@@ -512,7 +961,7 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
                     <Icon d={I.chevronLeft} size={20} />
                 </button>
                 <div className="de-title">
-                    <h1>{draft?.title || tmpl.name}</h1>
+                    <h1>{docTitle}</h1>
                     <div className="de-meta">
                         <span className="de-cat">{tmpl.cat}</span>
                         <span aria-hidden="true">·</span>
@@ -662,6 +1111,15 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
                         <span style={{ display: "grid", placeItems: "center", gap: 1 }}><Icon d={I.fileText} size={15} />DOC</span>
                     </TB>
                     <TB label="Translate this draft into court Urdu" onClick={translateToUrdu} style={{ fontSize: 14, fontWeight: 600, padding: "0 10px" }}>اردو</TB>
+                    {/* The blanks still to fill, behind one button (2026-10-20): the
+                        list used to sit above the paper and push the document down. */}
+                    {fields.length > 0 && (<>
+                        <span className="de-sep" />
+                        <button type="button" className="de-ph-btn" data-fields-toggle aria-expanded={fieldsOpen}
+                            title="Fill the placeholders in this draft" onMouseDown={e => e.preventDefault()} onClick={() => (fieldsOpen ? setFieldsOpen(false) : openFill())}>
+                            Placeholders <b>{fields.reduce((n, f) => n + f.count, 0)}</b>
+                        </button>
+                    </>)}
                 </div>
                 </div>
 
@@ -687,17 +1145,85 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
                                 suppressContentEditableWarning
                                 spellCheck={false}
                                 aria-label={`${tmpl.name} — document text`}
-                                onInput={e => { markEdited(); setWordCount(e.currentTarget.innerText.trim().split(/\s+/).filter(Boolean).length); }}
+                                data-empty={aiFirst ? "Describe the document in the Draft Assistant — the AI writes it here, then you edit it." : undefined}
+                                onInput={e => { markEdited(); refreshFields(); setWordCount(e.currentTarget.innerText.trim().split(/\s+/).filter(Boolean).length); }}
+                                onMouseUp={captureSelection}
+                                onKeyUp={captureSelection}
                                 style={{ fontFamily: font === "Default Font" ? "Georgia, 'Times New Roman', serif" : font }}
-                                dangerouslySetInnerHTML={{ __html: initialHtml }}
+                                dangerouslySetInnerHTML={paperHtml}
                             />
                         </div>
                     </section>
 
+                    {/* ── Fill placeholders (2026-10-20) ── */}
+                    {fieldsOpen && (() => {
+                        const left = new Map(fields.map(f => [f.label, f.count]));
+                        const rows = fillStart.filter(l => fillTab === "all" || left.has(l));
+                        const total = fillStart.length;
+                        const done = fillStart.filter(l => !left.has(l)).length;
+                        const blanks = left.get("___") || 0;
+                        const pretty = l => (/^\[_+\]$/.test(l) ? "Blank (in brackets)" : l.replace(/^\[|\]$/g, ""));
+                        const typed = Object.entries(fillValues).filter(([, v]) => v.trim()).length;
+                        return (
+                            <aside className={`de-assist${panelBig ? " big" : ""}`} aria-label="Fill placeholders" data-fill-panel>
+                                <div className="de-fill-head">
+                                    <span className="de-fill-ic" aria-hidden="true"><Icon d={I.edit} size={18} /></span>
+                                    <div><b>Fill placeholders</b><small>{done} of {total} filled</small></div>
+                                    {bigBtn}
+                                    <button type="button" className="de-fill-x" aria-label="Close" title="Close (Esc)" onClick={() => { setFieldsOpen(false); setPanelBig(false); }}>✕</button>
+                                </div>
+                                <div className="de-fill-tabs">
+                                    <div>
+                                        <button type="button" aria-pressed={fillTab === "all"} onClick={() => setFillTab("all")}>All</button>
+                                        <button type="button" aria-pressed={fillTab === "empty"} onClick={() => setFillTab("empty")}>Empty</button>
+                                    </div>
+                                    <span>{total - done} empty</span>
+                                </div>
+                                <div className="de-fill-list" data-lenis-prevent data-fields>
+                                    {rows.map(l => {
+                                        const filled = !left.has(l);
+                                        return (
+                                            <div key={l} className={`de-fill-row${filled ? " done" : ""}`} data-fill-row={l}>
+                                                <header>
+                                                    <i aria-hidden="true" />{pretty(l)}
+                                                    {left.get(l) > 1 && <small style={{ color: "var(--muted)", fontWeight: 600 }}>×{left.get(l)}</small>}
+                                                    <em>{filled ? "Filled" : "Empty"}</em>
+                                                    {!filled && <button type="button" data-field={l} onMouseDown={e => e.preventDefault()} onClick={() => selectField(l)}>Find</button>}
+                                                </header>
+                                                {!filled && (
+                                                    <textarea rows={1} aria-label={pretty(l)} placeholder={l} value={fillValues[l] || ""}
+                                                        onChange={e => setFillValues(v => ({ ...v, [l]: e.target.value }))} />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    {blanks > 0 && (
+                                        <div className="de-fill-row" data-fill-blanks>
+                                            <header>
+                                                <i aria-hidden="true" />Blank lines (___)<small style={{ color: "var(--muted)", fontWeight: 600 }}>×{blanks}</small>
+                                                <em />
+                                                <button type="button" data-field="___" onMouseDown={e => e.preventDefault()} onClick={() => selectField("___")}>Find next</button>
+                                            </header>
+                                            <small style={{ fontSize: 12, color: "var(--muted)" }}>Each is a different detail — select it on the page and type over it.</small>
+                                        </div>
+                                    )}
+                                    {!rows.length && !blanks && <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: 20 }}>Every placeholder is filled.</div>}
+                                </div>
+                                <div className="de-fill-foot">
+                                    <button type="button" className="de-fill-go" data-fill-go disabled={!typed} onClick={fillAll}
+                                        title={typed ? undefined : "Type a value in any field first"}>
+                                        <Icon d={I.check} size={17} />Fill in draft{typed ? ` (${typed})` : ""}
+                                    </button>
+                                </div>
+                            </aside>
+                        );
+                    })()}
                     {/* ── Draft Assistant ── */}
-                    <aside className="de-assist" aria-label="Draft Assistant">
+                    {panelBig && <div className="de-scrim" data-panel-scrim aria-hidden="true" onClick={() => setPanelBig(false)} />}
+                    <aside className={`de-assist${panelBig && !fieldsOpen ? " big" : ""}`} aria-label="Draft Assistant" style={fieldsOpen ? { display: "none" } : undefined}>
                         <div className="de-assist-head">
                             <b>Draft Assistant</b>
+                            {bigBtn}
                         </div>
                         <div className="de-assist-body">
                             {aiMessages.length === 0 && (
@@ -705,26 +1231,119 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
                                     <div className="de-hello">
                                         <div className="de-greet">
                                             <b>{greeting}, <em>{userName}</em></b>
-                                            <p><strong style={{ color: "var(--ink)" }}>{tmpl.name}</strong> is loaded. Ask for a new clause, a rewrite, a tone change or an improvement to the current draft.</p>
+                                            {aiFirst && (
+                                                <p data-ai-first>Describe the document and its facts — who it is from and to, what happened, what you want. The AI writes the whole draft on the page; then edit it and fill the blanks.</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="de-label">Quick actions</div>
-                                    <div className="de-quick">
-                                        {/* A short name on the pill; the full instruction goes into the prompt. */}
-                                        {[["Stronger prayer", "Add a stronger prayer clause"], ["Formal tone", "Make the tone more formal"],
-                                          ["Jurisdiction", "Add a jurisdiction paragraph"], ["Key arguments", "Summarise key arguments"]].map(([label, text]) => (
-                                            <button key={text} type="button" title={text} onClick={() => { setAiInput(text); aiInputRef.current?.focus(); }}>{label}</button>
+                                    <div className="de-quick" data-quick-actions>
+                                        {/* Actions that fit THIS document (a letter has no prayer).
+                                            A short name on the pill; the full instruction goes into
+                                            the prompt, editable, with the action's mode selected. */}
+                                        {quickActionsFor(tmpl.cat).map(a => (
+                                            <button key={a.label} type="button" title={a.text}
+                                                onClick={() => { setAiInput(a.text); setAssistMode(a.mode); aiInputRef.current?.focus(); }}>{a.label}</button>
                                         ))}
                                     </div>
                                 </>
                             )}
-                            {aiMessages.map((msg, i) => (
-                                <div key={i} className={`de-msg ${msg.role === "user" ? "user" : "ai"}`}>{msg.text}</div>
-                            ))}
+                            {aiMessages.map((msg, i) => {
+                                if (!msg.proposal) return (
+                                    <div key={i} className={`de-msg ${msg.role === "user" ? "user" : "ai"}`} data-failed={msg.retry ? "" : undefined}>
+                                        {msg.text}
+                                        {msg.role !== "user" && <GuardNote withheld={msg.withheld} />}
+                                        {msg.role !== "user" && <CheckScope check={msg.check} onChooseJurisdiction={caseId ? null : chooseJurisdiction} />}
+                                        {msg.retry && (
+                                            <div><button type="button" className="de-retry" data-retry disabled={aiLoading || caseBlocked}
+                                                onClick={() => sendToAI(msg.retry)}>Retry</button></div>
+                                        )}
+                                        {msg.placeholderAsk && (
+                                            <div><button type="button" className="de-retry" data-placeholder-ask disabled={aiLoading || caseBlocked}
+                                                onClick={() => sendToAI(msg.placeholderAsk)}>Draft it with a [PROVISION] placeholder</button></div>
+                                        )}
+                                    </div>
+                                );
+                                const p = msg.proposal;
+                                const rewrite = p.mode === "rewrite" && !!p.range;
+                                const stale = rewrite && !msg.applied && !rewriteTarget(p);
+                                return (
+                                    <div key={i} className="de-msg ai de-prop" data-proposal={p.mode}>
+                                        <div className="de-prop-kind" data-prop-kind={p.kindLabel ? "placeholder-alternative" : undefined}>{p.kindLabel || MODES[p.mode]?.label || "Proposal"}{msg.applied ? "" : " — not applied yet"}</div>
+                                        <div className="de-prop-text">{p.text}</div>
+                                        <GuardNote withheld={msg.withheld} />
+                                        <CheckScope check={msg.check} onChooseJurisdiction={caseId ? null : chooseJurisdiction} />
+                                        {msg.applied ? (
+                                            <div className="de-prop-done" data-applied>✓ {msg.applied}</div>
+                                        ) : (
+                                            <>
+                                                <div className="de-prop-actions">
+                                                    {rewrite && (
+                                                        <button type="button" className={stale ? "" : "primary"} disabled={stale} data-replace-selection
+                                                            onClick={() => applyProposal(i, "replace-selection")}>Replace selected text</button>
+                                                    )}
+                                                    {p.mode === "full" ? (
+                                                        <button type="button" className="primary" onClick={() => applyProposal(i, "replace-all")}>Replace whole draft</button>
+                                                    ) : (
+                                                        <button type="button" className={rewrite && !stale ? "" : "primary"}
+                                                            onClick={() => applyProposal(i, "insert")}>Insert at cursor</button>
+                                                    )}
+                                                    <button type="button" onClick={() => applyProposal(i, "copy")}>Copy</button>
+                                                </div>
+                                                {stale && (
+                                                    <div className="de-guard" data-stale-selection>
+                                                        The passage this was written for has changed or is no longer in the draft, so it will not be replaced. Select the passage again and ask again — or insert this at the cursor.
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                             {aiLoading && <div className="de-msg ai de-dots" aria-label="Drafting"><i /><i style={{ animationDelay: ".2s" }} /><i style={{ animationDelay: ".4s" }} /></div>}
                             <div ref={aiEndRef} />
                         </div>
                         <div className="de-compose">
+                            {/* Which law the draft is written under -- chosen before
+                                the first request when there is no case. */}
+                            <div className="de-juris" data-jurisdiction>
+                                {caseId ? (
+                                    <span data-jurisdiction-case>Jurisdiction: {provinceLabel(caseObj?.province)
+                                        ? `${provinceLabel(caseObj.province)} (from the case)` : "jurisdiction-neutral — the case has no province"}</span>
+                                ) : (
+                                    <>
+                                        <label htmlFor="de-juris">Jurisdiction</label>
+                                        <select id="de-juris" value={jurisdiction} aria-required="true" onChange={e => setJurisdiction(e.target.value)}>
+                                            <option value="" disabled>Choose before drafting…</option>
+                                            {PROVINCES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                                            <option value={NEUTRAL}>Not sure — jurisdiction-neutral</option>
+                                        </select>
+                                    </>
+                                )}
+                                {(caseId ? (provinceLabel(caseObj?.province) ? caseObj.province : NEUTRAL) : jurisdiction) && (
+                                    <small>{coverageNote(caseId ? (provinceLabel(caseObj?.province) ? caseObj.province : NEUTRAL) : jurisdiction)}</small>
+                                )}
+                            </div>
+                            {/* What the next reply will be, and what it acts on. */}
+                            {(() => {
+                                const active = modeFor({ chosen: assistMode, hasSelection: !!selectedText });
+                                return (
+                                    <div className="de-modes" role="group" aria-label="What the assistant should return" data-assist-modes>
+                                        {Object.entries(MODES).map(([key, m]) => (
+                                            <button key={key} type="button" aria-pressed={active === key} title={m.hint}
+                                                disabled={key === "rewrite" && !selectedText}
+                                                onClick={() => setAssistMode(key)}>{m.label}</button>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                            {selectedText && (
+                                <div className="de-selchip" data-selection-chip>
+                                    <span>Selected: “{selectedText.length > 70 ? selectedText.slice(0, 70) + "…" : selectedText}”</span>
+                                    <button type="button" aria-label="Clear selection"
+                                        onClick={() => { setSelectedText(""); savedRangeRef.current?.collapse(false); if (assistMode === "rewrite") setAssistMode(null); }}>×</button>
+                                </div>
+                            )}
                             <div className="de-compose-box">
                                 <label style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }} htmlFor="de-prompt">Prompt for the draft assistant</label>
                                 <textarea
@@ -736,8 +1355,8 @@ function StageEditor({ tmpl, binding = NO_CASE, draft, onBack, t, cases = [], on
                                     rows={1}
                                 />
                                 <div className="de-compose-row">
-                                    <span className="de-hint">Enter to send · Shift+Enter for a new line</span>
-                                    <button type="button" className="de-send-ic" onClick={sendToAI} disabled={!aiInput.trim() || aiLoading || caseBlocked}
+                                    <span className="de-hint">{!caseId && !jurisdiction ? "Choose a jurisdiction to start drafting" : "Enter to send · Shift+Enter for a new line"}</span>
+                                    <button type="button" className="de-send-ic" onClick={() => sendToAI()} disabled={!aiInput.trim() || aiLoading || caseBlocked || (!caseId && !jurisdiction)}
                                         aria-label="Generate" title="Generate (Enter)">
                                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
                                         <span className="de-sr">Generate</span>
@@ -810,6 +1429,9 @@ const _mapCase = (c) => ({
     title: c.title || "Untitled",
     client: c.client_name || "—",
     court: c.province || "—",
+    // The stored province value (punjab | sindh | kpk | balochistan | federal):
+    // shown in the drafter as the case's jurisdiction, never sent as an override.
+    province: c.province || null,
     type: c.case_type ? c.case_type.charAt(0).toUpperCase() + c.case_type.slice(1) : "Other",
     status: _DA_MAP[c.status] || "Filed",
 });
@@ -828,6 +1450,9 @@ function DocAutomationPage() {
     // Guards against a slow case lookup for one draft landing after another
     // draft (or a new document) has been opened.
     const openSeq = useRef(0);
+    // One editor instance per opened document: a new template or draft never
+    // inherits the previous one's AI proposals or saved selection.
+    const [editorKey, setEditorKey] = useState(0);
 
     useEffect(() => {
         if (stage !== "gallery") return;
@@ -836,6 +1461,7 @@ function DocAutomationPage() {
 
     const openDraft = async (d) => {
         const seq = ++openSeq.current;
+        setEditorKey(k => k + 1);
         setActiveDraft(d);
         setEditorBinding(pendingBindingForDraft(d));
         setSelectedTemplate({ id: -1, name: d.template_name || d.title, cat: "Draft", desc: "", icon: d.template_icon || "📄" });
@@ -846,6 +1472,7 @@ function DocAutomationPage() {
 
     const openTemplate = (tmpl) => {
         ++openSeq.current;
+        setEditorKey(k => k + 1);
         setActiveDraft(null);
         setEditorBinding(bindingForNewDocument(activeCaseObj));
         setSelectedTemplate(tmpl);
@@ -893,7 +1520,7 @@ function DocAutomationPage() {
                 />
             )}
             {stage === "editor" && selectedTemplate && (
-                <StageEditor tmpl={selectedTemplate} binding={editorBinding} draft={activeDraft} onBack={() => setStage("gallery")} t={t}
+                <StageEditor key={editorKey} tmpl={selectedTemplate} binding={editorBinding} draft={activeDraft} onBack={() => setStage("gallery")} t={t}
                     cases={apiCases} onRebind={b => { ++openSeq.current; setEditorBinding(b); }} />
             )}
         </div>

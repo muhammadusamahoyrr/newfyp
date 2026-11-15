@@ -55,25 +55,40 @@ def find_offence_sections(query: str) -> dict:
     alone.
 
     Returns:
+        outcome: "found", "ambiguous", "not_in_table" or "error".
         matches: candidate offences, best first, each with `law`, `section`,
             `title`, `punishment` and `court`.
         ambiguous: true when the words the user used map to SEVERAL different
             offences (e.g. "fraud" → s.420 cheating, s.406 breach of trust,
             s.468 forgery). When this is true, do not silently adopt the first
             match — read `note` and follow it.
-        note: what to do about the ambiguity.
-        error: present only when nothing matched. Do NOT invent a section.
+        note: what to do about the ambiguity, or about a table miss.
+        not_in_table: true when this small lookup table has no row for the
+            query. That is NOT evidence the provision does not exist — answer
+            from the statute text, never say the provision does not exist.
+        error: present only when the lookup itself failed. Do NOT invent a section.
     """
+    from app.ai import tool_contract as tc
     try:
+        # An explicit reference ("Section 420 PPC", "489-F PPC", "دفعہ 302
+        # تعزیرات پاکستان") is resolved by the shared citation parser, not by
+        # matching the whole sentence against section numbers -- which is how
+        # "Section 420 PPC" used to come back as "No offence matched".
+        refs = tc.provision_refs(query)
+        if refs:
+            return _lookup_references(refs)
         hits = bail_checker.search(query, limit=8)
     except Exception as exc:  # defensive: never kill the graph on a lookup
         logger.exception("find_offence_sections failed")
-        return {"error": f"Offence lookup failed: {exc}"}
+        return {"outcome": tc.OUTCOME_ERROR, "error": f"Offence lookup failed: {exc}"}
 
     if not hits:
         return {
-            "error": f"No offence matched '{query}'.",
-            "hint": "Ask the user for the exact section number written on the FIR.",
+            "outcome": tc.OUTCOME_NOT_IN_TABLE,
+            "not_in_table": True,
+            "query": query,
+            "note": tc.NOT_IN_TABLE_NOTE.format(what=f"'{query}'"),
+            "hint": "If the user described an offence in words, ask for the exact section number written on the FIR.",
         }
 
     # Ambiguous only when candidates genuinely TIE on relevance. Without this,
@@ -90,6 +105,7 @@ def find_offence_sections(query: str) -> dict:
         # materially different punishments. Picking one silently is exactly the
         # confidently-wrong answer we must not give; surface the choice instead.
         return {
+            "outcome": tc.OUTCOME_AMBIGUOUS,
             "matches": matches,
             "ambiguous": True,
             "note": (
@@ -100,7 +116,49 @@ def find_offence_sections(query: str) -> dict:
             ),
         }
 
-    return {"matches": matches, "ambiguous": False}
+    return {"outcome": tc.OUTCOME_FOUND, "matches": matches, "ambiguous": False}
+
+
+def _lookup_references(refs: list) -> dict:
+    """Table rows for explicit statute + section references.
+
+    The user NAMED the provision(s), so several named provisions are not an
+    ambiguity; several table rows for ONE named provision (its sub-clauses,
+    e.g. 337-A(i)..(vi)) are. A named provision with no row is reported as
+    outside the table, with the statutes that do carry that number -- never as
+    "no such offence".
+    """
+    from app.ai import exact_provision
+    from app.ai import tool_contract as tc
+    matches, missing, ambiguous = [], [], False
+    for ref in refs:
+        rows = bail_checker.rows_for_reference(ref.key[0], ref.section)
+        if not rows:
+            missing.append(ref)
+            continue
+        ambiguous = ambiguous or len(rows) > 1
+        matches += [{k: r[k] for k in _IDENTITY_FIELDS if k in r} for r in rows]
+
+    if not matches:
+        names = ", ".join(exact_provision.label(r) for r in missing)
+        elsewhere = sorted({o["law"] for r in missing for o in bail_checker.sections_matching(r.section)})
+        out = {"outcome": tc.OUTCOME_NOT_IN_TABLE, "not_in_table": True,
+               "provisions": [exact_provision.label(r) for r in missing],
+               "note": tc.NOT_IN_TABLE_NOTE.format(what=names)}
+        if elsewhere:
+            out["section_found_under"] = elsewhere
+        return out
+
+    out = {"outcome": tc.OUTCOME_AMBIGUOUS if ambiguous else tc.OUTCOME_FOUND,
+           "matches": matches, "ambiguous": ambiguous}
+    if ambiguous:
+        out["note"] = ("The named section is split into sub-clauses with different punishments. Tell the "
+                       "user which sub-clauses exist and ask which one the FIR cites.")
+    if missing:
+        out["not_in_table"] = [exact_provision.label(r) for r in missing]
+        out["note"] = (out.get("note", "") + " " + tc.NOT_IN_TABLE_NOTE.format(
+            what=", ".join(exact_provision.label(r) for r in missing))).strip()
+    return out
 
 
 @tool

@@ -404,3 +404,32 @@ async def test_workspace_does_not_return_a_failed_revision_as_saved(
         )
     assert caught.value.status_code == 503
     assert caught.value.detail["code"] == "generation_failed"
+
+
+async def test_a_document_whose_first_version_failed_names_its_own_plan(enabled):
+    """Audit 2026-10-15, F2: the 409 used to be a dead end. It now names the
+    owner's draft plan so the client can generate it again -- and never names
+    another owner's plan for the same document id."""
+    from app.db.collections import get_document_draft_plans_col
+    doc, rev = await seed()
+    await get_document_revisions_col().update_one({"_id": rev["_id"]}, {"$set": {"status": "failed"}})
+    plans = get_document_draft_plans_col()
+    plan_id = f"workspace-plan-{secrets.token_hex(5)}"
+    await plans.delete_many({"generation.document_id": doc["_id"]})
+    await plans.insert_one({"_id": plan_id, "owner_id": CLIENT["_id"], "version": 3,
+                            "status": "generation_failed", "generation": {"document_id": doc["_id"]}})
+    try:
+        with pytest.raises(HTTPException) as caught:
+            await api.get_document_workspace_v2(doc["_id"], current_user=CLIENT)
+        assert caught.value.status_code == 409
+        detail = caught.value.detail
+        assert (detail["code"], detail["plan_id"], detail["plan_version"], detail["plan_status"]) == (
+            "no_editable_revision", plan_id, 3, "generation_failed")
+
+        await plans.update_one({"_id": plan_id}, {"$set": {"owner_id": OTHER["_id"]}})
+        with pytest.raises(HTTPException) as caught:
+            await api.get_document_workspace_v2(doc["_id"], current_user=CLIENT)
+        assert caught.value.detail["code"] == "no_editable_revision"
+        assert "plan_id" not in caught.value.detail
+    finally:
+        await plans.delete_many({"_id": plan_id})

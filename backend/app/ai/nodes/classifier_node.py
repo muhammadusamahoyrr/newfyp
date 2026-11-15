@@ -27,6 +27,7 @@ import re
 
 from app.ai.graph.schemas import CaseType, ClassifierResult, RoutingMode
 from app.ai.graph.state import AgentState
+from app.ai.response_policy import presentation_base_query
 
 # ── Signal Tables ─────────────────────────────────────────────────────────────
 # Each tuple: (compiled regex, weight, label)
@@ -86,7 +87,7 @@ _FAMILY_SIGNALS: list[tuple[re.Pattern, float, str]] = [
 
 _CONSTITUTIONAL_SIGNALS: list[tuple[re.Pattern, float, str]] = [
     (re.compile(
-        r'\b(fundamental\s*rights|article\s*\d+|constitution|Supreme\s*Court|'
+        r'\b(fundamental\s*rights|(?:civil|human|basic|constitutional)\s+rights|article\s*\d+|constitution|Supreme\s*Court|'
         r'High\s*Court|writ|habeas\s*corpus|mandamus|certiorari|quo\s*warranto|'
         r'government|state|federal|provincial|parliament|legislation|ordinance)\b',
         re.IGNORECASE),
@@ -162,7 +163,9 @@ def classifier_node(state: AgentState) -> dict:
         case_type             — set only when confidence >= _HIGH_CONFIDENCE
         province              — set when city name found in query (ALWAYS checked)
     """
-    query = state.get("normalized_query") or state["query"]
+    # A client "make it short" turn is classified on the question it re-answers.
+    query = (presentation_base_query(state)
+             or state.get("normalized_query") or state["query"])
 
     # ── Province inference runs on EVERY turn, even if case_type is known ────
     # FIX 1: Previously this was skipped on early return — now it always runs.

@@ -27,7 +27,8 @@ import { TEMPLATES, BLANK_TEMPLATE, buildContent } from "@/lib/lawyerDraftTempla
 const SAVED_KEY = "attorney:lawyer-saved-templates";
 const CAT_VAR = { Family: "--c-petition", Litigation: "--c-contract", General: "--c-general" };
 // The practice areas the library is growing into. Listed so a lawyer sees the
-// whole map; each says honestly that it has no template yet (count 0).
+// whole map; an area with no template yet says so (count 0), and drops out of
+// this list as soon as a template exists for it.
 const MORE_CATS = [
     ["Agreement / Contract", "#8DB4F0"], ["Application / Petition", "#7FD39F"], ["Business / Commercial", "#C9A2F0"],
     ["Notice / Letter", "#F0A07F"], ["Property", "#E6C36A"], ["Criminal", "#F08FA8"],
@@ -47,7 +48,11 @@ function writeSaved(set) {
 
 /* The page's components. The palette is shared with the editor:
  * draftingTheme.js (DRAFTING_TOKENS_CSS, scoped by [data-drafting-theme]). */
-export const DRAFTING_HOME_CSS = `[data-drafting-home]{flex:1;min-height:0;overflow-y:auto;background:radial-gradient(900px 360px at 25% -80px,var(--glow),transparent 70%) no-repeat,var(--bg);color:var(--ink);font:15px/1.5 "Hanken Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+export const DRAFTING_HOME_CSS = `[data-drafting-home] [data-preview-text] ol{list-style:decimal;padding-left:2.1em;margin:.15em 0 .6em}
+[data-drafting-home] [data-preview-text] ul{list-style:disc;padding-left:2.1em;margin:.15em 0 .6em}
+[data-drafting-home] [data-preview-text] li{margin:.1em 0 .35em;padding-left:.25em}
+[data-drafting-home] [data-preview-text] p{margin:0 0 .45em}
+[data-drafting-home]{flex:1;min-height:0;overflow-y:auto;background:radial-gradient(900px 360px at 25% -80px,var(--glow),transparent 70%) no-repeat,var(--bg);color:var(--ink);font:15px/1.5 "Hanken Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 [data-drafting-home] *{box-sizing:border-box}
 [data-drafting-home] button,[data-drafting-home] input,[data-drafting-home] select{font:inherit;color:inherit}
 [data-drafting-home] button{cursor:pointer}
@@ -206,24 +211,31 @@ function PreviewDialog({ tmpl, mode, onClose, onUse }) {
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [onClose]);
+    const [pageHtml] = useState(() => ({ __html: buildContent(tmpl, null) }));
     return (
         <ModalPortal>
             <div style={{ ...BACKDROP, display: "grid", placeItems: "center", padding: 24 }} onClick={onClose}>
                 <div data-drafting-home data-drafting-theme data-mode={mode} role="dialog" aria-modal="true" aria-label={`Preview: ${tmpl.name}`}
                     onClick={e => e.stopPropagation()}
-                    style={{ flex: "none", width: "min(820px, 100%)", maxHeight: "86vh", borderRadius: 16, border: "1px solid var(--line-strong)", display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--surface)" }}>
+                    style={{ flex: "none", width: "min(900px, 100%)", maxHeight: "90vh", borderRadius: 16, border: "1px solid var(--line-strong)", display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--surface)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid var(--line)" }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="dh-cat" style={{ "--c": catColor(tmpl.cat) }}>{tmpl.cat}</div>
                             <div style={{ fontFamily: "Literata, Georgia, serif", fontWeight: 600, fontSize: 19 }}>{tmpl.name}</div>
                         </div>
-                        <button type="button" className="dh-btn primary" onClick={() => onUse(tmpl)}>Use template</button>
+                        {/* Edit (2026-10-20): the editor, with the page and the
+                            Fill placeholders panel side by side, as on the client's side. */}
+                        <button type="button" className="dh-btn" data-preview-edit onClick={() => onUse({ ...tmpl, openFill: true })}>
+                            <Icon d={I.edit} size={15} />Edit
+                        </button>
+                        <button type="button" className="dh-btn primary" data-preview-use onClick={() => onUse(tmpl)}>Use template</button>
                         <button type="button" className="dh-btn" aria-label="Close preview" onClick={onClose} style={{ width: 40, padding: 0, justifyContent: "center" }}><Icon d={I.x} size={16} /></button>
                     </div>
-                    <div style={{ overflowY: "auto", padding: 24, background: "var(--surface-2)" }}>
+                    {/* Its own scroll, outside the page's smooth-scroll: it did not scroll at all. */}
+                    <div data-lenis-prevent style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: 24, background: "var(--surface-2)" }}>
                         <div data-preview-text
-                            style={{ background: "#FBFAF7", color: "#1C1E22", borderRadius: 4, padding: "40px 48px", fontFamily: "Literata, Georgia, serif", fontSize: 14.5, lineHeight: 1.7, whiteSpace: "pre-wrap", boxShadow: "0 18px 36px -20px rgba(0,0,0,.6)" }}
-                            dangerouslySetInnerHTML={{ __html: buildContent(tmpl, null) }} />
+                            style={{ background: "#FBFAF7", color: "#1C1E22", borderRadius: 4, padding: "48px 56px", maxWidth: 760, margin: "0 auto", fontFamily: "Literata, Georgia, serif", fontSize: 15, lineHeight: 1.75, whiteSpace: "pre-wrap", boxShadow: "0 18px 36px -20px rgba(0,0,0,.6)" }}
+                            dangerouslySetInnerHTML={pageHtml} />
                     </div>
                 </div>
             </div>
@@ -310,7 +322,7 @@ export default function DraftingHome({ onSelect, drafts = [], onOpenDraft, onDel
                 <div className="dh-head">
                     <div>
                         <h1>Document <span className="dh-accent">templates</span></h1>
-                        <p>Court-ready starting points for Pakistani practice, each naming the law it is drafted under. <b>{TEMPLATES.length}</b> templates across {cats.length} categories.</p>
+                        <p>Starting points for Pakistani practice, each naming the law it is drafted under — review every draft before filing. <b>{TEMPLATES.length}</b> templates across {cats.length} categories.</p>
                     </div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                         <button type="button" className="dh-btn" disabled data-upload-template
@@ -396,7 +408,7 @@ export default function DraftingHome({ onSelect, drafts = [], onOpenDraft, onDel
                                 <span className="sw" />{c} <span className="n">{TEMPLATES.filter(x => x.cat === c).length}</span>
                             </button>
                         ))}
-                        {MORE_CATS.map(([c]) => (
+                        {MORE_CATS.filter(([c]) => !cats.includes(c)).map(([c]) => (
                             <button key={c} type="button" className="dh-chip zero" data-empty-category aria-pressed={cat === c} onClick={() => setCat(c)} style={{ "--c": catColor(c) }}>
                                 <span className="sw" />{c} <span className="n">0</span>
                             </button>

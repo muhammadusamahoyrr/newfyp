@@ -270,6 +270,40 @@ async def pleading_requirements(
     return pleading_rules.requirements_for(template_type[:64])
 
 
+def _template_text(template_type: str) -> str | None:
+    from app.services.pdf_generator import template_html
+    try:
+        return document_service._clean_draft_html(
+            template_html(template_type, {}, mark_all=True))
+    except Exception:   # a builder that cannot compose blank must not 500 the preview
+        return None
+
+
+@router.get("/templates/{template_type}/text")
+async def template_text(
+    template_type: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """A template's own wording, every detail shown as `[[FIELD_NAME]]`.
+
+    The client preview and "Edit wording first" showed only an outline of the
+    template (its title and field names), so every document looked empty
+    although the builder holds the full text (2026-10-19). This is that text,
+    composed by the same builder the PDF uses, with no file made and nothing
+    saved. `text_html` is null for a template whose output is not prose (a
+    computed table, the Urdu pleading): the PDF is the only faithful view.
+    """
+    import asyncio
+    if (not template_registry.known(template_type)
+            or template_type in template_registry.SYSTEM_ISSUED
+            or template_type in template_registry.FREEFORM):
+        raise NotFoundError("Template")
+    html = None
+    if template_registry.text_editable(template_type):
+        html = await asyncio.to_thread(_template_text, template_type)
+    return {"template_type": template_type, "text_html": html}
+
+
 # Registered LAST on purpose. FastAPI matches in registration order, so this
 # bare path parameter must sit below /review-queue, /drafts and /case/{case_id}
 # or it would swallow them.

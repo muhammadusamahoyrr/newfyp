@@ -10,6 +10,7 @@ import { DashboardPage } from "./DashboardPage.jsx";
 import { CasesPage } from "./CasesPage.jsx";
 import { DocWorkflowApp } from "./DocumentsPage.jsx";
 import { AppointmentsPage } from "./AppointmentsPage.jsx";
+import { useChatDock } from "./ChatDock.jsx";
 import { AgreementsPage } from "./AgreementsPage.jsx";
 import { CauselistPage } from "./CauselistPage.jsx";
 import { CaseLawPage } from "./CaseLawPage.jsx";
@@ -55,10 +56,22 @@ export const PAGE_PATH = {
 };
 const pageOfPath = path => Object.keys(PAGE_PATH).find(p => PAGE_PATH[p] === path.replace(/\/+$/, "") ) || null;
 
+/* Pages hidden from lawyers for now (2026-10-19, user's request). Their code
+ * is kept. Whatever asks for one (a notification, an old link, the address
+ * bar) lands on the dashboard instead. To bring one back, take it out of this
+ * set and restore its nav item in layout.jsx and its src/app/lawyer route. */
+export const HIDDEN_PAGES = new Set(["payments", "agreements"]);
+
 export default function App({ initialPage = "dashboard" }) {
     const [isDark, setIsDark] = useState(true);
     const t = isDark ? DARK : LIGHT;
-    const [page, setPage] = useState(initialPage);
+    // The chat windows (in the layout) follow this page's light / dark.
+    const dock = useChatDock();
+    useEffect(() => { dock?.setDark(isDark); }, [dock, isDark]);
+    const [page, setPage] = useState(HIDDEN_PAGES.has(initialPage) ? "dashboard" : initialPage);
+    useEffect(() => {
+        if (HIDDEN_PAGES.has(page)) setPage("dashboard");
+    }, [page]);
     useEffect(() => {
         const path = PAGE_PATH[page];
         if (!path || typeof window === "undefined" || window.location.pathname === path) return;
@@ -234,6 +247,14 @@ export default function App({ initialPage = "dashboard" }) {
                 try { sessionStorage.setItem("attorney:lawyer-open-doc", target.docId); } catch { /* storage off */ }
                 window.dispatchEvent(new CustomEvent("attorney:open-review-doc", { detail: target.docId }));
             }
+            // An appointment notification opens THAT appointment (2026-10-12).
+            if (target.appointmentId) {
+                try {
+                    sessionStorage.setItem("attorney:lawyer-open-appointment", target.appointmentId);
+                    if (target.thread) sessionStorage.setItem("attorney:lawyer-open-appointment-thread", target.appointmentId);
+                } catch { /* storage off */ }
+                window.dispatchEvent(new CustomEvent("attorney:open-appointment", { detail: target.appointmentId }));
+            }
             setPage(target.page);
             return true;
         }
@@ -252,7 +273,7 @@ export default function App({ initialPage = "dashboard" }) {
     const caseCtxVal = { activeCase, setActiveCase, openCaseId, setOpenCaseId, docs, setDocs, setPage };
     const notifCtxVal = { notifs, addNotif, clearNotif, clearAll, openNotif };
 
-    const Page = pageMap[page] || DashboardPage;
+    const Page = (!HIDDEN_PAGES.has(page) && pageMap[page]) || DashboardPage;
     // Gates only the active-case banner now (off by design). The Topbar it also
     // gated was never shown and has been removed with its inert search box.
     const hideTopbar = true;
@@ -302,7 +323,7 @@ export default function App({ initialPage = "dashboard" }) {
                                 <ActiveCaseBanner caseId={activeCase} onClear={() => { setActiveCaseState(null); setOpenCaseId(null); }} />
                             )}
                             {/* FIX: removed key={page} — was destroying all page state on every navigation */}
-                            <main ref={mainRef} data-lenis-prevent className="page-enter lw-main" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: ["ai-legal", "cases", "doc-automation", "doc-analyzer", "documents", "vault", "onboarding"].includes(page) ? "hidden" : "auto", scrollBehavior: "smooth", padding: ["ai-legal", "cases", "doc-automation", "doc-analyzer", "documents", "vault", "onboarding", "appointments", "bail-checker", "calculators", "profile", "settings", "dashboard"].includes(page) ? 0 : 24 }}>
+                            <main ref={mainRef} data-lenis-prevent className="page-enter lw-main" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: ["ai-legal", "cases", "clients", "doc-automation", "doc-analyzer", "documents", "vault", "onboarding"].includes(page) ? "hidden" : "auto", scrollBehavior: "smooth", padding: ["ai-legal", "cases", "clients", "doc-automation", "doc-analyzer", "documents", "vault", "onboarding", "appointments", "bail-checker", "calculators", "profile", "settings", "dashboard"].includes(page) ? 0 : 24 }}>
                                 {page === "onboarding"
                                     ? <OnboardingPage t={t} role="lawyer" onComplete={() => {
                                         try { localStorage.setItem(ONBOARDED_KEY, "1"); } catch {}

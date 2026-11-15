@@ -1,13 +1,17 @@
 'use client';
-import { useState, useEffect, useCallback, useRef, forwardRef, useMemo } from "react";
+import { Fragment, useState, useEffect, useCallback, useRef, forwardRef, useMemo } from "react";
 import {
-    formatPkt, isPktToday, pktHourMinute, pktDayKey, pktSlotToUtcISO,
+    formatPkt, isPktToday, pktHourMinute, pktDayKey, pktSlotToUtcISO, isPktSlotPast,
     pktMonthGridKeys, pktWeekDayKeys, shiftMonth, pktToday, dayOfMonth,
 } from "@/lib/bookingTime.js";
 import { useTheme, ThemeCtx } from "./theme.js";
 import { DRAFTING_TOKENS_CSS, draftingMode, themeOnTokens } from "./draftingTheme.js";
 import { useNotif, useCase } from "./theme.js";
 import { onNotification } from "@/lib/notificationTarget.js";
+import { AppointmentThread } from "@/components/shared/AppointmentThread.jsx";
+import VideoJoin, { useVideoConfigured } from "@/components/shared/VideoJoin.jsx";
+import { useChatDock } from "./ChatDock.jsx";
+import { PreJoinModal } from "./PreJoin.jsx";
 import { useToast } from "@/components/lawyer/Toast.jsx";
 import { Card, Btn } from "./components.jsx";
 import { Icon, I } from "./icons.jsx";
@@ -16,7 +20,7 @@ import {
     confirmAppointment as apiConfirm,
     cancelAppointment as apiCancel,
     completeAppointment as apiComplete,
-    listPendingOutcomes,
+    listPendingOutcomes, getLawyerActions, getAppointment,
     getMyWorkingHours,
     saveMyWorkingHours,
     markNoShow as apiNoShow,
@@ -25,6 +29,16 @@ import {
     createLawyerEvent,
     deleteLawyerEvent,
     listCases,
+    listEngagements,
+    listAppointmentFiles,
+    openAppointmentFile,
+    suggestAppointmentTimes,
+    getThreadSummary,
+    proposeNewTime,
+    readSharedSummary,
+    withdrawNewTime,
+    declineNewTime,
+    acceptNewTime,
 } from "@/lib/api.js";
 import { listAllCases } from "@/lib/allCases.js";
 
@@ -156,7 +170,13 @@ function StatusBadge({ status }) {
  * locally: the server decides whether the transition happened, and a row that
  * failed to move must stay in the queue.
  */
-function NeedsOutcome({ t, onRecorded }) {
+/* Since 2026-10-20 this is the "Needs outcome" TAB's list, not a strip above
+ * the tabs: the same server queue (keyset, so no row is skipped while outcomes
+ * are recorded) read with `immediate` -- listed the moment a meeting ends --
+ * and each row drawn as the ordinary appointment card (`renderRow`). Recording
+ * goes through the one four-option dialog. Rows can still be recorded straight
+ * from here when no `renderRow` is given (kept for the component's own use). */
+function NeedsOutcome({ t, onRecorded, onRecord = null, refreshKey = 0, renderRow = null }) {
     const [state, setState] = useState("loading");   // loading | ready | error
     const [items, setItems] = useState([]);
     const [cursor, setCursor] = useState(null);
@@ -174,9 +194,13 @@ function NeedsOutcome({ t, onRecorded }) {
      * see the queue the server now has — including the row that moved up from
      * a page this client had not reached.
      */
+    const shownRef = useRef(0);
+    shownRef.current = items.length;
     const load = useCallback(async () => {
-        setState("loading");
-        const { data, error } = await listPendingOutcomes({ page_size: 25 });
+        // Only the first read shows "Loading": a refresh after an outcome or a
+        // notification keeps the rows (and the scroll) until the answer comes.
+        if (!shownRef.current) setState("loading");
+        const { data, error } = await listPendingOutcomes({ page_size: 25, immediate: true });
         if (error || !data) {
             // NOT an empty queue. Saying "nothing to do" here would tell a
             // lawyer their record is clear on the strength of a failed read.
@@ -188,13 +212,15 @@ function NeedsOutcome({ t, onRecorded }) {
         setState("ready");
     }, []);
 
-    useEffect(() => { load(); }, [load]);
+    // Re-read whenever the page records an outcome through the shared dialog
+    // (refreshKey), so a row dealt with there leaves this queue too.
+    useEffect(() => { load(); }, [load, refreshKey]);
 
     const loadMore = async () => {
         if (!cursor || loadingMore) return;
         setMoreError(null);
         setLoadingMore(true);
-        const { data, error } = await listPendingOutcomes({ page_size: 25, cursor });
+        const { data, error } = await listPendingOutcomes({ page_size: 25, cursor, immediate: true });
         setLoadingMore(false);
         if (error || !data) {
             setMoreError(error?.message || "Could not load more outcomes. Please try again.");
@@ -225,9 +251,11 @@ function NeedsOutcome({ t, onRecorded }) {
 
     const section = (body) => (
         <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>
-                Needs outcome
-            </div>
+            {!renderRow && (
+                <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>
+                    Needs outcome
+                </div>
+            )}
             {recordError && <div role="alert" style={{ fontSize: 12.5, color: "#e8526a", marginBottom: 8 }}>{recordError}</div>}
             {body}
         </div>
@@ -235,7 +263,9 @@ function NeedsOutcome({ t, onRecorded }) {
 
     // Nothing to do, or not known yet: no section at all. A failed read is
     // still shown — it is not the same as an empty queue.
-    if (state === "loading") return null;
+    if (state === "loading") {
+        return renderRow ? <div style={{ textAlign: "center", padding: 40, color: t.textMuted, fontSize: 14 }}>Loading meetings that need an outcome…</div> : null;
+    }
 
     if (state === "error") {
         return section(
@@ -262,13 +292,18 @@ function NeedsOutcome({ t, onRecorded }) {
     }
 
     if (items.length === 0) {
+        if (renderRow) {
+            return section(<div data-outcomes-empty style={{ textAlign: "center", padding: 40, color: t.textMuted, fontSize: 14 }}>
+                Nothing waits for an outcome. Every meeting that has ended is recorded.
+            </div>);
+        }
         // The refused row may have been the last one; the reason still shows.
         return recordError ? section(null) : null;
     }
 
     return section(
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {items.map(item => (
+        <div style={{ display: "flex", flexDirection: "column", gap: renderRow ? 14 : 8 }}>
+            {renderRow ? items.map(item => <Fragment key={item.id}>{renderRow(item)}</Fragment>) : items.map(item => (
                 <div key={item.id} style={{
                     padding: "12px 16px", borderRadius: 12, background: t.cardHi,
                     border: `1px solid ${t.border}`, display: "flex",
@@ -286,7 +321,15 @@ function NeedsOutcome({ t, onRecorded }) {
                             })}
                         </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    {/* ONE outcome interface (2026-10-19): the same four-option
+                        dialog as the card, never a second set of buttons. */}
+                    {onRecord ? (
+                        <button type="button" data-strip-record={item.id} onClick={() => onRecord(item)} style={{
+                            minHeight: 36, padding: "8px 14px", borderRadius: 8,
+                            border: "1px solid rgba(232,184,75,0.55)", background: "rgba(232,184,75,0.14)",
+                            color: "#e8b84b", fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
+                        }}>Record outcome</button>
+                    ) : <div style={{ display: "flex", gap: 8 }}>
                         <button
                             disabled={busyId === item.id}
                             onClick={() => record(item.id, "complete")}
@@ -309,7 +352,7 @@ function NeedsOutcome({ t, onRecorded }) {
                                 cursor: busyId === item.id ? "wait" : "pointer",
                                 opacity: busyId === item.id ? 0.6 : 1,
                             }}>No Show</button>
-                    </div>
+                    </div>}
                 </div>
             ))}
             {cursor && (
@@ -747,7 +790,9 @@ function calendarDays(appointments, diary, hearings = []) {
     };
     for (const a of appointments) {
         if (!a.at || DID_NOT_HAPPEN.has(a.status)) continue;
-        const s = STATUS_STYLES[a.status] || STATUS_STYLES.Unknown;
+        // A case meeting wears the Meeting colour (2026-10-20); a request
+        // still pending keeps its own.
+        const s = a.caseMeeting && a.status !== "Pending" ? DIARY_STYLES.meeting : (STATUS_STYLES[a.status] || STATUS_STYLES.Unknown);
         put({ key: `a:${a.id}`, kind: "appointment", at: a.at, title: a.client, style: s, appointment: a });
     }
     for (const e of diary) {
@@ -775,7 +820,7 @@ function MonthCalendar({ t, month, onMonth, selected, onSelect, days, notices })
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderBottom: `1px solid ${t.border}` }}>
                 <div style={{ fontSize: 17, fontWeight: 800, color: t.text, flex: 1 }}>{monthTitle(month)}</div>
                 <div style={{ display: "flex", gap: 12, marginRight: 8, fontSize: 11, color: t.textMuted }}>
-                    {[["Appointment", "#38d8c4"], ["Meeting", DIARY_STYLES.meeting.dot], ["Event", DIARY_STYLES.event.dot], ["Court", COURT_STYLE.dot]].map(([l, c]) => (
+                    {[["Appointment", "#38d8c4"], ["Meeting / case meeting", DIARY_STYLES.meeting.dot], ["Event", DIARY_STYLES.event.dot], ["Court", COURT_STYLE.dot]].map(([l, c]) => (
                         <span key={l} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                             <span style={{ width: 8, height: 8, borderRadius: 2, background: c }} />{l}
                         </span>
@@ -966,30 +1011,101 @@ const DETAIL_STATUS = {
 };
 const MODE_WORD = { "Video Call": "Video call", "Phone Call": "Phone call", "In-Person": "In person" };
 
-function AppointmentDetail({ apt, now, onClose, gates, actions, onOpenCase, clashes = [] }) {
+// The lawyer's colours for the shared appointment thread.
+const LAWYER_THREAD_PALETTE = {
+    text: "var(--ink)", muted: "var(--muted)", faint: "var(--faint)", border: "var(--line)", surface: "var(--surface)",
+    input: "var(--input)", primary: "#1c9c66", onPrimary: "#fff", danger: "var(--danger)",
+    mine: "color-mix(in srgb, #1c9c66 18%, var(--input))",
+};
+
+/* The documents the client attached to this appointment (2026-10-19). The
+ * server decides what the lawyer may see: while pending only names and notes
+ * (a file opens only if the client chose to show it early), all of them once
+ * accepted, and nothing after a decline, cancel or expiry. */
+function ClientFiles({ apt }) {
+    const [rows, setRows] = useState([]);
+    const [err, setErr] = useState(null);
+    useEffect(() => {
+        let alive = true;
+        listAppointmentFiles(apt.id).then(({ data }) => { if (alive) setRows(data?.items || []); });
+        return () => { alive = false; };
+    }, [apt.id, apt.status]);
+    if (!rows.length) return null;
+    const open = async (row) => {
+        setErr(null);
+        const { data, error } = await openAppointmentFile(apt.id, row.id);
+        if (error) { setErr(error); return; }
+        window.open(data, "_blank", "noopener");
+        setTimeout(() => URL.revokeObjectURL(data), 60000);
+    };
+    const kb = n => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+    return (
+        <div className="ad-files" data-client-files>
+            <div className="ad-files-h">Client's documents <span>{rows.length}</span></div>
+            <ul>
+                {rows.map(r => (
+                    <li key={r.id} data-client-file={r.id}>
+                        <span className="ad-files-ic" aria-hidden="true"><Icon d={I.fileText} size={16} /></span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <b>{r.name}</b>
+                            <small>{kb(r.size)}{r.note ? ` · “${r.note}”` : ""}</small>
+                        </div>
+                        {r.can_open
+                            ? <button type="button" className="ad-btn ad-files-open" onClick={() => open(r)}>Open</button>
+                            : <span className="ad-files-lock">Opens after you accept</span>}
+                    </li>
+                ))}
+            </ul>
+            {err && <div role="alert" style={{ fontSize: 12, color: "var(--danger)", marginTop: 6 }}>{err}</div>}
+        </div>
+    );
+}
+
+function AppointmentDetail({ apt, now, onClose, gates, actions, onOpenCase, clashes = [], threadOpen = false, onThreadChange = () => {}, caseAccessible = false, history = [] }) {
     const [label, tone] = DETAIL_STATUS[apt.status] || [apt.status, "muted"];
     const day = apt.at ? new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short", timeZone: "Asia/Karachi" }).format(apt.at) : "";
     const time = apt.at ? `${label12(pktHourMinute(apt.at))}${apt.endAt ? `–${endLabel(apt.at, apt.endAt)}` : ""}` : "";
     const mode = MODE_WORD[apt.type] || apt.type;
     const ended = apt.endAt && +apt.endAt <= now;
-    const where = apt.type === "Video Call" ? (apt.meetingLink ? "Video call · link added" : "Video call · no link yet")
+    // In-app video (when set up) means a video call needs no pasted link.
+    const inAppVideo = useVideoConfigured();
+    const where = apt.type === "Video Call" ? (apt.meetingLink ? "Video call · link added" : inAppVideo ? "Video call · in-app video" : "Video call · no link yet")
         : apt.type === "Phone Call" ? "Phone call" : "In person";
     const btn = (text, onClick, { disabled = false, title, kind = "" } = {}) => (
-        <button type="button" className={`ad-btn${kind ? ` ${kind}` : ""}`} disabled={disabled} title={title} onClick={onClick}>{text}</button>
+        <button key={text} type="button" className={`ad-btn${kind ? ` ${kind}` : ""}`} disabled={disabled} title={title} onClick={onClick}>{text}</button>
     );
+    // "Message client" opens the thread just under the actions -- and brings it into view.
+    const threadRef = useRef(null);
+    useEffect(() => {
+        if (threadOpen) threadRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    }, [threadOpen]);
     const buttons = [];
     if (apt.status === "Pending") {
         buttons.push(btn("Accept", () => actions.accept(apt), { disabled: !gates.canAccept(apt), title: gates.whyNotAccept(apt), kind: "primary" }));
         buttons.push(btn("Decline", () => actions.cancel(apt), { kind: "danger" }));
+        if (actions.suggest && gates.canAccept(apt)) {
+            buttons.push(btn(apt.timeSuggestion ? "Change suggestion" : "Suggest other times", () => actions.suggest(apt)));
+        }
     }
     if (apt.status === "Upcoming") {
         if (apt.type === "Video Call" && !ended) {
-            buttons.push(btn(apt.meetingLink ? "Join call" : "Add joining link", () => actions.join(apt), { kind: "primary" }));
+            buttons.push(btn(apt.meetingLink ? "Join call" : inAppVideo ? "Join video" : "Add joining link", () => actions.join(apt), { kind: "primary" }));
         }
-        buttons.push(btn("Mark completed", () => actions.complete(apt), { disabled: !gates.canComplete(apt), title: gates.whyNotComplete(apt) }));
-        buttons.push(btn("No-show", () => actions.noShow(apt), { disabled: !gates.canNoShow(apt), title: gates.whyNotNoShow(apt) }));
+        // Outcome only once it has ended; before that, a new time can be proposed.
+        // ONE outcome interface (2026-10-20): the four-option dialog, which
+        // holds "The client didn't attend" -- no separate No-show button.
+        if (ended || (apt.videoMet && gates.canComplete(apt))) buttons.push(btn("Record outcome", () => actions.complete(apt), { disabled: !gates.canComplete(apt), title: gates.whyNotComplete(apt), kind: "primary" }));
+        else if (noShowOpen(apt, now)) buttons.push(btn("Record outcome", () => actions.complete(apt), { disabled: !gates.canNoShow(apt), title: gates.whyNotNoShow(apt) }));
+        if (!noShowOpen(apt, now) && !ended && actions.propose && !apt.proposal && !started(apt, now)) buttons.push(btn("Propose new time", () => actions.propose(apt)));
     }
-    if (apt.caseId) buttons.push(btn("Message", () => onOpenCase(apt.caseId)));
+    // The appointment's OWN thread (2026-10-12), not the case's: open once
+    // confirmed, readable afterwards; a pending request has none yet.
+    if (apt.status !== "Pending" && !threadOpen) {
+        buttons.push(btn(apt.status === "Upcoming" ? "Message client" : "View messages", () => onThreadChange(true), { kind: "" }));
+    }
+    // Only a case this lawyer can actually open (2026-10-19): before a hire the
+    // case is the client's, and the link led to "not in your list".
+    if (apt.caseId && caseAccessible) buttons.push(btn("Case messages", () => onOpenCase(apt.caseId)));
     if (apt.status === "Upcoming") buttons.push(btn("Cancel", () => actions.cancel(apt), { kind: "danger" }));
 
     return (
@@ -1010,10 +1126,21 @@ function AppointmentDetail({ apt, now, onClose, gates, actions, onOpenCase, clas
                     <div><dt>Where</dt><dd>{where}</dd></div>
                     <div><dt>Length</dt><dd>{apt.duration}</dd></div>
                     {apt.caseId && (
-                        <div><dt>Case</dt><dd><button type="button" className="ad-case" onClick={() => onOpenCase(apt.caseId)}>Open case ↗</button></dd></div>
+                        <div><dt>Case</dt><dd>{caseAccessible
+                            ? <button type="button" className="ad-case" onClick={() => onOpenCase(apt.caseId)}>Open case ↗</button>
+                            : <span title="This case is the client's; you can open it once they hire you">Client's case</span>}</dd></div>
                     )}
                 </dl>
-                {apt.note && <blockquote className="ad-note">“{apt.note}”</blockquote>}
+                {apt.status === "Upcoming" && apt.proposal && actions.proposal && (
+                    <div className="ad-prop" data-proposal={apt.proposal.by}>
+                        <b>{apt.proposal.by === "lawyer" ? "You proposed" : "The client proposed"}</b> {formatPkt(apt.proposal.scheduled_at, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}{apt.proposal.note ? ` — “${apt.proposal.note}”` : ""}. The current time stands until it is accepted.
+                        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                            {apt.proposal.by === "lawyer"
+                                ? <button type="button" className="ad-btn" onClick={() => actions.proposal("withdraw", apt)}>Withdraw</button>
+                                : <><button type="button" className="ad-btn" onClick={() => actions.proposal("decline", apt)}>Decline</button><button type="button" className="ad-btn primary" onClick={() => actions.proposal("accept", apt)}>Accept new time</button></>}
+                        </div>
+                    </div>
+                )}
                 {clashes.length > 0 && (apt.status === "Pending" || apt.status === "Upcoming") && (
                     <div role="alert" className="de-clash" data-clash>
                         <b>{apt.status === "Pending" ? "Accepting this clashes with:" : "Clashes with:"}</b>
@@ -1021,6 +1148,17 @@ function AppointmentDetail({ apt, now, onClose, gates, actions, onOpenCase, clas
                     </div>
                 )}
                 {buttons.length > 0 && <div className="ad-actions">{buttons}</div>}
+                {threadOpen && apt.status !== "Pending" && (
+                    <div data-detail-thread ref={threadRef} style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+                        <AppointmentThread appointmentId={apt.id} palette={LAWYER_THREAD_PALETTE}
+                            counterpart={String(apt.client || "the client").split(" ")[0]}
+                            title={`Messages with ${apt.client || "the client"}`} onClose={() => onThreadChange(false)} />
+                    </div>
+                )}
+                {apt.note && <blockquote className="ad-note">“{apt.note}”</blockquote>}
+                <ClientSummary apt={apt} />
+                <ClientFiles apt={apt} />
+                <ClientHistory items={history} />
             </section>
         </Card>
     );
@@ -1510,16 +1648,24 @@ function CancelAppointmentDialog({ t, apt, onClose, onConfirm }) {
                     <label htmlFor="cx-reason" style={{ fontSize: 11, fontWeight: 800, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                         Reason for the client <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>(optional)</span>
                     </label>
+                    {pending && (
+                        <div className="ld-chips" role="group" aria-label="Common reasons">
+                            {DECLINE_REASONS.map(r => (
+                                <button key={r} type="button" aria-pressed={reason === r} className={`ld-chip${reason === r ? " on" : ""}`}
+                                    onClick={() => setReason(r)}>{r}</button>
+                            ))}
+                        </div>
+                    )}
                     <textarea id="cx-reason" value={reason} onChange={e => setReason(e.target.value)} maxLength={500} rows={3}
                         placeholder={pending ? "e.g. I am in court that morning. Please pick another time." : "e.g. A hearing was fixed for the same time."}
                         style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 10, border: `1px solid ${t.border}`,
                                  background: t.inputBg, color: t.text, fontSize: 13.5, fontFamily: "inherit", resize: "vertical", outline: "none" }} />
-                    <div style={{ fontSize: 11.5, color: t.textFaint }}>Included in the notice the client receives.</div>
+                    <div style={{ fontSize: 11.5, color: t.textFaint }}>Included in the notice the client receives.{pending ? " If only the time is wrong, say so here — the client can send a new request." : ""}</div>
                     {error && <div role="alert" style={{ fontSize: 12.5, color: "#e8526a" }}>{error}</div>}
                 </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "14px 24px 20px" }}>
-                    <Btn variant="secondary" size="sm" disabled={busy} onClick={onClose}>{pending ? "Keep request" : "Keep appointment"}</Btn>
-                    <Btn variant="danger" size="sm" disabled={busy} onClick={submit}>{busy ? "Working…" : action}</Btn>
+                <div className="ld-foot">
+                    <button type="button" className="ad-btn" disabled={busy} onClick={onClose}>{pending ? "Keep request" : "Keep appointment"}</button>
+                    <button type="button" className="ad-btn danger solid" disabled={busy} onClick={submit}>{busy ? "Working…" : action}</button>
                 </div>
             </div>
         </div>
@@ -1742,9 +1888,15 @@ function daysAgo(date, now) {
     return days <= 0 ? "today" : days === 1 ? "1 day ago" : `${days} days ago`;
 }
 
-function PendingCard({ t, total, items, now, canAccept, onReview, onAcceptAll }) {
+function PendingCard({ t, total, items, now, canAccept, onReview, onAcceptAll, clashes = () => false }) {
     const [step, setStep] = useState("idle");          // idle | confirm | busy
-    const acceptable = items.filter(canAccept);
+    // Accept all takes only requests that are still in the future AND clash
+    // with nothing in the lawyer's diary: the server does not check hearings
+    // or diary entries, so a bulk accept would book over them silently.
+    const open = items.filter(canAccept);
+    const acceptable = open.filter(a => !clashes(a));
+    const passedN = items.length - open.length;
+    const clashN = open.length - acceptable.length;
     const oldest = items.reduce((min, a) => (a.createdAt && (!min || a.createdAt < min) ? a.createdAt : min), null);
     const count = Number.isInteger(total) ? total : items.length;
     const initials = items.slice(0, 2).map(a => a.initials);
@@ -1765,7 +1917,7 @@ function PendingCard({ t, total, items, now, canAccept, onReview, onAcceptAll })
             <div aria-hidden="true" style={{ position: "absolute", right: -65, top: -48, width: 205, height: 205, borderRadius: "50%", border: "29px solid rgba(106,221,235,0.06)", pointerEvents: "none" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
                 <DashLabel t={t} color={CYAN}>Pending requests</DashLabel>
-                <button type="button" onClick={onReview}
+                <button type="button" onClick={() => onReview()}
                     onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.16)"; }}
                     onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
                     style={{
@@ -1790,8 +1942,8 @@ function PendingCard({ t, total, items, now, canAccept, onReview, onAcceptAll })
                 {items.slice(0, 3).map(a => {
                     const passed = !canAccept(a);
                     return (
-                        <div key={a.id} style={{
-                            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+                        <button type="button" key={a.id} data-pending-item={a.id} onClick={() => onReview(a.id)} title="Open this request" style={{
+                            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, width: "100%", textAlign: "left", font: "inherit", color: "inherit", cursor: "pointer", border: "none",
                             padding: "8px 12px", borderRadius: 10, background: "rgba(0,0,0,0.18)",
                             borderLeft: `3px solid ${passed ? "#e8526a" : "rgba(106,221,235,0.7)"}`,
                         }}>
@@ -1807,7 +1959,7 @@ function PendingCard({ t, total, items, now, canAccept, onReview, onAcceptAll })
                                     {a.at ? (passed ? "time passed" : label12(pktHourMinute(a.at))) : ""}
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     );
                 })}
             </div>
@@ -1823,13 +1975,13 @@ function PendingCard({ t, total, items, now, canAccept, onReview, onAcceptAll })
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     {step === "idle" && (<>
                         <button type="button" disabled={acceptable.length === 0} onClick={() => setStep("confirm")}
-                            title={acceptable.length === 0 ? "No request can be accepted: none, or their times have passed" : undefined}
+                            title={acceptable.length === 0 ? (clashN ? "Every open request clashes with your diary — accept them one by one" : "No request can be accepted: none, or their times have passed") : undefined}
                             style={{ ...pillStyle(t), height: 33, padding: "0 14px", fontSize: 12.5, opacity: acceptable.length === 0 ? 0.5 : 1, cursor: acceptable.length === 0 ? "not-allowed" : "pointer" }}>Accept all</button>
-                        <button type="button" onClick={onReview} style={{ ...pillStyle(t), height: 33, padding: "0 16px", fontSize: 12.5, border: "none", background: CYAN, color: "#0b1c22", boxShadow: "0 4px 14px rgba(106,221,235,0.28)" }}>Review requests</button>
+                        <button type="button" onClick={() => onReview()} style={{ ...pillStyle(t), height: 33, padding: "0 16px", fontSize: 12.5, border: "none", background: CYAN, color: "#0b1c22", boxShadow: "0 4px 14px rgba(106,221,235,0.28)" }}>Answer appointment requests</button>
                     </>)}
                     {step !== "idle" && (<>
                         <span style={{ fontSize: 12.5, color: t.textMuted }}>
-                            Accept {acceptable.length} request{acceptable.length === 1 ? "" : "s"}{acceptable.length < items.length ? ` (${items.length - acceptable.length} already passed)` : ""}?
+                            Accept {acceptable.length} request{acceptable.length === 1 ? "" : "s"}{(passedN || clashN) ? ` (${[passedN ? `${passedN} already passed` : null, clashN ? `${clashN} clash${clashN === 1 ? "es" : ""} with your diary — accept ${clashN === 1 ? "it" : "them"} one by one` : null].filter(Boolean).join(", ")})` : ""}?
                         </span>
                         <button type="button" disabled={step === "busy"} onClick={() => setStep("idle")} style={{ ...pillStyle(t), height: 33, padding: "0 14px", fontSize: 12.5 }}>Cancel</button>
                         <button type="button" disabled={step === "busy"} onClick={run} style={{ ...pillStyle(t), height: 33, padding: "0 16px", fontSize: 12.5, border: "none", background: CYAN, color: "#0b1c22" }}>
@@ -1994,12 +2146,28 @@ function HoursCard({ t, hours, onOpen }) {
  * lawyer pasted, which is the only thing anyone actually knows about it.
  */
 function JoinCallModal({ apt, onClose, onSaveLink, t }) {
+    const inAppVideo = useVideoConfigured();
     const [link, setLink] = useState("");
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(null);
     const [copied, setCopied] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const panel = useRef(null);
+    useDialogFocus(panel, apt.meetingLink ? "[data-join-call]" : 'input[type="url"]');
+    useEffect(() => {
+        const esc = (e) => { if (e.key === "Escape" && !busy) onClose(); };
+        window.addEventListener("keydown", esc);
+        return () => window.removeEventListener("keydown", esc);
+    }, [busy, onClose]);
 
     const stored = apt.meetingLink || null;
+    const showField = !stored || editing;
+    const { day, span } = apptWhen(apt);
+    const now = Date.now();
+    const start = apt.at ? +apt.at : null;
+    const end = apt.endAt ? +apt.endAt : null;
+    const live = start !== null && start <= now && (end === null || now < end);
+    const when = live ? "Happening now" : start !== null && start > now ? `Starts in ${untilLabel(start - now)}` : null;
 
     const copy = async () => {
         try {
@@ -2030,119 +2198,102 @@ function JoinCallModal({ apt, onClose, onSaveLink, t }) {
         setBusy(false);
         if (err) { setError(err.message || "Could not save the link."); return; }
         setLink("");
+        setEditing(false);
     };
 
-    const row = { display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid color-mix(in srgb, ${t.border} 13%, transparent)` };
+    // In-app video on: the full join screen (camera check, big Join, options).
+    if (inAppVideo && apt.type === "Video Call" && apt.status === "Upcoming") {
+        return <PreJoinModal apt={apt} day={day} span={span} when={when} live={live} dark={!t || t.mode !== "light"}
+            onClose={onClose} onSaveLink={onSaveLink} />;
+    }
 
     return (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.65)", padding: 16 }} onClick={onClose}>
-            <div onClick={e => e.stopPropagation()} role="dialog" aria-label="Video consultation" style={{
-                background: t.card, border: `1px solid ${t.primary}40`,
-                borderRadius: 18, padding: 26, width: "100%", maxWidth: 420,
-                boxShadow: `0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px ${t.primary}20`,
-            }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-                    <div style={{
-                        width: 44, height: 44, borderRadius: 12,
-                        background: `${t.primary}20`, border: `1.5px solid ${t.primary}50`,
-                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-                    }}>📹</div>
-                    <div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: t.text }}>Video consultation</div>
-                        <div style={{ fontSize: 12, color: t.textMuted }}>with {apt.client}</div>
+        <div className="ld-backdrop" onClick={() => { if (!busy) onClose(); }}>
+            <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Video consultation" className="ld-card jc"
+                onClick={e => e.stopPropagation()}>
+                <div className="ld-head">
+                    <div className="lc-av" aria-hidden="true">{apt.initials}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h2>Video consultation</h2>
+                        <small>with {apt.client}</small>
                     </div>
-                    <button type="button" onClick={onClose} aria-label="Close" style={{ marginLeft: "auto", background: "none", border: "none", color: t.textMuted, cursor: "pointer", fontSize: 18, minHeight: 44, minWidth: 44 }}>✕</button>
+                    {when && <span className={`jc-when${live ? " live" : ""}`}><i aria-hidden="true" />{when}</span>}
+                    <button type="button" className="ad-x" aria-label="Close" onClick={onClose} disabled={busy}>✕</button>
                 </div>
 
-                <div style={{ background: t.cardHi, borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
+                <div className="ld-body">
                     {/* No "Platform" row. This product does not know which
                         service the link belongs to, and the old one asserted
                         "Zoom / Google Meet" regardless. */}
-                    {[["📅 Date", apt.date], ["⏰ Time", `${apt.time} · ${apt.duration}`]].map(([k, v]) => (
-                        <div key={k} style={row}>
-                            <span style={{ fontSize: 12, color: t.textFaint }}>{k}</span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: t.text }}>{v}</span>
+                    <dl className="ld-rows">
+                        <div><dt>When</dt><dd>{day} · {span} PKT</dd></div>
+                        <div><dt>Length</dt><dd>{apt.duration}</dd></div>
+                        {apt.note && <div><dt>Client's note</dt><dd style={{ fontWeight: 500, fontStyle: "italic" }}>“{apt.note}”</dd></div>}
+                    </dl>
+
+                    {stored && !editing && (<>
+                        <div className="jc-link">
+                            <Icon d={I.link} size={18} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <span className="jc-label">Meeting link</span>
+                                <span className="jc-url">{stored.replace(/^https:\/\//, "")}</span>
+                            </div>
+                            <button type="button" className="ad-btn jc-copy" onClick={copy}>
+                                {copied ? <><Icon d={I.check} size={14} />Copied</> : "Copy"}
+                            </button>
                         </div>
-                    ))}
+                        <div className="ld-note">
+                            Your client sees this link on their appointment.{" "}
+                            <button type="button" className="jc-change" onClick={() => { setEditing(true); setLink(stored); setError(null); }}>Change link</button>
+                        </div>
+                    </>)}
+
+                    {/* In-app video (Daily) first: it needs no link. Renders nothing unless set up. */}
+                    <VideoJoin apptId={apt.id} status={apt.status === "Upcoming" ? "confirmed" : ""} mode={apt.type === "Video Call" ? "video" : ""} accent="#13806b" muted="var(--muted)" danger="var(--danger)" dark={!t || t.mode !== "light"} />
+
+                    {showField && (
+                        <div className="de-field">
+                            {!stored && (inAppVideo ? (
+                                <div className="ld-note" style={{ marginBottom: 4 }}>
+                                    <strong style={{ color: "var(--ink)" }}>Prefer your own service?</strong>{" "}
+                                    Optional: paste a Meet, Zoom or Teams link and your client sees it on
+                                    their appointment too.
+                                </div>
+                            ) : (
+                                <div className="ld-note" style={{ marginBottom: 4 }}>
+                                    <strong style={{ color: "var(--ink)" }}>No joining link yet.</strong>{" "}
+                                    In-app video isn't set up, so this product does not host video calls — paste
+                                    the link from whichever service you are using, and your client
+                                    will see it on their appointment.
+                                </div>
+                            ))}
+                            <label htmlFor="jc-link">{stored ? "New joining link" : inAppVideo ? "Your own link (optional)" : "Joining link"}</label>
+                            <input id="jc-link" type="url" value={link} onChange={e => setLink(e.target.value)}
+                                placeholder="https://meet.google.com/… or a Zoom / Teams link" disabled={busy}
+                                aria-label="Joining link" style={{ height: 44 }} />
+                        </div>
+                    )}
+
+                    {error && <div role="alert" className="ld-warn" style={{ color: "var(--danger)" }}>{error}</div>}
                 </div>
 
-                {error && (
-                    <div role="alert" style={{ marginBottom: 12, fontSize: 12, color: t.danger, fontWeight: 600 }}>
-                        {error}
-                    </div>
-                )}
-
-                {stored ? (
-                    <>
-                        <div style={{
-                            display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
-                            borderRadius: 10, background: `${t.primary}10`,
-                            border: `1px solid ${t.primary}30`, marginBottom: 16, flexWrap: "wrap",
-                        }}>
-                            <span style={{ fontSize: 12, color: t.primary, fontFamily: "monospace", flex: "1 1 180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {stored}
-                            </span>
-                            <button type="button" onClick={copy} style={{
-                                padding: "8px 12px", minHeight: 44, borderRadius: 7, border: "none",
-                                background: t.primary, color: t.mode === "dark" ? "#0b1c22" : "#fff",
-                                fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                            }}>{copied ? "Copied" : "Copy"}</button>
-                        </div>
-                        <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                            <button type="button" onClick={onClose} style={{
-                                padding: "10px", minHeight: 44, borderRadius: 10, border: `1px solid ${t.border}`,
-                                background: "transparent", color: t.textMuted,
-                                fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
-                            }}>Close</button>
-                            {/* A real anchor to the stored link. The old
-                                "Launch Call" button had no handler at all. */}
-                            <a href={stored} target="_blank" rel="noreferrer" style={{
-                                padding: "10px", minHeight: 44, borderRadius: 10,
-                                background: `linear-gradient(135deg,${t.primary},#22a898)`,
-                                color: t.mode === "dark" ? "#0b1c22" : "#fff",
-                                fontSize: 13, fontWeight: 700, cursor: "pointer",
-                                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                                textDecoration: "none", boxShadow: `0 4px 14px ${t.primary}50`,
-                            }}>📹 Open link</a>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.5, marginBottom: 12 }}>
-                            <strong style={{ color: t.text }}>No joining link yet.</strong>{" "}
-                            This product does not host video calls — paste the link
-                            from whichever service you are using, and your client
-                            will see it on their appointment.
-                        </div>
-                        <input
-                            type="url"
-                            value={link}
-                            onChange={e => setLink(e.target.value)}
-                            placeholder="https://…"
-                            disabled={busy}
-                            aria-label="Joining link"
-                            style={{
-                                width: "100%", minHeight: 44, padding: "10px 12px",
-                                borderRadius: 9, border: `1px solid ${t.border}`,
-                                background: t.inputBg, color: t.text,
-                                fontSize: 13, fontFamily: "inherit", marginBottom: 12,
-                            }} />
-                        <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                            <button type="button" onClick={onClose} disabled={busy} style={{
-                                padding: "10px", minHeight: 44, borderRadius: 10, border: `1px solid ${t.border}`,
-                                background: "transparent", color: t.textMuted,
-                                fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
-                            }}>Close</button>
-                            <button type="button" onClick={save} disabled={busy} aria-busy={busy} style={{
-                                padding: "10px", minHeight: 44, borderRadius: 10, border: "none",
-                                background: `linear-gradient(135deg,${t.primary},#22a898)`,
-                                color: t.mode === "dark" ? "#0b1c22" : "#fff",
-                                fontSize: 13, fontWeight: 700, fontFamily: "inherit",
-                                cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1,
-                            }}>{busy ? "Saving…" : "Save link"}</button>
-                        </div>
-                    </>
-                )}
+                <div className="ld-foot">
+                    {showField ? (<>
+                        <button type="button" className="ad-btn" onClick={() => (editing ? (setEditing(false), setError(null)) : onClose())} disabled={busy}>
+                            {editing ? "Keep current link" : "Close"}
+                        </button>
+                        <button type="button" className={`ad-btn${inAppVideo ? "" : " primary"}`} onClick={save} disabled={busy} aria-busy={busy}>
+                            {busy ? "Saving…" : "Save link"}
+                        </button>
+                    </>) : (<>
+                        <button type="button" className="ad-btn" onClick={onClose}>Close</button>
+                        {/* A real anchor to the stored link. The old
+                            "Launch Call" button had no handler at all. */}
+                        <a href={stored} target="_blank" rel="noreferrer" data-join-call className="ad-btn primary jc-join">
+                            <Icon d={I.video} size={17} />Join call
+                        </a>
+                    </>)}
+                </div>
             </div>
         </div>
     );
@@ -2243,8 +2394,22 @@ export const APPTS_THEME_CSS = `[data-appts-ws]{height:100%;box-sizing:border-bo
 [data-appts-ws] .ad-rows dd{margin:0;text-align:right;color:var(--ink)}
 [data-appts-ws] .ad-case{padding:3px 10px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--brand-text);font:600 12.5px "JetBrains Mono",monospace;cursor:pointer}
 [data-appts-ws] .ad-case:hover{border-color:var(--hover-line);color:var(--hover-ink)}
+[data-appts-ws] .ad-files{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:10px 12px}
+[data-appts-ws] .ad-files-h{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+[data-appts-ws] .ad-files-h span{margin-left:6px;color:var(--ink)}
+[data-appts-ws] .ad-files ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+[data-appts-ws] .ad-files li{display:flex;align-items:center;gap:10px;min-width:0}
+[data-appts-ws] .ad-files-ic{color:var(--muted);display:flex}
+[data-appts-ws] .ad-files b{display:block;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-appts-ws] .ad-files small{display:block;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-appts-ws] .ad-btn.ad-files-open{height:30px;padding:0 12px;font-size:12.5px;border-radius:999px}
+[data-appts-ws] .ad-files-lock{font-size:11.5px;color:var(--muted);white-space:nowrap}
 [data-appts-ws] .ad-note{margin:4px 0 0;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);font-size:13.5px;line-height:1.55;color:var(--ink)}
 [data-appts-ws] .ad-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+[data-appts-ws] .ad-actions{display:flex;flex-wrap:wrap}
+[data-appts-ws] .ad-actions .ad-btn{flex:1 1 140px}
+[data-appts-ws] .ad-actions .ad-btn.primary,[data-appts-ws] .ad-actions .ad-btn.danger{flex-basis:100%}
+[data-appts-ws] .ad-actions .ad-btn{min-width:0;white-space:normal;line-height:1.2}
 [data-appts-ws] .ad-btn{height:42px;border-radius:12px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
 [data-appts-ws] .ad-btn:hover:not(:disabled){border-color:var(--hover-line);background:var(--hover-tint);color:var(--hover-ink)}
 [data-appts-ws] .ad-btn:disabled{opacity:.45;cursor:not-allowed}
@@ -2377,7 +2542,601 @@ export const APPTS_THEME_CSS = `[data-appts-ws]{height:100%;box-sizing:border-bo
 [data-appts-ws] .wh-off input{height:38px;font-size:13px}
 [data-appts-ws] .wh-add{height:34px;font-size:12.5px}
 [data-appts-ws] .wh-foot{padding:10px 22px 16px}
-[data-appts-ws] .wh-save{height:46px;border-radius:13px;font-size:15px}`;
+[data-appts-ws] .wh-save{height:46px;border-radius:13px;font-size:15px}
+/* List cards and their dialogs (2026-10-12). */
+[data-appts-ws] .lc-list{display:flex;flex-direction:column;gap:12px}
+[data-appts-ws] .lc.flash{animation:lcFlash 2.2s ease}
+[data-appts-ws] .lc-needs{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;color:#e8b84b;background:rgba(232,184,75,.12);border:1px solid rgba(232,184,75,.4)}
+[data-appts-ws] .lc-prop{margin-top:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;padding:10px 12px;border-radius:12px;border:1px solid rgba(106,221,235,.35);background:rgba(106,221,235,.08);font-size:13px;color:var(--ink)}
+[data-appts-ws] .lc-prop-acts{display:flex;gap:8px}
+[data-appts-ws] .ad-prop{padding:10px 12px;border-radius:12px;border:1px solid rgba(106,221,235,.35);background:rgba(106,221,235,.08);font-size:13px;color:var(--ink)}
+@keyframes lcFlash{0%,60%{box-shadow:0 0 0 2px #6addeb,0 0 26px rgba(106,221,235,.45)}100%{box-shadow:none}}
+[data-appts-ws] .lc.case-meet{border-left:4px solid #5ab3ff;padding-left:17px}
+[data-appts-ws] .lc-kind{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;color:#5ab3ff;background:rgba(90,179,255,.12);border:1px solid rgba(90,179,255,.4);white-space:nowrap}
+[data-appts-ws] .lc{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:16px;align-items:start;padding:18px 20px;border-radius:18px;border:1px solid var(--line);background:var(--surface);transition:border-color .15s}
+[data-appts-ws] .lc:hover{border-color:var(--hover-line)}
+[data-appts-ws] .lc-av{width:48px;height:48px;flex:none;border-radius:50%;display:grid;place-items:center;box-sizing:border-box;font-size:15px;font-weight:800;color:var(--ink);background:var(--surface-2);border:2px solid var(--c,#38d8c4)}
+[data-appts-ws] .lc-main{min-width:0;display:flex;flex-direction:column;gap:8px}
+[data-appts-ws] .lc-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+[data-appts-ws] .lc-name{font-size:16px;font-weight:800;color:var(--ink)}
+[data-appts-ws] .lc-when{font-size:12.5px;font-weight:700;color:var(--c)}
+[data-appts-ws] .lc-meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--muted)}
+[data-appts-ws] .lc-meta span{display:inline-flex;align-items:center;gap:6px}
+[data-appts-ws] .lc-meta svg{color:var(--faint)}
+[data-appts-ws] .lc-note{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink);font-style:italic}
+[data-appts-ws] .lc-flag{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+[data-appts-ws] .lc-flag.ok{color:#3ec99a}
+[data-appts-ws] .lc-flag.warn{color:#e8b84b}
+[data-appts-ws] .lc-actions{grid-column:2/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-start;padding-top:12px;border-top:1px solid var(--line)}
+[data-appts-ws] .lc-actions:empty{display:none}
+[data-appts-ws] .lc-actions .danger{margin-left:auto}
+[data-appts-ws] .lc-newmsg{grid-column:3;grid-row:1;align-self:start;position:relative;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(229,72,77,.45);background:rgba(229,72,77,.1);color:var(--ink);cursor:pointer;animation:lcPing 2.4s ease-out 2}
+[data-appts-ws] .lc-newmsg b{position:absolute;top:-5px;right:-5px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#e5484d;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--surface)}
+[data-appts-ws] .lc-newmsg:hover{background:rgba(229,72,77,.18);border-color:rgba(229,72,77,.75)}
+@keyframes lcPing{0%{box-shadow:0 0 0 0 rgba(229,72,77,.45)}70%{box-shadow:0 0 0 10px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+[data-appts-ws] .lc-btn{height:38px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;white-space:nowrap}
+[data-appts-ws] .lc-x{width:38px;padding:0}
+[data-appts-ws] .ld-backdrop{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(4,14,17,.6)}
+[data-appts-ws] .ld-card{width:min(560px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden;border-radius:20px;border:1px solid var(--line);background:var(--surface);box-shadow:0 30px 70px -20px rgba(0,0,0,.6);outline:none}
+[data-appts-ws] .ld-head{display:flex;align-items:center;gap:14px;padding:20px 22px 16px;border-bottom:1px solid var(--line)}
+[data-appts-ws] .ld-head .lc-av{width:44px;height:44px}
+[data-appts-ws] .ld-head h2{margin:0;font-size:18px;font-weight:800;color:var(--ink)}
+[data-appts-ws] .ld-head small{display:block;margin-top:2px;font-size:13px;color:var(--muted)}
+[data-appts-ws] .ld-body{overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+[data-appts-ws] .ld-rows{margin:0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+[data-appts-ws] .ld-rows > div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;padding:11px 14px;font-size:14px;border-top:1px solid var(--line)}
+[data-appts-ws] .ld-rows > div:first-child{border-top:0}
+[data-appts-ws] .ld-rows dt{color:var(--muted)}
+[data-appts-ws] .ld-rows dd{margin:0;color:var(--ink);font-weight:600}
+[data-appts-ws] .ld-ok{color:#3ec99a}
+[data-appts-ws] .ld-warn{color:#e8b84b;font-size:13px;font-weight:600}
+[data-appts-ws] .ld-note{font-size:12.5px;color:var(--muted);line-height:1.5}
+[data-appts-ws] .ld-label{font-size:13px;font-weight:700;color:var(--muted)}
+[data-appts-ws] .ld-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+[data-appts-ws] .ld-opt{display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--input);color:var(--ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer;text-align:left;transition:border-color .15s}
+[data-appts-ws] .ld-opt:hover:not(:disabled){border-color:var(--hover-line)}
+[data-appts-ws] .ld-opt i{width:16px;height:16px;flex:none;border-radius:50%;box-sizing:border-box;border:2px solid var(--muted)}
+[data-appts-ws] .ld-opt.on{border-color:var(--brand-text)}
+[data-appts-ws] .ld-opt.on i{border:5px solid var(--brand-text)}
+[data-appts-ws] .ld-opt:disabled{opacity:.45;cursor:not-allowed}
+[data-appts-ws] .ld-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 22px 20px;border-top:1px solid var(--line)}
+[data-appts-ws] .ld-foot .ad-btn{min-width:130px;padding:0 18px}
+[data-appts-ws] .ld-chips{display:flex;flex-wrap:wrap;gap:8px}
+[data-appts-ws] .ld-chip{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s}
+[data-appts-ws] .ld-chip:hover{border-color:var(--hover-line)}
+[data-appts-ws] .ld-chip.on{border-color:var(--danger);background:var(--danger-soft);color:var(--danger)}
+[data-appts-ws] .lc-flag.muted{color:var(--muted)}
+[data-appts-ws] .lc-mine{margin:0;font-size:13px;line-height:1.5;color:var(--muted)}
+[data-appts-ws] .lc-mine b{color:var(--ink)}
+[data-appts-ws] .lc-case{display:inline-flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:var(--brand-text);font:inherit;font-weight:700;cursor:pointer}
+[data-appts-ws] .lc-case:hover{text-decoration:underline;text-underline-offset:3px}
+[data-appts-ws] .ld-ack{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid rgba(232,184,75,.45);background:rgba(232,184,75,.08);color:var(--ink);font-size:13px;line-height:1.45;cursor:pointer}
+[data-appts-ws] .ld-ack input{width:16px;height:16px;margin-top:1px;flex:none;accent-color:#e8b84b;cursor:pointer}
+[data-appts-ws] .ld-card.jc{width:min(540px,100%)}
+[data-appts-ws] .jc-when{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;font-size:12.5px;font-weight:700;color:#38d8c4;background:rgba(56,216,196,.12);border:1px solid rgba(56,216,196,.35);white-space:nowrap}
+[data-appts-ws] .jc-when i{width:7px;height:7px;border-radius:50%;background:currentColor}
+[data-appts-ws] .jc-when.live{color:#3ec99a;background:rgba(62,201,154,.14);border-color:rgba(62,201,154,.45)}
+[data-appts-ws] .jc-link{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted)}
+[data-appts-ws] .jc-label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+[data-appts-ws] .jc-url{display:block;margin-top:2px;font-size:14.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-appts-ws] .jc-copy{height:36px;padding:0 16px;display:inline-flex;align-items:center;gap:6px;font-size:13px;flex:none}
+[data-appts-ws] .jc-change{border:0;background:none;padding:0;color:var(--brand-text);font:inherit;font-weight:700;cursor:pointer}
+[data-appts-ws] .jc-change:hover{text-decoration:underline;text-underline-offset:3px}
+[data-appts-ws] .jc-join{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+/* Pill buttons in the page's own green, like Export Excel (2026-10-12). */
+[data-appts-ws] .lc-btn,[data-appts-ws] .ld-foot .ad-btn,[data-appts-ws] .jc-copy,[data-appts-ws] .ad-actions .ad-btn{border-radius:999px}
+[data-appts-ws] .lc-btn.primary,[data-appts-ws] .ld-foot .ad-btn.primary,[data-appts-ws] .ad-actions .ad-btn.primary{border:1px solid transparent;background:linear-gradient(135deg,#12897f 0%,#1c9c66 100%);color:#fff;box-shadow:0 4px 14px rgba(28,156,102,.28);transition:filter .15s}
+[data-appts-ws] .lc-btn.primary:hover:not(:disabled),[data-appts-ws] .ld-foot .ad-btn.primary:hover:not(:disabled),[data-appts-ws] .ad-actions .ad-btn.primary:hover:not(:disabled){filter:brightness(1.08);color:#fff}
+[data-appts-ws] .lc-btn.primary:disabled,[data-appts-ws] .ld-foot .ad-btn.primary:disabled{box-shadow:none}
+[data-appts-ws] .ld-foot .ad-btn.danger.solid{border:1px solid transparent;background:#d9475f;color:#fff}
+[data-appts-ws] .ld-foot .ad-btn.danger.solid:hover:not(:disabled){filter:brightness(1.08);background:#d9475f;color:#fff}`;
+
+/* ── THE LIST'S CARDS AND THEIR DIALOGS (2026-10-12) ────────────────────────
+ * One card per appointment: who, when, how, about what, the client's note,
+ * and what the lawyer can do next. Accept and Complete open a dialog that
+ * shows what is being agreed to; the handlers and their clock gates are the
+ * page's, unchanged. */
+const MODE_ICON = { "Video Call": I.video, "Phone Call": I.phone, "In-Person": I.map };
+const hm24 = (d) => formatPkt(d, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const DECLINE_REASONS = [
+    "Not my area of practice",
+    "Not available at that time",
+    "Conflict of interest",
+    "Too busy to take new matters",
+];
+
+function untilLabel(ms) {
+    const min = Math.round(ms / 60000);
+    if (min < 60) return `${Math.max(min, 1)} min`;
+    const h = Math.floor(min / 60), m = min % 60;
+    if (h < 24) return m ? `${h} h ${m} min` : `${h} h`;
+    // Whole days rounded DOWN, like the client countdown, so both sides of one
+    // appointment say the same thing.
+    const d = Math.floor(h / 24);
+    return `${d} day${d === 1 ? "" : "s"}`;
+}
+
+function apptWhen(apt) {
+    if (!apt.at) return { day: apt.date, span: apt.time };
+    return {
+        day: formatPkt(apt.at, { weekday: "short", day: "numeric", month: "short" }),
+        span: `${hm24(apt.at)}${apt.endAt ? `–${hm24(apt.endAt)}` : ""}`,
+    };
+}
+
+/** "Hearing · Rent arrears 10:30, …" — only what the page has read: the
+ *  lawyer's other appointments, their hearings and diary entries. */
+function clashText(list) {
+    return list.map(c => `${c.kind === "court" ? "Hearing" : c.kind === "appointment" ? "Appointment"
+        : (DIARY_STYLES[c.kind] || DIARY_STYLES.event).label} · ${c.title} ${hm24(c.at)}`).join(", ");
+}
+
+function LawyerApptCard({ apt, now, clashes, caseTitle, gates, on, engagement = null, thread = null }) {
+    const inAppVideo = useVideoConfigured();
+    const { day, span } = apptWhen(apt);
+    const start = apt.at ? +apt.at : null;
+    const end = apt.endAt ? +apt.endAt : null;
+    const ended = end !== null && end <= now;
+    const running = start !== null && start <= now && !ended;
+    const toClose = apt.status === "Upcoming" && ended;
+    const tone = apt.status === "Pending" || toClose ? "#e8b84b"
+        : apt.status === "Upcoming" ? "#38d8c4" : apt.status === "Completed" ? "#3ec99a"
+        : apt.status === "Cancelled" ? "#e8526a" : "#94a2af";
+    const when = apt.status === "Pending"
+        ? (apt.createdAt ? `Sent ${daysAgo(apt.createdAt, now)}` : null)
+        : apt.status === "Upcoming"
+            ? (toClose ? `Ended ${untilLabel(now - end)} ago` : running ? "Happening now" : start ? `In ${untilLabel(start - now)}` : null)
+            : null;
+    const video = apt.type === "Video Call";
+    return (
+        <article className={`lc${apt.caseMeeting ? " case-meet" : ""}`} data-appt-card={apt.id} data-case-meeting={apt.caseMeeting || undefined} style={{ "--c": tone }}>
+            <div className="lc-av" aria-hidden="true">{apt.initials}</div>
+            <div className="lc-main">
+                <div className="lc-top">
+                    <b className="lc-name">{apt.client}</b>
+                    {toClose ? <span className="lc-needs" data-needs-outcome>Needs outcome</span> : <StatusBadge status={apt.status} />}
+                    {when && <span className="lc-when">{when}</span>}
+                    {apt.caseMeeting && <span className="lc-kind" data-case-meeting-chip>Case meeting{apt.caseNumber ? ` · ${apt.caseNumber}` : ""}</span>}
+                </div>
+                <div className="lc-meta">
+                    <span><Icon d={I.calendar} size={14} />{day}</span>
+                    <span><Icon d={I.clock} size={14} />{span} PKT</span>
+                    <span><Icon d={MODE_ICON[apt.type] || I.calendar} size={14} />{MODE_WORD[apt.type] || apt.type}</span>
+                    {apt.caseId && on.openCase && caseTitle
+                        ? <button type="button" className="lc-case" onClick={() => on.openCase(apt.caseId)}><Icon d={I.fileText} size={14} />{caseTitle || "Linked case"} ↗</button>
+                        : <span title={apt.caseId && !caseTitle ? "This case is the client's; you can open it once they hire you" : undefined}><Icon d={I.fileText} size={14} />{apt.caseId ? (caseTitle || "Client's case") : "General consultation"}</span>}
+                </div>
+                {apt.note && <p className="lc-note">“{apt.note}”</p>}
+                {/* What the client shared, on the card the lawyer decides from. */}
+                <ClientSummary apt={apt} />
+                <ClientFiles apt={apt} />
+                {apt.status === "Upcoming" && apt.proposal && on.proposal && (
+                    <div className="lc-prop" data-proposal={apt.proposal.by}>
+                        <span><b>{apt.proposal.by === "lawyer" ? "You proposed" : `${String(apt.client || "The client").split(" ")[0]} proposed`}</b> moving it to {formatPkt(apt.proposal.scheduled_at, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}{apt.proposal.note ? ` — “${apt.proposal.note}”` : ""}. The current time stands until it is accepted.</span>
+                        <span className="lc-prop-acts">
+                            {apt.proposal.by === "lawyer"
+                                ? <button type="button" className="ad-btn lc-btn" data-withdraw-proposal onClick={() => on.proposal("withdraw", apt)}>Withdraw</button>
+                                : <>
+                                    <button type="button" className="ad-btn lc-btn" data-decline-proposal onClick={() => on.proposal("decline", apt)}>Decline</button>
+                                    <button type="button" className="ad-btn primary lc-btn" data-accept-proposal onClick={() => on.proposal("accept", apt)}>Accept new time</button>
+                                </>}
+                        </span>
+                    </div>
+                )}
+                {apt.status === "Pending" && apt.timeSuggestion?.options?.length > 0 && (
+                    <p className="lc-note" data-suggested-times style={{ fontStyle: "normal" }}>
+                        <b>You suggested:</b> {apt.timeSuggestion.options.map(o => formatPkt(o, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })).join(" · ")} — waiting for {String(apt.client || "the client").split(" ")[0]} to pick one.
+                    </p>
+                )}
+                {apt.status === "Completed" && apt.lawyerNotes && (
+                    <p className="lc-mine"><b>Your notes</b> (only you) · {apt.lawyerNotes}</p>
+                )}
+                {apt.status === "Completed" && (
+                    engagement?.status === "requested"
+                        ? <div className="lc-flag ok" data-after="requested"><Icon d={I.checkCircle} size={14} />{apt.client} asked you to take their case — review the request and send your terms.</div>
+                        : engagement?.status === "terms_proposed"
+                            ? <div className="lc-flag muted" data-after="terms"><Icon d={I.clock} size={14} />Your terms are with {apt.client}. Nothing to do until they answer.</div>
+                            : engagement?.status === "accepted"
+                                ? <div className="lc-flag ok" data-after="hired"><Icon d={I.checkCircle} size={14} />{apt.client} hired you — the matter is in your Cases.</div>
+                                : <div className="lc-flag muted" data-after="none"><Icon d={I.checkCircle} size={14} />No further action needed. If {apt.client} wants to hire you, the request appears in Cases › New requests.</div>
+                )}
+                {apt.status === "Pending" && gates.canAccept(apt) && (
+                    clashes.length
+                        ? <div className="lc-flag warn"><Icon d={I.alert} size={14} />Clashes with: {clashText(clashes)}</div>
+                        : <div className="lc-flag ok"><Icon d={I.checkCircle} size={14} />No clash with your other appointments or hearings</div>
+                )}
+                {toClose && (
+                    <div className="lc-flag warn"><Icon d={I.alert} size={14} />Record what happened. Until you complete it, the client cannot hire you or leave a review.</div>
+                )}
+            </div>
+            {/* A new message from the client (2026-10-20): a chat icon with the
+                count in the card's top-right corner; hover shows the message,
+                a click opens the chat. Nothing when there is nothing new. */}
+            {on.message && thread?.unread > 0 && thread.last && !thread.last.from_me && (
+                <button type="button" className="lc-newmsg" data-thread-preview={apt.id} onClick={() => on.message(apt)}
+                    title={`New message: “${thread.last.text}”`} aria-label={`${thread.unread} new message${thread.unread === 1 ? "" : "s"} from the client — open the chat`}>
+                    <Icon d={I.chat} size={19} />
+                    <b>{thread.unread > 9 ? "9+" : thread.unread}</b>
+                </button>
+            )}
+            <div className="lc-actions">
+                {apt.status === "Pending" && (<>
+                    {/* The server refuses to confirm a slot that has already
+                        passed. Decline stays enabled: clearing the stale
+                        request is the action that remains. */}
+                    <button type="button" className="ad-btn primary lc-btn" disabled={!gates.canAccept(apt)}
+                        title={gates.whyNotAccept(apt)} onClick={() => on.accept(apt)}>Accept</button>
+                    {on.suggest && gates.canAccept(apt) && <button type="button" className="ad-btn lc-btn" data-suggest-times={apt.id} onClick={() => on.suggest(apt)}>{apt.timeSuggestion ? "Change suggestion" : "Suggest other times"}</button>}
+                    <button type="button" className="ad-btn danger lc-btn" onClick={() => on.decline(apt)}>Decline</button>
+                </>)}
+                {apt.status === "Completed" && engagement?.status === "requested" && on.openRequest && (
+                    <button type="button" className="ad-btn primary lc-btn" onClick={() => on.openRequest(engagement)}>Review request</button>
+                )}
+                {apt.status === "Completed" && engagement?.status === "accepted" && engagement.case_id && on.openCase && (
+                    <button type="button" className="ad-btn lc-btn" onClick={() => on.openCase(engagement.case_id)}>Open case</button>
+                )}
+                {apt.status === "Upcoming" && (<>
+                    {/* Not once it has ended: there is no call left to join.
+                        The label follows the DATA: with no stored link there
+                        is nothing to join yet. */}
+                    {video && !ended && (
+                        <button type="button" className="ad-btn primary lc-btn" onClick={() => on.join(apt)}>
+                            <Icon d={I.video} size={15} />{apt.meetingLink ? "Join Call" : inAppVideo ? "Join video" : "Add joining link"}
+                        </button>
+                    )}
+                    {/* Outcome buttons only once it has ended -- before that they
+                        were disabled clutter (2026-10-19). */}
+                    {/* A no-show can be recorded from the start (the client did
+                        not turn up); the full outcome once it has ended. */}
+                    {(ended || (apt.status === "Upcoming" && apt.videoMet && gates.canComplete(apt))) && <button type="button" className={`ad-btn lc-btn${toClose || apt.videoMet ? " primary" : ""}`} disabled={!gates.canComplete(apt)}
+                        title={gates.whyNotComplete(apt)} onClick={() => on.complete(apt)}>Record outcome</button>}
+                    {/* ONE outcome interface (2026-10-20): before the end only
+                        "The client didn't attend" can be chosen in the dialog. */}
+                    {!ended && !(apt.videoMet && gates.canComplete(apt)) && noShowOpen(apt, now) && <button type="button" className="ad-btn lc-btn" disabled={!gates.canNoShow(apt)}
+                        title={gates.whyNotNoShow(apt)} onClick={() => on.complete(apt)}>Record outcome</button>}
+                    {!started(apt, now) && !apt.proposal && on.propose && (
+                        <button type="button" className="ad-btn lc-btn" data-propose-time={apt.id} onClick={() => on.propose(apt)}>Propose new time</button>
+                    )}
+                    {on.message && (
+                        <button type="button" className="ad-btn lc-btn" data-message-client onClick={() => on.message(apt)}>Message client{thread?.unread ? ` (${thread.unread})` : ""}</button>
+                    )}
+
+                    {!ended && (
+                        <button type="button" className="ad-btn danger lc-btn" aria-label="Cancel appointment" title="Cancel appointment"
+                            onClick={() => on.cancel(apt)}>Cancel</button>
+                    )}
+                </>)}
+            </div>
+        </article>
+    );
+}
+
+/** Accept: what is being agreed to, a diary check, and (for video) the
+ *  joining link, which the server takes WITH the confirmation. */
+function AcceptDialog({ apt, clashes, caseTitle, onClose, onConfirm }) {
+    const inAppVideo = useVideoConfigured();
+    const [link, setLink] = useState("");
+    const [busy, setBusy] = useState(false);
+    // A clash is the lawyer's call, not a block: a diary entry can often be
+    // moved. But it is said once more and ticked, never accepted by accident.
+    const [ack, setAck] = useState(false);
+    const blocked = clashes.length > 0 && !ack;
+    const panel = useRef(null);
+    useDialogFocus(panel, "[data-accept-confirm]");
+    useEffect(() => {
+        const esc = (e) => { if (e.key === "Escape" && !busy) onClose(); };
+        window.addEventListener("keydown", esc);
+        return () => window.removeEventListener("keydown", esc);
+    }, [busy, onClose]);
+    const video = apt.type === "Video Call";
+    const trimmed = link.trim();
+    const linkBad = trimmed !== "" && !/^https:\/\/\S+\.\S+/.test(trimmed);
+    const { day, span } = apptWhen(apt);
+    const submit = async () => {
+        if (busy || linkBad || blocked) return;
+        setBusy(true);
+        await onConfirm(video && trimmed ? trimmed : null);
+        setBusy(false);
+    };
+    return (
+        <div className="ld-backdrop" onClick={() => { if (!busy) onClose(); }}>
+            <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Accept request" className="ld-card" onClick={e => e.stopPropagation()}>
+                <div className="ld-head">
+                    <div className="lc-av" aria-hidden="true">{apt.initials}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h2>Accept request</h2>
+                        <small>{apt.client}</small>
+                    </div>
+                    <button type="button" className="ad-x" aria-label="Close" onClick={onClose} disabled={busy}>✕</button>
+                </div>
+                <div className="ld-body">
+                    <dl className="ld-rows">
+                        <div><dt>When</dt><dd>{day} · {span} PKT</dd></div>
+                        <div><dt>How</dt><dd>{MODE_WORD[apt.type] || apt.type}</dd></div>
+                        <div><dt>About</dt><dd>{apt.caseId ? (caseTitle || "Linked case") : "General consultation"}</dd></div>
+                        <div><dt>Your diary</dt><dd>{clashes.length
+                            ? <span className="ld-warn">Clashes with: {clashText(clashes)}</span>
+                            : <span className="ld-ok">✓ No clash with your appointments or hearings</span>}</dd></div>
+                    </dl>
+                    {apt.note && <p className="lc-note" style={{ margin: 0 }}>“{apt.note}”</p>}
+                    {video && (
+                        <div className="de-field">
+                            <label htmlFor="ld-link">Joining link for the client <span style={{ fontWeight: 500 }}>(optional)</span></label>
+                            <input id="ld-link" type="url" inputMode="url" value={link} onChange={e => setLink(e.target.value)}
+                                placeholder="https://meet.google.com/… or a Zoom / Teams link" style={{ height: 44 }} />
+                            <span className={linkBad ? "ld-warn" : "de-hint"}>{linkBad ? "Use a full link starting with https://" : inAppVideo ? "Not needed: you and the client can join the in-app video from the appointment." : "No link yet? Add it later from this card with “Add joining link”."}</span>
+                        </div>
+                    )}
+                    {clashes.length > 0 && (
+                        <label data-clash-ack className="ld-ack">
+                            <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} />
+                            <span>I know this clashes with {clashes.length === 1 ? "an entry" : `${clashes.length} entries`} in my diary — accept anyway.</span>
+                        </label>
+                    )}
+                    <div className="ld-note">{apt.client} is notified that it is confirmed{video && trimmed && !linkBad ? ", with the joining link" : ""}.</div>
+                </div>
+                <div className="ld-foot">
+                    <button type="button" className="ad-btn" onClick={onClose} disabled={busy}>Cancel</button>
+                    <button type="button" className="ad-btn primary" data-accept-confirm onClick={submit} disabled={busy || linkBad || blocked}>
+                        {busy ? "Accepting…" : clashes.length ? "Accept anyway" : "Accept & confirm"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* What the client CHOSE to share for this appointment (2026-10-19): their
+ * approved summary snapshot. The server decides; this only shows it. */
+function ClientSummary({ apt }) {
+    const [s, setS] = useState(null);
+    useEffect(() => {
+        let alive = true;
+        readSharedSummary(apt.id).then(({ data }) => { if (alive) setS(data || null); });
+        return () => { alive = false; };
+    }, [apt.id, apt.status]);
+    if (!s?.shared) return null;
+    return (
+        <div className="ad-files" data-client-summary>
+            <div className="ad-files-h">Shared by the client</div>
+            <div style={{ fontSize: 13, color: "var(--ink)", whiteSpace: "pre-wrap", lineHeight: 1.5, maxHeight: 200, overflowY: "auto" }}>{s.text}</div>
+        </div>
+    );
+}
+
+/* "About this client": only THIS lawyer's appointments with THIS client. */
+function ClientHistory({ items }) {
+    if (!items?.length) return null;
+    const word = { Completed: "Completed", "No Show": "Client didn't attend", Cancelled: "Cancelled", Expired: "Expired", Upcoming: "Upcoming", Pending: "Requested" };
+    return (
+        <div className="ad-files" data-client-history>
+            <div className="ad-files-h">Your other appointments with this client <span>{items.length}</span></div>
+            <ul>{items.slice(0, 5).map(a => (
+                <li key={a.id}><div style={{ flex: 1, minWidth: 0 }}><b>{a.at ? formatPkt(a.at, { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : "No time"}</b>
+                    <small>{a.outcomeCode === "lawyer_no_show" ? "You couldn't attend" : a.outcomeCode === "did_not_take_place" ? "Didn't take place" : (a.status === "Upcoming" && a.endAt && +a.endAt <= Date.now() ? "Needs outcome" : (word[a.status] || a.status))}{a.note ? ` · “${a.note}”` : ""}</small></div></li>
+            ))}</ul>
+        </div>
+    );
+}
+
+/** Has this appointment's time begun? */
+function started(apt, now) { return apt.at ? +apt.at <= now : false; }
+/* A no-show only 15 minutes after the start: the server's NO_SHOW_GRACE
+ * (appointment_transitions.py), mirrored so the button appears when allowed. */
+export const NO_SHOW_GRACE_MS = 15 * 60 * 1000;
+function noShowOpen(apt, now) { return apt.at ? +apt.at + NO_SHOW_GRACE_MS <= now : false; }
+
+/* Propose a new time for a CONFIRMED appointment (2026-10-19). The client
+ * accepts or declines; the current time stands until then. */
+function ProposeTimeDialog({ apt, onClose, onSent }) {
+    const [day, setDay] = useState("");
+    const [time, setTime] = useState("10:00");
+    const [note, setNote] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState(null);
+    const panel = useRef(null);
+    useDialogFocus(panel, 'input[type="date"]');
+    useEffect(() => {
+        const esc = (e) => { if (e.key === "Escape" && !busy) onClose(); };
+        window.addEventListener("keydown", esc);
+        return () => window.removeEventListener("keydown", esc);
+    }, [busy, onClose]);
+    const when = apptWhen(apt);
+    const past = day && isPktSlotPast(day, time);
+    const submit = async () => {
+        if (busy || !day || past) return;
+        setBusy(true); setError(null);
+        const { error: err } = await proposeNewTime(apt.id, { scheduledAt: pktSlotToUtcISO(day, time), note: note.trim() });
+        setBusy(false);
+        if (err) { setError(err.message || "Could not send the proposal."); return; }
+        onSent();
+    };
+    return (
+        <div className="ld-backdrop" onClick={() => { if (!busy) onClose(); }}>
+            <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Propose a new time" className="ld-card" data-propose-dialog onClick={e => e.stopPropagation()}>
+                <div className="ld-head">
+                    <div className="lc-av" aria-hidden="true">{apt.initials}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h2>Propose a new time</h2>
+                        <small>Now {when.day} · {when.span} PKT with {apt.client}</small>
+                    </div>
+                    <button type="button" className="ad-x" aria-label="Close" onClick={onClose} disabled={busy}>✕</button>
+                </div>
+                <div className="ld-body">
+                    <div className="de-field">
+                        <label>New time (PKT)</label>
+                        <div style={{ display: "flex", gap: 8 }}>
+                            <input type="date" aria-label="New date" value={day} min={pktToday()} onChange={e => setDay(e.target.value)} style={{ height: 42, flex: 1 }} />
+                            <select aria-label="New time" value={time} onChange={e => setTime(e.target.value)} style={{ height: 42, width: 130 }}>
+                                {HALF_HOURS.map(h => <option key={h} value={h}>{label12(h)}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="de-field">
+                        <label htmlFor="pt-note">Why <span style={{ fontWeight: 500 }}>(optional, shown to the client)</span></label>
+                        <textarea id="pt-note" rows={2} maxLength={300} value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. A hearing was fixed for that morning." />
+                    </div>
+                    {past && <div className="ld-warn">That time has already passed.</div>}
+                    {error && <div role="alert" className="ld-warn">{error}</div>}
+                    <div className="ld-note">The appointment stays at its current time until {String(apt.client || "the client").split(" ")[0]} accepts. If they decline, nothing changes.</div>
+                </div>
+                <div className="ld-foot">
+                    <button type="button" className="ad-btn" onClick={onClose} disabled={busy}>Cancel</button>
+                    <button type="button" className="ad-btn primary" data-propose-send onClick={submit} disabled={busy || !day || past}>{busy ? "Sending…" : "Send proposal"}</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* Suggest other times (2026-10-19): the lawyer cannot move a request, but can
+ * OFFER up to three times. The client picks one and it is confirmed there --
+ * the lawyer already agreed to each. Times are PKT, on the half hour. */
+function SuggestTimesDialog({ apt, onClose, onSent }) {
+    const blank = () => ({ day: "", time: "10:00" });
+    const [rows, setRows] = useState([blank()]);
+    const [note, setNote] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState(null);
+    const panel = useRef(null);
+    useDialogFocus(panel, 'input[type="date"]');
+    useEffect(() => {
+        const esc = (e) => { if (e.key === "Escape" && !busy) onClose(); };
+        window.addEventListener("keydown", esc);
+        return () => window.removeEventListener("keydown", esc);
+    }, [busy, onClose]);
+    const { day, span } = apptWhen(apt);
+    const set = (i, k, v) => setRows(r => r.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
+    const chosen = rows.filter(r => r.day && r.time);
+    const past = chosen.some(r => isPktSlotPast(r.day, r.time));
+    const submit = async () => {
+        if (busy || !chosen.length || past) return;
+        setBusy(true); setError(null);
+        const { error: err } = await suggestAppointmentTimes(apt.id, {
+            options: chosen.map(r => pktSlotToUtcISO(r.day, r.time)), note: note.trim(),
+        });
+        setBusy(false);
+        if (err) { setError(err.message || "Could not send the suggestion."); return; }
+        onSent();
+    };
+    return (
+        <div className="ld-backdrop" onClick={() => { if (!busy) onClose(); }}>
+            <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Suggest other times" className="ld-card" data-suggest-dialog onClick={e => e.stopPropagation()}>
+                <div className="ld-head">
+                    <div className="lc-av" aria-hidden="true">{apt.initials}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h2>Suggest other times</h2>
+                        <small>{apt.client} asked for {day} · {span} PKT</small>
+                    </div>
+                    <button type="button" className="ad-x" aria-label="Close" onClick={onClose} disabled={busy}>✕</button>
+                </div>
+                <div className="ld-body">
+                    {rows.map((r, i) => (
+                        <div key={i} className="de-field" data-suggest-row={i}>
+                            <label>Option {i + 1} (PKT)</label>
+                            <div style={{ display: "flex", gap: 8 }}>
+                                <input type="date" aria-label={`Option ${i + 1} date`} value={r.day} min={pktToday()} onChange={e => set(i, "day", e.target.value)} style={{ height: 42, flex: 1 }} />
+                                <select aria-label={`Option ${i + 1} time`} value={r.time} onChange={e => set(i, "time", e.target.value)} style={{ height: 42, width: 130 }}>
+                                    {HALF_HOURS.map(h => <option key={h} value={h}>{label12(h)}</option>)}
+                                </select>
+                                {rows.length > 1 && <button type="button" className="ad-btn" aria-label={`Remove option ${i + 1}`} onClick={() => setRows(x => x.filter((_, j) => j !== i))} style={{ height: 42, padding: "0 12px" }}>✕</button>}
+                            </div>
+                        </div>
+                    ))}
+                    {rows.length < 3 && <button type="button" className="ad-btn" data-add-option onClick={() => setRows(r => [...r, blank()])} style={{ alignSelf: "flex-start", height: 36 }}>+ Add another time</button>}
+                    <div className="de-field">
+                        <label htmlFor="sg-note">Note for {String(apt.client || "the client").split(" ")[0]} <span style={{ fontWeight: 500 }}>(optional)</span></label>
+                        <textarea id="sg-note" rows={2} maxLength={300} value={note} onChange={e => setNote(e.target.value)}
+                            placeholder="e.g. I am in court that morning. Any of these works for me." />
+                    </div>
+                    {past && <div className="ld-warn">One of these times has already passed.</div>}
+                    {error && <div role="alert" className="ld-warn">{error}</div>}
+                    <div className="ld-note">{apt.client} is notified and picks one. The appointment is then confirmed at that time — you don't need to accept again.</div>
+                </div>
+                <div className="ld-foot">
+                    <button type="button" className="ad-btn" onClick={onClose} disabled={busy}>Cancel</button>
+                    <button type="button" className="ad-btn primary" data-suggest-send onClick={submit} disabled={busy || !chosen.length || past}>
+                        {busy ? "Sending…" : `Send ${chosen.length > 1 ? `${chosen.length} times` : "time"}`}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/** Close a consultation that has ended: it took place (with private notes),
+ *  or the client did not attend. Same guarded endpoints as before. */
+function CloseDialog({ apt, canNoShow, onClose, onComplete, onNoShow, onOutcome = null }) {
+    // Opened before the meeting's end (the client never joined): only "The
+    // client didn't attend" is open; the rest wait for the end.
+    const early = Boolean(apt.endAt && +apt.endAt > Date.now()) && apt.videoMet !== true;
+    const [outcome, setOutcome] = useState(early ? "no_show" : "held");
+    const [refused, setRefused] = useState(null);   // the server's reason, shown in the dialog
+    const [notes, setNotes] = useState("");
+    const [busy, setBusy] = useState(false);
+    const panel = useRef(null);
+    useDialogFocus(panel, "[data-close-confirm]");
+    useEffect(() => {
+        const esc = (e) => { if (e.key === "Escape" && !busy) onClose(); };
+        window.addEventListener("keydown", esc);
+        return () => window.removeEventListener("keydown", esc);
+    }, [busy, onClose]);
+    const { day, span } = apptWhen(apt);
+    const submit = async () => {
+        if (busy) return;
+        setBusy(true); setRefused(null);
+        const err = outcome === "held" ? await onComplete(notes.trim() || null)
+            : outcome === "no_show" ? await onNoShow()
+            : onOutcome ? await onOutcome(outcome) : null;
+        setBusy(false);
+        if (typeof err === "string") setRefused(err);
+    };
+    return (
+        <div className="ld-backdrop" onClick={() => { if (!busy) onClose(); }}>
+            <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Complete the consultation" className="ld-card" onClick={e => e.stopPropagation()}>
+                <div className="ld-head">
+                    <div className="lc-av" aria-hidden="true">{apt.initials}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h2>Complete the consultation</h2>
+                        <small>{apt.client} · {day} · {span} · {MODE_WORD[apt.type] || apt.type}</small>
+                    </div>
+                    <button type="button" className="ad-x" aria-label="Close" onClick={onClose} disabled={busy}>✕</button>
+                </div>
+                <div className="ld-body">
+                    <div className="ld-label">What happened?</div>
+                    <div role="radiogroup" aria-label="What happened" className="ld-opts">
+                        {[["held", "It took place"], ["no_show", "The client didn't attend"], ...(onOutcome ? [["lawyer_no_show", "I couldn't attend"], ["did_not_take_place", "It didn't take place"]] : [])].map(([k, label]) => (
+                            <button key={k} type="button" role="radio" aria-checked={outcome === k}
+                                disabled={k === "no_show" ? !canNoShow : early} onClick={() => setOutcome(k)}
+                                className={`ld-opt${outcome === k ? " on" : ""}`}>
+                                <i aria-hidden="true" />{label}
+                            </button>
+                        ))}
+                    </div>
+                    {outcome === "held" && (
+                        <div className="de-field">
+                            <label htmlFor="ld-notes">Private notes <span style={{ fontWeight: 500 }}>(only you see these)</span></label>
+                            <textarea id="ld-notes" rows={4} maxLength={2000} value={notes} onChange={e => setNotes(e.target.value)}
+                                placeholder="What was discussed, documents to ask for, next steps…" />
+                        </div>
+                    )}
+                    {refused && <div role="alert" className="ld-warn" data-outcome-refused>{refused}</div>}
+                    <div className="ld-note">{outcome === "held"
+                        ? `Once completed, ${apt.client} can hire you, book a follow-up or leave a review.`
+                        : outcome === "no_show" ? `${apt.client} is recorded as not attending. This cannot be undone.`
+                        : outcome === "lawyer_no_show" ? `Recorded as cancelled because you couldn't attend. ${apt.client} is told and can book a new time — they are not marked absent.`
+                        : `Recorded as cancelled: it didn't take place. ${apt.client} is told and can book a new time.`}</div>
+                </div>
+                <div className="ld-foot">
+                    <button type="button" className="ad-btn" onClick={onClose} disabled={busy}>Later</button>
+                    <button type="button" className={`ad-btn ${outcome === "held" ? "primary" : "danger"}`} data-close-confirm onClick={submit} disabled={busy}>
+                        {busy ? "Saving…" : outcome === "held" ? "Complete" : outcome === "no_show" ? "Record no-show" : "Record outcome"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function AppointmentsPage() {
     const { t } = useTheme();
@@ -2405,6 +3164,8 @@ function AppointmentsScreen() {
     // Hearings from the lawyer's cases, for the calendar. A failed read leaves
     // the calendar without them rather than saying something about them.
     const [hearings, setHearings] = useState([]);
+    // Case titles for the cards' "About", from the same read.
+    const [caseTitles, setCaseTitles] = useState({});
     useEffect(() => {
         let off = false;
         Promise.resolve().then(() => listAllCases(listCases)).then(res => {
@@ -2420,6 +3181,7 @@ function AppointmentsScreen() {
                 });
             }
             setHearings(out);
+            setCaseTitles(Object.fromEntries(res.data.items.map(c => [c._id, c.title || "Case"])));
         }).catch(() => {});
         return () => { off = true; };
     }, []);
@@ -2451,12 +3213,36 @@ function AppointmentsScreen() {
     const [now, setNow] = useState(() => Date.now());
     const [joinModal, setJoinModal] = useState(null);
     const [cancelFor, setCancelFor] = useState(null);   // row awaiting decline/cancel confirmation
+    const [acceptFor, setAcceptFor] = useState(null);   // request being accepted (dialog)
+    const [suggestFor, setSuggestFor] = useState(null); // request getting other times (dialog)
+    const [proposeFor, setProposeFor] = useState(null); // confirmed appointment being moved (dialog)
+    // Hire requests by the consultation they follow, for the completed cards.
+    // A failed read leaves the cards without them rather than saying "none".
+    const [engByAppt, setEngByAppt] = useState({});
+    const [closeFor, setCloseFor] = useState(null);     // ended consultation being completed (dialog)
     // Month calendar. Its own data: every appointment, whatever the list tab.
     const [calMonth, setCalMonth] = useState(() => pktToday().slice(0, 7));
     const [calDay, setCalDay] = useState(() => pktToday());
     // The appointment opened from the day's agenda (by id, so it follows a
     // reload), and the way to its case.
     const [detailId, setDetailId] = useState(null);
+    // An appointment named by a notification: read once at mount (the page
+    // may open BECAUSE of it), and heard live while the page is open.
+    const [focusApptId, setFocusApptId] = useState(() => {
+        try {
+            const v = sessionStorage.getItem("attorney:lawyer-open-appointment");
+            if (v) sessionStorage.removeItem("attorney:lawyer-open-appointment");
+            return v || null;
+        } catch { return null; }
+    });
+    useEffect(() => {
+        const heard = (e) => {
+            try { sessionStorage.removeItem("attorney:lawyer-open-appointment"); } catch { /* storage off */ }
+            setFocusApptId(typeof e.detail === "string" ? e.detail : null);
+        };
+        window.addEventListener("attorney:open-appointment", heard);
+        return () => window.removeEventListener("attorney:open-appointment", heard);
+    }, []);
     // Daily / Weekly / Monthly.
     const RANGE_KEY = "attorney:lawyer-appts-range";
     const [calRange, setCalRangeState] = useState(() => {
@@ -2476,6 +3262,17 @@ function AppointmentsScreen() {
     };
     const { setPage: goToPage, setOpenCaseId } = useCase();
     const openCase = (caseId) => { setOpenCaseId?.(caseId); goToPage?.("cases"); };
+    /** Cases › New requests, on this hire request (2026-10-12). A pending
+     *  request's case is not yet the lawyer's, so it is the REQUEST that is
+     *  opened. The id is stored so a reload on the way still lands on it; an
+     *  invalid one opens New requests. */
+    const openRequest = (eng) => {
+        const id = typeof eng?.id === "string" && eng.id.trim() ? eng.id : "";
+        try { sessionStorage.setItem("attorney:lawyer-open-request", id); } catch { /* storage off */ }
+        setOpenCaseId?.(null);
+        goToPage?.("cases");
+        window.dispatchEvent(new CustomEvent("attorney:open-request", { detail: id }));
+    };
     const [calItems, setCalItems] = useState([]);
     const [calState, setCalState] = useState("loading");   // loading | ready | error
     const [calPartial, setCalPartial] = useState(false);
@@ -2496,16 +3293,32 @@ function AppointmentsScreen() {
     // "Expired" earns a tab on the same reasoning as "No Show": the filter is
     // an exact match on the display status, so a status without a tab is
     // reachable under "All" and nowhere else.
-    const tabs = ["All", "Upcoming", "Pending", "Completed", "Cancelled", "No Show", "Expired"];
+    // "Needs outcome" (2026-10-20): ended meetings waiting to be recorded have
+    // their own tab, read from the server's queue, instead of hiding under All.
+    const tabs = ["All", "Needs outcome", "Upcoming", "Pending", "Completed", "Cancelled", "No Show", "Expired"];
 
     const calDays = calendarDays(calItems, calDiary, hearings);
 
     const mapApiAppt = (a) => ({
         id: a.id,
+        clientId: a.client_id || null,
         // The STORED joining link, or null. The modal used to construct a
         // meet.attorney.ai URL from the id and the client's first name — a host
         // this product does not own and a room nobody had created.
         meetingLink: a.meeting_link || null,
+        // Times this lawyer offered instead (2026-10-19), or null.
+        timeSuggestion: a.time_suggestion || null,
+        // An open proposal to move this confirmed appointment, and why an ended
+        // one was cancelled (2026-10-19, APPOINTMENT_FLOW_PLAN.md).
+        proposal: a.reschedule_proposal && (!a.reschedule_proposal.expires_at || new Date(a.reschedule_proposal.expires_at) > new Date()) ? a.reschedule_proposal : null,
+        outcomeCode: a.outcome_code || null,
+        // Both joined the in-app video near its time (2026-10-20): the
+        // consultation may be completed from its start, not only its end.
+        videoMet: a.video_met === true,
+        // On a case this lawyer is engaged on (2026-10-20): a case meeting,
+        // marked apart from a first consultation.
+        caseMeeting: a.case_meeting === true,
+        caseNumber: a.case_number || null,
         // Carried through so Accept can pin the schedule the lawyer was shown.
         // Dropping it here was the gap: the row rendered correctly and the one
         // field that makes the confirmation safe never reached the handler.
@@ -2528,6 +3341,8 @@ function AppointmentsScreen() {
         purpose: a.notes || "Consultation",
         // The client's note as written ("" when none), for the detail panel.
         note: a.notes || "",
+        // The lawyer's own private notes from completing it (sent to the lawyer only).
+        lawyerNotes: a.lawyer_notes || "",
         // Rendered in PKT, not the browser's zone. The stored instant used to
         // come back from Mongo without an offset, which JS then read as LOCAL
         // time — so an appointment displayed correctly when it was created and
@@ -2570,11 +3385,24 @@ function AppointmentsScreen() {
     // which is the only thing that can stop re-entry within one tick.
     const moreInFlight = useRef(false);
 
+    // What each tab asks the server for (2026-10-20). Upcoming is "not yet
+    // ended"; All comes in the order it is worked. Needs outcome has its own
+    // keyset list (NeedsOutcome), so it reads nothing here.
+    const listQuery = (tab) => ({
+        status: API_STATUS[tab],
+        ...(tab === "Upcoming" ? { upcoming_only: true } : {}),
+        ...(tab === "All" ? { order: "action" } : {}),
+    });
     const reload = async (tab = statusF) => {
         const mine = ++requestToken.current;
+        if (tab === "Needs outcome") {
+            setAppointments([]); setPageNo(1); setPagesTotal(1); setListTotal(null);
+            setFirstPageError(null); setMoreError(null); setLoading(false);
+            return;
+        }
         try {
             const { data, error } = await listAppointments({
-                status: API_STATUS[tab], page: 1, page_size: PAGE_SIZE,
+                ...listQuery(tab), page: 1, page_size: PAGE_SIZE,
             });
             if (mine !== requestToken.current) return;
             // The client resolves on failure rather than throwing, so an error
@@ -2609,7 +3437,7 @@ function AppointmentsScreen() {
         const mine = requestToken.current;
         const next = pageNo + 1;
         const { data, error } = await listAppointments({
-            status: API_STATUS[statusF], page: next, page_size: PAGE_SIZE,
+            ...listQuery(statusF), page: next, page_size: PAGE_SIZE,
         });
         moreInFlight.current = false;
         if (mine !== requestToken.current) { setLoadingMore(false); return; }
@@ -2659,6 +3487,27 @@ function AppointmentsScreen() {
         // Pending figure stayed at its old value after accepting a request.
     }, [calVersion]);
 
+    // The Needs outcome count: the server's one action count (GET
+    // /lawyer-actions), shared with the Dashboard. null = not known, never 0.
+    const [actionCounts, setActionCounts] = useState(null);
+    useEffect(() => {
+        let off = false;
+        getLawyerActions().then(({ data, error }) => { if (!off) setActionCounts(error || !data ? null : data); });
+        return () => { off = true; };
+    }, [calVersion]);
+
+    useEffect(() => {
+        let off = false;
+        Promise.resolve().then(() => listEngagements()).then(res => {
+            if (off || !res || res.error || !Array.isArray(res.data)) return;
+            const map = {};
+            // Newest wins when one consultation led to several requests over time.
+            for (const e of res.data) if (e.appointment_id) map[e.appointment_id] = e;
+            setEngByAppt(map);
+        }).catch(() => {});
+        return () => { off = true; };
+    }, [calVersion]);
+
     // A booking, a cancellation or a client's reschedule arriving while this
     // page is open: re-read the list, the calendar and the totals.
     useEffect(() => onNotification((n) => {
@@ -2667,6 +3516,15 @@ function AppointmentsScreen() {
         setCalVersion(v => v + 1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [statusF]);
+
+    // Daily confirmed that both met in the video room (VideoJoin asks the
+    // server after a call): re-read so "It took place" is offered at once.
+    useEffect(() => {
+        const heard = () => { reload(); setCalVersion(v => v + 1); };
+        window.addEventListener("attorney:video-met", heard);
+        return () => window.removeEventListener("attorney:video-met", heard);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [statusF]);
 
     useEffect(() => { setLoading(true); reload(statusF); },
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2705,6 +3563,58 @@ function AppointmentsScreen() {
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [viewMode, calVersion]);
+
+    // Unread count + last message per listed appointment (server receipts).
+    const [threads, setThreads] = useState({});
+    const threadIds = appointments.filter(a => a.status !== "Pending").map(a => a.id).join(",");
+    const dockTick = useChatDock()?.readTick || 0;
+    const [msgTick, setMsgTick] = useState(0);
+    useEffect(() => onNotification((n) => {
+        if (String(n.type || "") === "appointment_message") setMsgTick(x => x + 1);
+    }), []);
+    useEffect(() => {
+        if (!threadIds) { setThreads({}); return undefined; }
+        let alive = true;
+        getThreadSummary(threadIds.split(",")).then(({ data }) => { if (alive && data?.items) setThreads(data.items); });
+        return () => { alive = false; };
+    }, [threadIds, dockTick, msgTick]);
+
+    // The appointment whose message thread is open in the detail.
+    const [threadFor, setThreadFor] = useState(null);
+    /** Message a client: the floating chat window (2026-10-19) -- the page
+     *  stays where it is. Without the lawyer layout (tests), the detail's
+     *  own thread, as before. */
+    const dock = useChatDock();
+    const chatOf = (apt) => ({ id: apt.id, client: apt.client, at: apt.at });
+    const openThreadOf = (apt) => {
+        if (dock) { dock.openChat(chatOf(apt)); return; }
+        const k = apt.at ? pktDayKey(apt.at) : null;
+        if (k) { setCalDay(k); setCalMonth(k.slice(0, 7)); }
+        setViewMode("calendar");
+        setDetailId(apt.id);
+        setThreadFor(apt.id);
+    };
+
+    // Open the appointment a notification named, once every appointment is read.
+    useEffect(() => {
+        if (!focusApptId || calState !== "ready") return;
+        const a = calItems.find(x => x.id === focusApptId);
+        if (a) {
+            const k = a.at ? pktDayKey(a.at) : null;
+            if (k) { setCalDay(k); setCalMonth(k.slice(0, 7)); }
+            setViewMode("calendar");
+            setDetailId(a.id);
+            // A message notification also opens the thread.
+            try {
+                if (sessionStorage.getItem("attorney:lawyer-open-appointment-thread") === a.id) {
+                    if (dock) dock.openChat(chatOf(a)); else setThreadFor(a.id);
+                }
+                sessionStorage.removeItem("attorney:lawyer-open-appointment-thread");
+            } catch { /* storage off */ }
+        }
+        setFocusApptId(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusApptId, calState, calItems]);
 
     // The diary is read per month: exactly the days the grid shows.
     useEffect(() => {
@@ -2768,6 +3678,10 @@ function AppointmentsScreen() {
         const minutes = apt.endAt ? Math.max(1, Math.round((+apt.endAt - +apt.at) / 60000)) : 30;
         return clashesAt(pktDayKey(apt.at), pktHourMinute(apt.at), minutes, `a:${apt.id}`);
     };
+    /** What accepting a request would collide with: confirmed appointments,
+     *  hearings and diary entries. Another request still waiting is not one. */
+    const requestClashes = (apt) => clashesFor(apt)
+        .filter(c => c.kind !== "appointment" || c.appointment?.status === "Upcoming");
     const closeCreate = useCallback(() => setCreateKind(null), []);
     const onCreated = (entry) => {
         setCreateKind(null);
@@ -2844,18 +3758,19 @@ function AppointmentsScreen() {
     const endedAt = (apt) => (apt.endAt ? apt.endAt.getTime() : null);
 
     const canAccept = (apt) => startedAt(apt) !== null && now < startedAt(apt);
-    const canNoShow = (apt) => startedAt(apt) !== null && now >= startedAt(apt);
-    const canComplete = (apt) => endedAt(apt) !== null && now >= endedAt(apt);
+    const canNoShow = (apt) => startedAt(apt) !== null && now >= +startedAt(apt) + NO_SHOW_GRACE_MS;
+    const canComplete = (apt) => (endedAt(apt) !== null && now >= endedAt(apt))
+        || (apt.videoMet === true && startedAt(apt) !== null && now >= startedAt(apt));
 
     const whyNotAccept = (apt) => (canAccept(apt) ? undefined
         : startedAt(apt) === null ? "This appointment has no scheduled time"
         : "This time has already passed — cancel the request instead");
     const whyNotNoShow = (apt) => (canNoShow(apt) ? undefined
         : startedAt(apt) === null ? "This appointment has no scheduled time"
-        : "Available once the appointment has started");
+        : "Available 15 minutes after the appointment starts");
     const whyNotComplete = (apt) => (canComplete(apt) ? undefined
         : endedAt(apt) === null ? "This appointment has no end time"
-        : "Available once the consultation has ended");
+        : "Available once the consultation has ended, or once you have both joined the video");
 
     /** Record a status change on screen. On a filtered tab the row no longer
      *  belongs there, so it leaves (it used to stay, e.g. a cancelled request
@@ -2869,8 +3784,9 @@ function AppointmentsScreen() {
         }
     };
 
-    const handleAccept = async (id) => {
-        const apt = appointments.find(a => a.id === id);
+    const handleAccept = async (id, meetingLink = null) => {
+        const apt = appointments.find(a => a.id === id) || calItems.find(a => a.id === id);
+        setAcceptFor(null);
 
         // THE VERSION DISPLAYED WHEN ACCEPT WAS CLICKED, not one read fresh.
         //
@@ -2887,9 +3803,10 @@ function AppointmentsScreen() {
             return;
         }
 
-        const { error, status } = await apiConfirm(id, {
-            schedule_version: apt.scheduleVersion,
-        });
+        // The joining link goes WITH the confirmation when the lawyer has one.
+        const { error, status } = await apiConfirm(id, meetingLink
+            ? { schedule_version: apt.scheduleVersion, meeting_link: meetingLink }
+            : { schedule_version: apt.scheduleVersion });
 
         if (error) {
             const errMsg = error.message || "Could not confirm appointment";
@@ -2948,28 +3865,71 @@ function AppointmentsScreen() {
         addNotif({ type: "appointment", title: declined ? "Request Declined" : "Appointment Cancelled", body: msg, time: "Just now" });
         return null;
     };
-    const handleComplete = async (id) => {
-        const apt = appointments.find(a => a.id === id);
-        const { error } = await apiComplete(id);
+    // An outcome the server refuses because the meeting is no longer open
+    // (recorded in another tab, cancelled meanwhile): close the dialog and
+    // re-read the list and the counts, instead of leaving a stale row.
+    const [listNotice, setListNotice] = useState(null);
+    const staleOutcome = (res) => {
+        if (![404, 409].includes(res?.status)) return false;
+        setCloseFor(null);
+        reload();
+        setCalVersion(v => v + 1);
+        setListNotice(`${res.error?.message || "That meeting has changed."} The list has been refreshed.`);
+        return true;
+    };
+    const handleComplete = async (id, notes = null) => {
+        const apt = appointments.find(a => a.id === id) || calItems.find(a => a.id === id);
+        // Private notes, when the lawyer wrote any (the server keeps them from the client).
+        const res = await apiComplete(id, notes ? { lawyer_notes: notes } : undefined);
+        const { error } = res;
         if (error) {
             const errMsg = error.message || "Could not mark as complete";
+            if (staleOutcome(res)) return errMsg;
             toast.show(errMsg, "danger", 4000);
             addNotif({ type: "appointment", title: "Failed", body: errMsg, time: "Just now" });
-            return;
+            return errMsg;
         }
+        setCloseFor(null);
         applyStatus(id, "Completed");
+        await reload();
         setCalVersion(v => v + 1);
         const msg = `✓ Session completed with ${apt?.client}`;
         toast.show(msg, "success", 3000);
         addNotif({ type: "appointment", title: "Appointment Completed", body: msg, time: "Just now" });
+    };
+    // A proposal to move a confirmed appointment: withdraw ours, or answer theirs.
+    const handleProposal = async (action, apt) => {
+        const call = action === "withdraw" ? withdrawNewTime(apt.id)
+            : action === "decline" ? declineNewTime(apt.id) : acceptNewTime(apt.id, apt.proposal?.id);
+        const { error } = await call;
+        await reload();
+        setCalVersion(v => v + 1);
+        if (error) { toast.show(error.message || "Could not update the proposal.", "danger", 4000); return; }
+        toast.show(action === "accept" ? "Appointment moved to the new time." : action === "decline" ? "Declined — the time stays as it was." : "Proposal withdrawn.", "success", 3000);
+    };
+    // An ended appointment that did not happen: the lawyer could not attend,
+    // or it did not take place (recorded as cancelled with a reason code).
+    const handleOutcome = async (id, code) => {
+        const res = await apiCancel(id, null, code);
+        const { error } = res;
+        if (error) {
+            if (staleOutcome(res)) return error.message;
+            toast.show(error.message || "Could not record the outcome.", "danger", 4000); return error.message || "Could not record the outcome.";
+        }
+        setCloseFor(null);
+        await reload();
+        setCalVersion(v => v + 1);
+        toast.show("Outcome recorded — the client has been told.", "success", 3000);
     };
     const handleNoShow = async (id) => {
         // Uses the existing PATCH /appointments/{id}/no-show. The endpoint, the
         // API client function and the NO_SHOW status all already existed; the
         // lawyer — the only person who can record a no-show — simply had no way
         // to reach them.
-        const apt = appointments.find(a => a.id === id);
-        const { error } = await apiNoShow(id);
+        const apt = appointments.find(a => a.id === id) || calItems.find(a => a.id === id);
+        const res = await apiNoShow(id);
+        const { error } = res;
+        if (error && staleOutcome(res)) return error.message;
         if (error) {
             // The server allows this only on a CONFIRMED appointment, so a
             // stale card (one already completed or cancelled in another tab)
@@ -2977,9 +3937,11 @@ function AppointmentsScreen() {
             const errMsg = error.message || "Could not mark as no-show";
             toast.show(errMsg, "danger", 4000);
             addNotif({ type: "appointment", title: "Failed", body: errMsg, time: "Just now" });
-            return;
+            return errMsg;
         }
+        setCloseFor(null);
         applyStatus(id, "No Show");
+        await reload();
         setCalVersion(v => v + 1);
         const msg = `${apt?.client || "The client"} did not attend`;
         toast.show(msg, "warn", 3000);
@@ -2988,12 +3950,14 @@ function AppointmentsScreen() {
 
     /** Accept several pending requests, each pinned to the version shown,
      *  one at a time. Each is the same guarded confirm as the single Accept,
-     *  so a request the client moved (409) or one that clashes is refused by
-     *  the server and reported, not forced through. */
+     *  so a request the client moved (409) is refused by the server and
+     *  reported, not forced through. The server does NOT check hearings or
+     *  diary entries, so a request that clashes with one is left out here and
+     *  must be accepted on its own, where the clash is shown. */
     const acceptAll = async (targets) => {
         let ok = 0;
         let failed = 0;
-        for (const a of targets) {
+        for (const a of targets.filter(x => requestClashes(x).length === 0)) {
             if (!Number.isInteger(a.scheduleVersion)) { failed += 1; continue; }
             const { error } = await apiConfirm(a.id, { schedule_version: a.scheduleVersion });
             if (error) failed += 1; else ok += 1;
@@ -3005,11 +3969,86 @@ function AppointmentsScreen() {
             : `Accepted ${ok} request${ok === 1 ? "" : "s"}.`, failed ? "warn" : "success", 4000);
         if (ok) addNotif({ type: "appointment", title: "Appointments Accepted", body: `${ok} request${ok === 1 ? "" : "s"} confirmed`, time: "Just now" });
     };
-    const reviewRequests = () => { setViewMode("list"); setStatusF("Pending"); };
+    // "Review requests" / "View all" / a request in the card (2026-10-19): it
+    // only switched the list's filter, which looked like nothing happened when
+    // the list was already showing or sat below the fold. Now it also brings
+    // the request into view and marks it.
+    const [focusAppt, setFocusAppt] = useState(null);
+    const reviewRequests = (id) => {
+        setViewMode("list"); setStatusF("Pending");
+        const first = typeof id === "string" ? id : pendingItems.find(canAccept)?.id || pendingItems[0]?.id;
+        setFocusAppt(first ? { id: first, at: Date.now() } : null);
+    };
+    useEffect(() => {
+        if (!focusAppt) return undefined;
+        let tries = 0, raf = 0, timer = 0;
+        const find = () => {
+            const el = document.querySelector(`[data-appt-card="${CSS.escape(focusAppt.id)}"]`);
+            if (!el) { if (tries++ < 60) raf = requestAnimationFrame(find); return; }
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("flash");
+            timer = setTimeout(() => el.classList.remove("flash"), 2200);
+        };
+        raf = requestAnimationFrame(find);
+        return () => { cancelAnimationFrame(raf); clearTimeout(timer); };
+    }, [focusAppt]);
+    const apptCard = (apt) => (
+        <LawyerApptCard key={apt.id} apt={apt} now={now}
+            clashes={apt.status === "Pending" ? requestClashes(apt) : []}
+            caseTitle={caseTitles[apt.caseId]}
+            engagement={engByAppt[apt.id] || null}
+            thread={threads[apt.id] || null}
+            gates={{ canAccept, whyNotAccept, canComplete, whyNotComplete, canNoShow, whyNotNoShow }}
+            on={{
+                accept: setAcceptFor, decline: setCancelFor, cancel: setCancelFor, suggest: setSuggestFor,
+                propose: setProposeFor, proposal: handleProposal,
+                join: setJoinModal, complete: setCloseFor, noShow: (x) => handleNoShow(x.id),
+                openCase, openRequest, message: openThreadOf,
+            }} />
+    );
+
+    // "Record outcome" from the Dashboard (2026-10-20): open THAT meeting's
+    // outcome dialog on the Needs outcome tab. The id stays in sessionStorage
+    // until the dialog closes, so a refresh opens it again; a meeting that is
+    // no longer open (recorded elsewhere, missing) falls back to the tab.
+    const OUTCOME_KEY = "attorney:lawyer-record-outcome";
+    const [outcomeLink, setOutcomeLink] = useState(() => { try { return sessionStorage.getItem(OUTCOME_KEY); } catch { return null; } });
+    const outcomeOpened = useRef(null);
+    useEffect(() => {
+        const heard = (e) => setOutcomeLink(typeof e.detail === "string" && e.detail ? e.detail : null);
+        window.addEventListener("attorney:record-outcome", heard);
+        return () => window.removeEventListener("attorney:record-outcome", heard);
+    }, []);
+    useEffect(() => {
+        if (!outcomeLink) return undefined;
+        let off = false;
+        setViewMode("list");
+        setStatusF("Needs outcome");
+        getAppointment(outcomeLink).then(({ data, error }) => {
+            if (off) return;
+            const apt = !error && data ? mapApiAppt(data) : null;
+            if (apt && apt.status === "Upcoming" && apt.endAt && +apt.endAt <= Date.now()) {
+                outcomeOpened.current = apt.id;
+                setCloseFor(apt);
+            } else {
+                try { sessionStorage.removeItem(OUTCOME_KEY); } catch { /* storage off */ }
+                setListNotice("That meeting no longer needs an outcome. Here are the ones that do.");
+            }
+            setOutcomeLink(null);
+        });
+        return () => { off = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [outcomeLink]);
+    useEffect(() => {
+        if (closeFor || !outcomeOpened.current) return;
+        outcomeOpened.current = null;
+        try { sessionStorage.removeItem(OUTCOME_KEY); } catch { /* storage off */ }
+    }, [closeFor]);
+
     // Tab counts from every appointment. Not shown while loading, or when the
     // read stopped at its bound: a count of the first 1000 is not the total.
     const tabCounts = calState === "ready" && !calPartial ? Object.fromEntries(tabs.map(tab => [
-        tab, tab === "All" ? calItems.length : calItems.filter(a => a.status === tab).length,
+        tab, tab === "All" ? calItems.length : calItems.filter(a => a.status === tab && !(tab === "Upcoming" && a.endAt && +a.endAt <= now)).length,
     ])) : null;
     // Whether the list holds every row of its tab (for its footer).
     const listComplete = pagesTotal !== null && pageNo >= pagesTotal;
@@ -3032,6 +4071,19 @@ function AppointmentsScreen() {
                         <CancelAppointmentDialog t={t} apt={cancelFor}
                             onClose={() => setCancelFor(null)}
                             onConfirm={(reason) => handleReject(cancelFor.id, reason)} />
+                    )}
+                    {proposeFor && <ProposeTimeDialog apt={proposeFor} onClose={() => setProposeFor(null)}
+                        onSent={async () => { setProposeFor(null); await reload(); toast.show("Proposal sent — the client accepts or declines.", "success", 3200); }} />}
+                    {suggestFor && <SuggestTimesDialog apt={suggestFor} onClose={() => setSuggestFor(null)}
+                        onSent={async () => { setSuggestFor(null); await reload(); toast.show("Times sent — the client picks one.", "success", 3200); }} />}
+                    {acceptFor && (
+                        <AcceptDialog apt={acceptFor} clashes={requestClashes(acceptFor)} caseTitle={caseTitles[acceptFor.caseId]}
+                            onClose={() => setAcceptFor(null)} onConfirm={(link) => handleAccept(acceptFor.id, link)} />
+                    )}
+                    {closeFor && (
+                        <CloseDialog apt={closeFor} canNoShow={canNoShow(closeFor)} onClose={() => setCloseFor(null)}
+                            onComplete={(notes) => handleComplete(closeFor.id, notes)} onNoShow={() => handleNoShow(closeFor.id)}
+                            onOutcome={(code) => handleOutcome(closeFor.id, code)} />
                     )}
                     {joinModal && (
                         <JoinCallModal apt={joinModal} onClose={() => setJoinModal(null)}
@@ -3070,7 +4122,8 @@ function AppointmentsScreen() {
                         marginBottom: 10,      // breathing room above the toolbar
                     }}>
                         <PendingCard t={t} total={statusTotals.pending} items={pendingItems} now={now}
-                            canAccept={canAccept} onReview={reviewRequests} onAcceptAll={acceptAll} />
+                            canAccept={canAccept} onReview={reviewRequests} onAcceptAll={acceptAll}
+                            clashes={a => requestClashes(a).length > 0} />
                         <TodayCard t={t} items={todayItems} workMinutes={todayWorkMinutes} now={now}
                             pendingCount={pendingItems.length} />
                         <WeekCard t={t} items={calItems} />
@@ -3117,18 +4170,17 @@ function AppointmentsScreen() {
                         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 18 }}>
                             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
-                                {/* ── Needs outcome (hidden when empty) ── */}
-                                <NeedsOutcome t={t} onRecorded={() => { reload(); setCalVersion(v => v + 1); }} />
-
                                 {/* ── Filter tabs ─────────────────────── */}
                                 <div role="tablist" aria-label="Filter by status" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                                     {tabs.map(tab => {
                                         const on = statusF === tab;
                                         const tone = TAB_TONES[tab] || TAB_TONES.All;
-                                        const n = tabCounts ? tabCounts[tab] : null;
+                                        const n = tab === "Needs outcome"
+                                            ? (Number.isInteger(actionCounts?.outcomes_to_record) ? actionCounts.outcomes_to_record : null)
+                                            : tabCounts ? tabCounts[tab] : null;
                                         // Pending asks for attention while anything waits,
                                         // even when another tab is selected.
-                                        const nudge = !on && tab === "Pending" && n > 0;
+                                        const nudge = !on && (tab === "Pending" || tab === "Needs outcome") && n > 0;
                                         const showCount = Number.isInteger(n) && (ALWAYS_COUNTED.has(tab) || n > 0);
                                         return (
                                             <button key={tab} type="button" role="tab" aria-selected={on} onClick={() => setStatusF(tab)} style={{
@@ -3152,116 +4204,31 @@ function AppointmentsScreen() {
                                 </div>
 
                                 {/* ── Appointment cards ───────────────── */}
-                                <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                                    {appointments.map(apt => (
-                                        <Card key={apt.id} style={{ padding: 16 }}>
-                                            {/* Card header */}
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                                                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                                                    <div style={{
-                                                        width: 40, height: 40, borderRadius: 11,
-                                                        background: t.primaryGlow2,
-                                                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                                                    }}>
-                                                        <Icon d={I.user} size={16} style={{ color: t.primary }} />
-                                                    </div>
-                                                    <div>
-                                                        <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{apt.client}</div>
-                                                        <div style={{ fontSize: 12, color: t.textMuted, marginTop: 1 }}>{apt.purpose}</div>
-                                                    </div>
-                                                </div>
-                                                {/* Visible status badge */}
-                                                <StatusBadge status={apt.status} />
-                                            </div>
-
-                                            {/* Meta row */}
-                                            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-                                                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: t.textFaint }}>
-                                                    <Icon d={I.calendar} size={11} />{apt.date}
-                                                </span>
-                                                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: t.textFaint }}>
-                                                    <Icon d={I.clock} size={11} />{apt.time} · {apt.duration}
-                                                </span>
-                                                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: t.textFaint }}>
-                                                    {apt.type === "Video Call" ? <Icon d={I.video} size={11} /> : <Icon d={I.map} size={11} />}
-                                                    {apt.type}
-                                                </span>
-                                            </div>
-
-                                            {/* Action buttons */}
-                                            <div style={{ display: "flex", gap: 8 }}>
-                                                {apt.status === "Pending" && (<>
-                                                    {/* The server refuses to confirm a slot that has
-                                                        already passed — it would only produce a confirmed
-                                                        row for a meeting that cannot happen. Reject stays
-                                                        enabled, because clearing the stale request is the
-                                                        action that remains. */}
-                                                    <Btn variant="success" size="sm" style={{ flex: 1 }}
-                                                        disabled={!canAccept(apt)}
-                                                        title={whyNotAccept(apt)}
-                                                        onClick={() => handleAccept(apt.id)}>
-                                                        <Icon d={I.check} size={12} /> Accept
-                                                    </Btn>
-                                                    <Btn variant="danger" size="sm" style={{ flex: 1 }} onClick={() => setCancelFor(apt)}>
-                                                        <Icon d={I.x} size={12} /> Reject
-                                                    </Btn>
-                                                </>)}
-
-                                                {apt.status === "Upcoming" && (<>
-                                                    {/* Not once it has ended: there is no call left to join. */}
-                                                    {apt.type === "Video Call" && !(apt.endAt && +apt.endAt <= now) ? (
-                                                        <button
-                                                            onClick={() => setJoinModal(apt)}
-                                                            style={{
-                                                                flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                                                                padding: "7px 0", borderRadius: 9, border: "none",
-                                                                background: `linear-gradient(135deg,${t.primary},#22a898)`,
-                                                                color: t.mode === "dark" ? "#0b1c22" : "#fff",
-                                                                fontSize: 12, fontWeight: 700, fontFamily: "inherit", cursor: "pointer",
-                                                                boxShadow: `0 3px 10px ${t.primary}45`,
-                                                            }}>
-                                                            {/* The label follows the DATA. A video
-                                                                appointment with no stored link has
-                                                                nothing to join, and saying "Join Call"
-                                                                would promise a room that does not
-                                                                exist. */}
-                                                            {apt.meetingLink ? "📹 Join Call" : "📹 Add joining link"}
-                                                        </button>
-                                                    ) : null /* "View Details" had no handler and there
-                                                        is no detail view; the card already shows the
-                                                        appointment's details. */}
-                                                    {/* Both of these are offered on Upcoming only, because
-                                                        that is the display status for `confirmed` and the
-                                                        server accepts neither outcome on anything else.
-
-                                                        They are now ALSO gated on the clock, which reverses
-                                                        an earlier decision here. That note said the server
-                                                        had no "is it past?" rule and that inventing one
-                                                        client-side would refuse actions the API allowed.
-                                                        The server has those rules now — an outcome cannot
-                                                        be declared for a meeting that has not happened — so
-                                                        the choice is no longer between gating and not
-                                                        gating. It is between a disabled button and a button
-                                                        that always fails. */}
-                                                    <Btn variant="success" size="sm"
-                                                        disabled={!canComplete(apt)}
-                                                        title={whyNotComplete(apt)}
-                                                        onClick={() => handleComplete(apt.id)}>
-                                                        <Icon d={I.check} size={12} /> Done
-                                                    </Btn>
-                                                    <Btn variant="secondary" size="sm"
-                                                        disabled={!canNoShow(apt)}
-                                                        title={whyNotNoShow(apt)}
-                                                        onClick={() => handleNoShow(apt.id)}>
-                                                        No Show
-                                                    </Btn>
-                                                    <Btn variant="danger" size="sm" aria-label="Cancel appointment" title="Cancel appointment" onClick={() => setCancelFor(apt)}>
-                                                        <Icon d={I.x} size={12} />
-                                                    </Btn>
-                                                </>)}
-
-                                            </div>
-                                        </Card>
+                                {listNotice && (
+                                    <div role="status" data-list-notice style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12,
+                                        background: "rgba(232,184,75,0.12)", border: "1px solid rgba(232,184,75,0.45)", color: "#e8b84b", fontSize: 13, fontWeight: 600 }}>
+                                        <span style={{ flex: 1 }}>{listNotice}</span>
+                                        <button type="button" aria-label="Dismiss" onClick={() => setListNotice(null)}
+                                            style={{ border: "none", background: "transparent", color: "inherit", cursor: "pointer", fontSize: 15 }}>✕</button>
+                                    </div>
+                                )}
+                                <div className="lc-list">
+                                    {statusF === "Needs outcome" && (
+                                        <NeedsOutcome t={t} refreshKey={calVersion} renderRow={item => apptCard(mapApiAppt(item))} />
+                                    )}
+                                    {appointments.filter(apt => !(statusF === "Upcoming" && apt.endAt && +apt.endAt <= now)).map(apt => (
+                                        <LawyerApptCard key={apt.id} apt={apt} now={now}
+                                            clashes={apt.status === "Pending" ? requestClashes(apt) : []}
+                                            caseTitle={caseTitles[apt.caseId]}
+                                            engagement={engByAppt[apt.id] || null}
+                                            thread={threads[apt.id] || null}
+                                            gates={{ canAccept, whyNotAccept, canComplete, whyNotComplete, canNoShow, whyNotNoShow }}
+                                            on={{
+                                                accept: setAcceptFor, decline: setCancelFor, cancel: setCancelFor, suggest: setSuggestFor,
+                                                propose: setProposeFor, proposal: handleProposal,
+                                                join: setJoinModal, complete: setCloseFor, noShow: (x) => handleNoShow(x.id),
+                                                openCase, openRequest, message: openThreadOf,
+                                            }} />
                                     ))}
 
                                     {loading && (
@@ -3269,7 +4236,7 @@ function AppointmentsScreen() {
                                             Loading appointments…
                                         </div>
                                     )}
-                                    {!loading && appointments.length === 0 && !firstPageError && (
+                                    {!loading && appointments.length === 0 && !firstPageError && statusF !== "Needs outcome" && (
                                         <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 40, color: t.textMuted, fontSize: 14 }}>
                                             No appointments found for "{statusF}" filter.
                                         </div>
@@ -3324,9 +4291,14 @@ function AppointmentsScreen() {
                                                 </button>
                                             )}
                                             <div style={{ fontSize: 11, color: t.textFaint, marginTop: 8 }}>
-                                                {Number.isInteger(listTotal)
-                                                    ? `Showing ${appointments.length} of ${listTotal}`
-                                                    : `Showing ${appointments.length}`}
+                                                {/* Ended ones wait in "Needs outcome" above, not in this list:
+                                                    the count says so instead of disagreeing with the cards. */}
+                                                {(() => {
+                                                    const ended = statusF === "Upcoming" ? appointments.filter(a => a.endAt && +a.endAt <= now).length : 0;
+                                                    const shown = appointments.length - ended;
+                                                    return (Number.isInteger(listTotal) ? `Showing ${shown} of ${listTotal - ended}` : `Showing ${shown}`)
+                                                        + (ended ? ` · ${ended} ended, waiting for an outcome above` : "");
+                                                })()}
                                                 {listComplete ? " — that is all of them." : ""}
                                             </div>
                                         </div>
@@ -3372,11 +4344,15 @@ function AppointmentsScreen() {
                                 const open = detailId && calItems.find(a => a.id === detailId);
                                 if (!open && calRange === "day") return <MiniMonth dayKey={calDay} onDay={pickDay} days={calDays} />;
                                 return open ? (
-                                    <AppointmentDetail apt={open} now={now} onClose={() => setDetailId(null)} onOpenCase={openCase} clashes={clashesFor(open)}
+                                    <AppointmentDetail key={open.id} apt={open} now={now} onClose={() => setDetailId(null)} onOpenCase={openCase} clashes={clashesFor(open)}
+                                        caseAccessible={Boolean(open.caseId && caseTitles[open.caseId])}
+                                        history={open.clientId ? calItems.filter(a => a.clientId === open.clientId && a.id !== open.id).sort((x, y) => (y.at || 0) - (x.at || 0)) : []}
+                                        threadOpen={threadFor === open.id} onThreadChange={o => { if (o && dock) { dock.openChat(chatOf(open)); return; } setThreadFor(o ? open.id : null); }}
                                         gates={{ canAccept, whyNotAccept, canComplete, whyNotComplete, canNoShow, whyNotNoShow }}
                                         actions={{
-                                            accept: a => handleAccept(a.id), cancel: a => setCancelFor(a),
-                                            complete: a => handleComplete(a.id), noShow: a => handleNoShow(a.id), join: a => setJoinModal(a),
+                                            accept: a => setAcceptFor(a), cancel: a => setCancelFor(a), suggest: a => setSuggestFor(a),
+                                            complete: a => setCloseFor(a), noShow: a => handleNoShow(a.id), join: a => setJoinModal(a),
+                                            propose: a => setProposeFor(a), proposal: handleProposal,
                                         }} />
                                 ) : (
                                     <DayAgenda t={t} dayKey={calDay} list={calDays.get(calDay) || []}

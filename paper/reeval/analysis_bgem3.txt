@@ -1,0 +1,22 @@
+citation_1191                      n=1191 e5= 41.5 general= 68.0 const= 41.1 bgem3= 51.9 | bge-e5: +10.4 p=2.4e-12 | bge-general: -16.1 p=3.6e-24 | bge-const: +10.7 p=5.8e-12
+legaluqa_128                       n= 128 e5= 52.3 general= 54.7 const= 76.6 bgem3= 51.6 | bge-e5:  -0.8 p=1 | bge-general:  -3.1 p=0.56 | bge-const: -25.0 p=9.4e-07
+legaluqa_121                       n= 121 e5= 43.8 general= 68.6 const= 59.5 bgem3= 46.3 | bge-e5:  +2.5 p=0.68 | bge-general: -22.3 p=1.4e-05 | bge-const: -13.2 p=0.007
+citation_1191 urdu=True            n= 389 e5= 16.7 general= 64.0 bgem3= 46.5 | bge-e5: +29.8 p=9.9e-25 | bge-general: -17.5 p=1.8e-09
+citation_1191 urdu=False           n= 802 e5= 53.5 general= 70.0 bgem3= 54.5 | bge-e5:  +1.0 p=0.59 | bge-general: -15.5 p=5.9e-16
+thirdstyle clean-for-general       n=  25 e5= 20.0 general= 60.0 bgem3= 28.0 | bge-e5:  +8.0 p=0.73 | bge-general: -32.0 p=0.021
+grid uqa128/original               n= 128 e5= 52.3 general= 54.7 bgem3= 51.6 | bge-e5:  -0.8 p=1 | bge-general:  -3.1 p=0.56
+grid uqa128/urdu                   n= 128 e5= 18.0 general= 42.2 bgem3= 41.4 | bge-e5: +23.4 p=1.5e-08 | bge-general:  -0.8 p=1
+grid uqa128/layperson_en           n= 127 e5= 46.5 general= 52.8 bgem3= 48.8 | bge-e5:  +2.4 p=0.61 | bge-general:  -3.9 p=0.44
+grid uqa128/roman_urdu             n= 126 e5= 21.4 general= 38.9 bgem3= 24.6 | bge-e5:  +3.2 p=0.5 | bge-general: -14.3 p=0.0021
+grid uqa128/keyword                n= 126 e5= 37.3 general= 44.4 bgem3= 27.0 | bge-e5: -10.3 p=0.0072 | bge-general: -17.5 p=0.00031
+grid dev23/original                n=  23 e5= 17.4 general= 56.5 bgem3= 26.1 | bge-e5:  +8.7 p=0.69 | bge-general: -30.4 p=0.039
+grid dev23/urdu                    n=  20 e5=  5.0 general= 35.0 bgem3= 20.0 | bge-e5: +15.0 p=0.25 | bge-general: -15.0 p=0.38
+grid dev23/layperson_en            n=  22 e5= 27.3 general= 50.0 bgem3= 31.8 | bge-e5:  +4.5 p=1 | bge-general: -18.2 p=0.29
+grid dev23/roman_urdu              n=  22 e5= 22.7 general= 50.0 bgem3= 22.7 | bge-e5:  +0.0 p=1 | bge-general: -27.3 p=0.031
+grid dev23/keyword                 n=  22 e5= 18.2 general= 54.5 bgem3= 22.7 | bge-e5:  +4.5 p=1 | bge-general: -31.8 p=0.016
+grid uqa121/original               n= 121 e5= 43.8 constit= 59.5 bgem3= 46.3 | bge-e5:  +2.5 p=0.68 | bge-constit: -13.2 p=0.007
+grid uqa121/urdu                   n= 121 e5= 11.6 constit= 28.9 bgem3= 38.0 | bge-e5: +26.4 p=4.1e-09 | bge-constit:  +9.1 p=0.08
+grid uqa121/layperson_en           n= 120 e5= 42.5 constit= 57.5 bgem3= 40.0 | bge-e5:  -2.5 p=0.71 | bge-constit: -17.5 p=0.0011
+grid uqa121/roman_urdu             n= 119 e5= 17.6 constit= 29.4 bgem3= 30.3 | bge-e5: +12.6 p=0.0041 | bge-constit:  +0.8 p=1
+grid uqa121/keyword                n= 120 e5= 27.5 constit= 34.2 bgem3= 20.8 | bge-e5:  -6.7 p=0.15 | bge-constit: -13.3 p=0.009
+BAAI/bge-m3@5617a9f61b028005a4858fdac845db406aefb181

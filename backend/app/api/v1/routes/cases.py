@@ -8,6 +8,7 @@ from app.schemas.case import (
     CaseOut,
     CaseUpdate,
     HearingAdd,
+    HearingCancel,
     HearingOutcome,
     HearingReschedule,
     WalkInCaseCreate,
@@ -163,6 +164,20 @@ async def reschedule_hearing(
     """Move an upcoming hearing to a new date; the client is notified and the
     old date is kept on the hearing's reschedule history."""
     return await case_service.reschedule_hearing(
+        case_id, hearing_id, body.model_dump(), current_user["_id"]
+    )
+
+
+@router.post("/{case_id}/hearings/{hearing_id}/cancel", response_model=CaseOut)
+async def cancel_hearing(
+    case_id: str,
+    hearing_id: str,
+    body: HearingCancel,
+    current_user: dict = Depends(require_lawyer),
+):
+    """Take an upcoming hearing (no outcome yet) off the schedule; the client
+    is notified and a copy is kept on the case."""
+    return await case_service.cancel_hearing(
         case_id, hearing_id, body.model_dump(), current_user["_id"]
     )
 

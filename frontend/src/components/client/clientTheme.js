@@ -56,6 +56,47 @@ export const CLIENT_TOKENS_CSS = `@import url('https://fonts.googleapis.com/css2
  * is hovered or focused, then the brand gradient. `.ch-ib`: its round icon
  * buttons. (!important: the primitives set their colours inline.) */
 
+/* THE REFINED CLIENT THEME (2026-10-16) — ONE SWITCH, FULLY REVERTABLE.
+ *
+ * Small, measured improvements on top of the palette above; nothing above is
+ * changed. With the switch off (`CLIENT_THEME_REFINED = false`, or
+ * NEXT_PUBLIC_CLIENT_THEME_REFINED=0 in .env.local) the client looks exactly as
+ * it did, and the Theme menu goes back to the single Light/Dark item.
+ *
+ * What it fixes (WCAG contrast measured):
+ *  - dark: the page (#403E42 grey) was LIGHTER than its cards (#183840) and a
+ *    different hue, so cards sank into it (1.18:1). The page is now a deeper
+ *    shade of the cards' own teal, and cards sit above it (1.41:1).
+ *  - faint text: dark 4.1 -> 8.4:1, light 3.65 -> 5.6:1 (minimum 4.5).
+ *  - light page: lavender-grey -> a light tint of the brand green.
+ *  - light primary: white on #0E8A5F was 4.36:1 -> #0E7A55, 5.34:1.
+ *  - the solid green pill: white on its light end was 3.5:1 -> 5.3:1.
+ *  - buttons that put white text on mint (1.7:1) use the theme's own label
+ *    colour instead: see `onPrimaryInk`.
+ * Scoped by [data-refined], which the dashboard sets only while the switch is
+ * on AND the client chose Light or Dark: "System" in the Theme menu is the
+ * app's own original theme, drawn exactly as before (only `onPrimaryInk`, a
+ * readability fix, applies there too). Each rule is more specific than the one
+ * it overrides. */
+export const CLIENT_THEME_REFINED =
+    (typeof process === "undefined" || process.env?.NEXT_PUBLIC_CLIENT_THEME_REFINED !== "0");
+
+export const CLIENT_REFINED_CSS = `
+[data-client-theme][data-refined]:not([data-mode="light"]){--bg:#0B1B1F;--bg-a:#0B1B1FF5;--faint:#A7B6BA}
+[data-client-theme][data-refined][data-mode="light"]{--bg:#EEF3F1;--bg-a:#EEF3F1F5;--faint:#625E68;--brand-text:#0E7A55}
+[data-client-theme][data-refined] .ch-pill-solid{background:linear-gradient(135deg,#0E7468 0%,#137A52 100%)!important}
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+::view-transition-new(root){animation:aai-theme-reveal .6s cubic-bezier(.4,0,.2,1)}
+@keyframes aai-theme-reveal{from{clip-path:circle(0 at var(--aai-vt-x,50%) var(--aai-vt-y,50%))}to{clip-path:circle(var(--aai-vt-r,150vmax) at var(--aai-vt-x,50%) var(--aai-vt-y,50%))}}
+body.aai-theme-anim [data-client-theme],body.aai-theme-anim [data-client-theme] *{transition:background-color .45s ease,color .45s ease,border-color .45s ease,fill .45s ease,stroke .45s ease!important}
+@media (prefers-reduced-motion:reduce){::view-transition-new(root){animation:none}}
+`;
+
+/* The label colour for text on a `t.primary` fill. White on dark-theme mint is
+ * unreadable (1.7:1); the theme's own on-brand colour is 9.9:1. Off-switch:
+ * white, as before. */
+export const onPrimaryInk = t => (CLIENT_THEME_REFINED && t?.onPrimaryFill) || "#fff";
+
 // The lawyer documents' brand: mint in dark, deep green in light.
 const ACCENT = {
     dark: {
@@ -74,10 +115,12 @@ const ACCENT = {
 
 export const clientMode = t => (t?.mode === "light" ? "light" : "dark");
 
-export function clientThemeOnTokens(t) {
+export function clientThemeOnTokens(t, { refined = CLIENT_THEME_REFINED } = {}) {
     return {
         ...t,
         ...ACCENT[clientMode(t)],
+        // Refined: the light primary darkened for readable white labels.
+        ...(refined && clientMode(t) === "light" ? { primary: "#0E7A55" } : {}),
         onTokens: true,
         bg: "var(--bg)", surface: "var(--surface)", card: "var(--surface)", cardHi: "var(--surface-2)",
         border: "var(--line)", borderHi: "var(--line-strong)", text: "var(--ink)", textDim: "var(--ink)",

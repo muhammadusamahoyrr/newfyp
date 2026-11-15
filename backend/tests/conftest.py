@@ -28,6 +28,93 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+# ── the live Chroma store is out of bounds (installed before ANY test import) ─
+#
+# backend/chroma_data is the real, non-versioned knowledge base. Opening a
+# PersistentClient on it writes to its SQLite file, and some test modules
+# connect at IMPORT time (so `-m "not corpus"` cannot stop them). This block runs
+# when pytest loads conftest -- before any test module is imported -- and:
+#   1. points app.db.chroma at a throwaway store in the system temp dir;
+#   2. refuses, before the OS call happens, any Python-level open / sqlite3
+#      connect / mkdir / listdir / remove / rename / copy on a path with a
+#      `chroma_data*` component (an audit hook -- the live store, its backups and
+#      its orphan folders all match);
+#   3. refuses any chromadb System (every client type builds one) whose
+#      persist_directory has such a component -- chromadb's Rust core does its
+#      own file I/O, which the audit hook cannot see;
+#   4. skips `corpus` tests (they need the real store).
+# AAI_ALLOW_LIVE_CHROMA=1 turns all of this off, for a deliberate corpus run.
+
+import tempfile  # noqa: E402
+
+ALLOW_LIVE_CHROMA = os.environ.get("AAI_ALLOW_LIVE_CHROMA") == "1"
+LIVE_CHROMA_PATH = Path(__file__).resolve().parents[1] / "chroma_data"
+TEST_CHROMA_PATH = Path(tempfile.mkdtemp(prefix="aai-test-chroma-"))
+BLOCKED_CHROMA_ACCESS: list[str] = []
+#: Persistent chromadb Systems opened during the run (all on the temp store).
+#: A test that would have opened the LIVE store before isolation shows up here.
+OPENED_CHROMA_STORES: list[str] = []
+
+
+class LiveChromaAccessBlocked(PermissionError):
+    """Raised instead of touching backend/chroma_data during a test run."""
+
+
+def _touches_live_chroma(target) -> bool:
+    """String-only check (no filesystem call: realpath would open the path on Windows)."""
+    try:
+        s = os.fsdecode(os.fspath(target))
+    except TypeError:
+        return False
+    if s.startswith("file:"):                       # sqlite URI
+        s = s[5:].split("?", 1)[0]
+    parts = re.split(r"[\\/]+", os.path.normcase(os.path.abspath(s)))
+    return any(p.startswith("chroma_data") for p in parts)
+
+
+def _refuse(what: str, target) -> None:
+    BLOCKED_CHROMA_ACCESS.append(f"{what}: {target}")
+    raise LiveChromaAccessBlocked(
+        f"test tried {what} on {target!r} -- the live Chroma store is out of bounds "
+        "(set AAI_ALLOW_LIVE_CHROMA=1 only for a deliberate, approved corpus run)")
+
+
+_GUARDED_EVENTS = frozenset({"open", "sqlite3.connect", "os.mkdir", "os.listdir", "os.scandir",
+                             "os.remove", "os.rmdir", "os.rename", "os.replace", "os.truncate", "os.link",
+                             "os.symlink", "os.chmod", "os.utime", "shutil.copyfile", "shutil.copytree",
+                             "shutil.rmtree", "shutil.move", "shutil.copymode", "shutil.copystat"})
+
+
+def _chroma_audit_hook(event, args):
+    if event not in _GUARDED_EVENTS:
+        return
+    for a in args:      # src AND dst for rename/copy events
+        if isinstance(a, (str, bytes, os.PathLike)) and _touches_live_chroma(a):
+            _refuse(event, a)
+
+
+if not ALLOW_LIVE_CHROMA:
+    sys.addaudithook(_chroma_audit_hook)
+
+    import chromadb  # noqa: E402
+    import chromadb.config  # noqa: E402
+
+    _real_system_init = chromadb.config.System.__init__
+
+    def _guarded_system_init(self, settings, *a, **kw):
+        persist = getattr(settings, "persist_directory", None)
+        if getattr(settings, "is_persistent", False) and persist and _touches_live_chroma(persist):
+            _refuse("chromadb System", persist)
+        if getattr(settings, "is_persistent", False) and persist:
+            OPENED_CHROMA_STORES.append(str(persist))
+        return _real_system_init(self, settings, *a, **kw)
+
+    chromadb.config.System.__init__ = _guarded_system_init
+
+    import app.db.chroma as _chroma_mod  # noqa: E402
+    _chroma_mod._CHROMA_PATH = TEST_CHROMA_PATH
+
+
 TEST_DB_SUFFIX = "_test"
 #: Every database this suite creates carries this marker before the suffix, so
 #: cleanup can tell a pytest-owned database from anything else ending "_test".
@@ -124,6 +211,12 @@ def pytest_configure(config):
 
 
 def pytest_collection_modifyitems(config, items):
+    if not ALLOW_LIVE_CHROMA:
+        no_corpus = pytest.mark.skip(reason="corpus tier: reads the live Chroma store; "
+                                            "AAI_ALLOW_LIVE_CHROMA=1 only for an approved corpus run")
+        for item in items:
+            if item.get_closest_marker("corpus"):
+                item.add_marker(no_corpus)
     if LIVE:
         return
     skip = pytest.mark.skip(reason="live tier: set AAI_LIVE_TESTS=1 to run")
@@ -132,7 +225,26 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip)
 
 
+def pytest_unconfigure(config):
+    """Remove this run's throwaway store (never anything else)."""
+    if not ALLOW_LIVE_CHROMA and TEST_CHROMA_PATH.name.startswith("aai-test-chroma-"):
+        try:
+            import app.db.chroma as chroma
+            chroma.close_chroma()
+        except Exception:  # noqa: BLE001
+            pass
+        import shutil
+        shutil.rmtree(TEST_CHROMA_PATH, ignore_errors=True)
+
+
 def pytest_terminal_summary(terminalreporter):
+    terminalreporter.section("chroma isolation")
+    terminalreporter.write_line(
+        "live store ALLOWED (AAI_ALLOW_LIVE_CHROMA=1)" if ALLOW_LIVE_CHROMA
+        else f"test store: {TEST_CHROMA_PATH}; live-store accesses refused: {len(BLOCKED_CHROMA_ACCESS)}; "
+             f"persistent clients opened (temp store): {len(OPENED_CHROMA_STORES)}")
+    for line in BLOCKED_CHROMA_ACCESS:
+        terminalreporter.write_line(f"  refused {line}")
     if BLOCKED_LOOKUPS:
         from collections import Counter
 

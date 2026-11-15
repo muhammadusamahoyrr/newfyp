@@ -11,6 +11,7 @@ would let this file assert guarantees nothing real makes. The graph, the tracer
 and provenance are stubbed, so no provider is called.
 """
 import secrets
+import inspect
 
 import pytest
 
@@ -116,6 +117,89 @@ async def open_client(session_id, *, current_user, **kw):
     kw.setdefault("before_seq", None)
     kw.setdefault("page_size", 200)
     return await routes.get_conversation(session_id, current_user=current_user, **kw)
+
+
+def test_conversation_surfaces_are_role_gated():
+    """Ownership isolates users; role guards also isolate the two products."""
+    from app.dependencies import require_client, require_lawyer
+
+    client_handlers = (
+        routes.list_conversations, routes.create_conversation,
+        routes.get_conversation, routes.rename_conversation,
+        routes.delete_conversation, routes.cancel_client_turn,
+        routes.search_conversations,
+    )
+    research_handlers = (
+        routes.list_research, routes.create_research, routes.get_research,
+        routes.rename_research, routes.archive_research,
+        routes.delete_research, routes.cancel_research_turn,
+        routes.research_turn_status, routes.search_research,
+    )
+    for handler in client_handlers:
+        dep = inspect.signature(handler).parameters["current_user"].default
+        assert dep.dependency is require_client
+    for handler in research_handlers:
+        dep = inspect.signature(handler).parameters["current_user"].default
+        assert dep.dependency is require_lawyer
+
+
+async def test_rating_is_bound_to_owned_server_answer(monkeypatch):
+    captured = {}
+
+    async def owned(surface, session_id, owner_id):
+        captured["conversation"] = (surface, session_id, owner_id)
+        return {"session_id": session_id}
+
+    async def provenance(request_id, owner_id):
+        captured["provenance"] = (request_id, owner_id)
+        return {
+            "request_id": request_id,
+            "session_id": "rated-session",
+            "query": "server question",
+            "answer_preview": "server answer",
+        }
+
+    class Ratings:
+        async def update_one(self, query, update, upsert=False):
+            captured["rating"] = (query, update, upsert)
+
+    monkeypatch.setattr(ai_routes.conversations, "get_raw", owned)
+    monkeypatch.setattr(ai_routes.provenance_service, "get_by_request", provenance)
+    monkeypatch.setattr(
+        "app.db.collections.get_response_ratings_col", lambda: Ratings())
+
+    body = ai_routes.RateRequest(
+        request_id="answer-1", session_id="rated-session",
+        rating="up", source="research")
+    result = await ai_routes.rate_answer(body, current_user=LAWYER_A)
+
+    assert result["success"] is True
+    assert captured["conversation"] == (
+        conversations.SURFACE_RESEARCH, "rated-session", LAWYER_A["_id"])
+    assert captured["provenance"] == ("answer-1", LAWYER_A["_id"])
+    stored = captured["rating"][1]["$set"]
+    assert stored["answer_preview"] == "server answer"
+    assert stored["question_preview"] == "server question"
+    assert captured["rating"][2] is True
+
+
+async def test_rating_rejects_an_answer_from_another_session(monkeypatch):
+    async def owned(*args):
+        return {"session_id": "mine"}
+
+    async def provenance(*args):
+        return {"request_id": "answer-1", "session_id": "somewhere-else"}
+
+    monkeypatch.setattr(ai_routes.conversations, "get_raw", owned)
+    monkeypatch.setattr(ai_routes.provenance_service, "get_by_request", provenance)
+
+    with pytest.raises(ForbiddenError):
+        await ai_routes.rate_answer(
+            ai_routes.RateRequest(
+                request_id="answer-1", session_id="mine",
+                rating="down", source="chat"),
+            current_user=CLIENT_A,
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -293,6 +377,20 @@ def test_a_chat_frame_cannot_set_anything_unlisted():
         "archived": True, "deleted_at": None, "messages": [], "title": "x",
     })
     assert meta == {}
+
+
+def test_selected_client_case_type_seeds_the_graph_state():
+    from app.websockets.chat_socket import _build_state
+
+    selected = _build_state(
+        "What happens next?", "s1", {"case_type": "family"}, {}, [])
+    assert selected["case_type"] == "family"
+    assert selected["case_type_confidence"] == 1.0
+
+    invalid = _build_state(
+        "What happens next?", "s2", {"case_type": "not-a-type"}, {}, [])
+    assert invalid["case_type"] == "unknown"
+    assert invalid["case_type_confidence"] == 0.0
 
 
 # ══════════════════════════════════════════════════════════════════════════════

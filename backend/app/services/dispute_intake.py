@@ -750,8 +750,8 @@ async def send_to_lawyer(dispute_id: str, client_id: str) -> dict:
     lawyer = await _pick_verified_lawyer()
     if not lawyer:
         raise AppValidationError(
-            "No verified lawyer is available on the platform yet to receive this case. "
-            "Please try again once a verified lawyer is listed.")
+            "No registered lawyer is available on the platform yet to receive this case. "
+            "Please try again once a lawyer is listed.")
 
     lawyer_card = _lawyer_card(lawyer)
 

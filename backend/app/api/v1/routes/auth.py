@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Request, Response
+import logging
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 
 from app.core.config import settings
 from app.core.exceptions import AuthError
@@ -11,8 +13,10 @@ from app.schemas.auth import (
     LoginRequest,
     RefreshResponse,
     RegisterRequest,
+    ResendVerificationRequest,
     ResetPasswordRequest,
     TokenResponse,
+    VerifyEmailRequest,
     SessionsRevoked,
 )
 from app.schemas.common import StatusResponse
@@ -24,6 +28,7 @@ class WsTicketResponse(BaseModel):
     ticket: str
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 _REFRESH_MAX_AGE = settings.refresh_token_expire_days * 24 * 3600
 
@@ -54,9 +59,37 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
 
 @router.post("/register", response_model=StatusResponse)
 @limiter.limit("5/minute")
-async def register(request: Request, body: RegisterRequest):
-    await auth_service.register(body)
+async def register(request: Request, body: RegisterRequest, background: BackgroundTasks):
+    user = await auth_service.register(body)
+    if user.get("email_verified") is False:
+        # After the response, like forgot-password: SMTP takes seconds.
+        background.add_task(_send_verification_quietly, user["email"])
+        return StatusResponse(success=True, message="verify_email")
     return StatusResponse(success=True, message="Account created successfully")
+
+
+async def _send_verification_quietly(email: str) -> None:
+    try:
+        await auth_service.send_email_verification(email)
+    except Exception as exc:  # noqa: BLE001 - a background task has no response to fail
+        logger.warning("verification email task failed; error_type=%s", type(exc).__name__)
+
+
+@router.post("/verify-email", response_model=StatusResponse)
+@limiter.limit("10/minute")
+async def verify_email(request: Request, body: VerifyEmailRequest):
+    await auth_service.verify_email(body.token)
+    return StatusResponse(success=True, message="Email confirmed")
+
+
+@router.post("/resend-verification", response_model=StatusResponse)
+@limiter.limit("3/minute")
+async def resend_verification(request: Request, body: ResendVerificationRequest,
+                              background: BackgroundTasks):
+    # Same answer and timing for every address (see forgot-password).
+    background.add_task(_send_verification_quietly, body.email)
+    return StatusResponse(success=True,
+                          message="If that account still needs confirming, a new link has been sent")
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -137,10 +170,22 @@ async def revoke_session(
     return StatusResponse(success=True, message="Session revoked")
 
 
+async def _forgot_password_quietly(email: str) -> None:
+    # A background task has no response to fail, so log instead of raising.
+    try:
+        await auth_service.forgot_password(email)
+    except Exception as exc:  # noqa: BLE001 — never surface, never crash the worker
+        logger.warning("forgot-password background task failed; error_type=%s", type(exc).__name__)
+
+
 @router.post("/forgot-password", response_model=StatusResponse)
 @limiter.limit("3/minute")
-async def forgot_password(request: Request, body: ForgotPasswordRequest):
-    await auth_service.forgot_password(body.email)
+async def forgot_password(request: Request, body: ForgotPasswordRequest, background: BackgroundTasks):
+    # The lookup, token write and SMTP send run AFTER the response is sent.
+    # Awaiting them here returned instantly for unknown emails and slowly for
+    # real accounts, so the response time revealed who has an account even
+    # though the text is identical.
+    background.add_task(_forgot_password_quietly, body.email)
     return StatusResponse(
         success=True,
         message="If that email exists, a reset link has been sent",

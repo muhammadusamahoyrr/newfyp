@@ -4,6 +4,7 @@ import re
 
 from langchain_core.documents import Document
 
+from app.ai.contextual_index import strip_context
 from app.ai.graph.state import AgentState
 from app.ai.llm import get_fast_llm
 from app.ai.provider_health import PURPOSE_QUERY_EXPANSION
@@ -16,6 +17,13 @@ logger = logging.getLogger(__name__)
 _REWRITE_PROMPT = """\
 Rewrite the following user query into a concise legal search query using formal Pakistani legal terminology (PPC, CrPC, statute names, section topics).
 Output ONLY the rewritten query — no explanation, no quotes, no formatting."""
+# Client chat (2026-10-21): the corpus is English, and an Urdu question came
+# back from the rewrite still in Urdu. The rewrite is APPENDED to the query
+# (see _expand_query), so nothing the user wrote is lost.
+_REWRITE_ENGLISH = """
+Always write the search query in English, even when the user wrote in Urdu or Roman Urdu.
+Keep every statute name, section number and place the user gave. Do not add facts the user did not state."""
+_MAX_REWRITE_WORDS = 40
 
 # Statute alias map — normalise common Indian/English aliases to Pakistani statutes.
 # Users often confuse IPC (India) with PPC (Pakistan), etc.
@@ -60,8 +68,9 @@ _LEGAL_KEYWORDS = re.compile(
 )
 
 
-async def _expand_query(query: str) -> str:
-    """Normalise statute aliases, then rewrite to legal terminology for better BM25 recall."""
+async def _expand_query(query: str, english: bool = False) -> str:
+    """Normalise statute aliases, then rewrite to legal terminology for better BM25 recall.
+    `english` (client chat) asks for the rewrite in English."""
     query = _normalise_aliases(query)
     try:
         # Fast tier: this is a keyword rewrite for BM25 recall, not legal reasoning,
@@ -69,10 +78,13 @@ async def _expand_query(query: str) -> str:
         # model was costing several seconds inside every retrieval.
         llm    = get_fast_llm(purpose=PURPOSE_QUERY_EXPANSION)
         result = await asyncio.to_thread(llm.invoke, [
-            {"role": "system", "content": _REWRITE_PROMPT},
+            {"role": "system", "content": _REWRITE_PROMPT + (_REWRITE_ENGLISH if english else "")},
             {"role": "user",   "content": query},
         ])
         rewritten = result.content.strip()
+        # A runaway reply is not a search query.
+        if english and len(rewritten.split()) > _MAX_REWRITE_WORDS:
+            return query
         # Only use rewrite if it contains legal terminology (guards against hallucinated output)
         if _LEGAL_KEYWORDS.search(rewritten):
             return f"{query} {rewritten}"
@@ -388,7 +400,8 @@ def _docs_to_chunks(docs: list[Document], province: str = "",
             reference += 1
             continue
         chunks.append({
-            "content":        doc.page_content,
+            # A contextual index stores prefix + raw text; generation gets the raw text.
+            "content":        strip_context(doc.page_content, meta),
             "statute":        meta.get("statute", ""),
             # A misattributed chunk carries the section number of whatever
             # heading happened to precede it in the PDF, not its own. Passing
@@ -401,6 +414,14 @@ def _docs_to_chunks(docs: list[Document], province: str = "",
             "chunk_id":       meta.get("chunk_id", ""),
             "province":       meta.get("province", "federal"),
             "law_type":       meta.get("law_type", ""),
+            # sec_v2 records what the SOURCE says (a footnote quoting an
+            # omitted provision); absent on the base index.
+            **({"provision_status": meta["provision_status"]} if meta.get("provision_status") else {}),
+            # The versioned identity index (scripts/build_ident_index.py) names
+            # what the chunk IS when it is not a section: "Order XI Rule 17",
+            # "First Schedule, Articles 57-62". Absent on the base indexes.
+            **({"provision_kind": meta["provision_kind"], "provision_label": meta.get("provision_label", "")}
+               if meta.get("provision_kind") and meta.get("provision_kind") != "section" else {}),
         })
     if dropped:
         logger.info(
@@ -425,6 +446,155 @@ def _docs_to_chunks(docs: list[Document], province: str = "",
     return chunks
 
 
+# Bounded multi-query retrieval (Batch 3, 2026-10-12).
+_MAX_QUERY_VARIANTS = 3
+_BRANCH_TIMEOUT_S = 25.0
+_BRANCH_CONCURRENCY = 2
+
+
+def _norm_variant(q: str) -> str:
+    return " ".join((q or "").casefold().split())
+
+
+# An exact citation ("section 379 PPC", "Article 199 of the Constitution")
+# needs no LLM rewrite: the identifier is the best query there is. Benchmark
+# arm only (retrieval_policy["expansion_skip"]); production always expands.
+#
+# CONFIDENT citations only, from the strict citation parser (an explicit
+# section/article marker AND a named instrument): exactly one citation, in the
+# section or article numbering space, of an instrument the corpus holds. A
+# bare "section 379", "dafa 302", an Order/Rule reference, two citations, or
+# "section 9 of the Contract Act" (not in the corpus) keep the normal path --
+# and capability is still decided by the intake gate, never here.
+def confident_citation(query: str, index=None) -> bool:
+    try:
+        from app.ai.citation_verification import parse_statute_citations
+        from app.ai.corpus_index import get_index
+        idx = index if index is not None else get_index()
+        cites = parse_statute_citations(query or "", idx)
+    except Exception:  # noqa: BLE001 -- no parser/index: not confident
+        return False
+    if len(cites) != 1:
+        return False
+    c = cites[0]
+    return c.unit in ("section", "article") and idx.canonical(c.statute) == c.statute
+
+
+def _skip_expansion(policy: dict, query: str, index=None) -> bool:
+    # expansion_skip_all: a caller out of model-call budget (the offline
+    # agentic experiment) searches with the raw query instead.
+    if policy.get("expansion_skip_all"):
+        return True
+    return bool(policy.get("expansion_skip")) and confident_citation(query, index)
+
+
+def _multi_query_enabled(policy: dict) -> bool:
+    if "multi_query" in policy:
+        return bool(policy["multi_query"])
+    from app.core.config import settings
+    return bool(getattr(settings, "retrieval_multi_query", False))
+
+
+def _query_variants(state: AgentState, base_query: str, expanded: str) -> list[tuple[str, str]]:
+    """Named, deduplicated queries. With multi-query ON (an A/B arm, off by
+    default) intake searches with the rewrite AND the client's own words AND
+    the original story. Otherwise -- and always for chat -- the single
+    rewritten query, the production behaviour."""
+    policy = state.get("retrieval_policy") or {}
+    if policy.get("purpose") != "intake" or not _multi_query_enabled(policy):
+        return [("expanded", expanded)]
+    # An issue-bound request must not reintroduce the unsupported sentences
+    # through the raw-story branch.
+    scope = state.get("issue_scope") or {}
+    story = scope.get("supported_text") if scope.get("retrieval_bound") else state.get("user_text")
+    out, seen = [], set()
+    for name, q in (("expanded", expanded), ("client_words", base_query),
+                    ("story", story or "")):
+        key = _norm_variant(q)
+        if key and key not in seen:
+            seen.add(key)
+            out.append((name, q))
+    return out[:_MAX_QUERY_VARIANTS]
+
+
+async def _invoke(retriever, query: str, sem: asyncio.Semaphore):
+    """One retriever call off the event loop, bounded in time."""
+    async with sem:
+        return await asyncio.wait_for(asyncio.to_thread(retriever.invoke, query), _BRANCH_TIMEOUT_S)
+
+
+async def _run_branches(retriever, variants: list[tuple[str, str]]) -> list[tuple[str, list | None]]:
+    """Every branch runs; a failed branch is None and never erases the others."""
+    sem = asyncio.Semaphore(_BRANCH_CONCURRENCY)
+    results = await asyncio.gather(*(_invoke(retriever, q, sem) for _, q in variants),
+                                   return_exceptions=True)
+    out = []
+    for (name, _), res in zip(variants, results):
+        if isinstance(res, BaseException):
+            logger.warning("retrieval: branch %r failed (%s)", name, type(res).__name__)
+            out.append((name, None))
+        else:
+            out.append((name, res))
+    return out
+
+
+def _doc_key(d: Document) -> str:
+    md = d.metadata or {}
+    return md.get("chunk_id") or f"{md.get('statute', '')}|{md.get('section_number', '')}|{hash(d.page_content)}"
+
+
+async def apply_client_exact_provisions(state: AgentState, chunks: list[dict]) -> tuple[list[dict], dict]:
+    """Client chat only: a provision the user NAMED ("What is Section 489-F
+    PPC?") is fetched by exact identity and put first. Similarity search
+    returned eight CrPC schedule rows that merely mention 489-F, and the answer
+    described one of them as the section (ai/exact_provision.py). Research and
+    intake never set the client surface, so they get `chunks` back untouched.
+    Returns (chunks, {provision label: found?})."""
+    from app.ai import answer_safeguards
+    if not answer_safeguards.on(state):
+        return chunks, {}
+    from app.ai import exact_provision
+    from app.ai.contextual_index import provision_label
+    from app.ai.response_policy import presentation_base_query
+    # A lettered section labelled by its bare number in the base index ("489"
+    # for the "489- F. Dishonestly issuing a cheque" passage) gets its label
+    # back from its OWN heading. The model copied the bare label and named the
+    # cheque offence "Section 489" -- tampering with a property mark (live
+    # final run, c12/c13). Metadata on this turn's copies only; no corpus write.
+    relabelled = []
+    for c in chunks:
+        label = provision_label({"section_number": c.get("section_number", "")}, c.get("content", ""))
+        relabelled.append({**c, "section_number": label, "section_label_from": c.get("section_number")}
+                          if label and label != c.get("section_number") else c)
+    chunks = relabelled
+    # The provision of the named Act whose own HEADING governs the
+    # question's issue ("Limitation", Punjab Pre-emption Act s.30) is fetched
+    # by identity and put first. Similarity alone found it or not depending on
+    # an LLM query expansion (eval E11: rank 7, or absent from the top 28).
+    # Deterministic and bounded (ai/issue_lookup.py); nothing found = unchanged.
+    from app.ai import issue_lookup
+    governing = await asyncio.to_thread(
+        issue_lookup.fetch_governing,
+        presentation_base_query(state) or state.get("query", ""),
+        state.get("province"),
+        answer_safeguards.research_on(state),
+    )
+    if governing:
+        chunks = exact_provision.pin(chunks, governing)
+    cits = exact_provision.requested(presentation_base_query(state) or state.get("query", ""))
+    if not cits:
+        return chunks, {}
+    # Client chat calls exactly as before; research reads the identity indexes.
+    if answer_safeguards.research_on(state):
+        fetched = await asyncio.to_thread(exact_provision.fetch, cits, True)
+    else:
+        fetched = await asyncio.to_thread(exact_provision.fetch, cits)
+    exact = [c for hits in fetched.values() for c in hits]
+    found = {k: bool(v) for k, v in fetched.items()}
+    logger.info("retrieval: exact provisions %s", found)
+    return exact_provision.pin(chunks, exact), found
+
+
 async def retrieval_node(state: AgentState) -> dict:
     attempts    = state.get("retrieval_attempts", 0) + 1
     known_facts = state.get("known_facts", [])
@@ -439,6 +609,18 @@ async def retrieval_node(state: AgentState) -> dict:
     supplement = state.get("retrieval_query_supplement")
     if supplement and supplement != base_query:
         base_query = supplement
+    # Intake only: English legal terms for Urdu / Roman-Urdu legal words
+    # (deterministic; the client's words elsewhere are untouched).
+    if (state.get("retrieval_policy") or {}).get("purpose") == "intake":
+        from app.ai.legal_terms import augment
+        base_query = augment(base_query)
+    # Client chat only: a general question in Urdu script / Roman Urdu, or one
+    # opening with "Briefly,", is searched and scored with English legal terms
+    # (ai/retrieval_query.py). None -> the existing query, unchanged.
+    from app.ai import retrieval_query
+    english_query = retrieval_query.for_state(state)
+    if english_query:
+        base_query = english_query
     # On retry: weave known facts into the query to widen recall
     if attempts > 1 and known_facts:
         base_query = f"{base_query} {' '.join(known_facts)}"
@@ -458,15 +640,32 @@ async def retrieval_node(state: AgentState) -> dict:
     if state.get("expansion_for") == base_query and state.get("expanded_query"):
         expanded = state["expanded_query"]
         logger.info("retrieval: reusing query expansion for identical retry query")
+    elif _skip_expansion(state.get("retrieval_policy") or {}, base_query):
+        expanded = base_query
+        logger.info("retrieval: exact citation in query — expansion skipped (policy)")
+    elif english_query:
+        # The deterministic English query is the search query. The LLM rewrite
+        # of it was measured adding wrong law ("theft punishment" -> "CrPC
+        # Section 379 ...", "... IPC ..."), which BM25 then matched.
+        expanded = base_query
+        logger.info("retrieval: client English retrieval query — LLM expansion skipped")
     else:
-        expanded = await _expand_query(base_query)
+        expanded = await (_expand_query(base_query, english=True) if state.get("surface") == "client"
+                          else _expand_query(base_query))
 
     # Case law runs on the raw (un-rewritten) query — judgment prose matches lay
-    # phrasing better than statute-terminology rewrites.
-    case_law = await _retrieve_case_law(base_query, state.get("province"))
+    # phrasing better than statute-terminology rewrites. A purpose may switch it
+    # off: the intake analysis schema cannot represent a judgment citation (the
+    # binder treats judgment ids as invalid statute evidence), so for intake it
+    # only cost time and added prompt noise.
+    if (state.get("retrieval_policy") or {}).get("case_law") is False:
+        case_law = []
+    else:
+        case_law = await _retrieve_case_law(base_query, state.get("province"))
 
     try:
-        retriever = build_retriever(state["case_type"], state["province"])
+        retriever = build_retriever(state["case_type"], state["province"],
+                                    (state.get("retrieval_policy") or {}).get("index_variant"))
     except Exception:
         # Previously swallowed in silence. A retriever that cannot be built (e.g.
         # Chroma not connected) then returned zero chunks, and the user simply got
@@ -484,6 +683,7 @@ async def retrieval_node(state: AgentState) -> dict:
             "retrieval_attempts": attempts,
             "expanded_query":     expanded,
             "expansion_for":      base_query,
+            "retrieval_query":    english_query,
             # A crashed retriever is NOT the same as "no relevant law exists",
             # but both used to arrive at the Decision Engine as zero chunks and
             # be refused identically. Recording the difference matters twice
@@ -493,14 +693,26 @@ async def retrieval_node(state: AgentState) -> dict:
             "retrieval_error": True,
         }
 
-    # ── Hop 1: primary query ──────────────────────────────────────────────────
+    # ── Hop 1: one or more queries (multi-query for intake) ──────────────────
+    # A total failure (every branch raised) is a RETRIEVAL ERROR; branches that
+    # ran and found nothing are a valid zero result. The two must not merge.
     retrieval_error = False
-    try:
-        docs_hop1: list[Document] = retriever.invoke(expanded)
-    except Exception:
-        logger.exception("retrieval: hop-1 query failed — continuing with no chunks")
-        docs_hop1 = []
+    variants = _query_variants(state, base_query, expanded)
+    branches = await _run_branches(retriever, variants)
+    succeeded = [(name, docs) for name, docs in branches if docs is not None]
+    retrieved_by: dict[str, list[str]] = {}
+    for name, docs in succeeded:
+        for d in docs:
+            retrieved_by.setdefault(_doc_key(d), []).append(name)
+    if not succeeded:
+        logger.error("retrieval: every hop-1 query failed — continuing with no chunks")
+        docs_hop1: list[Document] = []
         retrieval_error = True
+    elif len(succeeded) == 1:
+        docs_hop1 = succeeded[0][1]
+    else:
+        # Deterministic fusion with the existing RRF (dedupes by content key).
+        docs_hop1 = RRF([docs for _, docs in succeeded]).rearrange(top_k=0)
 
     # ── Hop 2: follow statute cross-references found in hop-1 results ─────────
     all_hops: list[list[Document]] = [docs_hop1]
@@ -519,7 +731,11 @@ async def retrieval_node(state: AgentState) -> dict:
             if stat_refs:
                 # Anchor the hop-2 query with case context so province filter still applies
                 hop2_query = f"{stat_refs} {state['case_type']} {state['province']}"
-                docs_hop2: list[Document] = retriever.invoke(hop2_query)
+                try:
+                    docs_hop2: list[Document] = await _invoke(retriever, hop2_query, asyncio.Semaphore(1))
+                except Exception:
+                    logger.warning("retrieval: hop-2 text query failed — keeping hop 1")
+                    docs_hop2 = []
                 if docs_hop2:
                     all_hops.append(docs_hop2)
 
@@ -530,6 +746,11 @@ async def retrieval_node(state: AgentState) -> dict:
         merged = docs_hop1
 
     chunks = _docs_to_chunks(merged, state.get("province", ""))
+    # Provenance of each chunk: which query variant found it, and its rank
+    # before the topic/affinity rules re-order the list.
+    for rank, c in enumerate(chunks, 1):
+        c["retrieved_by"] = retrieved_by.get(c.get("chunk_id") or "", ["graph_hop2"])
+        c["rank_fused"] = rank
     chunks = _apply_topic_rules(chunks, base_query)
 
     # Named-statute affinity, AFTER topic rules so it is the final word: an
@@ -541,7 +762,9 @@ async def retrieval_node(state: AgentState) -> dict:
     # state["query"] deliberately, not base_query: base_query carries the LLM
     # rewrite, which appends statute terminology of its own. Preference must
     # follow the user's words, not the model's.
-    chunks, named = apply_affinity(chunks, state.get("query", ""))
+    # The client's own words when the pipeline supplies them (intake: the story,
+    # never AI-authored question text); otherwise the user's query as before.
+    chunks, named = apply_affinity(chunks, state.get("user_text") or state.get("query", ""))
     if named:
         logger.info("retrieval: named-statute affinity applied for %s", named)
 
@@ -550,15 +773,28 @@ async def retrieval_node(state: AgentState) -> dict:
         web_chunks = await _web_search(base_query, state.get("case_type", ""))
         chunks = chunks + web_chunks
 
+    # Client chat only: a provision the user NAMED ("What is Section 489-F
+    # PPC?") is fetched by exact identity and put first. Similarity search
+    # returned eight CrPC schedule rows that merely mention 489-F, and the
+    # answer described one of them as the section (ai/exact_provision.py).
+    # Research and intake never set the client surface.
+    chunks, exact_found = await apply_client_exact_provisions(state, chunks)
+
     return {
+        "requested_provisions": exact_found,
         "retrieved_chunks": chunks,
         # Passthrough fallback for intake_graph (grader overwrites this in chat_graph)
         "reranked_chunks":  chunks,
         "case_law_chunks":  case_law,
         "retrieval_attempts": attempts,
         "retrieval_error":  retrieval_error,
+        "retrieval_trace":  [{"chunk_id": c.get("chunk_id"), "retrieved_by": c.get("retrieved_by"),
+                              "rank_fused": c.get("rank_fused"), "rank_final": i}
+                             for i, c in enumerate(chunks, 1)][:40],
         # Carried so a "defer" retry asking the identical question reuses this
         # rewrite instead of spending a second fast-tier call to recompute it.
         "expanded_query":     expanded,
         "expansion_for":      base_query,
+        # The grader scores with it (lexical + embedding signals).
+        "retrieval_query":    english_query,
     }

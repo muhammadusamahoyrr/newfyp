@@ -7,6 +7,15 @@ import React, { useEffect, useRef, useState } from "react";
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+/* Load PDF.js ahead of time (2026-10-20): the first version opened used to wait
+ * on it, showing only "Rendering page…". Safe to call any number of times. */
+let pdfjsPromise = null;
+export function preloadPdfViewer() {
+    if (typeof window === "undefined") return null;
+    if (!pdfjsPromise) pdfjsPromise = import("pdfjs-dist/webpack.mjs").catch(() => { pdfjsPromise = null; return null; });
+    return pdfjsPromise;
+}
+
 export default function PdfDocumentView({ url, t }) {
     const hostRef = useRef(null);
     const canvasRef = useRef(null);
@@ -43,8 +52,8 @@ export default function PdfDocumentView({ url, t }) {
         if (url) {
             // This import stays client-only; pdfjs-dist/webpack.mjs supplies its
             // matching worker from the installed package, not a remote CDN.
-            import("pdfjs-dist/webpack.mjs").then(pdfjs => {
-                if (cancelled) return null;
+            (preloadPdfViewer() || import("pdfjs-dist/webpack.mjs")).then(pdfjs => {
+                if (cancelled || !pdfjs) return null;
                 task = pdfjs.getDocument({ url });
                 return task.promise;
             }).then(loaded => {
@@ -122,7 +131,15 @@ export default function PdfDocumentView({ url, t }) {
             <span aria-live="polite" style={{ minWidth: 54, textAlign: "center" }}>{pageNumber} / {pages}</span>
             <button type="button" aria-label="Next page" disabled={pageNumber >= pages} onClick={() => setPageNumber(n => n + 1)} style={button(pageNumber >= pages)}>›</button>
         </div>}
-        {message && <div role="status" style={{ padding: 18, color: t.textMuted, textAlign: "center", fontSize: 13 }}>{message}</div>}
+        {/* While loading: the shape of a page, not just a line of text. */}
+        {message && /…$/.test(message) ? (
+            <div role="status" aria-label={message} data-pdf-skeleton style={{ width: "min(760px,100%)", aspectRatio: "1 / 1.414", borderRadius: 5, background: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,0.14)", padding: "8% 9%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 14, opacity: .9 }}>
+                <style>{"@keyframes pdfPulse{0%,100%{opacity:.55}50%{opacity:1}}"}</style>
+                {[38, 62, 0, 92, 88, 95, 70, 0, 90, 85, 60].map((w, i) => w
+                    ? <span key={i} style={{ height: 10, width: `${w}%`, borderRadius: 4, background: "#e6ebea", animation: "pdfPulse 1.4s ease-in-out infinite", animationDelay: `${i * 60}ms` }} />
+                    : <span key={i} style={{ height: 8 }} />)}
+            </div>
+        ) : message && <div role="status" style={{ padding: 18, color: t.textMuted, textAlign: "center", fontSize: 13 }}>{message}</div>}
         <div style={{ width: "100%", overflowX: "auto", display: "flex", justifyContent: zoom > 1 ? "flex-start" : "center" }}>
             <canvas ref={canvasRef} role="img" aria-label={`PDF page ${pageNumber}${pages ? ` of ${pages}` : ""}`}
                 style={{ display: pages && !message ? "block" : "none", flexShrink: 0, maxWidth: "none", background: "#fff", borderRadius: 5, boxShadow: "0 8px 24px rgba(0,0,0,0.14)" }} />

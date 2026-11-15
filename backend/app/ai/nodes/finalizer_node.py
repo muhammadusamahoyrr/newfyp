@@ -2,7 +2,7 @@ import re
 
 from langchain_core.messages import AIMessage
 
-from app.ai import cache
+from app.ai import answer_safeguards, cache, exact_provision, period_support
 from app.ai.answer_citations import annotate_citations_from_evidence, apply_currency
 from app.ai.source_links import apply_source_links
 from app.ai.graph.state import AgentState
@@ -12,6 +12,7 @@ from app.ai.nodes.cache_node import (
     cache_block_reason,
     effective_language,
 )
+from app.ai.response_policy import cache_variant
 from app.utils.pii import scrub_pii as _scrub_pii
 
 _REFUSE = (
@@ -70,6 +71,20 @@ def _sanitised_claims(claims: list[dict]) -> list[dict]:
     return [{**claim, "text": _scrub_pii(claim.get("text", ""))} for claim in claims]
 
 
+def _mark_removed(claims: list[dict], final_answer: str) -> list[dict]:
+    """Claims whose sentence is no longer in the answer the user reads.
+
+    Kept in the record (the audit should show what was withdrawn and why) but
+    flagged, so nothing counts them as statements the answer still makes."""
+    visible = period_support.normalise(final_answer)
+    for claim in claims:
+        text = period_support.normalise(claim.get("text", "")).strip()
+        if text and text not in visible:
+            claim["removed_from_answer"] = True
+            claim["support"] = "unsupported"
+    return claims
+
+
 def _answer_llm_for_cache():
     """Attribution for the answer being cached. None when nothing generated it."""
     try:
@@ -81,6 +96,19 @@ def _answer_llm_for_cache():
 
 
 async def finalizer_node(state: AgentState) -> dict:
+    # "Can you help me?" -- a fixed answer about what the assistant does, in the
+    # asker's language; nothing retrieved, nothing cached (ai/client_help.py).
+    from app.ai.client_help import is_capability_question, capability_answer
+    if is_capability_question(state.get("query")) and not state.get("is_grounded"):
+        text = capability_answer(state.get("language"), state.get("query"))
+        return {
+            "answer":             text,
+            "confidence":         0.0,
+            "is_grounded":        False,
+            "convergence_status": "capability",
+            "messages":           [AIMessage(content=text[:500])],
+        }
+
     # Off-topic: triage_node already set the answer — just sanitise it.
     if state.get("convergence_status") == "off_topic":
         answer = state.get("answer", "")
@@ -110,6 +138,28 @@ async def finalizer_node(state: AgentState) -> dict:
                 "messages":           [AIMessage(content=msg)],
             }
 
+        # A LAWYER researching gets labelled general guidance instead of a
+        # blank refusal when the library simply held too little (never on a
+        # fault, and never in place of a refusal given for a reason above).
+        # Not grounded, not cached, says so first. See ai/general_guidance.py.
+        # And a CLIENT (2026-10-20) gets plain-language general information,
+        # labelled the same way and pointing to a lawyer, instead of "I was
+        # unable to provide a reliable answer" on a basic question.
+        if not failed:
+            from app.ai.answer_safeguards import SURFACE_CLIENT, SURFACE_RESEARCH
+            if state.get("surface") in (SURFACE_RESEARCH, SURFACE_CLIENT):
+                from app.ai import general_guidance
+                guidance = await general_guidance.write(
+                    state, audience="client" if state.get("surface") == SURFACE_CLIENT else "lawyer")
+                if guidance:
+                    return {
+                        "answer":             guidance,
+                        "confidence":         0.0,
+                        "is_grounded":        False,
+                        "convergence_status": "general_guidance",
+                        "messages":           [AIMessage(content=guidance[:500])],
+                    }
+
         msg = _REFUSE_ERROR if failed else _REFUSE
         return {
             "answer":             msg,
@@ -138,9 +188,97 @@ async def finalizer_node(state: AgentState) -> dict:
     # "unresolved". The stored list was already annotated when it was written.
     citations = state.get("citations", [])
     claims = _sanitised_claims(state.get("claim_assessments") or [])
+    removed: list[str] = []   # client chat: period statements withdrawn (audited)
+
+    # Client chat: a stated period that no relied-on source states for this
+    # matter is removed from the visible answer and replaced by one plain
+    # notice (ai/period_support.py). Before citation annotation and the cache
+    # write, so neither describes or stores text the user will not see. Not on
+    # a cache hit: that entry was already cleaned when it was written.
+    # Lawyer research gets the same guards when its safeguards are on
+    # (ai/answer_safeguards.py), with lawyer-worded notices and a foreign-law
+    # check; off, research is unchanged (rollback).
+    research = answer_safeguards.research_on(state)
+    urdu = state.get("language") == "ur"
+    tool_conflicts = list(state.get("tool_conflicts") or [])
+    if answer_safeguards.on(state) and not state.get("cache_hit"):
+        # An answer that says a provision was not found / does not exist while
+        # that provision's own text is in its evidence contradicts its evidence
+        # (eval E1, ai/tool_contract.py). Generation no longer sees a lookup
+        # miss for such a provision; this is the backstop for a model that
+        # denies it anyway. Not repairable sentence by sentence -- the rest of
+        # the answer is built on the false premise -- so it is withheld whole,
+        # before citations, the cache write and provenance read it.
+        from app.ai import tool_contract
+        contradicted = tool_contract.contradicted_provisions(clean, state.get("generation_evidence") or [])
+        if contradicted:
+            from app.ai.nodes.generation_node import DISCLAIMER
+            logger.info("finalizer: answer denied provision(s) present in evidence: %s", contradicted)
+            clean = tool_contract.conflict_answer(contradicted, urdu=state.get("language") == "ur",
+                                                  disclaimer=DISCLAIMER.strip())
+            claims = _mark_removed(claims, clean)
+            tool_conflicts.append({"tool": None, "provisions": contradicted,
+                                   "resolution": "answer_withheld_denied_provision_in_evidence"})
+        clean, removed = period_support.strip_unsupported_periods(
+            clean, state.get("generation_evidence") or [], urdu=urdu,
+            notice=((period_support.RESEARCH_NOTICE_UR if urdu else period_support.RESEARCH_NOTICE_EN)
+                    if research else None))
+        if removed:
+            logger.info("finalizer: removed %d unsupported period statement(s)", len(removed))
+            claims = _mark_removed(claims, clean)
+        # A provision the user named whose text the model never saw may not be
+        # explained from elsewhere (ai/exact_provision.py).
+        from app.ai.nodes.generation_node import DISCLAIMER
+        from app.ai.response_policy import presentation_base_query
+        enforced, missing = exact_provision.enforce(
+            clean, presentation_base_query(state) or state.get("query", ""),
+            state.get("generation_evidence") or [], urdu=state.get("language") == "ur",
+            disclaimer=DISCLAIMER.strip())
+        if missing:
+            logger.info("finalizer: named provision(s) not in evidence: %s", missing)
+            clean = enforced
+            claims = _mark_removed(claims, clean)
+        # Research: Indian law presented as Pakistani authority is removed with
+        # a note, unless the lawyer asked for a comparative view.
+        if research:
+            from app.ai import jurisdiction_guard
+            clean, foreign = jurisdiction_guard.strip_foreign(
+                clean, presentation_base_query(state) or state.get("query", ""), urdu=urdu)
+            if foreign:
+                logger.info("finalizer: removed %d foreign-law reference(s)", len(foreign))
+                claims = _mark_removed(claims, clean)
+            # The FINAL visible assertions (ai/visible_authority.py): no
+            # "the Act is silent" from a few retrieved sections (eval E11 d2),
+            # no period notice contradicting a verified period (E11 d1), no
+            # omitted / mispaired / unverifiable authority left visible beside
+            # a warning chip (RU2 d2). Last text change before citations, the
+            # cache write, history and provenance.
+            from app.ai import visible_authority
+            question = presentation_base_query(state) or state.get("query", "")
+            notice = period_support.RESEARCH_NOTICE_UR if urdu else period_support.RESEARCH_NOTICE_EN
+            clean, silenced = visible_authority.whole_act_silence(clean, question, state.get("province"), urdu)
+            clean, withheld = visible_authority.authorities(clean, question, urdu, research=True,
+                                                            evidence=state.get("generation_evidence") or [])
+            # Last: the notice must describe the text as it is finally shown
+            # (eval V4 -- a sentence carrying the period was replaced AFTER the
+            # notice had been worded "the period shown here").
+            clean = visible_authority.precise_notice(clean, removed, notice, urdu)
+            if silenced or withheld:
+                logger.info("finalizer: whole-Act silence %d, authorities withheld %d", len(silenced), len(withheld))
+                claims = _mark_removed(claims, clean)
+                tool_conflicts += [{"tool": None, "resolution": "whole_act_silence_replaced", "text": s[:200]}
+                                   for s in silenced]
+                tool_conflicts += [{"tool": None, "resolution": "authority_withheld",
+                                    "problems": w["problems"], "text": w["text"][:200]} for w in withheld]
+
     if not state.get("cache_hit"):
+        # Client chat matches citations on dash/space-normalised text: models
+        # write "489‑F" with a non-breaking hyphen, which parsed as section
+        # "489" -- a DIFFERENT provision -- and the correct 489-F citation was
+        # shown as an unresolved "489". Research keeps its existing matching.
+        cite_text = answer_safeguards.citation_text(clean, state)
         citations = annotate_citations_from_evidence(
-            clean, state.get("generation_evidence") or [])
+            cite_text, state.get("generation_evidence") or [])
 
     # Stamp repeal currency onto the citations and the claims resting on them.
     # Deterministic, no model, no extra call — it reads the same omission map
@@ -153,6 +291,45 @@ async def finalizer_node(state: AgentState) -> dict:
     # because it looks identical, and a provision repealed since the entry was
     # written must not inherit that entry's silence.
     apply_currency(citations, claims, province=state.get("province", "") or "")
+
+    # The CPC on file is the PUNJAB Code text (ai/source_currency.py, batch 5).
+    # Unless the turn's province is CONFIRMED Punjab (selected / case record --
+    # not inferred, not unknown): a claim resting only on the CPC is not
+    # "supported", a CPC citation's currency is "unknown", and one plain notice
+    # says so in the answer. Every chat-graph surface; on cache hits too (an
+    # entry written before this rule may carry "supported"); before the write.
+    from app.ai import source_currency
+    claims, citations, clean, _cpc = source_currency.apply_cpc_jurisdiction(
+        claims, citations, clean, state.get("province"), state.get("jurisdiction_basis"),
+        bool(state.get("province_inferred")), urdu=urdu,
+        question=state.get("query") or "")
+
+    # Authority availability (ai/authority_registry.py, batch 10) on the FINAL
+    # visible answer -- fresh, follow-up or cache hit. The decision node already
+    # refused a question that needs only unavailable law, and removed that
+    # law's text from a mixed question's evidence; here the answered part is
+    # marked plainly. An answer that reached this point WITHOUT that gate (a
+    # cache entry, or any other bypass) is not shown from other law at all.
+    from app.ai import authority_registry
+    authority_withheld = False
+    limits = state.get("authority_limits") or {}
+    if limits.get("unavailable"):
+        keys = [k for k in limits["unavailable"] if not (k == "cpc" and _cpc.get("notice"))]
+        if keys:
+            clean = clean.rstrip() + "\n\n" + authority_registry.limitation_message(
+                keys, state.get("province"), state.get("jurisdiction_basis"),
+                bool(state.get("province_inferred")), urdu=urdu, answered_rest=True)
+    else:
+        unavailable = authority_registry.assess_state(state)["unavailable"]
+        if unavailable:
+            logger.info("finalizer: answer withheld -- needs unavailable authority %s (gate not run)", unavailable)
+            clean = authority_registry.limitation_message(
+                unavailable, state.get("province"), state.get("jurisdiction_basis"),
+                bool(state.get("province_inferred")), urdu=urdu)
+            claims = _mark_removed(claims, clean)
+            citations = []
+            is_grounded = False
+            authority_withheld = True
 
     # Write-through: cache generic, grounded answers so an identical later query
     # skips the retrieval→generation chain.
@@ -174,6 +351,9 @@ async def finalizer_node(state: AgentState) -> dict:
         is_grounded
         and not blocked
         and not state.get("cache_hit")
+        # Do not replay an Urdu-script answer to the next English asker if the
+        # one-shot language repair failed. The current answer still goes out.
+        and not state.get("language_mismatch")
         and not state.get("followup_intent")
     ):
         try:
@@ -214,6 +394,7 @@ async def finalizer_node(state: AgentState) -> dict:
                 # so the read and the write cannot disagree about which bucket
                 # this answer belongs in.
                 language=effective_language(state),
+                variant=cache_variant(state),
             )
         except Exception:
             pass  # cache is best-effort — never fail the response on a cache error
@@ -228,6 +409,12 @@ async def finalizer_node(state: AgentState) -> dict:
         "answer":             clean,
         "citations":          citations,
         "claim_assessments":  claims,
+        # The exact sentences the period guard removed, so every withdrawal can
+        # be reviewed -- cited or not (claims cover only cited sentences).
+        "periods_removed":    removed,
+        "tool_conflicts":     tool_conflicts,
         "convergence_status": "converged" if is_grounded else "max_attempts",
         "messages":           [AIMessage(content=clean[:500])],
+        **({"is_grounded": False, "confidence": 0.0, "refusal_kind": "source_unavailable_for_jurisdiction"}
+           if authority_withheld else {}),
     }

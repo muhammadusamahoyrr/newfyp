@@ -36,6 +36,10 @@ def _graph_result(**over) -> dict:
         "claim_assessments": [
             {"index": 1, "kind": "summary", "citation_status": "matched",
              "support": "supported"},
+            # The action's own judged claim (the pipeline always builds one per
+            # action); the output guard shows only legal steps that were checked.
+            {"index": 2, "kind": "action", "action_kind": "legal", "text": "File an FIR",
+             "citation_status": "matched", "support": "supported"},
         ],
         "binding_mode": "id",
         "citation_binding": {"bound": 1, "untrustworthy": 0, "total": 1},

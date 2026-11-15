@@ -1,0 +1,3565 @@
+{
+ "sets": {
+  "dev": {
+   "rows": 157,
+   "invented": 22
+  },
+  "urdu": {
+   "rows": 7,
+   "invented": 4
+  },
+  "probe": {
+   "rows": 26,
+   "invented": 16
+  },
+  "all": {
+   "rows": 190,
+   "invented": 42
+  }
+ },
+ "methods": {
+  "dev:L": {
+   "caught": 5,
+   "of_invented": 22,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    54,
+    56,
+    64,
+    84,
+    90,
+    99,
+    121,
+    124,
+    139,
+    153
+   ],
+   "false_flags": 0,
+   "of_ok": 135,
+   "false_flag_ids": []
+  },
+  "dev:E@0.8": {
+   "caught": 0,
+   "of_invented": 22,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    18,
+    24,
+    29,
+    47,
+    51,
+    54,
+    56,
+    64,
+    68,
+    84,
+    90,
+    99,
+    108,
+    121,
+    124,
+    139,
+    150,
+    153
+   ],
+   "false_flags": 0,
+   "of_ok": 135,
+   "false_flag_ids": []
+  },
+  "dev:E@0.82": {
+   "caught": 0,
+   "of_invented": 22,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    18,
+    24,
+    29,
+    47,
+    51,
+    54,
+    56,
+    64,
+    68,
+    84,
+    90,
+    99,
+    108,
+    121,
+    124,
+    139,
+    150,
+    153
+   ],
+   "false_flags": 3,
+   "of_ok": 135,
+   "false_flag_ids": [
+    44,
+    46,
+    119
+   ]
+  },
+  "dev:E@0.84": {
+   "caught": 8,
+   "of_invented": 22,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    29,
+    47,
+    51,
+    64,
+    68,
+    108,
+    121,
+    150,
+    153
+   ],
+   "false_flags": 17,
+   "of_ok": 135,
+   "false_flag_ids": [
+    6,
+    7,
+    25,
+    44,
+    46,
+    49,
+    57,
+    58,
+    75,
+    77,
+    85,
+    109,
+    117,
+    118,
+    119,
+    133,
+    135
+   ]
+  },
+  "dev:E@0.86": {
+   "caught": 9,
+   "of_invented": 22,
+   "missed": [
+    10,
+    12,
+    14,
+    24,
+    29,
+    47,
+    51,
+    64,
+    68,
+    108,
+    121,
+    150,
+    153
+   ],
+   "false_flags": 38,
+   "of_ok": 135,
+   "false_flag_ids": [
+    5,
+    6,
+    7,
+    8,
+    19,
+    21,
+    25,
+    33,
+    35,
+    43,
+    44,
+    45,
+    46,
+    49,
+    57,
+    58,
+    75,
+    76,
+    77,
+    83,
+    85,
+    88,
+    89,
+    93,
+    97,
+    109,
+    115,
+    116,
+    117,
+    118,
+    119,
+    122,
+    125,
+    127,
+    130,
+    133,
+    135,
+    155
+   ]
+  },
+  "dev:E@0.88": {
+   "caught": 12,
+   "of_invented": 22,
+   "missed": [
+    12,
+    14,
+    24,
+    29,
+    51,
+    64,
+    68,
+    108,
+    150,
+    153
+   ],
+   "false_flags": 51,
+   "of_ok": 135,
+   "false_flag_ids": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    19,
+    21,
+    25,
+    27,
+    30,
+    32,
+    33,
+    35,
+    41,
+    43,
+    44,
+    45,
+    46,
+    49,
+    57,
+    58,
+    59,
+    65,
+    71,
+    75,
+    76,
+    77,
+    83,
+    85,
+    88,
+    89,
+    93,
+    94,
+    97,
+    109,
+    112,
+    115,
+    116,
+    117,
+    118,
+    119,
+    122,
+    125,
+    127,
+    130,
+    133,
+    135,
+    136,
+    142,
+    155
+   ]
+  },
+  "dev:L+E@0.8": {
+   "caught": 5,
+   "of_invented": 22,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    54,
+    56,
+    64,
+    84,
+    90,
+    99,
+    121,
+    124,
+    139,
+    153
+   ],
+   "false_flags": 0,
+   "of_ok": 135,
+   "false_flag_ids": []
+  },
+  "dev:L+E@0.82": {
+   "caught": 5,
+   "of_invented": 22,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    54,
+    56,
+    64,
+    84,
+    90,
+    99,
+    121,
+    124,
+    139,
+    153
+   ],
+   "false_flags": 3,
+   "of_ok": 135,
+   "false_flag_ids": [
+    44,
+    46,
+    119
+   ]
+  },
+  "dev:L+E@0.84": {
+   "caught": 12,
+   "of_invented": 22,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    64,
+    121,
+    153
+   ],
+   "false_flags": 17,
+   "of_ok": 135,
+   "false_flag_ids": [
+    6,
+    7,
+    25,
+    44,
+    46,
+    49,
+    57,
+    58,
+    75,
+    77,
+    85,
+    109,
+    117,
+    118,
+    119,
+    133,
+    135
+   ]
+  },
+  "dev:L+E@0.86": {
+   "caught": 13,
+   "of_invented": 22,
+   "missed": [
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    64,
+    121,
+    153
+   ],
+   "false_flags": 38,
+   "of_ok": 135,
+   "false_flag_ids": [
+    5,
+    6,
+    7,
+    8,
+    19,
+    21,
+    25,
+    33,
+    35,
+    43,
+    44,
+    45,
+    46,
+    49,
+    57,
+    58,
+    75,
+    76,
+    77,
+    83,
+    85,
+    88,
+    89,
+    93,
+    97,
+    109,
+    115,
+    116,
+    117,
+    118,
+    119,
+    122,
+    125,
+    127,
+    130,
+    133,
+    135,
+    155
+   ]
+  },
+  "dev:L+E@0.88": {
+   "caught": 16,
+   "of_invented": 22,
+   "missed": [
+    12,
+    14,
+    24,
+    51,
+    64,
+    153
+   ],
+   "false_flags": 51,
+   "of_ok": 135,
+   "false_flag_ids": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    19,
+    21,
+    25,
+    27,
+    30,
+    32,
+    33,
+    35,
+    41,
+    43,
+    44,
+    45,
+    46,
+    49,
+    57,
+    58,
+    59,
+    65,
+    71,
+    75,
+    76,
+    77,
+    83,
+    85,
+    88,
+    89,
+    93,
+    94,
+    97,
+    109,
+    112,
+    115,
+    116,
+    117,
+    118,
+    119,
+    122,
+    125,
+    127,
+    130,
+    133,
+    135,
+    136,
+    142,
+    155
+   ]
+  },
+  "urdu:L": {
+   "caught": 1,
+   "of_invented": 4,
+   "missed": [
+    "U1",
+    "U3",
+    "U4"
+   ],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:E@0.8": {
+   "caught": 0,
+   "of_invented": 4,
+   "missed": [
+    "U1",
+    "U2",
+    "U3",
+    "U4"
+   ],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:E@0.82": {
+   "caught": 2,
+   "of_invented": 4,
+   "missed": [
+    "U3",
+    "U4"
+   ],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:E@0.84": {
+   "caught": 4,
+   "of_invented": 4,
+   "missed": [],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:E@0.86": {
+   "caught": 4,
+   "of_invented": 4,
+   "missed": [],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:E@0.88": {
+   "caught": 4,
+   "of_invented": 4,
+   "missed": [],
+   "false_flags": 1,
+   "of_ok": 3,
+   "false_flag_ids": [
+    "U6"
+   ]
+  },
+  "urdu:L+E@0.8": {
+   "caught": 1,
+   "of_invented": 4,
+   "missed": [
+    "U1",
+    "U3",
+    "U4"
+   ],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:L+E@0.82": {
+   "caught": 2,
+   "of_invented": 4,
+   "missed": [
+    "U3",
+    "U4"
+   ],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:L+E@0.84": {
+   "caught": 4,
+   "of_invented": 4,
+   "missed": [],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:L+E@0.86": {
+   "caught": 4,
+   "of_invented": 4,
+   "missed": [],
+   "false_flags": 0,
+   "of_ok": 3,
+   "false_flag_ids": []
+  },
+  "urdu:L+E@0.88": {
+   "caught": 4,
+   "of_invented": 4,
+   "missed": [],
+   "false_flags": 1,
+   "of_ok": 3,
+   "false_flag_ids": [
+    "U6"
+   ]
+  },
+  "probe:L": {
+   "caught": 8,
+   "of_invented": 16,
+   "missed": [
+    "I02",
+    "I05",
+    "I07",
+    "I08",
+    "I09",
+    "I11",
+    "I13",
+    "I16"
+   ],
+   "false_flags": 0,
+   "of_ok": 10,
+   "false_flag_ids": []
+  },
+  "probe:E@0.8": {
+   "caught": 1,
+   "of_invented": 16,
+   "missed": [
+    "I01",
+    "I02",
+    "I03",
+    "I04",
+    "I05",
+    "I06",
+    "I07",
+    "I08",
+    "I09",
+    "I10",
+    "I11",
+    "I12",
+    "I13",
+    "I15",
+    "I16"
+   ],
+   "false_flags": 1,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G10"
+   ]
+  },
+  "probe:E@0.82": {
+   "caught": 9,
+   "of_invented": 16,
+   "missed": [
+    "I01",
+    "I02",
+    "I03",
+    "I05",
+    "I06",
+    "I09",
+    "I15"
+   ],
+   "false_flags": 2,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G05",
+    "G10"
+   ]
+  },
+  "probe:E@0.84": {
+   "caught": 13,
+   "of_invented": 16,
+   "missed": [
+    "I01",
+    "I05",
+    "I09"
+   ],
+   "false_flags": 2,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G05",
+    "G10"
+   ]
+  },
+  "probe:E@0.86": {
+   "caught": 16,
+   "of_invented": 16,
+   "missed": [],
+   "false_flags": 3,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G05",
+    "G08",
+    "G10"
+   ]
+  },
+  "probe:E@0.88": {
+   "caught": 16,
+   "of_invented": 16,
+   "missed": [],
+   "false_flags": 3,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G05",
+    "G08",
+    "G10"
+   ]
+  },
+  "probe:L+E@0.8": {
+   "caught": 8,
+   "of_invented": 16,
+   "missed": [
+    "I02",
+    "I05",
+    "I07",
+    "I08",
+    "I09",
+    "I11",
+    "I13",
+    "I16"
+   ],
+   "false_flags": 1,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G10"
+   ]
+  },
+  "probe:L+E@0.82": {
+   "caught": 13,
+   "of_invented": 16,
+   "missed": [
+    "I02",
+    "I05",
+    "I09"
+   ],
+   "false_flags": 2,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G05",
+    "G10"
+   ]
+  },
+  "probe:L+E@0.84": {
+   "caught": 14,
+   "of_invented": 16,
+   "missed": [
+    "I05",
+    "I09"
+   ],
+   "false_flags": 2,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G05",
+    "G10"
+   ]
+  },
+  "probe:L+E@0.86": {
+   "caught": 16,
+   "of_invented": 16,
+   "missed": [],
+   "false_flags": 3,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G05",
+    "G08",
+    "G10"
+   ]
+  },
+  "probe:L+E@0.88": {
+   "caught": 16,
+   "of_invented": 16,
+   "missed": [],
+   "false_flags": 3,
+   "of_ok": 10,
+   "false_flag_ids": [
+    "G05",
+    "G08",
+    "G10"
+   ]
+  },
+  "all:L": {
+   "caught": 14,
+   "of_invented": 42,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    54,
+    56,
+    64,
+    84,
+    90,
+    99,
+    121,
+    124,
+    139,
+    153,
+    "U1",
+    "U3",
+    "U4",
+    "I02",
+    "I05",
+    "I07",
+    "I08",
+    "I09",
+    "I11",
+    "I13",
+    "I16"
+   ],
+   "false_flags": 0,
+   "of_ok": 148,
+   "false_flag_ids": []
+  },
+  "all:E@0.8": {
+   "caught": 1,
+   "of_invented": 42,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    18,
+    24,
+    29,
+    47,
+    51,
+    54,
+    56,
+    64,
+    68,
+    84,
+    90,
+    99,
+    108,
+    121,
+    124,
+    139,
+    150,
+    153,
+    "U1",
+    "U2",
+    "U3",
+    "U4",
+    "I01",
+    "I02",
+    "I03",
+    "I04",
+    "I05",
+    "I06",
+    "I07",
+    "I08",
+    "I09",
+    "I10",
+    "I11",
+    "I12",
+    "I13",
+    "I15",
+    "I16"
+   ],
+   "false_flags": 1,
+   "of_ok": 148,
+   "false_flag_ids": [
+    "G10"
+   ]
+  },
+  "all:E@0.82": {
+   "caught": 11,
+   "of_invented": 42,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    18,
+    24,
+    29,
+    47,
+    51,
+    54,
+    56,
+    64,
+    68,
+    84,
+    90,
+    99,
+    108,
+    121,
+    124,
+    139,
+    150,
+    153,
+    "U3",
+    "U4",
+    "I01",
+    "I02",
+    "I03",
+    "I05",
+    "I06",
+    "I09",
+    "I15"
+   ],
+   "false_flags": 5,
+   "of_ok": 148,
+   "false_flag_ids": [
+    44,
+    46,
+    119,
+    "G05",
+    "G10"
+   ]
+  },
+  "all:E@0.84": {
+   "caught": 25,
+   "of_invented": 42,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    29,
+    47,
+    51,
+    64,
+    68,
+    108,
+    121,
+    150,
+    153,
+    "I01",
+    "I05",
+    "I09"
+   ],
+   "false_flags": 19,
+   "of_ok": 148,
+   "false_flag_ids": [
+    6,
+    7,
+    25,
+    44,
+    46,
+    49,
+    57,
+    58,
+    75,
+    77,
+    85,
+    109,
+    117,
+    118,
+    119,
+    133,
+    135,
+    "G05",
+    "G10"
+   ]
+  },
+  "all:E@0.86": {
+   "caught": 29,
+   "of_invented": 42,
+   "missed": [
+    10,
+    12,
+    14,
+    24,
+    29,
+    47,
+    51,
+    64,
+    68,
+    108,
+    121,
+    150,
+    153
+   ],
+   "false_flags": 41,
+   "of_ok": 148,
+   "false_flag_ids": [
+    5,
+    6,
+    7,
+    8,
+    19,
+    21,
+    25,
+    33,
+    35,
+    43,
+    44,
+    45,
+    46,
+    49,
+    57,
+    58,
+    75,
+    76,
+    77,
+    83,
+    85,
+    88,
+    89,
+    93,
+    97,
+    109,
+    115,
+    116,
+    117,
+    118,
+    119,
+    122,
+    125,
+    127,
+    130,
+    133,
+    135,
+    155,
+    "G05",
+    "G08",
+    "G10"
+   ]
+  },
+  "all:E@0.88": {
+   "caught": 32,
+   "of_invented": 42,
+   "missed": [
+    12,
+    14,
+    24,
+    29,
+    51,
+    64,
+    68,
+    108,
+    150,
+    153
+   ],
+   "false_flags": 55,
+   "of_ok": 148,
+   "false_flag_ids": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    19,
+    21,
+    25,
+    27,
+    30,
+    32,
+    33,
+    35,
+    41,
+    43,
+    44,
+    45,
+    46,
+    49,
+    57,
+    58,
+    59,
+    65,
+    71,
+    75,
+    76,
+    77,
+    83,
+    85,
+    88,
+    89,
+    93,
+    94,
+    97,
+    109,
+    112,
+    115,
+    116,
+    117,
+    118,
+    119,
+    122,
+    125,
+    127,
+    130,
+    133,
+    135,
+    136,
+    142,
+    155,
+    "U6",
+    "G05",
+    "G08",
+    "G10"
+   ]
+  },
+  "all:L+E@0.8": {
+   "caught": 14,
+   "of_invented": 42,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    54,
+    56,
+    64,
+    84,
+    90,
+    99,
+    121,
+    124,
+    139,
+    153,
+    "U1",
+    "U3",
+    "U4",
+    "I02",
+    "I05",
+    "I07",
+    "I08",
+    "I09",
+    "I11",
+    "I13",
+    "I16"
+   ],
+   "false_flags": 1,
+   "of_ok": 148,
+   "false_flag_ids": [
+    "G10"
+   ]
+  },
+  "all:L+E@0.82": {
+   "caught": 20,
+   "of_invented": 42,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    54,
+    56,
+    64,
+    84,
+    90,
+    99,
+    121,
+    124,
+    139,
+    153,
+    "U3",
+    "U4",
+    "I02",
+    "I05",
+    "I09"
+   ],
+   "false_flags": 5,
+   "of_ok": 148,
+   "false_flag_ids": [
+    44,
+    46,
+    119,
+    "G05",
+    "G10"
+   ]
+  },
+  "all:L+E@0.84": {
+   "caught": 30,
+   "of_invented": 42,
+   "missed": [
+    9,
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    64,
+    121,
+    153,
+    "I05",
+    "I09"
+   ],
+   "false_flags": 19,
+   "of_ok": 148,
+   "false_flag_ids": [
+    6,
+    7,
+    25,
+    44,
+    46,
+    49,
+    57,
+    58,
+    75,
+    77,
+    85,
+    109,
+    117,
+    118,
+    119,
+    133,
+    135,
+    "G05",
+    "G10"
+   ]
+  },
+  "all:L+E@0.86": {
+   "caught": 33,
+   "of_invented": 42,
+   "missed": [
+    10,
+    12,
+    14,
+    24,
+    47,
+    51,
+    64,
+    121,
+    153
+   ],
+   "false_flags": 41,
+   "of_ok": 148,
+   "false_flag_ids": [
+    5,
+    6,
+    7,
+    8,
+    19,
+    21,
+    25,
+    33,
+    35,
+    43,
+    44,
+    45,
+    46,
+    49,
+    57,
+    58,
+    75,
+    76,
+    77,
+    83,
+    85,
+    88,
+    89,
+    93,
+    97,
+    109,
+    115,
+    116,
+    117,
+    118,
+    119,
+    122,
+    125,
+    127,
+    130,
+    133,
+    135,
+    155,
+    "G05",
+    "G08",
+    "G10"
+   ]
+  },
+  "all:L+E@0.88": {
+   "caught": 36,
+   "of_invented": 42,
+   "missed": [
+    12,
+    14,
+    24,
+    51,
+    64,
+    153
+   ],
+   "false_flags": 55,
+   "of_ok": 148,
+   "false_flag_ids": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    19,
+    21,
+    25,
+    27,
+    30,
+    32,
+    33,
+    35,
+    41,
+    43,
+    44,
+    45,
+    46,
+    49,
+    57,
+    58,
+    59,
+    65,
+    71,
+    75,
+    76,
+    77,
+    83,
+    85,
+    88,
+    89,
+    93,
+    94,
+    97,
+    109,
+    112,
+    115,
+    116,
+    117,
+    118,
+    119,
+    122,
+    125,
+    127,
+    130,
+    133,
+    135,
+    136,
+    142,
+    155,
+    "U6",
+    "G05",
+    "G08",
+    "G10"
+   ]
+  }
+ },
+ "urdu_boundaries": [
+  {
+   "text": "یہ کہ ملزم کی درخواست سیکشن 354، CrPC 1898 کے تحت کی جاتی ہے",
+   "expect": 2,
+   "got": 2,
+   "ok": true
+  },
+  {
+   "text": "یہ کہ دفعہ 497 ضابطہ فوجداری کے تحت ضمانت دی جائے۔ مزید انکو",
+   "expect": 3,
+   "got": 3,
+   "ok": true
+  },
+  {
+   "text": "That bail be granted under Sec. 497 CrPC. The inquiry is inc",
+   "expect": 2,
+   "got": 2,
+   "ok": true
+  },
+  {
+   "text": "یہ کہ FIR No. 12/2026 درج کی گئی۔ سیکشن 154 CrPC کے تحت۔",
+   "expect": 2,
+   "got": 2,
+   "ok": true
+  }
+ ],
+ "items": [
+  {
+   "set": "dev",
+   "n": 0,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 1,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 2,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9365975260734558,
+   "clauses": [
+    [
+     "the plaint is returned to the plaintiff on the ground that this Court lacks territorial jurisdiction over the cause of action",
+     0.9365975260734558
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 3,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8637503385543823,
+   "clauses": [
+    [
+     "the suit is presently pending before this Hon’ble Court",
+     0.8637503385543823
+    ],
+    [
+     "the applicant’s interest is directly affected, rendering him a necessary party for the complete adjudication of the matter",
+     0.8705865144729614
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 4,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8686815500259399,
+   "clauses": [
+    [
+     "settle all questions involved, order that such person be added as a party",
+     0.8686815500259399
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 5,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.847358226776123,
+   "clauses": [
+    [
+     "the applicant is a person who ought to have been joined as a plaintiff/defendant",
+     0.8835449814796448
+    ],
+    [
+     "and his presence before the Court is essential to enable the Court to effectually",
+     0.847358226776123
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 6,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8208208084106445,
+   "clauses": [
+    [
+     "thereby ensuring that no limitation bar is raised by such addition",
+     0.8208208084106445
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 7,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8391498923301697,
+   "clauses": [
+    [
+     "and such amendment is necessary to prevent multiplicity of proceedings",
+     0.8391498923301697
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 8,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8501642942428589,
+   "clauses": [
+    [
+     "the decree was obtained by fraud",
+     0.8501642942428589
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 9,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8407739996910095,
+   "clauses": [
+    [
+     "the fraud was discovered within three years from the date of the decree",
+     0.8407739996910095
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 10,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8720135688781738,
+   "clauses": [
+    [
+     "the decree was passed ex parte without the plaintiff being given a proper opportunity to appear",
+     0.8720135688781738
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 11,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 12,
+   "label": "invented",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 13,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 14,
+   "label": "invented",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 15,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 16,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 17,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 18,
+   "label": "invented",
+   "L": true,
+   "min_support": 0.830836832523346,
+   "clauses": [
+    [
+     "the accused, though not insane, is unable to understand the proceedings",
+     0.830836832523346
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 19,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8438725471496582,
+   "clauses": [
+    [
+     "the further prosecution of the accused would result in a miscarriage of justice",
+     0.8438725471496582
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 20,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 21,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8570441603660583,
+   "clauses": [
+    [
+     "the applicant is a surety who executed a bond CrPC 1898, guaranteeing the appearance of the accused before the Court",
+     0.8570441603660583
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 22,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 23,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 24,
+   "label": "invented",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 25,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8330501317977905,
+   "clauses": [
+    [
+     "the welfare of the minor child requires that she be placed in the custody of her mother",
+     0.9358686208724976
+    ],
+    [
+     "who is best positioned to ensure her support, health, education",
+     0.8330501317977905
+    ],
+    [
+     "overall welfare as mandated by",
+     0.8417966961860657
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 26,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 27,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.864106297492981,
+   "clauses": [
+    [
+     "you are required to vacate the premises located at within days of receipt of this notice, on account of your failure to pay rent due under the tenancy, pursuant to",
+     0.864106297492981
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 28,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 29,
+   "label": "invented",
+   "L": true,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 30,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8625049591064453,
+   "clauses": [
+    [
+     "The parties agree that this restriction is reasonable",
+     0.8625049591064453
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 31,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8860722780227661,
+   "clauses": [
+    [
+     "finally resolved by arbitration in Karachi, in accordance with",
+     0.8860722780227661
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 32,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8693282604217529,
+   "clauses": [
+    [
+     "this notice constitutes the statutory notice required under CPC 1908 — provision not identified before instituting any suit against the Federal Government",
+     0.8693282604217529
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 33,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8545621037483215,
+   "clauses": [
+    [
+     "CPC 1908 — provision not identified)",
+     0.8545621037483215
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 34,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 35,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8505878448486328,
+   "clauses": [
+    [
+     "being the amount covered by Cheque No. dated drawn on",
+     0.8540266752243042
+    ],
+    [
+     "which has been dishonoured on presentation",
+     0.8505878448486328
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 36,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8931502103805542,
+   "clauses": [
+    [
+     "You are further put on notice that, if such payment is not made within fifteen (15) days from the receipt of this notice, legal action will be instituted against you, including criminal proceedings",
+     0.8931502103805542
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 37,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9121687412261963,
+   "clauses": [
+    [
+     "the plaint filed by the plaintiff does not disclose any cause of action against the defendant",
+     0.9121687412261963
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 38,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 39,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 40,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 41,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.865084707736969,
+   "clauses": [
+    [
+     "the applicant’s legal right or interest is directly affected, making his presence before the Court necessary for a complete adjudication of the dispute",
+     0.865084707736969
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 42,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8811113238334656,
+   "clauses": [
+    [
+     "that it is necessary for the determination of the real matter in dispute, order any other person to be added as a party",
+     0.8811113238334656
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 43,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8400155305862427,
+   "clauses": [
+    [
+     "the applicant is a person whose interest is such that, if not joined, the Court would be unable to fully",
+     0.8627042174339294
+    ],
+    [
+     "effectively settle all questions involved in the suit",
+     0.8400155305862427
+    ],
+    [
+     "and therefore his addition is required to enable the Court to adjudicate upon",
+     0.8568602204322815
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 44,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8019470572471619,
+   "clauses": [
+    [
+     "and consequently the limitation period will not be prejudiced by his inclusion",
+     0.8019470572471619
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 45,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8501642942428589,
+   "clauses": [
+    [
+     "the decree was obtained by fraud",
+     0.8501642942428589
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 46,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8158695697784424,
+   "clauses": [
+    [
+     "the plaintiff only became aware of the fraud on",
+     0.8158695697784424
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 47,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8677026033401489,
+   "clauses": [
+    [
+     "the decree was passed ex parte without the plaintiff being given a proper opportunity to be heard",
+     0.8677026033401489
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 48,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.883675754070282,
+   "clauses": [
+    [
+     "and therefore be pleased to fix an early date for hearing this application to prevent any abuse of the process",
+     0.883675754070282
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 49,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8202735781669617,
+   "clauses": [
+    [
+     "the need to allow the parties sufficient time to appear",
+     0.8202735781669617
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 50,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 51,
+   "label": "invented",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 52,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 53,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 54,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.82940673828125,
+   "clauses": [
+    [
+     "the learned trial Court proceeded with the trial despite the accused’s inability to understand the proceedings",
+     0.82940673828125
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 55,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.892141580581665,
+   "clauses": [
+    [
+     "quash criminal proceedings where the process is being misused or employed to harass the accused",
+     0.892141580581665
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 56,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.82909095287323,
+   "clauses": [
+    [
+     "as the accused has been denied a fair opportunity to defend himself",
+     0.82909095287323
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 57,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8267338871955872,
+   "clauses": [
+    [
+     "is necessary to secure the ends of justice",
+     0.8267338871955872
+    ],
+    [
+     "as contemplated by the inherent powers conferred upon the High Court by CrPC",
+     0.8461130261421204
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 58,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8265411853790283,
+   "clauses": [
+    [
+     "the applicant is not in custody",
+     0.8265411853790283
+    ],
+    [
+     "the complaint has been instituted mala fide by the complainant",
+     0.8718430995941162
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 59,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8678210973739624,
+   "clauses": [
+    [
+     "the applicant, , executed a bail bond as surety for the accused CrPC 1898",
+     0.8678210973739624
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 60,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 61,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 62,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 63,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 64,
+   "label": "invented",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 65,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.869968831539154,
+   "clauses": [
+    [
+     "the welfare of the minor child requires that custody be placed with the mother",
+     0.9473668336868286
+    ],
+    [
+     "who as guardian of the person is charged with the custody, support, health",
+     0.869968831539154
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 66,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 67,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 68,
+   "label": "invented",
+   "L": true,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 69,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 70,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 71,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8693282604217529,
+   "clauses": [
+    [
+     "this notice constitutes the statutory notice required under CPC 1908 — provision not identified before instituting any suit against the Federal Government",
+     0.8693282604217529
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 72,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8999686241149902,
+   "clauses": [
+    [
+     "which has been dishonoured on presentation, within fifteen (15) days of receipt of this notice",
+     0.8999686241149902
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 73,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 74,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 75,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8336107730865479,
+   "clauses": [
+    [
+     "the plaint is returned to the plaintiff",
+     0.8336107730865479
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 76,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8551738262176514,
+   "clauses": [
+    [
+     "and therefore the Court is without jurisdiction",
+     0.8827909231185913
+    ],
+    [
+     "as required by the CPC Appendix",
+     0.8551738262176514
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 77,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8359630107879639,
+   "clauses": [
+    [
+     "the applicant, , is a person having a direct",
+     0.8359630107879639
+    ],
+    [
+     "therefore is a necessary party within the meaning of the Code of Civil Procedure, 1908",
+     0.8634975552558899
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 78,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 79,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 80,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 81,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 82,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 83,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8455489873886108,
+   "clauses": [
+    [
+     "the decree was obtained by fraud",
+     0.8501643538475037
+    ],
+    [
+     "having induced the Court to pass the ex parte decree",
+     0.8455489873886108
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 84,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8344024419784546,
+   "clauses": [
+    [
+     "and the plaintiff has filed this application within three years from the date such fraud became known",
+     0.8344024419784546
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 85,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8306676149368286,
+   "clauses": [
+    [
+     "That, CPC, the Court has the power, in special circumstances, to set aside a decree and, if necessary, stay or set aside its execution",
+     0.8306676149368286
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 86,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 87,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 88,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8501453399658203,
+   "clauses": [
+    [
+     "the appellant was served with the judgment on and, , the day of service is excluded in computing the period of limitation for filing an appeal",
+     0.8501453399658203
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 89,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8445773124694824,
+   "clauses": [
+    [
+     "the appellant filed the appeal on",
+     0.8445773124694824
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 90,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.825473427772522,
+   "clauses": [
+    [
+     "the delay was caused by",
+     0.825473427772522
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 91,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 92,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 93,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8535566926002502,
+   "clauses": [
+    [
+     "the criminal proceedings instituted against the Applicant constitute an abuse of process",
+     0.9014368057250977
+    ],
+    [
+     "ought to be quashed",
+     0.8535566926002502
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 94,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8725191354751587,
+   "clauses": [
+    [
+     "That, of Criminal Procedure, 1898, this Hon’ble Court has the authority to set aside the proceedings on the ground of abuse of process",
+     0.8725191354751587
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 95,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 96,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8808178305625916,
+   "clauses": [
+    [
+     "the complaint filed against the Applicant is mala fide, lacking any sufficient ground for proceeding",
+     0.8808178305625916
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 97,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8444538116455078,
+   "clauses": [
+    [
+     "the applicant, , is a surety for the attendance",
+     0.8444538116455078
+    ],
+    [
+     "appearance of the accused",
+     0.8617597818374634
+    ],
+    [
+     "who has been released on bail",
+     0.8567538261413574
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 98,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 99,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8366549015045166,
+   "clauses": [
+    [
+     "the applicant has complied with all conditions of the bond",
+     0.8466812372207642
+    ],
+    [
+     "there is no prejudice to the prosecution or the public interest in granting the discharge",
+     0.8366549015045166
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 100,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 101,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9063102006912231,
+   "clauses": [
+    [
+     "Discharge the applicant as surety from the bail bond executed CrPC (or CrPC)",
+     0.9063102006912231
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 102,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.904399037361145,
+   "clauses": [
+    [
+     "Order that the applicant be released from any further liability in respect of the said bond",
+     0.904399037361145
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 103,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8833255767822266,
+   "clauses": [
+    [
+     "ملزم کے خلاف گرفتاری کے بعد اس کی ضمانت کی درخواست کی جاتی ہے",
+     0.8833255767822266
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 104,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9237542152404785,
+   "clauses": [
+    [
+     "as defined , necessitates that the minor be placed in the custody of the mother",
+     0.9237542152404785
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 105,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 106,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8869055509567261,
+   "clauses": [
+    [
+     "the Tenant is required to vacate the premises within days from the date of this notice due to non‑payment of rent, pursuant to",
+     0.8869055509567261
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 107,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 108,
+   "label": "invented",
+   "L": true,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 109,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8383685350418091,
+   "clauses": [
+    [
+     "Enforceability under Pakistani law is limited to reasonable restraints of trade",
+     0.8692077398300171
+    ],
+    [
+     "is subject to judicial scrutiny",
+     0.8383685350418091
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 110,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 111,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 112,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8677725791931152,
+   "clauses": [
+    [
+     "the plaint filed by the plaintiff fails to disclose any cause of action against the defendant",
+     0.9234257936477661
+    ],
+    [
+     "as it does not allege any legal right infringed or any factual basis for relief",
+     0.8677725791931152
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 113,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 114,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 115,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8489002585411072,
+   "clauses": [
+    [
+     "the plaint is returned to the plaintiff CPC",
+     0.8489002585411072
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 116,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8451826572418213,
+   "clauses": [
+    [
+     "as demonstrated by the facts set out in the CPC Appendix",
+     0.8451826572418213
+    ],
+    [
+     "and therefore the appropriate Court with territorial jurisdiction is elsewhere",
+     0.8747000098228455
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 117,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8242713212966919,
+   "clauses": [
+    [
+     "the applicant is a person whose legal rights",
+     0.8337562084197998
+    ],
+    [
+     "interests are directly affected by the subject matter of the suit",
+     0.8242713212966919
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 118,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.83548903465271,
+   "clauses": [
+    [
+     "the applicant is a necessary party within the meaning of the Code of Civil Procedure, 1908",
+     0.8791826367378235
+    ],
+    [
+     "and his presence is indispensable for a complete",
+     0.83548903465271
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 119,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8170565366744995,
+   "clauses": [
+    [
+     "the applicant has a direct",
+     0.8506264090538025
+    ],
+    [
+     "any judgment rendered without his participation would be incomplete",
+     0.8170565366744995
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 120,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 121,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8626835346221924,
+   "clauses": [
+    [
+     "the decree was passed ex parte without the plaintiff being served notice as required by law",
+     0.8626835346221924
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 122,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8488205671310425,
+   "clauses": [
+    [
+     "the decree was obtained by fraud",
+     0.8501643538475037
+    ],
+    [
+     "which induced the Court to pass the decree",
+     0.8488205671310425
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 123,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 124,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8398256897926331,
+   "clauses": [
+    [
+     "the fraud was discovered by the plaintiff within three years of the decree",
+     0.8398256897926331
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 125,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8430426120758057,
+   "clauses": [
+    [
+     "That, CPC, the Court has power to set aside the decree and, if necessary, stay or set aside its execution",
+     0.8430426120758057
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 126,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 127,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8515162467956543,
+   "clauses": [
+    [
+     "the matter remitted for trial on the merits",
+     0.8515162467956543
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 128,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 129,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9164037704467773,
+   "clauses": [
+    [
+     "but the appeal was filed 12 days after the expiry of such period",
+     0.9164037704467773
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 130,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8569803237915039,
+   "clauses": [
+    [
+     "That, in computing the period of limitation, the day on which the judgment was pronounced is excluded",
+     0.8569803237915039
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 131,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 132,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 133,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8370240330696106,
+   "clauses": [
+    [
+     "the criminal proceedings instituted against the applicant constitute an abuse of the process of law, being without reasonable basis",
+     0.8969016075134277
+    ],
+    [
+     "intended to harass the applicant",
+     0.8370240330696106
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 134,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 135,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8392221927642822,
+   "clauses": [
+    [
+     "the complaint lodged by the complainant is mala fide, being devoid of any substantive basis",
+     0.8727763891220093
+    ],
+    [
+     "filed with an ulterior motive to harass the accused",
+     0.8542102575302124
+    ],
+    [
+     "the application is filed CrPC 1898",
+     0.8392221927642822
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 136,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8608930110931396,
+   "clauses": [
+    [
+     "the Applicant, , is a surety who executed a bond for the attendance",
+     0.8791661262512207
+    ],
+    [
+     "appearance of the accused, , in the case bearing FIR No. , dated , before the Court, Sindh",
+     0.8608930110931396
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 137,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 138,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 139,
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8394837379455566,
+   "clauses": [
+    [
+     "the Applicant has complied with all conditions of the bond",
+     0.8398710489273071
+    ],
+    [
+     "there is no pending liability or forfeiture that would prejudice the discharge",
+     0.8394837379455566
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 140,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 141,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 142,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8784328103065491,
+   "clauses": [
+    [
+     "Issue a warrant of arrest directing the accused to appear before the Magistrate CrPC",
+     0.8784328103065491
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 143,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9020145535469055,
+   "clauses": [
+    [
+     "Discharge the Applicant from the bail bond executed in favour of the accused, of Criminal Procedure, 1898",
+     0.9020145535469055
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 144,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 145,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8902627229690552,
+   "clauses": [
+    [
+     "ملزم کے خلاف مزید انکوائری درکار ہے",
+     0.8902627229690552
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 146,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9289739727973938,
+   "clauses": [
+    [
+     "the welfare of the minor necessitates that she be placed in the custody of her mother",
+     0.9289739727973938
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 147,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 148,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 149,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 150,
+   "label": "invented",
+   "L": true,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 151,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 152,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 153,
+   "label": "invented",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 154,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "dev",
+   "n": 155,
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8564616441726685,
+   "clauses": [
+    [
+     "this notice is served CPC",
+     0.8564616441726685
+    ]
+   ]
+  },
+  {
+   "set": "dev",
+   "n": 156,
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "urdu",
+   "n": "U1",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8174543380737305,
+   "clauses": [
+    [
+     "ملزم ذہنی مریض ہے اور مقدمے کی کارروائی نہیں سمجھ سکتا",
+     0.8174543380737305
+    ]
+   ]
+  },
+  {
+   "set": "urdu",
+   "n": "U2",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.8040921688079834,
+   "clauses": [
+    [
+     "ملزم کو 3 مارچ 2025 کو گرفتار کیا گیا",
+     0.8040921688079834
+    ]
+   ]
+  },
+  {
+   "set": "urdu",
+   "n": "U3",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8360579013824463,
+   "clauses": [
+    [
+     "مدعی نے گواہوں کو دھمکیاں دی ہیں",
+     0.8360579013824463
+    ]
+   ]
+  },
+  {
+   "set": "urdu",
+   "n": "U4",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8228316307067871,
+   "clauses": [
+    [
+     "ملزم کا کوئی سابقہ مجرمانہ ریکارڈ نہیں ہے",
+     0.8228316307067871
+    ]
+   ]
+  },
+  {
+   "set": "urdu",
+   "n": "U5",
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8902627825737,
+   "clauses": [
+    [
+     "ملزم کے خلاف مزید انکوائری درکار ہے",
+     0.8902627825737
+    ]
+   ]
+  },
+  {
+   "set": "urdu",
+   "n": "U6",
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8722956776618958,
+   "clauses": [
+    [
+     "یہ ضمانت کی درخواست گرفتاری کے بعد دائر کی جا رہی ہے",
+     0.8722956776618958
+    ]
+   ]
+  },
+  {
+   "set": "urdu",
+   "n": "U7",
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "probe",
+   "n": "I01",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.8448283672332764,
+   "clauses": [
+    [
+     "the accused is mentally unfit to follow the trial",
+     0.8448283672332764
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I02",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8353914022445679,
+   "clauses": [
+    [
+     "the accused lacks the capacity to comprehend the proceedings",
+     0.8353914022445679
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I03",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.829308271408081,
+   "clauses": [
+    [
+     "the accused suffers from a psychiatric disorder",
+     0.829308271408081
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I04",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.8138567209243774,
+   "clauses": [
+    [
+     "the accused has been of unsound mind",
+     0.8138567209243774
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I05",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8543775081634521,
+   "clauses": [
+    [
+     "the petitioner was in hospital on the date of the alleged offence",
+     0.8543775081634521
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I06",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.8343754410743713,
+   "clauses": [
+    [
+     "the complainant has repeatedly threatened the witnesses",
+     0.8343754410743713
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I07",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8123153448104858,
+   "clauses": [
+    [
+     "the accused is a seventeen-year-old student",
+     0.8123153448104858
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I08",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8001965284347534,
+   "clauses": [
+    [
+     "the accused was not present in the city when the FIR was lodged",
+     0.8001965284347534
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I09",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.840387225151062,
+   "clauses": [
+    [
+     "the complainant bears a long-standing grudge against the accused over a land dispute",
+     0.840387225151062
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I10",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.8121219873428345,
+   "clauses": [
+    [
+     "the FIR was lodged after an unexplained delay of nine days",
+     0.8121219873428345
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I11",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8050596714019775,
+   "clauses": [
+    [
+     "the accused is the sole breadwinner of a family of six",
+     0.8050596714019775
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I12",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.8037877082824707,
+   "clauses": [
+    [
+     "the alleged amount of R ,00,000 was never received by the accused",
+     0.8037877082824707
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I13",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8047093749046326,
+   "clauses": [
+    [
+     "Mr. Asif Raza, the complainant's brother, is the only witness",
+     0.8047093749046326
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I14",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.7999816536903381,
+   "clauses": [
+    [
+     "the accused was arrested on 3 March 2025",
+     0.7999816536903381
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I15",
+   "label": "invented",
+   "L": true,
+   "min_support": 0.8253002762794495,
+   "clauses": [
+    [
+     "the accused is a widow with minor children",
+     0.8253002762794495
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "I16",
+   "label": "invented",
+   "L": false,
+   "min_support": 0.8179858922958374,
+   "clauses": [
+    [
+     "the accused has no previous criminal record",
+     0.8179858922958374
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "G01",
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8924504518508911,
+   "clauses": [
+    [
+     "who is 17, is unable to understand the proceedings",
+     0.8924504518508911
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "G02",
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9494311809539795,
+   "clauses": [
+    [
+     "FIR No. 45/2025 was lodged on 3 March 2025",
+     0.9494311809539795
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "G03",
+   "label": "ok",
+   "L": false,
+   "min_support": 0.9226431846618652,
+   "clauses": [
+    [
+     "Mr. Asif Raza lodged the complaint",
+     0.9226431846618652
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "G04",
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "probe",
+   "n": "G05",
+   "label": "ok",
+   "L": false,
+   "min_support": 0.818963885307312,
+   "clauses": [
+    [
+     "the offence CrPC is punishable with less than ten years",
+     0.818963885307312
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "G06",
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "probe",
+   "n": "G07",
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "probe",
+   "n": "G08",
+   "label": "ok",
+   "L": false,
+   "min_support": 0.8564231395721436,
+   "clauses": [
+    [
+     "the cheque of R ,000 was dishonoured on presentation",
+     0.8564231395721436
+    ]
+   ]
+  },
+  {
+   "set": "probe",
+   "n": "G09",
+   "label": "ok",
+   "L": false,
+   "min_support": null,
+   "clauses": []
+  },
+  {
+   "set": "probe",
+   "n": "G10",
+   "label": "ok",
+   "L": false,
+   "min_support": 0.7652514576911926,
+   "clauses": [
+    [
+     "the proceedings are an abuse of process of Criminal Procedure, 1898",
+     0.7652514576911926
+    ]
+   ]
+  }
+ ]
+}

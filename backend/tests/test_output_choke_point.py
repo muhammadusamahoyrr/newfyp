@@ -27,6 +27,7 @@ paper actually claims.
 import ast
 import inspect
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -197,6 +198,36 @@ async def test_a_normal_turn_is_recorded_and_sent(captured):
     assert len(captured) == 1
     assert captured[0]["turn_type"] == provenance_service.TURN_ANSWER
     assert len(ws.sent) == 1
+    assert ws.sent[0]["request_id"] == "req-test"
+
+
+@pytest.mark.asyncio
+async def test_history_is_not_reported_saved_when_the_question_write_failed(
+        monkeypatch, captured):
+    async def yes(*args, **kwargs):
+        return True
+
+    async def stored(*args, **kwargs):
+        return {"id": "assistant-row"}
+
+    async def nothing(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(chat_socket.turns, "holds_authority", yes)
+    monkeypatch.setattr(chat_socket.turns, "complete_turn", yes)
+    monkeypatch.setattr(chat_socket.turns, "annotate_response", yes)
+    monkeypatch.setattr(chat_socket.turns, "release_conversation_lease", nothing)
+    monkeypatch.setattr(chat_socket.conversations, "append_message", stored)
+    monkeypatch.setattr(chat_socket.conversations, "set_pending_question", nothing)
+
+    ws = _FakeWS()
+    ref = SimpleNamespace(
+        key="client:doc", surface="client", session_id="s1", owner_id="u1")
+    await _emit(
+        ws, captured, ref=ref, turn_id="turn-1", owner_token="owner-1",
+        question_saved=False)
+
+    assert ws.sent[0]["history_saved"] is False
 
 
 @pytest.mark.asyncio

@@ -1,0 +1,141 @@
+<mxGraphModel dx="2326" dy="1226" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1820" pageHeight="780" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="hdr" parent="1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.5;shadow=1;arcSize=6;align=left;spacingLeft=16;" value="&lt;div style=&quot;font-size:16px;font-weight:800;color:#0F172A;&quot;&gt;Attorney.AI — Lawyer Drafting Engine (Draft with AI)&lt;/div&gt;&lt;div style=&quot;font-size:11px;color:#64748B;margin-top:3px;&quot;&gt;Template / blank page → Instruction to Draft Assistant → RAG over Pakistani law → Streaming LLM → Draft Guard → Lawyer decides &amp;amp; saves&lt;/div&gt;">
+      <mxGeometry x="50" y="25" width="1720" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- STAGE 1 -->
+    <mxCell id="col1" parent="1" vertex="1" value="  1. START A DRAFT" style="swimlane;startSize=30;fillColor=#BAE6FD;strokeColor=#BAE6FD;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#EFF6FF;collapsible=0;">
+      <mxGeometry x="50" y="90" width="310" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_ui" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#0284C7;font-size:12px;&quot;&gt;Drafting home&lt;/b&gt;&lt;br/&gt;44 templates (preview / edit)&lt;br/&gt;or &lt;b&gt;Draft with AI&lt;/b&gt; on a blank page">
+      <mxGeometry x="15" y="45" width="280" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_api" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="Templates = HTML in the frontend&lt;br/&gt;(generated from real Word .docx files)">
+      <mxGeometry x="15" y="135" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_svc" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Editor setup&lt;/b&gt;&lt;br/&gt;• Bound to a case (fixed when opened)&lt;br/&gt;• No case → choose jurisdiction or neutral&lt;br/&gt;• Placeholders found &amp;amp; listed to fill">
+      <mxGeometry x="15" y="215" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_ai" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#94A3B8;strokeWidth=1.5;dashed=1;arcSize=20;fontSize=10;fontColor=#475569;" value="No AI yet — sets the &lt;b&gt;context&lt;/b&gt;&lt;br/&gt;(case + jurisdiction) for the AI">
+      <mxGeometry x="15" y="325" width="280" height="44" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_db" parent="col1" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;cases (lawyer's own)">
+      <mxGeometry x="15" y="480" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e1_1" parent="col1" edge="1" source="s1_ui" target="s1_api" style="strokeColor=#0284C7;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e1_2" parent="col1" edge="1" source="s1_api" target="s1_svc" style="strokeColor=#0284C7;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e1_3" parent="col1" edge="1" source="s1_svc" target="s1_ai" style="strokeColor=#94A3B8;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e1_4" parent="col1" edge="1" source="s1_ai" target="s1_db" style="strokeColor=#0284C7;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 2 -->
+    <mxCell id="col2" parent="1" vertex="1" value="  2. ASK THE DRAFT ASSISTANT" style="swimlane;startSize=30;fillColor=#99F6E4;strokeColor=#99F6E4;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#F0FDFA;collapsible=0;">
+      <mxGeometry x="400" y="90" width="310" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_ui" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#0D9488;font-size:12px;&quot;&gt;Instruction + mode&lt;/b&gt;&lt;br/&gt;Add clause · Rewrite selection&lt;br/&gt;Whole draft · Ask a question">
+      <mxGeometry x="15" y="45" width="280" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_api" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;POST&lt;/b&gt; /ai/draft/stream&lt;br/&gt;(Server-Sent Events, lawyer only)">
+      <mxGeometry x="15" y="135" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_svc" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Build the context&lt;/b&gt;&lt;br/&gt;• Province &amp;amp; case type taken from the case&lt;br/&gt;• Case facts: whitelisted, personal data removed&lt;br/&gt;• Current draft + selection + last 6 turns">
+      <mxGeometry x="15" y="215" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_ai" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF2F8;strokeColor=#DB2777;strokeWidth=1.5;dashed=1;arcSize=20;fontSize=10;fontColor=#9D174D;" value="&lt;b&gt;AI concept:&lt;/b&gt; Context Engineering&lt;br/&gt;(prompt built from case + draft + history)">
+      <mxGeometry x="15" y="325" width="280" height="44" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_db" parent="col2" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;cases (scrubbed context)">
+      <mxGeometry x="15" y="480" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e2_1" parent="col2" edge="1" source="s2_ui" target="s2_api" style="strokeColor=#0D9488;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e2_2" parent="col2" edge="1" source="s2_api" target="s2_svc" style="strokeColor=#0D9488;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e2_3" parent="col2" edge="1" source="s2_svc" target="s2_ai" style="strokeColor=#DB2777;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e2_4" parent="col2" edge="1" source="s2_ai" target="s2_db" style="strokeColor=#0D9488;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 3 -->
+    <mxCell id="col3" parent="1" vertex="1" value="  3. RETRIEVE LAW &amp; GENERATE" style="swimlane;startSize=30;fillColor=#FDE68A;strokeColor=#FDE68A;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#FEF3C7;collapsible=0;">
+      <mxGeometry x="750" y="90" width="310" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_ui" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#D97706;font-size:12px;&quot;&gt;Live typing in the panel&lt;/b&gt;&lt;br/&gt;Tokens stream in as the AI writes">
+      <mxGeometry x="15" y="45" width="280" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_api" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="Fail-closed: verified law indexes must load,&lt;br/&gt;else no AI call at all">
+      <mxGeometry x="15" y="135" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_svc" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;RAG pipeline&lt;/b&gt;&lt;br/&gt;• Query rewritten in statute wording&lt;br/&gt;• Statutes + case law retrieved (ChromaDB)&lt;br/&gt;• LLM (Groq gpt-oss) streams the draft">
+      <mxGeometry x="15" y="215" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_ai" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF2F8;strokeColor=#DB2777;strokeWidth=1.5;dashed=1;arcSize=20;fontSize=10;fontColor=#9D174D;" value="&lt;b&gt;AI concept:&lt;/b&gt; Retrieval-Augmented Generation&lt;br/&gt;+ Query Rewriting + Streaming LLM">
+      <mxGeometry x="15" y="325" width="280" height="44" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_db" parent="col3" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;ChromaDB&lt;/b&gt;&lt;br/&gt;statute identity indexes · case law">
+      <mxGeometry x="15" y="480" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e3_1" parent="col3" edge="1" source="s3_ui" target="s3_api" style="strokeColor=#D97706;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_2" parent="col3" edge="1" source="s3_api" target="s3_svc" style="strokeColor=#D97706;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_3" parent="col3" edge="1" source="s3_svc" target="s3_ai" style="strokeColor=#DB2777;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_4" parent="col3" edge="1" source="s3_ai" target="s3_db" style="strokeColor=#D97706;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 4 -->
+    <mxCell id="col4" parent="1" vertex="1" value="  4. DRAFT GUARD (LEGAL CHECK)" style="swimlane;startSize=30;fillColor=#DDD6FE;strokeColor=#DDD6FE;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#F5F3FF;collapsible=0;">
+      <mxGeometry x="1100" y="90" width="310" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_ui" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#6D28D9;font-size:12px;&quot;&gt;Checked proposal shown&lt;/b&gt;&lt;br/&gt;Withheld sentences + reasons&lt;br/&gt;Supported / not-checked provisions">
+      <mxGeometry x="15" y="45" width="280" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_api" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="SSE events: tokens → &lt;b&gt;guard&lt;/b&gt; → verification → done&lt;br/&gt;No guard result → nothing can be inserted">
+      <mxGeometry x="15" y="135" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_svc" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;draft_guard.py checks&lt;/b&gt;&lt;br/&gt;• Section exists &amp;amp; fits the subject&lt;br/&gt;• Right province / personal law (CPC Punjab gate)&lt;br/&gt;• Invented facts → [placeholder] version">
+      <mxGeometry x="15" y="215" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_ai" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF2F8;strokeColor=#DB2777;strokeWidth=1.5;dashed=1;arcSize=20;fontSize=10;fontColor=#9D174D;" value="&lt;b&gt;AI concept:&lt;/b&gt; Guardrails / Hallucination Detection&lt;br/&gt;(citation grounding against the corpus)">
+      <mxGeometry x="15" y="325" width="280" height="44" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_db" parent="col4" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;Corpus section index&lt;/b&gt;&lt;br/&gt;(which sections each Act really has)">
+      <mxGeometry x="15" y="480" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e4_1" parent="col4" edge="1" source="s4_ui" target="s4_api" style="strokeColor=#7C3AED;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_2" parent="col4" edge="1" source="s4_api" target="s4_svc" style="strokeColor=#7C3AED;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_3" parent="col4" edge="1" source="s4_svc" target="s4_ai" style="strokeColor=#DB2777;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_4" parent="col4" edge="1" source="s4_ai" target="s4_db" style="strokeColor=#7C3AED;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 5 -->
+    <mxCell id="col5" parent="1" vertex="1" value="  5. LAWYER DECIDES &amp; SAVES" style="swimlane;startSize=30;fillColor=#A7F3D0;strokeColor=#A7F3D0;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#ECFDF5;collapsible=0;">
+      <mxGeometry x="1450" y="90" width="320" height="580" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ui" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#059669;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#059669;font-size:12px;&quot;&gt;Insert · Replace · Ignore&lt;/b&gt;&lt;br/&gt;Save Draft · Save as PDF to Vault&lt;br/&gt;Translate to court Urdu">
+      <mxGeometry x="15" y="45" width="290" height="60" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_api" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;POST&lt;/b&gt; /documents/drafts&lt;br/&gt;&lt;b&gt;POST&lt;/b&gt; /documents/v2 + /{id}/generate (PDF)">
+      <mxGeometry x="15" y="135" width="290" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_svc" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Save &amp;amp; audit&lt;/b&gt;&lt;br/&gt;• AI reply is a proposal, never auto-applied&lt;br/&gt;• Citation check stored with the draft&lt;br/&gt;• Audit record of every AI draft">
+      <mxGeometry x="15" y="215" width="290" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ai" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF2F8;strokeColor=#DB2777;strokeWidth=1.5;dashed=1;arcSize=20;fontSize=10;fontColor=#9D174D;" value="&lt;b&gt;AI concept:&lt;/b&gt; Human-in-the-Loop&lt;br/&gt;+ Provenance (explainable, auditable AI)">
+      <mxGeometry x="15" y="325" width="290" height="44" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_db" parent="col5" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#059669;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;doc_drafts · documents · answer_provenance">
+      <mxGeometry x="15" y="480" width="290" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e5_1" parent="col5" edge="1" source="s5_ui" target="s5_api" style="strokeColor=#059669;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5_2" parent="col5" edge="1" source="s5_api" target="s5_svc" style="strokeColor=#059669;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5_3" parent="col5" edge="1" source="s5_svc" target="s5_ai" style="strokeColor=#DB2777;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5_4" parent="col5" edge="1" source="s5_ai" target="s5_db" style="strokeColor=#059669;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE-TO-STAGE -->
+    <mxCell id="f12" parent="1" edge="1" source="s1_ui" target="s2_ui" style="strokeColor=#0284C7;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f23" parent="1" edge="1" source="s2_ui" target="s3_ui" style="strokeColor=#0D9488;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f34" parent="1" edge="1" source="s3_ui" target="s4_ui" style="strokeColor=#D97706;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f45" parent="1" edge="1" source="s4_ui" target="s5_ui" style="strokeColor=#7C3AED;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- LEGEND -->
+    <mxCell id="legend" parent="1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.5;shadow=1;arcSize=12;align=center;fontSize=11;" value="&lt;b&gt;Rule:&lt;/b&gt; the AI never writes into the document directly — every reply is checked by the Draft Guard and the lawyer decides  &amp;nbsp;|&amp;nbsp;  &lt;span style=&quot;color:#9D174D;&quot;&gt;&lt;b&gt;Pink dashed&lt;/b&gt; = AI concept used at that stage&lt;/span&gt;">
+      <mxGeometry x="50" y="685" width="1720" height="36" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>

@@ -1,0 +1,117 @@
+[
+ {
+  "id": "P01",
+  "label": "invented",
+  "fact": "fraud discovered within three years"
+ },
+ {
+  "id": "P02",
+  "label": "invented",
+  "fact": "bona fide reasons beyond control"
+ },
+ {
+  "id": "P03",
+  "label": "invented",
+  "fact": "not insane / unable to understand"
+ },
+ {
+  "id": "P04",
+  "label": "invented",
+  "fact": "twelve months; Federal Capital Territory"
+ },
+ {
+  "id": "P05",
+  "label": "invented",
+  "fact": "prosecuting a civil proceeding"
+ },
+ {
+  "id": "P06",
+  "label": "invented",
+  "fact": "denied a fair opportunity to defend"
+ },
+ {
+  "id": "P07",
+  "label": "invented",
+  "fact": "twelve months"
+ },
+ {
+  "id": "P08",
+  "label": "invented",
+  "fact": "exercised all due diligence"
+ },
+ {
+  "id": "P09",
+  "label": "invented",
+  "fact": "twelve months"
+ },
+ {
+  "id": "P10",
+  "label": "invented",
+  "fact": "fraud discovered within three years"
+ },
+ {
+  "id": "P11",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P12",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P13",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P14",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P15",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P16",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P17",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P18",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P19",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P20",
+  "label": "invented",
+  "fact": "mentally ill"
+ },
+ {
+  "id": "P21",
+  "label": "invented",
+  "fact": "arrest date"
+ },
+ {
+  "id": "P22",
+  "label": "ok",
+  "fact": ""
+ },
+ {
+  "id": "P23",
+  "label": "ok",
+  "fact": ""
+ }
+]

@@ -38,6 +38,7 @@ UNSPECIFIED = "unknown"
 # How a jurisdiction came to be chosen. Ordered by authority: a user's stated
 # jurisdiction is a fact and outranks anything a model infers from the text.
 BASIS_USER = "user_selected"
+BASIS_CASE = "case_record"
 BASIS_INFERRED = "inferred_from_query"
 BASIS_UNSPECIFIED = "unspecified"
 # No law was consulted at all: a canned acknowledgement, a gatekeeper refusal,
@@ -93,6 +94,8 @@ def resolve(
     selection would both filter on nothing and claim the user chose it.
     """
     valid_requested = normalise(requested)
+    if valid_requested != UNSPECIFIED and requested_basis == BASIS_CASE:
+        return valid_requested, BASIS_CASE
     if valid_requested != UNSPECIFIED and requested_basis != BASIS_INFERRED:
         return valid_requested, BASIS_USER
 

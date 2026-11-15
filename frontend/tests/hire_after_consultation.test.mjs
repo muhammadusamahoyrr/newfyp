@@ -175,12 +175,12 @@ function hireableCase(id) {
              status: "open", lawyer_id: null };
 }
 
-async function mountLawyersFromLink(consults, params) {
+async function mountLawyersFromLink(consults, params, cases = [hireableCase("C1"), hireableCase("C2")], directory = []) {
     for (const [k, v] of Object.entries(params)) nav().params.set(k, v);
     api.__respond("bootstrapAuth", true);
     api.__respond("getMe", { data: { _id: "u1", role: "client" } });
-    api.__respond("searchLawyers", { data: { items: [] } });
-    api.__respond("listCases", { data: { items: [hireableCase("C1"), hireableCase("C2")] } });
+    api.__respond("searchLawyers", { data: { items: directory } });
+    api.__respond("listCases", { data: { items: cases } });
     api.__respond("listHireConsultations", { data: consults });
     api.__respond("requestEngagement", { data: { id: "E1" } });
 
@@ -298,7 +298,7 @@ test("a case with terms proposed is not offered again", async () => {
     await ui.unmount();
 });
 
-test("opening the hire form re-reads engagements, and refuses when every case is now taken", async () => {
+test("opening the hire form re-reads engagements, and offers a new matter when every case is now taken", async () => {
     let reads = 0;
     api.__respond("listEngagements", () => {
         reads += 1;
@@ -311,7 +311,155 @@ test("opening the hire form re-reads engagements, and refuses when every case is
     });
     const ui = await mountLawyersFromLink([consult("A1")], { hire: "L1", hire_name: "Adv Ayesha Khan", appointment: "A1" });
     assert.ok(reads >= 2, "engagements were not re-read when the form opened");
-    assert.ok(!/Send Hire Request/.test(ui.text()), "the form opened on cases that can no longer be sent");
-    assert.match(ui.text(), /already have a lawyer or a pending request/);
+    // Hiring needs a matter, not the intake (2026-10-12): the taken cases are
+    // not offered, and the client can describe a new one instead.
+    assert.match(ui.text(), /Send Hire Request/);
+    const offered = [...dom.window.document.querySelectorAll("option")].map(o => o.value);
+    assert.ok(!offered.includes("C1") && !offered.includes("C2"), `a case already under negotiation was offered: ${offered}`);
+    assert.ok(dom.window.document.querySelector("[data-new-matter]"), "no way to describe a new matter");
+    await ui.unmount();
+});
+
+/* ── no case to send: a new matter, or a confirmed draft (2026-10-12) ─────── */
+
+async function typeInto(el, value) {
+    const proto = el.tagName === "TEXTAREA" ? dom.window.HTMLTextAreaElement
+        : el.tagName === "SELECT" ? dom.window.HTMLSelectElement : dom.window.HTMLInputElement;
+    await act(async () => {
+        Object.getOwnPropertyDescriptor(proto.prototype, "value").set.call(el, value);
+        el.dispatchEvent(new dom.window.Event(el.tagName === "SELECT" ? "change" : "input", { bubbles: true }));
+    });
+}
+
+test("with no case to send, a new matter is created and then named by the request", async () => {
+    api.__respond("createCase", { data: { _id: "NEW1", status: "open" } });
+    const ui = await mountLawyersFromLink([consult("A1")],
+        { hire: "L1", hire_name: "Adv Ayesha Khan", appointment: "A1" }, []);
+    const form = dom.window.document.querySelector("[data-new-matter]");
+    assert.ok(form, "the new-matter fields did not open");
+
+    await ui.click("Send Hire Request");
+    assert.equal(api.__calls("createCase").length, 0, "an empty matter was created");
+
+    await typeInto(form.querySelector('[aria-label="Matter title"]'), "Security deposit not returned");
+    await typeInto(form.querySelector('[aria-label="Area of law"]'), "civil");
+    await typeInto(form.querySelector('[aria-label="Province"]'), "punjab");
+    await typeInto(form.querySelector('[aria-label="What the lawyer should handle"]'), "My landlord kept the deposit after I moved out.");
+    await ui.click("Send Hire Request");
+
+    assert.deepEqual(api.__calls("createCase")[0].args[0], {
+        title: "Security deposit not returned", case_type: "civil", province: "punjab",
+        description: "My landlord kept the deposit after I moved out.",
+    });
+    const sent = api.__calls("requestEngagement");
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].args[0].case_id, "NEW1");
+    assert.equal(sent[0].args[0].appointment_id, "A1");
+    await ui.unmount();
+});
+
+test("an intake draft is offered, and confirmed before it is sent", async () => {
+    api.__respond("confirmCase", { data: { _id: "D1", status: "open" } });
+    const ui = await mountLawyersFromLink([consult("A1")],
+        { hire: "L1", hire_name: "Adv Ayesha Khan", appointment: "A1" },
+        [{ _id: "D1", title: "Tenancy dispute", status: "draft", lawyer_id: null }]);
+    assert.equal(ui.field("Case *").value, "draft:D1");
+    assert.match(ui.text(), /from your intake/);
+
+    await ui.click("Send Hire Request");
+    assert.deepEqual(api.__calls("confirmCase").map(c => c.args[0]), ["D1"]);
+    assert.equal(api.__calls("requestEngagement")[0].args[0].case_id, "D1");
+    await ui.unmount();
+});
+
+test("a consultation booked for a case offers no new matter", async () => {
+    const ui = await mountLawyersFromLink([consult("A1", { case_id: "C2" })],
+        { hire: "L1", hire_name: "Adv Ayesha Khan", appointment: "A1" });
+    assert.deepEqual(caseOptions(ui), ["C2"]);
+    assert.ok(!/Describe a new matter/.test(ui.text()));
+    await ui.unmount();
+});
+
+/* ── a link to one lawyer: book again, or review (2026-10-12) ────────────── */
+
+const listed = { _id: "L1", full_name: "Adv Ayesha Khan", province: "punjab",
+                 lawyer_profile: { availability: true, kyc_verified: true, specializations: ["civil"] } };
+
+test("a 'book again' link opens that lawyer's booking, found by name", async () => {
+    api.__respond("getBookableSlots", { data: { configured: false, enforced: false, days: [] }, error: null });
+    const ui = await mountLawyersFromLink([], { lawyer: "L1", lawyer_name: "Adv Ayesha Khan", action: "book" }, [], [listed]);
+    await settle(60);
+    assert.ok(api.__calls("searchLawyers").some(c => c.args[0]?.q === "Adv Ayesha Khan"), "the lawyer was not looked up by name");
+    const dialog = dom.window.document.querySelector("[data-booking-dialog]");
+    assert.ok(dialog, "the booking did not open");
+    assert.match(dialog.textContent, /Adv Ayesha Khan/);
+    await ui.unmount();
+});
+
+test("a 'review' link opens that lawyer's review form", async () => {
+    api.__respond("getReviewEligibility", { data: { can_review: true, already_reviewed: false, reason: null } });
+    const ui = await mountLawyersFromLink([], { lawyer: "L1", lawyer_name: "Adv Ayesha Khan", action: "review" }, [], [listed]);
+    await settle(60);
+    assert.match(ui.text(), /Your Rating/);
+    await ui.unmount();
+});
+
+test("a lawyer no longer listed is said so, and nothing opens", async () => {
+    const ui = await mountLawyersFromLink([], { lawyer: "L9", lawyer_name: "Adv Gone", action: "book" }, [], [listed]);
+    await settle(60);
+    assert.match(ui.text(), /Adv Gone is not listed right now/);
+    assert.equal(dom.window.document.querySelector("[data-booking-dialog]"), null);
+    await ui.unmount();
+});
+
+test("after a hire request, Tracking shows where it stands, not 'Hire' again (2026-10-12)", async () => {
+    api.__respond("listEngagements", { data: [{ id: "E1", appointment_id: "apt-1", status: "requested", lawyer_id: "L1" }] });
+    const ui = await mountTracking([appointment()]);
+    assert.equal(ui.hireLink(), undefined, "Tracking still offers the hire");
+    const box = ui.container.querySelector('[data-hire-state="requested"]');
+    assert.ok(box, "no hire state on the card");
+    assert.match(box.textContent, /View request →.*Hire request sent/s);
+    await ui.unmount();
+});
+
+/* ── who may review: asked before the form (2026-10-12) ────────────────────── */
+
+const reviewState = () => dom.window.document.querySelector("[data-review-form]")?.getAttribute("data-review-state");
+const openReviewOf = (elig) => {
+    api.__respond("getReviewEligibility", elig);
+    return mountLawyersFromLink([], { lawyer: "L1", lawyer_name: "Adv Ayesha Khan", action: "review" }, [], [listed]);
+};
+
+test("a client with no consultation is told when they can review, and gets no form", async () => {
+    const ui = await openReviewOf({ data: { can_review: false, already_reviewed: false, reason: "no_completed_relationship" } });
+    await settle(60);
+    assert.equal(reviewState(), "not-eligible");
+    assert.match(ui.text(), /You can review Adv after a completed consultation/);
+    assert.ok(!/Your Rating|Write a Review/.test(ui.text()), "the form was offered anyway");
+    await ui.unmount();
+});
+
+test("an already-reviewed lawyer says so instead of a second form", async () => {
+    const ui = await openReviewOf({ data: { can_review: false, already_reviewed: true, reason: "already_reviewed" } });
+    await settle(60);
+    assert.equal(reviewState(), "done");
+    assert.match(ui.text(), /Review submitted — thank you/);
+    assert.ok(!/Your Rating/.test(ui.text()));
+    await ui.unmount();
+});
+
+test("a failed eligibility read fails closed, and Retry asks again", async () => {
+    let calls = 0;
+    api.__respond("getReviewEligibility", () => (++calls === 1
+        ? { data: null, error: { message: "down" }, status: 503 }
+        : { data: { can_review: true, already_reviewed: false, reason: null }, error: null, status: 200 }));
+    const ui = await mountLawyersFromLink([], { lawyer: "L1", lawyer_name: "Adv Ayesha Khan", action: "review" }, [], [listed]);
+    await settle(60);
+    assert.equal(reviewState(), "error");
+    assert.ok(!/Your Rating/.test(ui.text()), "the form showed without an answer");
+    await ui.click("Retry");
+    await settle(60);
+    assert.equal(reviewState(), "can");
+    assert.ok(calls >= 2);
     await ui.unmount();
 });

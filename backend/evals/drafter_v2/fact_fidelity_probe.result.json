@@ -1,0 +1,106 @@
+{
+ "invented_total": 16,
+ "invented_flagged": 9,
+ "invented_missed": 7,
+ "missed": [
+  [
+   "I02",
+   "condition (paraphrase)"
+  ],
+  [
+   "I05",
+   "event (paraphrase)"
+  ],
+  [
+   "I07",
+   "age (hyphenated words)"
+  ],
+  [
+   "I08",
+   "alibi event"
+  ],
+  [
+   "I09",
+   "motive"
+  ],
+  [
+   "I11",
+   "family circumstance"
+  ],
+  [
+   "I16",
+   "record (paraphrase)"
+  ]
+ ],
+ "caught": [
+  [
+   "I01",
+   "condition",
+   [
+    "mentally unfit"
+   ]
+  ],
+  [
+   "I03",
+   "condition",
+   [
+    "psychiatric"
+   ]
+  ],
+  [
+   "I04",
+   "condition + date",
+   [
+    "unsound mind",
+    "2019"
+   ]
+  ],
+  [
+   "I06",
+   "conduct",
+   [
+    "threatened"
+   ]
+  ],
+  [
+   "I10",
+   "period in words",
+   [
+    "nine days"
+   ]
+  ],
+  [
+   "I12",
+   "amount",
+   [
+    "2,00,000"
+   ]
+  ],
+  [
+   "I13",
+   "name",
+   [
+    "Asif Raza"
+   ]
+  ],
+  [
+   "I14",
+   "date",
+   [
+    "3",
+    "2025"
+   ]
+  ],
+  [
+   "I15",
+   "status",
+   [
+    "widow",
+    "minor"
+   ]
+  ]
+ ],
+ "given_total": 10,
+ "given_false_flags": 0,
+ "false_flags": []
+}

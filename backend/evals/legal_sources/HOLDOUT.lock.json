@@ -1,0 +1,17 @@
+{
+  "file": "pilot_questions_v0.jsonl",
+  "locked_on": "2026-10-16",
+  "holdout_ids": [
+    "ls017",
+    "ls018",
+    "ls019",
+    "ls020",
+    "ls021",
+    "ls022",
+    "ls023",
+    "ls024"
+  ],
+  "holdout_sha256": "229686041814aa2c71ca3ea2671cfde82be4e1faefdac998d6eb84703d4e9d4e",
+  "rule": "Holdout items are not read, tuned against or edited before a pilot result is recorded. Any edit changes this hash and voids the holdout.",
+  "label_status": "ALL provisional_developer - no Pakistani lawyer has validated any label"
+}

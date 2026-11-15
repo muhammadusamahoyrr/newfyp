@@ -1,0 +1,245 @@
+{
+ "label": "fresh-2026-10-14",
+ "method": "socket-v1",
+ "started_utc": "2026-10-13T19:29:19.183987+00:00",
+ "dataset": {
+  "path": "evals/chat_length/questions_v1.jsonl",
+  "sha256": "91376b718754f46ca2b741b84cb3ae7ecfd2227ea877eea237b1ebcb1dda2af8",
+  "items": 30,
+  "turns": 37
+ },
+ "code": {
+  "source_fingerprint": "927ab3aeadd7e0b88f8f441b9ffb906fbefcc849e821253e44dd2bb01c9b12bd",
+  "files_hashed": 360,
+  "key_files": {
+   "app/ai/answer_citations.py": "7a06e9a6bdad034c0ec638f2499c2acdb9f87e9d77de2b27a6d8648fc9122af2",
+   "app/ai/cache.py": "4f6e76872933fffa3fd4e1d1769024758b4b61cfdfb3c1d0e2a55d9f1c4b2d77",
+   "app/ai/graph/edges.py": "c68604953957840597d8cccafb2e658b33d9477467461a65da2acc641c34351f",
+   "app/ai/nodes/classifier_node.py": "43c3761d49463003588af04378af3551d6a96a261ac7a645576710f08190e239",
+   "app/ai/nodes/fact_gap_node.py": "dc6bd0e23d07ff1cc98e9e5fd6fddbe1a913df895777177b018f9bdfcf5d539f",
+   "app/ai/nodes/finalizer_node.py": "1d2269c1f4407ab5c5ce304bf4106a49021b04d27065672fccdb4150299a6bb8",
+   "app/ai/nodes/generation_node.py": "a95ac0609d95234f4aa71403854c08ba0d5be182aea975de6cbf051b141f4d80",
+   "app/ai/nodes/hallucination_node.py": "02deb15d924da161b5859801a023bc1e893d393ea9c980d9925b5be1b9600d22",
+   "app/ai/nodes/triage_node.py": "b0d4942b2be595d31dd1b2fc8ad2d1a62fdd4896d16a5631f52b133ca8e14a99",
+   "app/ai/period_support.py": "f6ac0c3f50da4719d446f6265bdab96d3b0affaaa3373ae8ae1e64e9f112440f",
+   "app/ai/response_policy.py": "e7e6d85a6172a26ae7771974d386ec5a179477a31f2b064afb4fdedeb927b91f",
+   "app/websockets/chat_socket.py": "6cb4d83a0ea852c3e7969998a4ea64459cbc64ec96b59a169c7147349f24c691"
+  },
+  "git_head": "af960e32467e552ebdc28270c619f3cbf7b01ed9",
+  "git_dirty": true,
+  "git_diff_sha256": "bb4e888e5c5ca6f1d1e5a76414289aca96fef4bc1da085c6ffa022891ea5698d"
+ },
+ "corpus": {
+  "collections": {
+   "criminal_collection__ctx_v1": 3306,
+   "criminal_collection": 3306,
+   "family_collection": 989,
+   "civil_collection": 4648,
+   "constitutional_collection": 1736,
+   "lawyers_collection": 1,
+   "criminal_collection__sec_v2": 3305,
+   "judgments_collection": 23978,
+   "criminal_collection__sec_v1": 3306,
+   "statutes_collection": 0
+  },
+  "embedding_model": "intfloat/multilingual-e5-base",
+  "embedding_version": "intfloat/multilingual-e5-base/v1",
+  "chunking_version": "v2",
+  "decision_policy_version": "v6"
+ },
+ "effective_settings": {
+  "analyzer_ai_model": "openai/gpt-oss-120b",
+  "analyzer_ai_model_allowlist": "openai/gpt-oss-120b,openai/gpt-oss-20b,llama-3.3-70b-versatile",
+  "analyzer_ai_provider": "simulated",
+  "chat_adaptive_length_client": true,
+  "embedding_cache_ttl": 3600,
+  "gemini_model_fast": "gemini-3.5-flash-lite",
+  "gemini_model_main": "gemini-3.5-flash-lite",
+  "llm_local_only": false,
+  "llm_provider": "openrouter",
+  "ollama_fast_model": "",
+  "ollama_model": "qwen2.5:7b",
+  "retrieval_index_variant": "base",
+  "retrieval_multi_query": false,
+  "voice_groq_model": "whisper-large-v3",
+  "voice_provider": "groq"
+ },
+ "chat_adaptive_length_client": true,
+ "response_policy_version": "resp-policy-v1",
+ "client_guard_version": "period-guard-v1",
+ "env_overlay": ".env.analyzer-demo.local (values not recorded)",
+ "finished_utc": "2026-10-13T19:41:28.166053+00:00",
+ "duration_s": 729.0,
+ "failures": [
+  {
+   "turn": "c03.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c05.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)",
+    "other (400)",
+    "other (400)",
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c06.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)",
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c07.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c08.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)",
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c11.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c12.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c20.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)",
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c21.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c22.2",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c23.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c23.2",
+   "frame": "error",
+   "turn_failed": true,
+   "run_error": null,
+   "llm_errors": [],
+   "node_errors": [
+    "hallucination_node"
+   ]
+  },
+  {
+   "turn": "c24.2",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "rate_limit (429)",
+    "rate_limit (429)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c25.2",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  },
+  {
+   "turn": "c28.1",
+   "frame": "final",
+   "turn_failed": false,
+   "run_error": null,
+   "llm_errors": [
+    "other (400)"
+   ],
+   "node_errors": []
+  }
+ ],
+ "turns_failed": 1,
+ "turns_recovered_after_provider_error": 14,
+ "groq_tool_use_failed_log_lines": 0,
+ "groq_output_parse_failed_log_lines": 0,
+ "warning_log_counts": {
+  "attorney.trace": 24,
+  "app.ai.nodes.triage_node": 2
+ },
+ "models_seen": [
+  "models/gemini-3.5-flash-lite",
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b"
+ ]
+}

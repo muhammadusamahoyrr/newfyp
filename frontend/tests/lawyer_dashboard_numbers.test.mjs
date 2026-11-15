@@ -51,14 +51,14 @@ function serve({ cases, total = cases.length, submitted, byStatus = null }) {
         counts: { all: submitted, submitted, approved: 0, returned: 0, rejected: 0 } }, error: null, status: 200 });
 }
 
-async function mount() {
+async function mount(setPage = () => {}) {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
     await act(async () => {
         root.render(h(AuthProvider, null,
             h(NotifCtx.Provider, { value: { addNotif: () => {} } },
-                h(CaseCtx.Provider, { value: { setOpenCaseId: () => {}, setActiveCase: () => {}, setPage: () => {} } },
+                h(CaseCtx.Provider, { value: { setOpenCaseId: () => {}, setActiveCase: () => {}, setPage } },
                     h(DashboardPage)))));
     });
     await settle();
@@ -156,4 +156,61 @@ test("a case's next hearing is its soonest upcoming one, not the first one added
     assert.ok(text.includes(fmtDate(`${plus(6)}T00:00:00Z`)), "the soonest upcoming hearing is not shown");
     assert.ok(!text.includes(fmtDate(`${plus(40)}T00:00:00Z`)), "the first-added hearing is shown instead");
     await view.unmount();
+});
+
+// The flow's next steps come from ONE server count (GET /lawyer-actions,
+// 2026-10-20), each with a button to the item to do first.
+const ACTIONS = (over = {}) => ({ data: { appointment_requests: 0, outcomes_to_record: 0, hire_requests: 0, upcoming: 0,
+    waiting_for_client: 0, to_do: 0, next: { appointment_request: null, outcome: null, hire_request: null }, ...over }, error: null });
+const briefRow = (c, re) => [...c.querySelectorAll("li, div")].find(el => re.test(el.textContent) && el.querySelector("button")
+    && [...el.children].length <= 4);
+
+test("the brief lists outcomes to record, hire requests and appointment requests, each opening the first one", async () => {
+    serve({ cases: [], submitted: 0 });
+    api.__respond("getLawyerActions", ACTIONS({ outcomes_to_record: 1, hire_requests: 2, appointment_requests: 1, upcoming: 3, to_do: 4,
+        next: { appointment_request: "apt-req", outcome: "apt-out", hire_request: "eng-1" } }));
+    const pages = [], events = [];
+    const listen = e => events.push([e.type, e.detail]);
+    window.addEventListener("attorney:record-outcome", listen);
+    window.addEventListener("attorney:open-request", listen);
+    const view = await mount(p => pages.push(p));
+    const text = view.container.textContent;
+    assert.match(text, /1 meeting needs an outcome/);
+    assert.match(text, /2 hire requests awaiting your terms/);
+    assert.match(text, /1 appointment request to answer/);
+    assert.match(stat(view.container, "Appointments Today") + text, /3 upcoming in total/);
+    const btn = label => [...view.container.querySelectorAll("button")].find(b => b.textContent.trim() === label);
+    await act(async () => { btn("Record outcome").click(); });
+    await act(async () => { btn("Send terms").click(); });
+    assert.deepEqual(pages, ["appointments", "cases"]);
+    assert.deepEqual(events, [["attorney:record-outcome", "apt-out"], ["attorney:open-request", "eng-1"]]);
+    assert.equal(window.sessionStorage.getItem("attorney:lawyer-record-outcome"), "apt-out", "the outcome deep link does not survive a refresh");
+    window.removeEventListener("attorney:record-outcome", listen);
+    window.removeEventListener("attorney:open-request", listen);
+    await view.unmount();
+});
+
+test("an ended meeting is not upcoming, and the day is 'all done' only when nothing waits", async () => {
+    const today = new Date(Date.now() - 40 * 60e3).toISOString();   // ended 10 minutes ago
+    // In the first 40 minutes of a Pakistan day it began yesterday; only then is the line absent.
+    const sameDay = (new Date().getUTCHours() + 5) % 24 >= 1;
+    const ended = { _id: "a1", status: "confirmed", scheduled_at: today, duration_minutes: 30, mode: "video", client_name: "Ahmed" };
+    for (const [over, want, not] of [
+        [{ outcomes_to_record: 1, to_do: 1 }, /today's schedule is finished/, /all done/],
+        [{}, /all done/, /schedule is finished/],
+    ]) {
+        serve({ cases: [], submitted: 0 });
+        api.__respond("listAppointments", (args = {}) => (args.starts_from
+            ? { data: { items: [ended], total: 1, pages: 1 }, error: null }
+            : { data: { items: [], total: 0, pages: 0 }, error: null }));
+        api.__respond("getLawyerActions", ACTIONS(over));
+        const view = await mount();
+        const text = view.container.textContent;
+        if (sameDay) {
+            assert.match(text, want);
+            assert.doesNotMatch(text, not);
+        }
+        assert.match(text, /0 upcoming in total/, "an ended meeting was counted as upcoming");
+        await view.unmount();
+    }
 });

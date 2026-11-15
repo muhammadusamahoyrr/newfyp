@@ -1,0 +1,34 @@
+{
+ "about": "Synthetic probe for draft_claims S3 (input-fact fidelity), written 2026-10-15 to MEASURE misses and false flags -- not tuned on. 'invented': the fact is NOT in the input (should be flagged). 'given': every fact IS in the input or is law (should not be flagged).",
+ "input_default": "Draft grounds for a petition to quash criminal proceedings that are an abuse of process.",
+ "invented": [
+  {"id": "I01", "kind": "condition", "sentence": "That the accused is mentally unfit to follow the trial."},
+  {"id": "I02", "kind": "condition (paraphrase)", "sentence": "That the accused lacks the capacity to comprehend the proceedings."},
+  {"id": "I03", "kind": "condition", "sentence": "That the accused suffers from a psychiatric disorder."},
+  {"id": "I04", "kind": "condition + date", "sentence": "That the accused has been of unsound mind since 2019."},
+  {"id": "I05", "kind": "event (paraphrase)", "sentence": "That the petitioner was in hospital on the date of the alleged offence."},
+  {"id": "I06", "kind": "conduct", "sentence": "That the complainant has repeatedly threatened the witnesses."},
+  {"id": "I07", "kind": "age (hyphenated words)", "sentence": "That the accused is a seventeen-year-old student."},
+  {"id": "I08", "kind": "alibi event", "sentence": "That the accused was not present in the city when the FIR was lodged."},
+  {"id": "I09", "kind": "motive", "sentence": "That the complainant bears a long-standing grudge against the accused over a land dispute."},
+  {"id": "I10", "kind": "period in words", "sentence": "That the FIR was lodged after an unexplained delay of nine days."},
+  {"id": "I11", "kind": "family circumstance", "sentence": "That the accused is the sole breadwinner of a family of six."},
+  {"id": "I12", "kind": "amount", "sentence": "That the alleged amount of Rs. 2,00,000 was never received by the accused."},
+  {"id": "I13", "kind": "name", "sentence": "That Mr. Asif Raza, the complainant's brother, is the only witness."},
+  {"id": "I14", "kind": "date", "sentence": "That the accused was arrested on 3 March 2025."},
+  {"id": "I15", "kind": "status", "sentence": "That the accused is a widow with minor children."},
+  {"id": "I16", "kind": "record (paraphrase)", "sentence": "That the accused has no previous criminal record."}
+ ],
+ "given": [
+  {"id": "G01", "input": "the accused, aged 17, is unable to understand the proceedings", "sentence": "That the accused, who is 17, is unable to understand the proceedings."},
+  {"id": "G02", "input": "FIR No. 45/2025 lodged on 3 March 2025", "sentence": "That FIR No. 45/2025 was lodged on 3 March 2025."},
+  {"id": "G03", "input": "complainant Asif Raza", "sentence": "That Mr. Asif Raza lodged the complaint."},
+  {"id": "G04", "input": "Fill in: name [NAME], father [FATHER]", "sentence": "That I, [NAME], son of [FATHER], solemnly affirm."},
+  {"id": "G05", "input": "Draft a ground for post-arrest bail.", "sentence": "That the offence under Section 497 CrPC is punishable with less than ten years."},
+  {"id": "G06", "input": "Draft an application for condonation of delay.", "sentence": "That the appeal lies within thirty days as provided in the First Schedule of the Limitation Act, 1908."},
+  {"id": "G07", "input": "custody of the minor children with the mother", "sentence": "That the welfare of the minor children requires custody with the mother."},
+  {"id": "G08", "input": "a cheque of Rs. 50,000 dishonoured", "sentence": "That the cheque of Rs. 50,000 was dishonoured on presentation."},
+  {"id": "G09", "input": "Add a non-compete for six months after the consultant leaves.", "sentence": "The Consultant shall not compete for six (6) months after leaving."},
+  {"id": "G10", "input": "Draft grounds.", "sentence": "1.1 That the proceedings are an abuse of process under Section 561-A of the Code of Criminal Procedure, 1898."}
+ ]
+}

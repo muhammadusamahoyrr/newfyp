@@ -18,7 +18,7 @@ import { Badge } from "./components.jsx";
 import { ModalPortal } from "./ui.jsx";
 import {
     listCases, listAppointments, listLawyerEvents, reviewQueueV2, listReviewQueue, errorCode,
-    listTasks, getMe, listMyKycDocuments, getMyWorkingHours,
+    listTasks, getMe, listMyKycDocuments, getMyWorkingHours, getLawyerActions,
 } from "@/lib/api.js";
 import { caseStatusLabel } from "@/lib/caseStatus.js";
 
@@ -131,7 +131,7 @@ function CountUp({ value }) {
 const PAGES = [
     ["cases", "Cases"], ["clients", "Clients"], ["appointments", "Appointments"], ["causelist", "Cause List"],
     ["ai-legal", "AI Assistant"], ["caselaw", "Legal Library"], ["doc-automation", "Legal Drafting"], ["documents", "Document Review"],
-    ["vault", "Vault"], ["doc-analyzer", "Document Analyzer"], ["agreements", "Agreements"], ["payments", "Payments"],
+    ["vault", "Vault"],    // Agreements, Payments and Document Analyzer hidden from dashboard navigation.
     ["bail-checker", "Bail Checker"], ["calculators", "Calculators"], ["profile", "Profile"], ["settings", "Settings"],
 ].map(([pg, label]) => ({ pg, label }));
 function Palette({ mode, onClose, onGo, onAsk }) {
@@ -364,8 +364,8 @@ function DashboardPage() {
     // Documents awaiting this lawyer's review; null = not known.
     const [pendingDocs, setPendingDocs] = useState(null);
     // `null` = not known (not yet read, or the read failed). Distinct from 0.
-    const [aptCount, setAptCount] = useState(null);
-    const [aptPending, setAptPending] = useState(null);
+    // What waits on the lawyer, from the server's one count (GET /lawyer-actions).
+    const [actions, setActions] = useState(null);
     const [weekAppts, setWeekAppts] = useState([]);
     const [diary, setDiary] = useState([]);
     const [tasks, setTasks] = useState([]);           // open tasks across live cases
@@ -437,19 +437,10 @@ function DashboardPage() {
             }
         }));
 
-        // THE COUNT COMES FROM THE SERVER'S `total`, NOT FROM COUNTING ROWS: a
-        // single row of each status reads the real figure without downloading
-        // an appointment history to count it.
-        jobs.push(Promise.all([
-            listAppointments({ status: "pending", page_size: 1 }),
-            listAppointments({ status: "confirmed", page_size: 1 }),
-        ]).then(([pending, confirmed]) => {
-            if (pending.error || confirmed.error) { setAptCount(null); return; }
-            const count = (n) => (Number.isInteger(n?.data?.total) ? n.data.total : null);
-            const p = count(pending), c = count(confirmed);
-            setAptPending(p);
-            setAptCount(p === null || c === null ? null : p + c);
-        }));
+        // The action counts come from ONE server read shared with the other
+        // pages (2026-10-20). It used to add pending + confirmed here with no
+        // time filter, so a meeting that had ended still counted as upcoming.
+        jobs.push(getLawyerActions().then(({ data, error }) => setActions(error || !data ? null : data)));
 
         // The coming week, asked for by Pakistan date — today's agenda is the
         // first day of it. The first page of the full list is the OLDEST fifty,
@@ -519,6 +510,26 @@ function DashboardPage() {
         setActiveCase(id);
         setOpenCaseId(id);
         setPage("cases");
+    };
+    // Deep links into the page that owns the step, by the same keys those
+    // pages already read (sessionStorage first, then the live event).
+    const openAppointment = (id) => {
+        if (id) { try { sessionStorage.setItem("attorney:lawyer-open-appointment", id); } catch { /* storage off */ } }
+        setPage("appointments");
+        if (id) window.dispatchEvent(new CustomEvent("attorney:open-appointment", { detail: id }));
+    };
+    // Straight into that meeting's outcome dialog (the Needs outcome tab when
+    // none is named or it has been dealt with).
+    const openOutcome = (id) => {
+        try { if (id) sessionStorage.setItem("attorney:lawyer-record-outcome", id); } catch { /* storage off */ }
+        setPage("appointments");
+        if (id) window.dispatchEvent(new CustomEvent("attorney:record-outcome", { detail: id }));
+    };
+    const openHireRequest = (id) => {
+        try { sessionStorage.setItem("attorney:lawyer-open-request", id || ""); } catch { /* storage off */ }
+        setOpenCaseId(null);
+        setPage("cases");
+        window.dispatchEvent(new CustomEvent("attorney:open-request", { detail: id || "" }));
     };
     const askAI = (q) => { try { sessionStorage.setItem("attorney:ai-prefill", q); } catch { /* storage off */ } setPage("ai-legal"); };
 
@@ -591,11 +602,18 @@ function DashboardPage() {
     if (overdue.length) brief.push({ c: "#F28B80", text: <><b>{overdue.length} task{overdue.length === 1 ? " is" : "s are"} overdue</b><em> — oldest: {overdue[0].title}, {whenWord(overdue[0].key, today).toLowerCase()}</em></>, act: "Open", go: () => openCase(overdue[0].case) });
     if (todays.length) {
         const first = todays.find(i => +i.end > now);
-        brief.push({ c: "#3CCFE0", text: <><b>{todays.length} thing{todays.length === 1 ? "" : "s"} on today</b>{first ? <em> — next: {first.title}{first.timed ? ` at ${hm(first.at.toISOString())}` : ""}</em> : <em> — all done</em>}</>, act: "Schedule", go: () => setTab("today") });
+        // "All done" only when nothing at all waits on the lawyer; a day whose
+        // meetings are over can still leave outcomes or terms to send.
+        const done = actions && actions.to_do === 0 ? " — all done" : " — today's schedule is finished";
+        brief.push({ c: "#3CCFE0", text: <><b>{todays.length} thing{todays.length === 1 ? "" : "s"} on today</b>{first ? <em> — next: {first.title}{first.timed ? ` at ${hm(first.at.toISOString())}` : ""}</em> : <em>{done}</em>}</>, act: "Schedule", go: () => setTab("today") });
     }
     if (nextHearing) brief.push({ c: "#B9A6F5", text: <><b>Next hearing {whenWord(nextHearing.key, today).toLowerCase()}</b><em> — {nextHearing.title}{nextHearing.hearing?.court ? `, ${nextHearing.hearing.court}` : ""}</em></>, act: "Open case", go: () => openCase(nextHearing.case) });
     if (pendingDocs) brief.push({ c: "#F2C35E", text: <><b>{pendingDocs} document{pendingDocs === 1 ? "" : "s"} waiting for your review</b><em> — clients are waiting on your decision</em></>, act: "Review", go: () => setPage("documents") });
-    if (aptPending) brief.push({ c: "#F2C35E", text: <><b>{aptPending} appointment request{aptPending === 1 ? "" : "s"}</b><em> — accept, or suggest another time</em></>, act: "Answer", go: () => setPage("appointments") });
+    // The flow's next steps, each opening the one to do first.
+    const outcomes = actions?.outcomes_to_record || 0, hires = actions?.hire_requests || 0, aptPending = actions?.appointment_requests || 0;
+    if (outcomes) brief.push({ c: "#F28B80", text: <><b>{outcomes} meeting{outcomes === 1 ? " needs" : "s need"} an outcome</b><em> — record what happened; until then the client cannot hire you</em></>, act: "Record outcome", go: () => openOutcome(actions.next?.outcome) });
+    if (hires) brief.push({ c: "#3EE0A1", text: <><b>{hires} hire request{hires === 1 ? "" : "s"} awaiting your terms</b><em> — a client asked you to take their case</em></>, act: "Send terms", go: () => openHireRequest(actions.next?.hire_request) });
+    if (aptPending) brief.push({ c: "#F2C35E", text: <><b>{aptPending} appointment request{aptPending === 1 ? "" : "s"} to answer</b><em> — accept, or suggest another time</em></>, act: "Answer", go: () => openAppointment(actions.next?.appointment_request) });
     if (unread.length) brief.push({ c: "#8DB8FF", text: <><b>{unread.length} unread client message{unread.length === 1 ? "" : "s"}</b><em> — {unread[0].title}</em></>, act: "Read", go: () => (openNotif ? openNotif(unread[0]) : setPage("cases")) });
     if (noDateCases.length) brief.push({ c: "#93A4A8", text: <><b>{noDateCases.length} active case{noDateCases.length === 1 ? " has" : "s have"} no next hearing</b><em> — {noDateCases[0].title}{noDateCases.length > 1 ? " and others" : ""}</em></>, act: "Set date", go: () => openCase(noDateCases[0]) });
 
@@ -617,7 +635,7 @@ function DashboardPage() {
         { l: "Active Cases", v: activeCnt, s: noDateCases.length ? `${noDateCases.length} need a hearing date` : "Open + in progress", tone: noDateCases.length ? "warn" : "", icon: "shield", pg: "cases" },
         { l: "Hearings This Week", v: fromCases(hearingsWeek.length), s: nextHearing ? `Next: ${dayName(nextHearing.key, { weekday: "short" })}${nextHearing.timed ? ` ${hm(nextHearing.at.toISOString())}` : ""}` : "None in the next 7 days", icon: "gavel", pg: "causelist" },
         { l: "Docs to Review", v: pendingDocs === null ? "—" : String(pendingDocs), s: pendingDocs ? "Awaiting your decision" : "All caught up", tone: pendingDocs ? "warn" : "", icon: "doc", pg: "documents" },
-        { l: "Appointments Today", v: todayFailed ? "—" : String(apptsToday.length), s: aptCount === null ? "Pending + confirmed" : `${aptCount} upcoming in total`, icon: "clock", pg: "appointments" },
+        { l: "Appointments Today", v: todayFailed ? "—" : String(apptsToday.length), s: actions === null ? "Confirmed, not yet held" : `${actions.upcoming} upcoming in total`, icon: "clock", pg: "appointments" },
     ];
 
     const recentCases = cases.slice(0, 5);

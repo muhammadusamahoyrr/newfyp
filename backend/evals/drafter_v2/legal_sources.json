@@ -1,0 +1,154 @@
+{
+ "note": "Official sources for V2 labels. A label is DEFINITIVE only if its source has a URL and the section is in checked_sections (heading read from the official text) and the label is not marked 'needs lawyer review'. Everything else is PROVISIONAL and is reported separately, never as correctness.",
+ "sources": {
+  "crpc_1898": {
+   "statute": "Code of Criminal Procedure 1898",
+   "publisher": "Pakistan Code (Ministry of Law and Justice)",
+   "url": "https://pakistancode.gov.pk/pdffiles/administrator7db1e56f0f1d39a6e67573ec6b0944e2.pdf",
+   "retrieved": "2026-10-14",
+   "local_copy_sha256": "08cf18684b87ad585a6af00b962ce7324456826ee22f9291b6f69a9ee735afb4",
+   "version_note": "PDF shows no 'last amended' date; URL-to-copy association from session notes -- re-confirm",
+   "checked_sections": {
+    "154": "Information in cognizable cases",
+    "420": "Procedure when appellant in jail",
+    "426": "Suspension of sentence pending appeal. Release of appellant on bail",
+    "437": "[Omitted]",
+    "438": "[Omitted]",
+    "491": "Power to issue directions of the nature of a habeas corpus",
+    "496": "In what cases bail to be taken",
+    "497": "When bail may be taken in case of non-bailable offence",
+    "498": "Power to direct admission to bail or reduction of bail",
+    "499": "Bond of accused and sureties",
+    "500": "Discharge from custody",
+    "501": "Power to order sufficient bail when that first taken is insufficient",
+    "502": "Discharge of sureties",
+    "561-A": "Saving of inherent power of High Court"
+   }
+  },
+  "ppc_1860": {
+   "statute": "Pakistan Penal Code 1860",
+   "publisher": "Pakistan Code (Ministry of Law and Justice)",
+   "url": "https://pakistancode.gov.pk/pdffiles/administratoracbdabf2b79c8956d6ea4804fcceb92d.pdf",
+   "retrieved": "2026-10-14",
+   "local_copy_sha256": "ff2f4748624512e7ff9d810836e3ac11ba95211f52285a27e186e1f3dbd2fda9",
+   "version_note": "local copy says 'Last Amended on 2017-02-16' -- may be stale; re-confirm",
+   "checked_sections": {
+    "406": "Punishment for criminal breach of trust",
+    "420": "Cheating and dishonestly inducing delivery of property",
+    "489-F": "Dishonestly issuing a cheque",
+    "506": "Punishment for criminal intimidation"
+   }
+  },
+  "limitation_1908": {
+   "statute": "Limitation Act 1908",
+   "publisher": "Pakistan Code",
+   "url": "https://pakistancode.gov.pk/pdffiles/administrator3294e35255f255ea96b3356091fb4844.pdf",
+   "retrieved": "session notes",
+   "checked_sections": {},
+   "version_note": "section text not checked in this batch"
+  },
+  "contract_1872": {
+   "statute": "Contract Act 1872",
+   "publisher": "Pakistan Code",
+   "url": "https://pakistancode.gov.pk/pdffiles/administrator8332a6df32386960ac7d81a5cf7aade2.pdf",
+   "retrieved": "2026-10-01",
+   "sha256": "930c60f67216530fab28f37d439ad3c3ae941dc918c914f2e7c18ddbabb7bfbd",
+   "checked_sections": {
+    "27": "Agreement in restraint of trade void",
+    "28": "Agreements in restraint of legal proceedings void"
+   },
+   "version_note": "pinned in app/services/analyzer/authority_library.yaml"
+  },
+  "registration_1908_pb": {
+   "statute": "Registration Act 1908 (Punjab Code)",
+   "publisher": "Punjab Code",
+   "url": "https://punjabcode.punjab.gov.pk/uploads/articles/registration-act-1908-doc-pdf.pdf",
+   "retrieved": "2026-10-01",
+   "sha256": "2d20ce6cffeedeb53446410043dab72c26cfe5108de250fab83c9f5e612cfcd8",
+   "checked_sections": {
+    "17": "Documents of which registration is compulsory"
+   },
+   "version_note": "authority_library.yaml"
+  },
+  "tpa_1882_pb": {
+   "statute": "Transfer of Property Act 1882 (Punjab Code)",
+   "publisher": "Punjab Code",
+   "url": "https://punjabcode.punjab.gov.pk/uploads/articles/THE_TRANSFER_OF_PROPERTY_ACT_1882.doc.pdf",
+   "retrieved": "2026-10-01",
+   "sha256": "c9250ac578d088e7779aaf1dea7b3b29ec3a6aa50a6c25c5ae83d3bc4f121097",
+   "checked_sections": {
+    "107": "Leases how made"
+   },
+   "version_note": "authority_library.yaml"
+  },
+  "prpa_2009": {
+   "statute": "Punjab Rented Premises Act 2009",
+   "publisher": "Punjab Code",
+   "url": "https://punjabcode.punjab.gov.pk/uploads/articles/THE_PUNJAB_RENTED_PREMISES_ACT_2009.doc.pdf",
+   "retrieved": "2026-10-01",
+   "sha256": "dc8e42971dfd2bd770c08f80b2b079ccaa6db54079a7b45adc40ee64cfc26962",
+   "checked_sections": {
+    "5": "Agreement between landlord and tenant",
+    "6": "Contents of tenancy agreement",
+    "7": "Payment of rent"
+   },
+   "version_note": "authority_library.yaml"
+  },
+  "gwa_1890": {
+   "statute": "Guardians and Wards Act 1890",
+   "publisher": "Pakistan Code",
+   "url": "https://pakistancode.gov.pk/pdffiles/administratord265c726d2d564a9377ed7a8e04708ae.pdf",
+   "retrieved": "2026-08-06",
+   "checked_sections": {},
+   "version_note": "URL from scripts/fetch_family_statutes.py; section text not checked in this batch"
+  },
+  "dmma_1939": {
+   "statute": "Dissolution of Muslim Marriages Act 1939",
+   "publisher": "Pakistan Code",
+   "url": "https://pakistancode.gov.pk/pdffiles/administratorfb32d6015ae887e6d6b85018961842ea.pdf",
+   "retrieved": "2026-08-06",
+   "checked_sections": {},
+   "version_note": "URL from scripts/fetch_family_statutes.py; section text not checked"
+  },
+  "fca_1964": {
+   "statute": "West Pakistan Family Courts Act 1964",
+   "publisher": "Ministry of Law and Justice",
+   "url": "https://molaw.gov.pk/SiteImage/Misc/files/THE%20WEST%20PAKISTAN%20FAMILY%20COURTS%20ACT,%201964.pdf",
+   "retrieved": "2026-08-06",
+   "checked_sections": {},
+   "version_note": "provincial amendments differ; section text not checked"
+  },
+  "cpc_1908": {
+   "statute": "Code of Civil Procedure 1908",
+   "publisher": null,
+   "url": null,
+   "retrieved": null,
+   "checked_sections": {},
+   "version_note": "OFFICIAL SOURCE NOT RECORDED (pakistancode page not found in this batch) -- every CPC label is provisional"
+  },
+  "sra_1877": {
+   "statute": "Specific Relief Act 1877",
+   "publisher": null,
+   "url": null,
+   "retrieved": null,
+   "checked_sections": {},
+   "version_note": "OFFICIAL SOURCE NOT RECORDED"
+  },
+  "mflo_1961": {
+   "statute": "Muslim Family Laws Ordinance 1961",
+   "publisher": null,
+   "url": null,
+   "retrieved": null,
+   "checked_sections": {},
+   "version_note": "OFFICIAL SOURCE NOT RECORDED"
+  },
+  "ni_act_1881": {
+   "statute": "Negotiable Instruments Act 1881",
+   "publisher": null,
+   "url": null,
+   "retrieved": null,
+   "checked_sections": {},
+   "version_note": "used only as a FORBIDDEN Indian-law pattern (s.138); not a Pakistani authority claim"
+  }
+ }
+}

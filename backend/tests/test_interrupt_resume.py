@@ -167,6 +167,45 @@ async def test_normalized_query_is_enriched_too(monkeypatch):
     assert "Lahore" in values["query"]
 
 
+async def test_a_complete_legal_question_replaces_a_stale_capability_clarification(monkeypatch):
+    """A seven-hour-old "can you guide me" interrupt polluted the MFLO search."""
+    from app.ai.nodes import clarification_node as mod
+
+    monkeypatch.setattr(mod, "get_fast_llm", lambda **_kw: _StubLLM("What is your legal issue?"))
+    legal = ("Under the Muslim Family Laws Ordinance 1961, what is the procedure "
+             "and timeline for a husband sending a divorce notice in Pakistan?")
+    graph, config = await _run_to_interrupt(
+        mod.clarification_node,
+        _base_state(query="Can you guide me on my legal matter?",
+                    normalized_query="Can you guide me on my legal matter?",
+                    language="ur", case_type="criminal", province="sindh",
+                    jurisdiction_basis="inferred_from_query",
+                    known_facts=["old criminal matter"]),
+    )
+    values = await _resume(graph, config, legal)
+
+    assert values["query"] == legal
+    assert values["normalized_query"] == legal
+    assert "guide me" not in values["query"].lower()
+    assert values["language"] == "en"
+    assert values["case_type"] != "criminal"
+    assert values["province"] == "unknown"
+    assert values["known_facts"] == [legal[:200]]
+
+
+def test_replacing_placeholder_keeps_a_user_selected_jurisdiction():
+    from app.ai.nodes._resume import merge_user_reply
+
+    updates = merge_user_reply(
+        _base_state(query="Can you guide me on my legal matter?", province="punjab",
+                    jurisdiction_basis="user_selected"),
+        "How can I seek khula?",
+    )
+    assert updates["query"] == "How can I seek khula?"
+    assert "province" not in updates
+    assert "jurisdiction_basis" not in updates
+
+
 # ── fact_gap_node ─────────────────────────────────────────────────────────────
 
 async def test_fact_gap_reply_becomes_a_known_fact(monkeypatch):

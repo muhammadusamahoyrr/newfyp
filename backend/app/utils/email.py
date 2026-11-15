@@ -41,8 +41,23 @@ async def _send(to: str, subject: str, html: str) -> bool:
     return True
 
 
+async def send_verification_email(email: str, token: str) -> bool:
+    # Fragment for the same reason as the reset link: never sent to a server.
+    url = f"{settings.frontend_url}/verify-email#token={token}"
+    html = f"""
+    <h2>Confirm your email — Attorney.AI</h2>
+    <p>Click the link below to confirm this is your email address. The link expires in 24 hours.</p>
+    <a href="{url}">{url}</a>
+    <p>If you did not create an Attorney.AI account, ignore this email.</p>
+    """
+    return await _send(email, "Confirm your Attorney.AI email", html)
+
+
 async def send_password_reset_email(email: str, token: str) -> bool:
-    reset_url = f"{settings.frontend_url}/reset-password?token={token}"
+    # Fragment, not query string: a fragment is never sent to a server, so the
+    # secret stays out of access/proxy logs and Referer headers (the page reads
+    # it and then strips it from the address bar). Same pattern as /sign links.
+    reset_url = f"{settings.frontend_url}/reset-password#token={token}"
     html = f"""
     <h2>Password Reset — Attorney.AI</h2>
     <p>Click the link below to reset your password. This link expires in 1 hour.</p>

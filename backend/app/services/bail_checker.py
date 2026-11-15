@@ -322,6 +322,23 @@ def sections_matching(section: str) -> list[dict]:
     return [o for o in OFFENCES if _norm(o["section"]) == sn]
 
 
+def rows_for_reference(law: str, section: str) -> list[dict]:
+    """Table rows for an EXPLICIT reference (statute + section), public form.
+
+    The statute is binding (as in _find). A section also covers its own
+    sub-clause rows -- "337-A" -> "337-A(i)" -- because the table splits some
+    offences that way; it never covers a lettered sibling ("489" is not
+    "489-F": the fold keeps the letter). Empty when the table has no row for
+    it, which says nothing about whether the provision exists.
+    """
+    ln, sn = _norm_law(law), _norm(section)
+    if not ln or not sn:
+        return []
+    return [_public(o) for o in OFFENCES
+            if _norm_law(o["law"]) == ln
+            and (_norm(o["section"]) == sn or _norm(o["section"]).startswith(sn + "("))]
+
+
 def _find(law: str, section: str) -> dict | None:
     """Look up one offence. A stated statute is BINDING.
 

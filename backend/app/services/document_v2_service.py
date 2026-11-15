@@ -425,14 +425,29 @@ async def _resolve_lost_promotion(revision_id: str, worker_id: str,
     return await _await_terminal_revision(revision_id)
 
 
+async def _refuse_if_under_review(document_id: str, refuse_when_submitted: bool) -> None:
+    """The reason a reservation matched nothing, when it is the review."""
+    if not refuse_when_submitted:
+        return
+    doc = await get_documents_col().find_one({"_id": document_id}, {"review_status": 1})
+    if doc and doc.get("review_status") == "submitted":
+        raise ConflictError("This document is with your lawyer for review. Withdraw the "
+                            "submitted revision before making a new version.")
+
+
 async def generate_revision(
     *, document_id: str, template_type: str, fields: dict, idempotency_key: str,
     worker_id: str | None = None,
     expected_revision_id: str | None = None,
     expected_version: int | None = None,
     expected_content_epoch: int | None = None,
+    refuse_when_submitted: bool = True,
 ) -> dict:
-    """Generate the next revision of a document. Idempotent under retry."""
+    """Generate the next revision of a document. Idempotent under retry.
+
+    refuse_when_submitted (default): a document under review gets no new
+    version -- atomically, in the reservation (revision_repo). Only the
+    lawyer's return-with-edits passes False."""
     worker_id = worker_id or WORKER_ID
     validate_idempotency_key(idempotency_key)
 
@@ -464,6 +479,7 @@ async def generate_revision(
             expected_revision_id=str(expected_revision_id),
             expected_version=int(expected_version),
             expected_content_epoch=int(expected_content_epoch),
+            refuse_when_submitted=refuse_when_submitted,
         )
         if version is None:
             # A simultaneous retry with the SAME key may have lost the epoch
@@ -481,11 +497,26 @@ async def generate_revision(
                     return await _await_terminal(
                         document_id, idempotency_key, winner)
                 await asyncio.sleep(0.05)
+            await _refuse_if_under_review(document_id, refuse_when_submitted)
             raise ConflictError(
                 "This document changed since you opened the editor. Reload it "
                 "before saving so another revision is not overwritten.")
     else:
-        version = await revision_repo.reserve_version(document_id)
+        version = None
+        for _attempt in range(3):
+            version = await revision_repo.reserve_version(
+                document_id, refuse_when_submitted=refuse_when_submitted)
+            if version is not None:
+                break
+            # Matched nothing: under review, gone -- or under review a moment
+            # ago and decided since (an approval racing this generate). Only a
+            # document that really is gone is "not found"; one that left review
+            # in between is simply tried again.
+            await _refuse_if_under_review(document_id, refuse_when_submitted)
+            if not await get_documents_col().find_one({"_id": document_id}, {"_id": 1}):
+                raise NotFoundError("Document")
+        if version is None:
+            raise ConflictError("This document is changing under review right now. Reload it and try again.")
     revision_id = secrets.token_urlsafe(16)
     now = _now()
     fence = 0

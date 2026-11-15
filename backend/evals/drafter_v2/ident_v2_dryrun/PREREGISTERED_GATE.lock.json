@@ -1,0 +1,7 @@
+{
+ "file": "PREREGISTERED_GATE.md",
+ "sha256": "04806e18c4db30d5cb4fee60752a7d96bd1d013c59790c88cfdc3f95ae1890d6",
+ "gate_queries_sha256": "3f8bcde3c368d9cfdfd1ad17a22820f5656febcad89018c1a559824f2969f534",
+ "locked": "2026-10-15",
+ "note": "Locked before any further live build. Editing either file makes a new, unapproved gate."
+}

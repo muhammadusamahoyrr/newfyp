@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Documents home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap">
+<style>
+body{margin:0;background:#0f2228;font-family:Inter,system-ui,sans-serif;color:#e6f1f2}
+a{color:#3fd6c6}a:hover{color:#8ff0e5}
+.nav{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;color:#a9c3c8;font-size:14px;text-decoration:none}
+.nav:hover{background:#21414a;color:#e6f1f2}
+.sub{display:block;padding:8px 14px 8px 40px;border-radius:9px;color:#a9c3c8;font-size:13.5px;text-decoration:none}
+.sub:hover{background:#21414a;color:#e6f1f2}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:11px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;box-sizing:border-box;font-family:inherit}
+.btn-primary{background:#3fd6c6;color:#0b2a2d;border:none}
+.btn-primary:hover{background:#6fe3d6;color:#0b2a2d}
+.btn-ghost{background:transparent;color:#d3e6e8;border:1px solid #3a5e68}
+.btn-ghost:hover{background:#21414a;color:#fff}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:#1d3a42;border:1px solid #2f5059;color:#cfe3e6;font-size:13px;cursor:pointer;font-family:inherit}
+.chip:hover{border-color:#3fd6c6}
+.card{background:#172f36;border:1px solid #28464f;border-radius:16px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.field{background:#0f2429;border:1px solid #33555e;border-radius:10px;color:#e6f1f2;font:inherit;font-size:14px;padding:10px 12px;box-sizing:border-box}
+.ibtn{width:40px;height:40px;border-radius:10px;border:1px solid #3a5e68;background:transparent;color:#cfe3e6;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.ibtn:hover{background:#21414a;color:#fff;border-color:#3fd6c6}
+.thumb{display:block;width:100%;height:118px;padding:14px 0 0;border:none;border-radius:12px 12px 0 0;background:#10262c;cursor:pointer;overflow:hidden;position:relative}
+.thumb:hover{background:#12303a}
+.tool{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:36px;min-height:36px;padding:0 9px;border-radius:8px;border:1px solid transparent;background:transparent;color:#cfe3e6;font:inherit;font-size:13px;cursor:pointer}
+.tool:hover{background:#1b363e;color:#fff}
+.tokp{font-family:Inter,sans-serif;font-size:12px;font-weight:600;background:#fdf0cf;color:#7a5200;border:1px solid #e9c46a;border-radius:5px;padding:0 5px}
+.tokv{background:#e3f6f3;color:#0d5c54;border-radius:4px;padding:0 3px}
+.oline{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:9px;border:none;background:transparent;color:#cfe3e6;font:inherit;font-size:13.5px;cursor:pointer}
+.oline:hover{background:#1b363e}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 1200px; display: flex; overflow: hidden; background: #0f2228">
+
+<aside style="width: 248px; flex-shrink: 0; background: #132a31; border-right: 1px solid #22404a; padding: 22px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+<div style="font-family: Fraunces, Georgia, serif; font-size: 24px; font-weight: 600; color: #f2f8f8; padding: 0 12px 22px">Attorney<span style="color: #3fd6c6">.AI</span></div>
+<a class="nav" href="#">Overview</a>
+<a class="nav" href="#">Legal Intake</a>
+<a class="nav" href="#">AI Chat</a>
+<a class="nav" href="#">Lawyers</a>
+<a class="nav" href="#">Agreements</a>
+<a class="nav" href="Main.dc.html" style="background: #1f4a4f; color: #3fd6c6; font-weight: 600">Documents</a>
+<a class="sub" href="Plan.dc.html">AI drafting</a>
+<a class="sub" href="#templates">Templates</a>
+<a class="sub" href="Analyzer.dc.html">Document analyzer</a>
+<a class="sub" href="Vault.dc.html">Vault</a>
+<a class="nav" href="#">Tracking</a>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; background: #172f36">
+<div style="width: 36px; height: 36px; border-radius: 50%; background: #3fd6c6; color: #0b2a2d; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px">TU</div>
+<div><div style="font-size: 13.5px; font-weight: 600">Test User</div><div style="font-size: 12px; color: #93aeb4">Client</div></div>
+</div>
+</aside>
+
+<main style="flex-grow: 1; padding: 30px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px; overflow: hidden">
+<div style="display: flex; align-items: flex-end; justify-content: space-between">
+<div>
+<h1 style="margin: 0; font-family: Fraunces, Georgia, serif; font-size: 34px; font-weight: 600; color: #f2f8f8">Documents</h1>
+<div style="margin-top: 4px; font-size: 14px; color: #93aeb4">Draft with AI, start from a template, or continue your work.</div>
+</div>
+<a class="btn btn-ghost" href="Vault.dc.html">Vault</a>
+</div>
+
+<section class="card" style="padding: 26px 28px; display: flex; flex-direction: column; gap: 14px; background: #183840; border-color: #2d5a62">
+<label for="need" style="font-family: Fraunces, Georgia, serif; font-size: 22px; font-weight: 600; color: #f2f8f8">What do you need to draft?</label>
+<textarea id="need" class="field" rows="3" style="width: 100%; resize: none; font-size: 15px; line-height: 1.55; padding: 14px 16px">6-month NDA between ABC Pvt Ltd and a freelance designer in Karachi</textarea>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<span style="font-size: 12.5px; color: #93aeb4; margin-right: 4px">Try:</span>
+<button class="chip" type="button">Notice to a tenant for unpaid rent</button>
+<button class="chip" type="button">Employment contract for a sales manager</button>
+<button class="chip" type="button">Affidavit for a lost CNIC</button>
+</div>
+<div style="display: flex; gap: 14px; align-items: flex-end">
+<div style="display: flex; flex-direction: column; gap: 6px; width: 260px">
+<label for="dtype" style="font-size: 12.5px; color: #93aeb4">Document type (optional)</label>
+<select id="dtype" class="field"><option>Detect from my description</option><option>Non-Disclosure Agreement</option><option>Legal Notice</option><option>Rent Agreement</option></select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; width: 300px">
+<label for="dcase" style="font-size: 12.5px; color: #93aeb4">Linked case (optional)</label>
+<select id="dcase" class="field"><option>Standalone — no linked case</option><option>Case #12 — Tenant arrears, Lahore</option></select>
+</div>
+<div style="flex-grow: 1"></div>
+<a class="btn btn-primary" href="Plan.dc.html" style="padding: 0 24px">Plan my draft
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+</div>
+</section>
+
+<section id="templates" style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 12px">
+<h2 style="margin: 0; font-family: Fraunces, Georgia, serif; font-size: 20px; font-weight: 600">Start from a template</h2>
+<span style="font-size: 13px; color: #93aeb4">Reviewed wording · you only fill the details</span>
+<div style="flex-grow: 1"></div>
+<label for="tsearch" style="position: absolute; left: -9999px">Search templates</label>
+<input id="tsearch" class="field" placeholder="Search templates" style="width: 220px">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="4">
+<button class="chip" type="button" onClick="{{c.pick}}" style="background: {{c.bg}}; border-color: {{c.border}}; color: {{c.fg}}">{{c.name}}</button>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<sc-for list="{{cards}}" as="t" hint-placeholder-count="6">
+<div class="card" style="display: flex; flex-direction: column; gap: 10px; padding: 18px; min-height: 236px; box-sizing: border-box">
+<div style="display: flex; align-items: flex-start; gap: 10px">
+<span style="width: 46px; height: 46px; border-radius: 13px; background: {{t.tileBg}}; color: {{t.tileFg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<sc-if value="{{t.isNotice}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></sc-if>
+<sc-if value="{{t.isContract}}" hint-placeholder-val="{{true}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8 17c1.5-2 2.5-2 3 0s1.5 2 3-1"/></svg></sc-if>
+<sc-if value="{{t.isCourt}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6h6zM19 7l-3 6h6z"/></svg></sc-if>
+</span>
+<div style="flex-grow: 1; min-width: 0">
+<div style="font-size: 12px; font-weight: 600; color: #93aeb4">{{t.cat}}</div>
+<div style="font-size: 16px; font-weight: 600; color: #f2f8f8; margin-top: 2px">{{t.name}}</div>
+</div>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 4px 9px; border-radius: 999px; background: {{t.riskBg}}; color: {{t.riskFg}}; white-space: nowrap"><span class="dot" style="background: {{t.riskColor}}"></span>{{t.riskShort}}</span>
+</div>
+<div style="font-size: 13.5px; color: #a9c3c8; line-height: 1.55">{{t.desc}}</div>
+<div style="display: flex; gap: 14px; font-size: 12.5px; color: #93aeb4">
+<span>{{t.nFields}} details</span><span>{{t.pages}}</span><span>{{t.langs}}</span>
+</div>
+<sc-if value="{{t.needsLawyer}}" hint-placeholder-val="{{false}}"><div style="font-size: 12px; color: #f5a3a8">Lawyer review required before filing</div></sc-if>
+<div style="display: flex; gap: 8px; margin-top: auto; padding-top: 4px">
+<button class="ibtn" type="button" onClick="{{t.preview}}" aria-label="Preview {{t.name}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+<button class="ibtn" type="button" onClick="{{t.edit}}" aria-label="Customize {{t.name}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+<a class="btn btn-primary" href="Workspace.dc.html" style="flex-grow: 1; min-height: 40px; font-size: 13.5px">Use template</a>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: center"><h2 style="margin: 0; font-size: 15px; font-weight: 600; flex-grow: 1">Continue where you left off</h2><a href="Vault.dc.html" style="font-size: 13px">View all</a></div>
+<sc-for list="{{recent}}" as="r" hint-placeholder-count="3">
+<a href="{{r.href}}" style="display: flex; align-items: center; gap: 14px; padding: 10px 6px; border-top: 1px solid #22404a; text-decoration: none; color: #e6f1f2">
+<span style="font-size: 14px; font-weight: 500; flex-grow: 1">{{r.name}}</span>
+<span style="font-size: 12px; padding: 4px 10px; border-radius: 999px; background: {{r.bg}}; color: {{r.fg}}">{{r.status}}</span>
+<span style="font-size: 12.5px; color: #93aeb4; width: 150px; text-align: right">{{r.when}}</span>
+</a>
+</sc-for>
+</section>
+</main>
+
+<sc-if value="{{isPreview}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 1440px; height: 1200px; background: rgba(4,14,17,.72); display: flex; align-items: flex-start; justify-content: center; padding-top: 70px; box-sizing: border-box">
+<div role="dialog" aria-label="Template preview" style="width: 1120px; height: 820px; background: #132a31; border: 1px solid #2f5059; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.5)">
+<div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #22404a">
+<button class="ibtn" type="button" onClick="{{prev}}" aria-label="Previous template">‹</button>
+<button class="ibtn" type="button" onClick="{{next}}" aria-label="Next template">›</button>
+<div style="font-family: Fraunces, Georgia, serif; font-size: 22px; font-weight: 600; margin-left: 6px">{{cur.name}}</div>
+<span style="font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #1f4a4f; color: #bff3ec">{{cur.cat}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #cfe3e6"><span class="dot" style="background: {{cur.riskColor}}"></span>{{cur.risk}}</span>
+<div style="flex-grow: 1"></div>
+<span style="font-size: 12.5px; color: #93aeb4">{{counter}}</span>
+<button class="ibtn" type="button" onClick="{{close}}" aria-label="Close preview">×</button>
+</div>
+<div style="flex-grow: 1; display: flex; overflow: hidden">
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center; padding: 24px 0; background: #0c1d22">
+<article style="width: 560px; height: 900px; background: #ffffff; color: #1d2a2e; border-radius: 8px; padding: 40px 46px; box-sizing: border-box; font-family: 'Source Serif 4', Georgia, serif; font-size: 14px; line-height: 1.8">
+<h2 style="margin: 0 0 18px; text-align: center; font-size: 17px; letter-spacing: .14em; font-weight: 600">{{cur.caps}}</h2>
+<sc-for list="{{previewSecs}}" as="sec" hint-placeholder-count="5">
+<p style="margin: 0 0 12px"><sc-if value="{{sec.hasHead}}" hint-placeholder-val="{{false}}"><b>{{sec.head}} </b></sc-if><sc-for list="{{sec.parts}}" as="p" hint-placeholder-count="3"><sc-if value="{{p.isTok}}" hint-placeholder-val="{{false}}"><span class="tokp">{{p.label}}</span></sc-if><sc-if value="{{p.isText}}" hint-placeholder-val="{{true}}">{{p.text}}</sc-if></sc-for></p>
+</sc-for>
+</article>
+</div>
+<div style="width: 360px; flex-shrink: 0; border-left: 1px solid #22404a; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; overflow: hidden">
+<div><div style="font-size: 12px; font-weight: 700; letter-spacing: .07em; color: #6fcfc3">USE THIS WHEN</div><div style="font-size: 14px; line-height: 1.6; margin-top: 6px; color: #dce9eb">{{cur.when}}</div></div>
+<div><div style="font-size: 12px; font-weight: 700; letter-spacing: .07em; color: #6fcfc3">YOU'LL FILL {{cur.nFields}} DETAILS</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px">
+<sc-for list="{{cur.fieldList}}" as="f" hint-placeholder-count="6"><span style="font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: #3b3217; color: #f7cf7d">{{f.label}}</span></sc-for>
+</div></div>
+<div><div style="font-size: 12px; font-weight: 700; letter-spacing: .07em; color: #6fcfc3">BASED ON</div><div style="font-size: 13.5px; margin-top: 6px; color: #cfe3e6">{{cur.law}}</div></div>
+<div style="padding: 12px 14px; border-radius: 12px; background: #172f36; border: 1px solid #28464f; font-size: 13px; line-height: 1.55; color: #cfe3e6">{{cur.review}}</div>
+<div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
+<a class="btn btn-primary" href="Workspace.dc.html">Use this template</a>
+<button class="btn btn-ghost" type="button" onClick="{{toEdit}}">Customize wording first</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 1440px; height: 1200px; background: rgba(4,14,17,.72); padding: 26px; box-sizing: border-box">
+<div role="dialog" aria-label="Customize template" style="width: 100%; height: 100%; background: #132a31; border: 1px solid #2f5059; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #22404a">
+<div style="font-family: Fraunces, Georgia, serif; font-size: 20px; font-weight: 600">Customize · {{cur.name}}</div>
+<span style="font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #1d4a36; color: #8ff0b5">Your copy · original untouched</span>
+<span style="font-size: 12px; color: #93aeb4">Saved just now</span>
+<div style="flex-grow: 1"></div>
+<button class="ibtn" type="button" onClick="{{close}}" aria-label="Close editor">×</button>
+</div>
+<div style="display: flex; align-items: center; gap: 2px; padding: 6px 14px; border-bottom: 1px solid #22404a; background: #152e35">
+<button class="tool" type="button" aria-label="Undo">↶</button>
+<button class="tool" type="button" aria-label="Redo">↷</button>
+<span style="width: 1px; height: 22px; background: #2f5059; margin: 0 6px"></span>
+<label for="stylesel" style="position: absolute; left: -9999px">Text style</label>
+<select id="stylesel" class="field" style="padding: 7px 10px; font-size: 13px; width: 130px"><option>Paragraph</option><option>Heading</option><option>Clause title</option></select>
+<span style="width: 1px; height: 22px; background: #2f5059; margin: 0 6px"></span>
+<button class="tool" type="button" aria-label="Bold" style="font-weight: 800">B</button>
+<button class="tool" type="button" aria-label="Italic" style="font-style: italic">I</button>
+<button class="tool" type="button" aria-label="Underline" style="text-decoration: underline">U</button>
+<button class="tool" type="button" aria-label="Numbered list">1.</button>
+<button class="tool" type="button" aria-label="Bulleted list">•</button>
+<span style="width: 1px; height: 22px; background: #2f5059; margin: 0 6px"></span>
+<button class="tool" type="button" style="border-color: #3a5e68">+ Insert detail field</button>
+<button class="tool" type="button" style="border-color: #3a5e68">+ Add clause from library</button>
+<div style="flex-grow: 1"></div>
+<span style="font-size: 12.5px; color: #c9bff5">● Changes are marked for your lawyer</span>
+</div>
+<div style="flex-grow: 1; display: flex; overflow: hidden">
+<nav aria-label="Document outline" style="width: 230px; flex-shrink: 0; border-right: 1px solid #22404a; padding: 14px 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: .07em; color: #6fcfc3; padding: 0 12px 8px">OUTLINE</div>
+<sc-for list="{{outline}}" as="o" hint-placeholder-count="5"><button class="oline" type="button" onClick="{{o.pick}}" style="background: {{o.bg}}; color: {{o.fg}}">{{o.name}}</button></sc-for>
+</nav>
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center; padding: 24px 0; background: #0c1d22">
+<article style="width: 620px; height: 1000px; background: #ffffff; color: #1d2a2e; border-radius: 8px; padding: 44px 52px; box-sizing: border-box; font-family: 'Source Serif 4', Georgia, serif; font-size: 14.5px; line-height: 1.8">
+<h2 style="margin: 0 0 18px; text-align: center; font-size: 18px; letter-spacing: .14em; font-weight: 600">{{cur.caps}}</h2>
+<sc-for list="{{editSecs}}" as="sec" hint-placeholder-count="5">
+<div style="position: relative; margin: 0 -12px 10px; padding: 6px 12px; border-radius: 8px; background: {{sec.bg}}; outline: {{sec.outline}}">
+<sc-if value="{{sec.selected}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; gap: 6px; margin-bottom: 4px; font-family: Inter, sans-serif">
+<button type="button" style="font: inherit; font-size: 11.5px; font-weight: 600; min-height: 28px; padding: 0 10px; border-radius: 7px; border: none; background: #efeaff; color: #5b3fb0; cursor: pointer">Rewrite with AI</button>
+<button type="button" style="font: inherit; font-size: 11.5px; font-weight: 600; min-height: 28px; padding: 0 10px; border-radius: 7px; border: 1px solid #d5dde0; background: #fff; color: #33474c; cursor: pointer">Move</button>
+<button type="button" style="font: inherit; font-size: 11.5px; font-weight: 600; min-height: 28px; padding: 0 10px; border-radius: 7px; border: 1px solid #f0c9c9; background: #fff; color: #b3261e; cursor: pointer">Delete</button>
+</div>
+</sc-if>
+<p style="margin: 0"><sc-if value="{{sec.hasHead}}" hint-placeholder-val="{{false}}"><b>{{sec.head}} </b></sc-if><sc-for list="{{sec.parts}}" as="p" hint-placeholder-count="3"><sc-if value="{{p.isTok}}" hint-placeholder-val="{{false}}"><span class="tokp">{{p.label}}</span></sc-if><sc-if value="{{p.isVal}}" hint-placeholder-val="{{false}}"><span class="tokv">{{p.value}}</span></sc-if><sc-if value="{{p.isText}}" hint-placeholder-val="{{true}}">{{p.text}}</sc-if></sc-for></p>
+</div>
+</sc-for>
+</article>
+</div>
+<aside style="width: 330px; flex-shrink: 0; border-left: 1px solid #22404a; display: flex; flex-direction: column; overflow: hidden">
+<div style="padding: 14px 18px; border-bottom: 1px solid #22404a"><div style="font-size: 15px; font-weight: 700">Fill details</div><div style="font-size: 12.5px; color: #f7cf7d">{{filledText}}</div></div>
+<div style="flex-grow: 1; padding: 12px 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden">
+<sc-for list="{{editFields}}" as="f" hint-placeholder-count="6">
+<sc-if value="{{f.newGroup}}" hint-placeholder-val="{{false}}"><div style="font-size: 11.5px; font-weight: 700; letter-spacing: .07em; color: #6fcfc3; padding-top: 4px">{{f.group}}</div></sc-if>
+<div style="display: flex; flex-direction: column; gap: 5px">
+<label for="{{f.id}}" style="font-size: 13px; color: #cfe3e6">{{f.label}}</label>
+<input id="{{f.id}}" class="field" value="{{f.value}}" onChange="{{f.change}}" placeholder="{{f.hint}}" style="border-color: {{f.border}}">
+</div>
+</sc-for>
+</div>
+</aside>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid #22404a; background: #152e35">
+<span style="font-size: 12.5px; color: #93aeb4; flex-grow: 1">{{wordCount}}</span>
+<button class="btn btn-ghost" type="button">Save as my template</button>
+<button class="btn btn-ghost" type="button">Word</button>
+<button class="btn btn-ghost" type="button">PDF</button>
+<a class="btn btn-primary" href="Workspace.dc.html" style="padding: 0 24px">Continue to draft →</a>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { modal: null, idx: 0, cat: 'All', sel: 0, vals: {} }; }
+  renderVals() {
+    var s = this.state, low = '#4fd18b', med = '#f2b84b', high = '#f07a7a';
+    var T = [
+      { name: 'Legal Notice', caps: 'LEGAL NOTICE', cat: 'Notices', risk: 'Low risk', riskColor: low, pages: '1 page', urdu: true,
+        desc: 'Demand payment or action before going to court.',
+        when: 'Someone owes you money or must do something, and you want a formal written warning before filing a case.',
+        law: 'Contract Act 1872 · Civil Procedure Code 1908',
+        review: 'Low risk: you can download and send it yourself. A lawyer review makes it stronger.',
+        fields: [['SENDER', 'Your name', 'SENDER'], ['SENDER_ADDR', 'Your address', 'SENDER'], ['RECIPIENT', 'Recipient name', 'RECIPIENT'], ['RECIPIENT_ADDR', 'Recipient address', 'RECIPIENT'], ['AMOUNT', 'Amount owed (PKR)', 'THE CLAIM'], ['SINCE', 'Owed since', 'THE CLAIM'], ['DAYS', 'Days to pay', 'THE CLAIM'], ['DATE', 'Date', 'THE CLAIM']],
+        secs: [['', 'From: [[SENDER]], [[SENDER_ADDR]]'], ['', 'To: [[RECIPIENT]], [[RECIPIENT_ADDR]]'], ['1.', 'You owe my client PKR [[AMOUNT]], outstanding since [[SINCE]], despite repeated requests.'], ['2.', 'You are called upon to pay the full amount within [[DAYS]] days of receiving this notice.'], ['3.', 'If you fail to do so, legal proceedings will be started against you at your risk as to costs.'], ['', 'Dated: [[DATE]]']] },
+      { name: 'Non-Disclosure Agreement', caps: 'NON-DISCLOSURE AGREEMENT', cat: 'Contracts', risk: 'Medium', riskColor: med, pages: '3 pages', urdu: false,
+        desc: 'One-way or mutual confidentiality between two parties.',
+        when: 'You will share business information with a freelancer, employee or partner and need it kept confidential.',
+        law: 'Contract Act 1872 · Specific Relief Act 1877 · Stamp Act 1899',
+        review: 'Medium risk: download is allowed; a lawyer review is recommended before anyone signs.',
+        fields: [['COMPANY', 'Disclosing party', 'PARTIES'], ['RECEIVER', 'Receiving party', 'PARTIES'], ['TERM', 'Term (months)', 'TERMS'], ['CITY', 'City for disputes', 'TERMS'], ['DATE', 'Date', 'TERMS']],
+        secs: [['', 'This Agreement is made on [[DATE]] between [[COMPANY]] and [[RECEIVER]].'], ['1. Confidential Information.', 'All information disclosed by [[COMPANY]] in any form.'], ['2. Obligations.', 'The receiving party shall use it only for the agreed purpose and shall not disclose it.'], ['3. Term.', '[[TERM]] months; obligations survive for two years.'], ['4. Disputes.', 'The courts at [[CITY]] shall have jurisdiction.']] },
+      { name: 'Rent Agreement', caps: 'TENANCY AGREEMENT', cat: 'Contracts', risk: 'Medium', riskColor: med, pages: '2 pages', urdu: true,
+        desc: 'Tenancy terms, rent, deposit and notice periods.',
+        when: 'You are renting out or renting a house, flat or shop and want the terms in writing.',
+        law: 'Punjab Rented Premises Act 2009 · Stamp Act 1899',
+        review: 'Medium risk: review recommended; file it with the Rent Registrar where the law requires.',
+        fields: [['LANDLORD', 'Landlord', 'PARTIES'], ['TENANT', 'Tenant', 'PARTIES'], ['PREMISES', 'Premises address', 'PROPERTY'], ['RENT', 'Monthly rent (PKR)', 'MONEY'], ['DEPOSIT', 'Security deposit (PKR)', 'MONEY'], ['TERM', 'Term (months)', 'PROPERTY']],
+        secs: [['', 'Between [[LANDLORD]] (Landlord) and [[TENANT]] (Tenant).'], ['1. Premises.', '[[PREMISES]] is let for [[TERM]] months.'], ['2. Rent.', 'PKR [[RENT]] per month, payable by the 5th.'], ['3. Deposit.', 'PKR [[DEPOSIT]], refundable on handover less documented damage.'], ['4. Notice.', 'Either party may end the tenancy on two months’ notice.']] },
+      { name: 'Employment Contract', caps: 'EMPLOYMENT CONTRACT', cat: 'Contracts', risk: 'Medium', riskColor: med, pages: '3 pages', urdu: false,
+        desc: 'Role, pay, probation, leave and termination.',
+        when: 'You are hiring someone, or were offered a job and want the terms clearly written.',
+        law: 'Contract Act 1872 · provincial labour laws',
+        review: 'Medium risk: review recommended, especially for termination and non-compete terms.',
+        fields: [['EMPLOYER', 'Employer', 'PARTIES'], ['EMPLOYEE', 'Employee', 'PARTIES'], ['ROLE', 'Designation', 'JOB'], ['SALARY', 'Monthly salary (PKR)', 'JOB'], ['START', 'Start date', 'JOB'], ['PROBATION', 'Probation (months)', 'JOB']],
+        secs: [['', '[[EMPLOYER]] employs [[EMPLOYEE]] as [[ROLE]] from [[START]].'], ['1. Salary.', 'PKR [[SALARY]] per month, paid by the 7th.'], ['2. Probation.', '[[PROBATION]] months, with one month’s notice during probation.'], ['3. Leave.', 'Annual, casual and sick leave as per law.'], ['4. Termination.', 'One month’s notice or pay in lieu after probation.']] },
+      { name: 'Affidavit', caps: 'AFFIDAVIT', cat: 'Court', risk: 'Low risk', riskColor: low, pages: '1 page', urdu: true,
+        desc: 'A sworn statement of facts for an office or court.',
+        when: 'An office or court asks you to state facts on oath — for example a lost CNIC or a change of address.',
+        law: 'Oaths Act 1873',
+        review: 'Low risk: sign before an Oath Commissioner.',
+        fields: [['NAME', 'Your name', 'DEPONENT'], ['FATHER', 'Father’s name', 'DEPONENT'], ['CNIC', 'CNIC', 'DEPONENT'], ['ADDRESS', 'Address', 'DEPONENT'], ['FACT', 'What you are stating', 'STATEMENT']],
+        secs: [['', 'I, [[NAME]], son/daughter of [[FATHER]], CNIC [[CNIC]], resident of [[ADDRESS]], solemnly state:'], ['1.', '[[FACT]]'], ['2.', 'The above is true to the best of my knowledge and belief.'], ['', 'Deponent']] },
+      { name: 'Civil Plaint', caps: 'PLAINT', cat: 'Court', risk: 'High — lawyer review required', riskColor: high, pages: '4 pages', urdu: false,
+        desc: 'Order VII Rule 1 CPC suit; filed in court.',
+        when: 'You are filing a civil suit — for example to recover money or enforce a contract.',
+        law: 'Civil Procedure Code 1908, Order VII Rule 1',
+        review: 'High risk: a lawyer must review before filing; the final PDF stays marked “Draft” until approved.',
+        fields: [['COURT', 'Court', 'CASE'], ['PLAINTIFF', 'Plaintiff', 'PARTIES'], ['DEFENDANT', 'Defendant', 'PARTIES'], ['CAUSE', 'Cause of action', 'CASE'], ['RELIEF', 'Relief sought', 'CASE']],
+        secs: [['', 'In the Court of [[COURT]]'], ['', '[[PLAINTIFF]] … Plaintiff  versus  [[DEFENDANT]] … Defendant'], ['1. Facts.', '[[CAUSE]]'], ['2. Jurisdiction.', 'This Court has jurisdiction as the cause of action arose within its limits.'], ['3. Prayer.', 'The plaintiff prays for [[RELIEF]], with costs.']] }
+    ];
+    var shown = T.map((t, i) => ({ t, i })).filter(x => s.cat === 'All' || x.t.cat === s.cat);
+    var cur = T[s.idx];
+    var label = (key) => (cur.fields.find(f => f[0] === key) || [key, key])[1];
+    var split = (text, withVals) => text.split(/(\[\[\w+\]\])/).filter(Boolean).map(part => {
+      var m = part.match(/^\[\[(\w+)\]\]$/);
+      if (!m) return { isText: true, isTok: false, isVal: false, text: part };
+      var v = withVals ? (s.vals[s.idx + ':' + m[1]] || '').trim() : '';
+      return { isText: false, isTok: !v, isVal: !!v, label: label(m[1]), value: v };
+    });
+    var filled = cur.fields.filter(f => (s.vals[s.idx + ':' + f[0]] || '').trim()).length;
+    var words = cur.secs.map(x => x[0] + ' ' + x[1]).join(' ').split(/\s+/).length;
+    var go = (d) => () => this.setState({ idx: (s.idx + d + T.length) % T.length });
+    return {
+      cats: ['All', 'Contracts', 'Notices', 'Court'].map(n => ({ name: n, pick: () => this.setState({ cat: n }),
+        bg: s.cat === n ? '#1f4a4f' : '#1d3a42', border: s.cat === n ? '#3fd6c6' : '#2f5059', fg: s.cat === n ? '#3fd6c6' : '#cfe3e6' })),
+      cards: shown.map(x => ({ name: x.t.name, cat: x.t.cat, riskColor: x.t.riskColor, desc: x.t.desc,
+        riskShort: x.t.riskColor === high ? 'High risk' : x.t.riskColor === med ? 'Medium' : 'Low risk',
+        riskBg: x.t.riskColor === high ? '#4a2226' : x.t.riskColor === med ? '#3b3217' : '#1d4a36',
+        riskFg: x.t.riskColor === high ? '#f5a3a8' : x.t.riskColor === med ? '#f7cf7d' : '#8ff0b5',
+        needsLawyer: x.t.riskColor === high,
+        isNotice: x.t.cat === 'Notices', isContract: x.t.cat === 'Contracts', isCourt: x.t.cat === 'Court',
+        tileBg: x.t.cat === 'Notices' ? '#1d3f5a' : x.t.cat === 'Court' ? '#2f2a4a' : '#1f4a4f',
+        tileFg: x.t.cat === 'Notices' ? '#9fd0f5' : x.t.cat === 'Court' ? '#c9bff5' : '#3fd6c6',
+        nFields: x.t.fields.length, pages: x.t.pages, langs: x.t.urdu ? 'English · اردو' : 'English',
+        preview: () => this.setState({ modal: 'preview', idx: x.i }),
+        edit: () => this.setState({ modal: 'edit', idx: x.i, sel: 0 }) })),
+      isPreview: s.modal === 'preview', isEdit: s.modal === 'edit',
+      close: () => this.setState({ modal: null }),
+      toEdit: () => this.setState({ modal: 'edit', sel: 0 }),
+      prev: go(-1), next: go(1), counter: (s.idx + 1) + ' of ' + T.length,
+      cur: { ...cur, nFields: cur.fields.length, fieldList: cur.fields.map(f => ({ label: f[1] })) },
+      previewSecs: cur.secs.map(x => ({ hasHead: !!x[0], head: x[0], parts: split(x[1], false) })),
+      outline: cur.secs.map((x, i) => ({ name: x[0] ? x[0].replace(/\.$/, '') : (i === 0 ? 'Opening' : 'Section ' + (i + 1)),
+        pick: () => this.setState({ sel: i }), bg: s.sel === i ? '#1f4a4f' : 'transparent', fg: s.sel === i ? '#3fd6c6' : '#cfe3e6' })),
+      editSecs: cur.secs.map((x, i) => ({ hasHead: !!x[0], head: x[0], parts: split(x[1], true), selected: s.sel === i,
+        bg: s.sel === i ? '#f3f8f8' : 'transparent', outline: s.sel === i ? '2px solid #3fd6c6' : 'none' })),
+      editFields: cur.fields.map((f, i) => {
+        var k = s.idx + ':' + f[0], v = s.vals[k] || '';
+        return { id: 'ef_' + f[0], label: f[1], hint: 'Enter ' + f[1].toLowerCase() + '…', value: v,
+          group: f[2], newGroup: i === 0 || cur.fields[i - 1][2] !== f[2],
+          border: v.trim() ? '#3fd6c6' : '#33555e',
+          change: (e) => this.setState({ vals: { ...s.vals, [k]: e.target.value } }) };
+      }),
+      filledText: filled + ' of ' + cur.fields.length + ' filled · the document updates as you type',
+      wordCount: words + ' words · ' + cur.pages + ' · unfilled details stay highlighted and downloads are marked “Draft”',
+      recent: [
+        { name: 'Non-Disclosure Agreement — ABC Pvt Ltd', status: 'Draft', bg: '#26434b', fg: '#cfe3e6', when: 'Edited 2 hours ago', href: 'Workspace.dc.html' },
+        { name: 'Legal Notice — unpaid rent', status: 'Changes requested', bg: '#4a3a1c', fg: '#f7cf7d', when: 'Lawyer replied today', href: 'ChangesRequested.dc.html' },
+        { name: 'Civil Plaint — recovery suit', status: 'In review', bg: '#1d3f5a', fg: '#9fd0f5', when: 'Submitted yesterday', href: 'Workspace.dc.html' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

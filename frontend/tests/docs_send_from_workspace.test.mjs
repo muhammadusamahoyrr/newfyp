@@ -184,9 +184,10 @@ test("a document with the lawyer can be withdrawn from its banner", async () => 
 });
 
 test("an edited document returned by the lawyer is revised in the workspace, never rebuilt from fields", async () => {
-    // The guided flow is still reachable from the templates home's "My
-    // documents". There, "Revise & Regenerate" used to rebuild an edited
-    // document from the template's fields -- the template's words back.
+    // "Revise & Regenerate" in the old guided flow rebuilt an edited document
+    // from the template's fields -- the template's words back. That flow is
+    // gone (2026-10-19): "Open" in My documents goes straight to the
+    // workspace, where the edited text is revised as text.
     const edited = { ...DETAIL, review_status: "returned", review_note: "Add the tenant's CNIC.",
         current_revision: { ...DETAIL.current_revision, template_type: "edited_document" } };
     api.__respond("getDocumentV2", { data: edited });
@@ -195,12 +196,8 @@ test("an edited document returned by the lawyer is revised in the workspace, nev
     const open = [...p.container.querySelectorAll("#my-documents button")].find(b => b.textContent.trim() === "Open");
     await click(open);
     await settle(40);
-    const revise = btn(p.container, "✏️ Revise in workspace");
-    assert.ok(revise, "the returned screen should offer revising in the workspace");
     assert.equal(btn(p.container, "✏️ Revise & Regenerate"), undefined);
-    await click(revise);
-    await settle(40);
-    assert.ok(p.container.querySelector("[data-document-workspace]"), "Revise did not open the workspace");
+    assert.ok(p.container.querySelector("[data-document-workspace]"), "Open did not go to the workspace");
     assert.equal(api.__calls("generateRevisionV2").length, 0, "nothing may be rebuilt from fields");
     assert.equal(api.__calls("createDocumentV2").length, 0);
     await p.unmount();
@@ -434,5 +431,91 @@ test("with a lawyer engaged, quick reviews are offered below them, never the eng
     assert.match(panel(p.container).textContent, /OR GET A QUICK REVIEW FROM ANOTHER LAWYER/);
     assert.ok(p.container.querySelector('[data-reviewer="LX"]'));
     assert.equal(p.container.querySelector('[data-reviewer="L1"]'), null);
+    await p.unmount();
+});
+
+/* Audit 2026-10-15 -- F2: a document whose first version failed to generate was a dead end (listed, but refused
+   by the workspace with nothing to do); F3: a document that failed to open left the previous one on screen;
+   F5: a double click on "Cancel request" sent two cancels and showed a false error. */
+const FAILED_FIRST = { data: null, status: 409, error: { code: "no_editable_revision",
+    message: "Generate the first revision before opening the editor.",
+    detail: { code: "no_editable_revision", message: "Generate the first revision before opening the editor.",
+              plan_id: "plan-9", plan_version: 3, plan_status: "generation_failed" } } };
+
+test("F2: a document whose first version failed offers Generate again, through its own plan", async () => {
+    api.__respond("getDocumentWorkspaceV2", FAILED_FIRST);
+    api.__respond("getDocumentV2", { data: { ...DETAIL, id: "d2", title: "Failed notice", current_revision: null } });
+    api.__respond("getDraftPlanV2", { data: { id: "plan-9", version: 3, status: "generation_failed" } });
+    api.__respond("generateDraftPlanV2", { data: { id: "plan-9", status: "generated" } });
+    dom.window.history.replaceState(null, "", "/documents?doc=d2");
+    const p = await mount();
+    await settle(40);
+    assert.match(p.container.textContent, /could not be generated/);
+    const again = btn(p.container, "Generate again");
+    assert.ok(again, "no way out of the failed document");
+    api.__respond("getDocumentWorkspaceV2", { data: { ...WORKSPACE, document_id: "d2" } });
+    await click(again);
+    await settle(40);
+    const call = api.__calls("generateDraftPlanV2")[0];
+    assert.equal(call.args[0], "plan-9");
+    assert.equal(call.args[1].expectedVersion, 3);
+    assert.ok(btn(p.container, "Send to lawyer"), "the regenerated document did not open");
+    await p.unmount();
+});
+
+test("F2: without its plan, the failed document says what to do instead of offering a button that cannot work", async () => {
+    api.__respond("getDocumentWorkspaceV2", { data: null, status: 409,
+        error: { code: "no_editable_revision", message: "Generate the first revision before opening the editor." } });
+    api.__respond("getDocumentV2", { data: { ...DETAIL, id: "d3", current_revision: null } });
+    dom.window.history.replaceState(null, "", "/documents?doc=d3");
+    const p = await mount();
+    await settle(40);
+    assert.match(p.container.textContent, /draft plan is no longer available/);
+    assert.equal(btn(p.container, "Generate again"), undefined);
+    await p.unmount();
+});
+
+test("F3: a document that fails to open does not leave the previous one on screen", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [ROW, { ...ROW, id: "d2", title: "Broken notice" }], has_more: false } });
+    api.__respond("getDocumentWorkspaceV2", id => id === "d1"
+        ? { data: WORKSPACE }
+        : { data: null, status: 404, error: { code: "not_found", message: "Document not found." } });
+    api.__respond("getDocumentV2", id => id === "d1"
+        ? { data: DETAIL }
+        : { data: null, status: 404, error: { code: "not_found", message: "Document not found." } });
+    const p = await mount();
+    await act(async () => { requestDocumentsView("drafts"); });
+    await settle();
+    await click(p.container.querySelector('[data-doc="d1"]'));
+    assert.ok(btn(p.container, "Send to lawyer"), "d1 did not open");
+    await click(p.container.querySelector('[data-doc="d2"]'));
+    await settle(40);
+    assert.match(p.container.textContent, /Document not found/);
+    assert.equal(btn(p.container, "Send to lawyer"), undefined, "d1 is still shown under d2's error");
+    await p.unmount();
+});
+
+test("F5: a double click on Cancel request sends one cancel", async () => {
+    api.__respond("listEngagements", { data: [] });
+    api.__respond("listQuickReviewers", { data: { items: [REVIEWER] } });
+    api.__respond("myQuickReviews", { data: { items: [OPEN_REQ] } });
+    let release;
+    const held = new Promise(r => { release = r; });
+    api.__respond("cancelQuickReview", async () => { await held; return { data: { ...OPEN_REQ, status: "cancelled" } }; });
+    const p = await mount();
+    await act(async () => { requestDocumentsView("drafts"); });
+    await settle();
+    await click(p.container.querySelector('[data-doc="d1"]'));
+    await click(btn(p.container, "Review requested"));
+    await settle(40);
+    const cancel = p.container.querySelector("[data-request-cancel]");
+    await act(async () => { cancel.click(); cancel.click(); });
+    assert.equal(cancel.disabled, true, "Cancel stays clickable while the first cancel is in flight");
+    api.__respond("myQuickReviews", { data: { items: [{ ...OPEN_REQ, status: "cancelled" }] } });
+    await act(async () => { release(); });
+    await settle(40);
+    assert.equal(api.__calls("cancelQuickReview").length, 1);
+    assert.equal(p.container.querySelector("[data-request-pending]"), null);
+    assert.equal(p.container.querySelector('[role="alert"]')?.textContent?.match(/could not/i) ?? null, null);
     await p.unmount();
 });

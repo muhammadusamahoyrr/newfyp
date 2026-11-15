@@ -1,0 +1,908 @@
+{
+ "schema": "stability-v2",
+ "refused": false,
+ "labels": "silver",
+ "generated_at": "2026-10-13T09:49:08.903322+00:00",
+ "source_fingerprint": "e88222fce28867a7",
+ "git_commit": "af960e32467e",
+ "worktree_dirty": true,
+ "datasets": {
+  "evals/legal_rag/datasets/dev_v1.jsonl": "596a769a07ffa733",
+  "evals/legal_rag/datasets/multi_issue_v1.jsonl": "285e47cdbb161d7f"
+ },
+ "evaluator_version": "generation-eval-v3",
+ "gate_version": "intake-evidence-gate-v3",
+ "output_guard_version": "intake-output-guard-v3",
+ "index_variant": "base",
+ "run_files": [
+  "evals/legal_rag/results/generations_closure_r1.jsonl",
+  "evals/legal_rag/results/generations_closure_r2.jsonl",
+  "evals/legal_rag/results/generations_closure_r3.jsonl"
+ ],
+ "items": {
+  "d007": {
+   "n_runs": 3,
+   "answerable": true,
+   "structurally_safe_all_runs": true,
+   "available_all_runs": true,
+   "gate_status_stable": true,
+   "expected_issue_coverage_all_runs": true,
+   "provision_set_stable": false,
+   "no_wrong_provision_runs": true,
+   "no_unsupported_extra_provision_runs": false,
+   "localization_stable": true,
+   "urdu_rendered_runs": 3,
+   "urdu_safe_fallback_runs": 0,
+   "legally_stable_all_runs": false,
+   "demo_stable": true,
+   "distinct_provision_sets": 2,
+   "distinct_gate_status": [
+    "supported"
+   ],
+   "outcomes": [
+    "unsupported_extra_provision",
+    "unsupported_extra_provision",
+    "unsupported_extra_provision"
+   ],
+   "runs": [
+    {
+     "run": 1,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "CrPC 1898 s.496",
+      "CrPC 1898 s.497"
+     ],
+     "issue_coverage": null,
+     "full_issue_coverage": true,
+     "wrong_provisions": [
+      "CrPC 1898 s.496"
+     ],
+     "missing_expected": [],
+     "legal_outcome": "unsupported_extra_provision",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "ok"
+     },
+     "localization_state": "rendered",
+     "latency_ms": 58075.8
+    },
+    {
+     "run": 2,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": true,
+     "gate": "supported",
+     "grounding": "ungrounded",
+     "visible": [
+      "CrPC 1898 s.496",
+      "CrPC 1898 s.497",
+      "CrPC 1898 s.60"
+     ],
+     "issue_coverage": null,
+     "full_issue_coverage": true,
+     "wrong_provisions": [
+      "CrPC 1898 s.496",
+      "CrPC 1898 s.60"
+     ],
+     "missing_expected": [],
+     "legal_outcome": "unsupported_extra_provision",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "ok"
+     },
+     "localization_state": "rendered",
+     "latency_ms": 44412.7
+    },
+    {
+     "run": 3,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq/openai/gpt-oss-120b",
+      "groq2/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": true,
+     "gate": "supported",
+     "grounding": "grounded",
+     "visible": [
+      "CrPC 1898 s.496",
+      "CrPC 1898 s.497"
+     ],
+     "issue_coverage": null,
+     "full_issue_coverage": true,
+     "wrong_provisions": [
+      "CrPC 1898 s.496"
+     ],
+     "missing_expected": [],
+     "legal_outcome": "unsupported_extra_provision",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "ok"
+     },
+     "localization_state": "rendered",
+     "latency_ms": 66178.5
+    }
+   ]
+  },
+  "d014": {
+   "n_runs": 3,
+   "answerable": true,
+   "structurally_safe_all_runs": true,
+   "available_all_runs": true,
+   "gate_status_stable": false,
+   "expected_issue_coverage_all_runs": false,
+   "provision_set_stable": false,
+   "no_wrong_provision_runs": true,
+   "no_unsupported_extra_provision_runs": true,
+   "localization_stable": null,
+   "urdu_rendered_runs": null,
+   "urdu_safe_fallback_runs": null,
+   "legally_stable_all_runs": false,
+   "demo_stable": false,
+   "distinct_provision_sets": 2,
+   "distinct_gate_status": [
+    "no_relevant_evidence",
+    "supported"
+   ],
+   "outcomes": [
+    "legally_supported_answer",
+    "false_abstention",
+    "false_abstention"
+   ],
+   "runs": [
+    {
+     "run": 1,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq/openai/gpt-oss-120b",
+      "groq2/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": true,
+     "gate": "supported",
+     "grounding": "grounded",
+     "visible": [
+      "Punjab Rented Premises Act 2009 s.5"
+     ],
+     "issue_coverage": null,
+     "full_issue_coverage": true,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "legally_supported_answer",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 12882.3
+    },
+    {
+     "run": 2,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "supported",
+     "grounding": "no_supported_legal_content",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [
+      "Punjab Rented Premises Act 2009 s.None"
+     ],
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 9453.5
+    },
+    {
+     "run": 3,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": true,
+     "gate": "no_relevant_evidence",
+     "grounding": "no_relevant_evidence",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [
+      "Punjab Rented Premises Act 2009 s.None"
+     ],
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 15387.3
+    }
+   ]
+  },
+  "d020": {
+   "n_runs": 3,
+   "answerable": true,
+   "structurally_safe_all_runs": true,
+   "available_all_runs": true,
+   "gate_status_stable": true,
+   "expected_issue_coverage_all_runs": false,
+   "provision_set_stable": false,
+   "no_wrong_provision_runs": false,
+   "no_unsupported_extra_provision_runs": false,
+   "localization_stable": true,
+   "urdu_rendered_runs": 2,
+   "urdu_safe_fallback_runs": 1,
+   "legally_stable_all_runs": false,
+   "demo_stable": false,
+   "distinct_provision_sets": 3,
+   "distinct_gate_status": [
+    "supported"
+   ],
+   "outcomes": [
+    "wrong_provision_answer",
+    "legally_supported_answer",
+    "unsupported_extra_provision"
+   ],
+   "runs": [
+    {
+     "run": 1,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq2/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "Muslim Family Laws Ordinance 1961 s.8"
+     ],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [
+      "Muslim Family Laws Ordinance 1961 s.8"
+     ],
+     "missing_expected": [
+      "Family Courts Act 1964 s.10"
+     ],
+     "legal_outcome": "wrong_provision_answer",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "ok"
+     },
+     "localization_state": "rendered",
+     "latency_ms": 12369.8
+    },
+    {
+     "run": 2,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "supported",
+     "grounding": "ungrounded",
+     "visible": [
+      "Dissolution of Muslim Marriages Act 1939 s.2",
+      "Family Courts Act 1964 s.10"
+     ],
+     "issue_coverage": null,
+     "full_issue_coverage": true,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "legally_supported_answer",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "failed"
+     },
+     "localization_state": "fallback_english",
+     "latency_ms": 14559.5
+    },
+    {
+     "run": 3,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "supported",
+     "grounding": "grounded",
+     "visible": [
+      "Family Courts Act 1964 s.10",
+      "Family Courts Act 1964 s.7",
+      "West Pakistan Family Courts Act 1964 s.10"
+     ],
+     "issue_coverage": null,
+     "full_issue_coverage": true,
+     "wrong_provisions": [
+      "Family Courts Act 1964 s.7"
+     ],
+     "missing_expected": [],
+     "legal_outcome": "unsupported_extra_provision",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "ok"
+     },
+     "localization_state": "rendered",
+     "latency_ms": 16642.1
+    }
+   ]
+  },
+  "d029": {
+   "n_runs": 3,
+   "answerable": true,
+   "structurally_safe_all_runs": true,
+   "available_all_runs": true,
+   "gate_status_stable": false,
+   "expected_issue_coverage_all_runs": false,
+   "provision_set_stable": false,
+   "no_wrong_provision_runs": true,
+   "no_unsupported_extra_provision_runs": true,
+   "localization_stable": true,
+   "urdu_rendered_runs": 3,
+   "urdu_safe_fallback_runs": 0,
+   "legally_stable_all_runs": false,
+   "demo_stable": false,
+   "distinct_provision_sets": 2,
+   "distinct_gate_status": [
+    "no_relevant_evidence",
+    "supported"
+   ],
+   "outcomes": [
+    "legally_supported_answer",
+    "false_abstention",
+    "false_abstention"
+   ],
+   "runs": [
+    {
+     "run": 1,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": true,
+     "gate": "supported",
+     "grounding": "grounded",
+     "visible": [
+      "Punjab Protection of Women against Violence Act 2016 s.13",
+      "Punjab Protection of Women against Violence Act 2016 s.14",
+      "Punjab Protection of Women against Violence Act 2016 s.28",
+      "Punjab Protection of Women against Violence Act 2016 s.4063"
+     ],
+     "issue_coverage": null,
+     "full_issue_coverage": true,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "legally_supported_answer",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "ok"
+     },
+     "localization_state": "rendered",
+     "latency_ms": 11505.7
+    },
+    {
+     "run": 2,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "no_relevant_evidence",
+     "grounding": "no_relevant_evidence",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [
+      "Punjab Protection of Women against Violence Act 2016 s.None"
+     ],
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "ok"
+     },
+     "localization_state": "rendered",
+     "latency_ms": 10985.7
+    },
+    {
+     "run": 3,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "no_relevant_evidence",
+     "grounding": "no_relevant_evidence",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [
+      "Punjab Protection of Women against Violence Act 2016 s.None"
+     ],
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {
+      "ur": "ok"
+     },
+     "localization_state": "rendered",
+     "latency_ms": 26154.6
+    }
+   ]
+  },
+  "d037": {
+   "n_runs": 3,
+   "answerable": false,
+   "structurally_safe_all_runs": true,
+   "available_all_runs": true,
+   "gate_status_stable": true,
+   "expected_issue_coverage_all_runs": null,
+   "provision_set_stable": true,
+   "no_wrong_provision_runs": true,
+   "no_unsupported_extra_provision_runs": true,
+   "localization_stable": null,
+   "urdu_rendered_runs": null,
+   "urdu_safe_fallback_runs": null,
+   "legally_stable_all_runs": true,
+   "demo_stable": true,
+   "distinct_provision_sets": 1,
+   "distinct_gate_status": [
+    "corpus_not_capable"
+   ],
+   "outcomes": [
+    "safe_abstention",
+    "safe_abstention",
+    "safe_abstention"
+   ],
+   "runs": [
+    {
+     "run": 1,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 3456.1
+    },
+    {
+     "run": 2,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 3175.0
+    },
+    {
+     "run": 3,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": true,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 8206.1
+    }
+   ]
+  },
+  "d038": {
+   "n_runs": 3,
+   "answerable": false,
+   "structurally_safe_all_runs": true,
+   "available_all_runs": true,
+   "gate_status_stable": true,
+   "expected_issue_coverage_all_runs": null,
+   "provision_set_stable": true,
+   "no_wrong_provision_runs": true,
+   "no_unsupported_extra_provision_runs": true,
+   "localization_stable": null,
+   "urdu_rendered_runs": null,
+   "urdu_safe_fallback_runs": null,
+   "legally_stable_all_runs": true,
+   "demo_stable": true,
+   "distinct_provision_sets": 1,
+   "distinct_gate_status": [
+    "corpus_not_capable"
+   ],
+   "outcomes": [
+    "safe_abstention",
+    "safe_abstention",
+    "safe_abstention"
+   ],
+   "runs": [
+    {
+     "run": 1,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 3626.1
+    },
+    {
+     "run": 2,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 3050.5
+    },
+    {
+     "run": 3,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "corpus_not_capable",
+     "grounding": "corpus_not_capable",
+     "visible": [],
+     "issue_coverage": null,
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "safe_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 8040.5
+    }
+   ]
+  },
+  "m001": {
+   "n_runs": 3,
+   "answerable": true,
+   "structurally_safe_all_runs": true,
+   "available_all_runs": false,
+   "gate_status_stable": false,
+   "expected_issue_coverage_all_runs": false,
+   "provision_set_stable": false,
+   "no_wrong_provision_runs": true,
+   "no_unsupported_extra_provision_runs": false,
+   "localization_stable": null,
+   "urdu_rendered_runs": null,
+   "urdu_safe_fallback_runs": null,
+   "legally_stable_all_runs": false,
+   "demo_stable": false,
+   "distinct_provision_sets": 3,
+   "distinct_gate_status": [
+    "pipeline_failed",
+    "supported"
+   ],
+   "outcomes": [
+    "legally_supported_answer",
+    "false_abstention",
+    "unsupported_extra_provision"
+   ],
+   "runs": [
+    {
+     "run": 1,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "supported",
+     "grounding": "visible_provision_mismatch",
+     "visible": [
+      "PPC 1860 s.489-F",
+      "PPC 1860 s.506"
+     ],
+     "issue_coverage": {
+      "covered": [
+       "cheque",
+       "threat"
+      ],
+      "total": 2
+     },
+     "full_issue_coverage": true,
+     "wrong_provisions": [],
+     "missing_expected": [],
+     "legal_outcome": "legally_supported_answer",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 8061.3
+    },
+    {
+     "run": 2,
+     "pipeline_failed": true,
+     "providers_used": [],
+     "provider_limit_hit": false,
+     "gate": "pipeline_failed",
+     "grounding": "pipeline_failed",
+     "visible": [],
+     "issue_coverage": {
+      "covered": [],
+      "total": 2
+     },
+     "full_issue_coverage": false,
+     "wrong_provisions": [],
+     "missing_expected": [
+      "PPC 1860 s.489-F",
+      "PPC 1860 s.506"
+     ],
+     "legal_outcome": "false_abstention",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": null,
+     "latency_ms": 18842.0
+    },
+    {
+     "run": 3,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "PPC 1860 s.489-F",
+      "PPC 1860 s.503",
+      "PPC 1860 s.506"
+     ],
+     "issue_coverage": {
+      "covered": [
+       "cheque",
+       "threat"
+      ],
+      "total": 2
+     },
+     "full_issue_coverage": true,
+     "wrong_provisions": [
+      "PPC 1860 s.503"
+     ],
+     "missing_expected": [],
+     "legal_outcome": "unsupported_extra_provision",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 10248.0
+    }
+   ]
+  },
+  "m004": {
+   "n_runs": 3,
+   "answerable": true,
+   "structurally_safe_all_runs": true,
+   "available_all_runs": true,
+   "gate_status_stable": true,
+   "expected_issue_coverage_all_runs": false,
+   "provision_set_stable": false,
+   "no_wrong_provision_runs": false,
+   "no_unsupported_extra_provision_runs": false,
+   "localization_stable": null,
+   "urdu_rendered_runs": null,
+   "urdu_safe_fallback_runs": null,
+   "legally_stable_all_runs": false,
+   "demo_stable": false,
+   "distinct_provision_sets": 3,
+   "distinct_gate_status": [
+    "partially_supported"
+   ],
+   "outcomes": [
+    "wrong_provision_answer",
+    "wrong_provision_answer",
+    "unsupported_extra_provision"
+   ],
+   "runs": [
+    {
+     "run": 1,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "partially_supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "PPC 1860 s.378",
+      "PPC 1860 s.381-A"
+     ],
+     "issue_coverage": {
+      "covered": [],
+      "total": 1
+     },
+     "full_issue_coverage": false,
+     "wrong_provisions": [
+      "PPC 1860 s.378",
+      "PPC 1860 s.381-A"
+     ],
+     "missing_expected": [
+      "PPC 1860 s.379"
+     ],
+     "legal_outcome": "wrong_provision_answer",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 8816.5
+    },
+    {
+     "run": 2,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq2/openai/gpt-oss-120b",
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": true,
+     "gate": "partially_supported",
+     "grounding": "claims_disagree",
+     "visible": [
+      "CrPC 1898 s.85",
+      "PPC 1860 s.381-A"
+     ],
+     "issue_coverage": {
+      "covered": [],
+      "total": 1
+     },
+     "full_issue_coverage": false,
+     "wrong_provisions": [
+      "CrPC 1898 s.85",
+      "PPC 1860 s.381-A"
+     ],
+     "missing_expected": [
+      "PPC 1860 s.379"
+     ],
+     "legal_outcome": "wrong_provision_answer",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 7769.8
+    },
+    {
+     "run": 3,
+     "pipeline_failed": false,
+     "providers_used": [
+      "groq2/openai/gpt-oss-120b",
+      "groq3/openai/gpt-oss-120b",
+      "groq4/openai/gpt-oss-20b"
+     ],
+     "provider_limit_hit": false,
+     "gate": "partially_supported",
+     "grounding": "citations_unverified",
+     "visible": [
+      "PPC 1860 s.379",
+      "PPC 1860 s.381-A"
+     ],
+     "issue_coverage": {
+      "covered": [
+       "theft"
+      ],
+      "total": 1
+     },
+     "full_issue_coverage": true,
+     "wrong_provisions": [
+      "PPC 1860 s.381-A"
+     ],
+     "missing_expected": [],
+     "legal_outcome": "unsupported_extra_provision",
+     "unsafe": [],
+     "visible_provision_mismatch": [],
+     "localization": {},
+     "localization_state": "not_needed",
+     "latency_ms": 29272.5
+    }
+   ]
+  }
+ },
+ "totals": {
+  "structurally_unsafe_runs": 0,
+  "pipeline_failed_runs": 1,
+  "items_structurally_safe": 8,
+  "items_legally_stable": 2,
+  "items_demo_stable": 3
+ },
+ "latency_ms": {
+  "p50": 11245.7,
+  "p95": 56026.33499999998
+ },
+ "note": "structurally safe != legally accurate; silver labels; see each dimension separately"
+}

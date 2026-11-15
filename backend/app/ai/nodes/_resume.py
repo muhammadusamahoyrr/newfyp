@@ -82,13 +82,35 @@ def merge_user_reply(state: AgentState, reply: object) -> dict:
     updates: dict = {}
 
     query = (state.get("query") or "").strip()
-    enriched = f"{query} {text}".strip()
+    # A vague capability question used to leave an interrupt parked forever.
+    # Hours later, a complete legal question was treated as its answer and the
+    # two were concatenated into the retrieval query. A complete question
+    # replaces that placeholder; it is not a fact about it.
+    from app.ai.client_help import is_capability_question
+    replaces_placeholder = is_capability_question(query)
+    enriched = text if replaces_placeholder else f"{query} {text}".strip()
     updates["query"] = enriched
+
+    if replaces_placeholder:
+        # This is a NEW question, not a fact about the old one. The graph
+        # resumes after triage, so leaving its language and inferred legal area
+        # in state would answer the new question using the old classification.
+        from app.ai.nodes.triage_node import _reconcile_language
+        from app.ai import jurisdiction
+
+        updates["language"] = _reconcile_language(text, state.get("language", "en"))
+        updates["case_type"] = _best_case_type(text) or "unknown"
+        if state.get("jurisdiction_basis") not in (jurisdiction.BASIS_USER, jurisdiction.BASIS_CASE):
+            inferred = _extract_province(text)
+            updates["province"] = inferred or jurisdiction.UNSPECIFIED
+            updates["jurisdiction_basis"] = (
+                jurisdiction.BASIS_INFERRED if inferred else jurisdiction.BASIS_UNSPECIFIED)
+            updates["province_inferred"] = bool(inferred)
 
     # See module docstring: normalized_query wins over query downstream.
     normalized = (state.get("normalized_query") or "").strip()
     if normalized:
-        updates["normalized_query"] = f"{normalized} {text}"
+        updates["normalized_query"] = text if replaces_placeholder else f"{normalized} {text}"
 
     # The reply is very often the answer to "which province?" — that is the most
     # common reason this interrupt fires at all.
@@ -104,7 +126,7 @@ def merge_user_reply(state: AgentState, reply: object) -> dict:
         if resolved:
             updates["case_type"] = resolved
 
-    facts = list(state.get("known_facts") or [])
+    facts = [] if replaces_placeholder else list(state.get("known_facts") or [])
     fact = text[:_MAX_FACT_CHARS]
     if fact not in facts:
         facts.append(fact)

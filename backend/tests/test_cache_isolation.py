@@ -265,16 +265,14 @@ async def test_an_english_turn_is_not_served_the_urdu_answer():
     assert result["cache_hit"] is False
 
 
-async def test_urdu_script_and_roman_urdu_share_one_entry():
-    """Both produce an Urdu answer — `generation_node` branches on
-    `lang in ("ur", "roman_urdu")` — so splitting them would halve the hit rate
-    for no gain in correctness."""
+async def test_urdu_script_and_roman_urdu_have_separate_entries():
+    """Roman Urdu uses Latin letters; Urdu uses Urdu script."""
     assert effective_language({"language": "ur"}) == "ur"
-    assert effective_language({"language": "roman_urdu"}) == "ur"
+    assert effective_language({"language": "roman_urdu"}) == "roman_urdu"
 
     await store(answer="اردو جواب", language="ur")
     result = await cache_lookup_node(turn(language="roman_urdu"))
-    assert result["cache_hit"] is True
+    assert result["cache_hit"] is False
 
 
 async def test_an_absent_language_is_english():

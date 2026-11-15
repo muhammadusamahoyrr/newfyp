@@ -68,23 +68,29 @@ FIELDS: dict[str, frozenset[str]] = {
         "pre_arrest",
     }),
     "complaint_154_3": frozenset({
-        "application_date", "district", "incident_facts", "police_station",
+        "application_date", "complainant_address", "complainant_cnic",
+        "complainant_name", "complainant_phone", "district", "incident_facts",
+        "police_station",
     }),
     "dispute_petition": frozenset({
         "cause_of_action", "court_heading", "facts", "jurisdiction_clause",
         "petitioner", "relief", "respondent", "timing_note", "year",
     }),
     "fia_cybercrime": frozenset({
-        "accused_details", "evidence_list", "fia_office_city",
-        "incident_date", "incident_facts", "offence_sections", "platform",
+        "accused_details", "complainant_address", "complainant_cnic",
+        "complainant_name", "complainant_phone", "evidence_list",
+        "fia_office_city", "incident_date", "incident_facts",
+        "offence_sections", "platform",
     }),
     "fir_application": frozenset({
-        "accused_details", "district", "incident_date", "incident_facts",
+        "accused_details", "complainant_address", "complainant_cnic",
+        "complainant_name", "complainant_phone", "district", "incident_date",
+        "incident_facts",
         "incident_place", "incident_time", "offence_sections",
         "police_station", "witnesses",
     }),
     "guardianship_petition": frozenset({
-        "application_scope", "causes", "court_name",
+        "application_scope", "causes", "court_name", "facts",
         "custodian_name_address", "date", "declaration_grounds",
         "existing_guardian", "minor_dob", "minor_marital_status",
         "minor_name", "minor_property", "minor_religion", "minor_residence",
@@ -113,6 +119,9 @@ FIELDS: dict[str, frozenset[str]] = {
     "edited_document": frozenset({
         "body_html", "source_template", "title",
     }),
+    "general_document": frozenset({
+        "body_html", "title",
+    }),
     "legal_notice": frozenset({
         "date", "demand", "notice_body", "recipient_address",
         "recipient_name", "response_days", "sender_address", "sender_name",
@@ -127,13 +136,15 @@ FIELDS: dict[str, frozenset[str]] = {
     }),
     "petition_22a": frozenset({
         "accused_details", "application_date", "complainant_address",
-        "complainant_name", "district", "incident_date", "incident_facts",
-        "incident_place", "police_station", "sp_complaint_date",
+        "complainant_cnic", "complainant_name", "complainant_phone",
+        "district", "incident_date", "incident_facts", "incident_place",
+        "police_station", "sp_complaint_date",
     }),
     "plaint_civil": frozenset({
         "applicable_laws", "cause_of_action", "court_name", "date",
-        "defendant_address", "defendant_name", "facts", "plaintiff_address",
-        "plaintiff_name", "relief_sought",
+        "defendant_address", "defendant_name", "facts",
+        "jurisdiction_facts", "plaintiff_address", "plaintiff_name",
+        "relief_sought", "valuation", "verified_by",
     }),
     "poa_revocation": frozenset({
         "attorney_name", "date", "original_date", "principal_name",
@@ -169,9 +180,16 @@ FIELDS: dict[str, frozenset[str]] = {
     "written_statement": frozenset({
         "additional_facts", "court_name", "date", "defendant_name",
         "plaintiff_name", "preliminary_objections", "reply_on_merits",
-        "suit_number",
+        "suit_number", "verified_by",
     }),
 }
+
+# Keys a builder reads that the SERVER supplies, never the person filling the
+# form. `verify_url` is the verifiable-POA link the issuing flow mints; offering
+# it as a form field would invite a client to type a "verification" link. The
+# drift test counts these as read, and they stay out of FIELDS.
+SYSTEM_SUPPLIED: frozenset[str] = frozenset({"verify_url"})
+
 
 # Fields the builder receives as an object or list rather than a line of text.
 # The form must not render a text input for these, and a caller that sends a
@@ -280,6 +298,13 @@ _META: dict[str, tuple[str, str, str]] = {
         "A named template whose wording its owner edited as text. The text no "
         "longer follows the template's fields, so no statutory completeness "
         "check applies to it — only the citation existence check over its text."),
+    "general_document": (
+        "General Document (AI draft)", DRAFTING,
+        "A document the AI wrote from a client's own description when no "
+        "named template fits (2026-10-19). Names no instrument, so no "
+        "statutory completeness check applies to it -- only the citation "
+        "existence check over its text. Shown as an AI draft for a lawyer to "
+        "check."),
     "lawyer_draft": (
         "Lawyer Draft", DRAFTING,
         "Free prose written by a lawyer on the drafting page. Names no "
@@ -309,8 +334,13 @@ LAWYER_AUTHORED = frozenset({"lawyer_draft"})
 # its revisions carry this one from the first text edit on.
 TEXT_EDITED = frozenset({"edited_document"})
 
-# Both kinds are edited as rich text rather than through fields.
-FREEFORM = LAWYER_AUTHORED | TEXT_EDITED
+# Written by the AI from a client's description when no named template fits
+# (2026-10-19). Like a lawyer draft it is not a template, so it is held out of
+# the picker; it is reached only from the drafting page's description.
+AI_AUTHORED = frozenset({"general_document"})
+
+# All three kinds are edited as rich text rather than through fields.
+FREEFORM = LAWYER_AUTHORED | TEXT_EDITED | AI_AUTHORED
 
 
 # ── Queries ───────────────────────────────────────────────────────────────────
@@ -362,6 +392,7 @@ def spec(template_type: str) -> dict | None:
         "system_issued": template_type in SYSTEM_ISSUED,
         "lawyer_authored": template_type in LAWYER_AUTHORED,
         "text_edited": template_type in TEXT_EDITED,
+        "ai_authored": template_type in AI_AUTHORED,
         "text_editable": text_editable(template_type),
     }
 
@@ -383,7 +414,8 @@ def listing(include_system: bool = False,
     return [i for i in items if i
             and (include_system or not i["system_issued"])
             and (include_lawyer_authored or not i["lawyer_authored"])
-            and not i["text_edited"]]
+            and not i["text_edited"]
+            and not i["ai_authored"]]
 
 
 # ── Shape report ──────────────────────────────────────────────────────────────

@@ -46,11 +46,14 @@ async def _clean(mongo):
 async def _submitted(version=3, pdf_sha256=GOOD_HASH):
     """A document sitting in the lawyer's queue, as `submit` leaves it."""
     doc_id = f"stale-{secrets.token_hex(6)}"
+    rev_id = "rev-" + secrets.token_hex(4)
     await get_documents_col().insert_one({
         "_id": doc_id, "schema_version": 2, "client_id": CLIENT,
         "title": "A notice", "template_type": "legal_notice",
         "review_status": "submitted", "submitted_to": LAWYER,
-        "submitted_revision_id": "rev-" + secrets.token_hex(4),
+        # submit only accepts the CURRENT revision, so the two are equal (an
+        # approval is pinned to that: document_transitions.review, B1).
+        "current_revision_id": rev_id, "submitted_revision_id": rev_id,
         "submitted_version": version, "submitted_pdf_sha256": pdf_sha256,
         "current_version": version, "event_seq": 0, "pending_events": [],
     })

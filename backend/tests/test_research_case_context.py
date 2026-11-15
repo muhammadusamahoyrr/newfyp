@@ -17,6 +17,8 @@ Offline: the graph, provenance and the case repository are all replaced. No
 database is read or written and no provider is called.
 """
 import asyncio
+import functools
+from datetime import date
 
 import pytest
 
@@ -72,9 +74,18 @@ class Tracer:
         return False
 
 
+# The fixture's clock. The hearing dates above are fixed, so "upcoming" must be
+# judged against a fixed day too: on the real clock the 2026-10-14 hearing
+# became "past" on 2026-10-15 and the next-hearing tests began to fail. The
+# production rule is unchanged -- case_context.next_hearing takes `today`.
+TODAY = date(2026, 10, 1)
+
+
 @pytest.fixture
 def wire(monkeypatch):
     """Real authorization rule; everything else replaced."""
+    monkeypatch.setattr(ai_routes.case_context_mod, "next_hearing",
+                        functools.partial(ai_routes.case_context_mod.next_hearing, today=TODAY))
     cap = {"states": [], "records": [], "values": {"answer": "a"},
            "question": None, "updates": []}
 
@@ -193,9 +204,14 @@ def test_a_refused_request_runs_no_graph_turn_and_writes_no_provenance(wire):
     assert wire["records"] == [], "an unauthorised caller must not create a record"
 
 
-def test_the_owning_client_may_use_their_own_case(wire):
-    call(Body(case_id="case-1"), CLIENT)
-    assert wire["states"][0]["case_id"] == "case-1"
+def test_the_research_http_route_is_lawyer_only():
+    """Case ownership is not enough: this is the professional research tool."""
+    import inspect
+    from app.dependencies import require_lawyer
+
+    dependency = inspect.signature(ai_routes.ai_research).parameters[
+        "current_user"].default
+    assert dependency.dependency is require_lawyer
 
 
 def test_an_unrelated_client_is_refused(wire):
@@ -309,12 +325,12 @@ def test_a_future_case_field_is_excluded_by_default(wire):
 def test_the_case_province_supplies_the_jurisdiction(wire):
     call(Body(case_id="case-1"), LAWYER_A)
     assert wire["states"][0]["province"] == "punjab"
-    assert wire["states"][0]["jurisdiction_basis"] == "user_selected"
+    assert wire["states"][0]["jurisdiction_basis"] == "case_record"
 
 
-def test_an_explicit_request_province_overrides_the_case(wire):
+def test_browser_province_cannot_override_the_case_record(wire):
     call(Body(case_id="case-1", province="sindh"), LAWYER_A)
-    assert wire["states"][0]["province"] == "sindh"
+    assert wire["states"][0]["province"] == "punjab"
 
 
 # ── persistence and isolation ────────────────────────────────────────────────

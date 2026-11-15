@@ -328,3 +328,11 @@ def test_binding_never_raises_on_junk(bad):
     citations, mode = bind_intake_citations(bad, _evidence())
     assert isinstance(citations, list)
     assert mode in {BIND_ID, BIND_NONE, BIND_TEXTUAL}
+
+
+def test_a_section_stored_with_its_word_is_not_rendered_twice():
+    """`section: "Section 2"` used to render "… Section Section 2" (2026-10-12)."""
+    from app.ai.intake_evidence import render_applicable_laws
+    out = render_applicable_laws([{"statute": "Civil Procedure Code 1908", "section": "Section 2"},
+                                  {"statute": "PPC", "section": "489-F"}])
+    assert out == ["Civil Procedure Code 1908 Section 2", "PPC Section 489-F"]

@@ -76,6 +76,10 @@ export function RecentlyDeleted({ reloadSignal = 0, onRestored }) {
     const t = useT();
     const [items, setItems] = useState(null);
     const [error, setError] = useState(null);
+    // A failed RESTORE is its own message: it used to share `error` with the
+    // list, and the reload that follows a failure cleared it at once -- the
+    // client saw a flash and the same button again (audit 2026-10-15, F1).
+    const [actionError, setActionError] = useState(null);
     const [busyId, setBusyId] = useState(null);
     const inFlight = useRef(false);
 
@@ -95,10 +99,18 @@ export function RecentlyDeleted({ reloadSignal = 0, onRestored }) {
         const res = await restoreDocumentV2(item.id);
         inFlight.current = false;
         setBusyId(null);
-        if (res?.error) { setError(deletionErrorMessage(res.error.code, res.error.message)); load(); return; }
+        if (res?.error) {
+            setActionError({ id: item.id, message: deletionErrorMessage(res.error.code, res.error.message) });
+            await load();
+            return;
+        }
+        setActionError(null);
         await load();
         onRestored?.(item);
     };
+    // Past its recovery deadline a document cannot come back, whatever the row
+    // says: the button would only fail.
+    const canRestore = item => item.restorable && !(item.purge_after && new Date(item.purge_after) <= new Date());
 
     if (error) return <div role="alert" style={{ padding: 24, color: t.text }}>{error}</div>;
     if (items === null) return <div aria-busy="true" style={{ padding: 24, color: t.textMuted }}>Loading…</div>;
@@ -106,6 +118,12 @@ export function RecentlyDeleted({ reloadSignal = 0, onRestored }) {
         return <div data-trash-empty style={{ padding: 24, color: t.textMuted, fontSize: 14 }}>Nothing here. Deleted documents stay here for a while so you can restore them.</div>;
     }
     return (
+        <>
+        {actionError && (
+            <div role="alert" data-restore-problem style={{ margin: "12px 24px 0", color: t.danger, fontSize: 14 }}>
+                {actionError.message}
+            </div>
+        )}
         <ul aria-label="Recently deleted" style={{ listStyle: "none", margin: 0, padding: "6px 18px 14px" }}>
             {items.map(item => (
                 <li key={item.id} data-trash-row={item.id}
@@ -116,7 +134,7 @@ export function RecentlyDeleted({ reloadSignal = 0, onRestored }) {
                             Deleted {formatWhen(item.deleted_at)} · {purgeDayText(item)}
                         </div>
                     </div>
-                    {item.restorable && (
+                    {canRestore(item) && (
                         <Btn onClick={() => restore(item)} disabled={busyId === item.id}>
                             {busyId === item.id ? "Restoring…" : "Restore"}
                         </Btn>
@@ -124,5 +142,6 @@ export function RecentlyDeleted({ reloadSignal = 0, onRestored }) {
                 </li>
             ))}
         </ul>
+        </>
     );
 }

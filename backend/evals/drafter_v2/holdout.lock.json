@@ -1,0 +1,15 @@
+{
+ "locked": "2026-10-15",
+ "rule": "Holdout cases are locked before any model run. A fix developed from a holdout failure makes that case dev; re-lock and say so.",
+ "cases": {
+  "V03": "780c347b95a27fc2f15b9436c4d64a9acfcea3f43889bf0a34c75702e92968c0",
+  "V06": "1a28ae51758a0d7e7cb52b67abdba2a85f323630a1db5e536783abead8f88f6b",
+  "V10": "fd66005db12e8016ebc9bebd18040306a83a80e8c91b7dfdac234aa4fa3b5bc9",
+  "V14": "cfa4dc2517ab8507c5ee6361d34ed95493cb33c4094f978033b1b1511a346856",
+  "V18": "d14fbd7b675e9c06d2519941a0d906296575f00c1cdcfc9cbc0f7c70e518589d",
+  "V21": "78977b27cfa5f37a3b621a0293c354e77d8078ab53bc8f8ad5eb707a3e2fd6f6",
+  "V25": "f65d4100496ff75f30f8469310a0e17bc1c89d2c1916d443194a39575067dd32",
+  "T05": "fe4c3539c1930ebba3d10c827c7654db25a1d1c3840186156e7eade0fba6bbd6",
+  "T06": "9d23153b98cf37c6789b3f40eff26000f98c869d8525e40ca5cede11d713c0ca"
+ }
+}

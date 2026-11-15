@@ -304,7 +304,7 @@ async def test_an_unverified_lawyer_is_never_surfaced_even_as_a_listing(
 
     assert out["matches"] == []
     assert out["result_kind"] == "none"
-    assert "verified" in out["notice"]
+    assert "registered" in out["notice"]
 
 
 async def test_the_listing_prefers_the_case_province_before_widening(

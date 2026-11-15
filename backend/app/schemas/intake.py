@@ -51,6 +51,9 @@ class IntakeStep1(_StepModel):
 class IntakeStep2(_StepModel):
     case_type: CaseType
     urgency: Literal["low", "medium", "high", "urgent"] = "medium"
+    # The language the analysis is shown in, pinned with the story (2026-10-12)
+    # so a refresh, a retry or an app-language toggle cannot change it.
+    output_language: Literal["en", "ur"] | None = None
 
 
 class IntakeStep3(_StepModel):
@@ -236,6 +239,15 @@ class IntakeClarifyResponse(BaseModel):
     # comments claimed two, and a reader trusting any of them would size a UI
     # for half the conversation.
     round: int
+    # True when `done` is only because the AI could not produce a question
+    # (provider failure or an empty reply). The client is still let through,
+    # but the UI must not claim "no questions were needed".
+    ai_unavailable: bool = False
+
+
+class IntakeRetryAnalysisResponse(BaseModel):
+    """`done` once the case has a real analysis; `failed` when it failed again."""
+    analysis_status: Literal["done", "failed"]
 
 
 class IntakeConvertRequest(BaseModel):

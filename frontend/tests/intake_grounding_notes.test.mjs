@@ -72,3 +72,25 @@ test("a fabricated citation is not described as a missing check", () => {
 test("the generic fallback still exists for anything unforeseen", () => {
     assert.ok(uiNotes().has("unverified"));
 });
+
+/* Batch 6: the CPC jurisdiction status is written by ai/source_currency.py, not the judge. */
+test("the CPC jurisdiction status has a note in English and Urdu", () => {
+    const backend = readFileSync(resolve(here, "../../backend/app/ai/source_currency.py"), "utf8");
+    const status = backend.match(/INTAKE_CPC_STATUS = "([a-z_]+)"/)[1];
+    assert.equal(status, "cpc_jurisdiction_unverified");
+    assert.ok(uiNotes().has(status), "no English note for the CPC jurisdiction status");
+    const ui = readFileSync(UI, "utf8");
+    const ur = ui.slice(ui.indexOf("const GROUNDING_NOTE_UR"));
+    assert.ok(ur.slice(0, ur.indexOf("};")).includes(`${status}:`), "no Urdu note for the CPC jurisdiction status");
+});
+
+/* Batch 9: the evidence gate's authority-availability status has a note in both languages. */
+test("the source-unavailable-for-jurisdiction status has a note in English and Urdu", () => {
+    const gate = readFileSync(resolve(here, "../../backend/app/ai/nodes/intake_evidence_gate_node.py"), "utf8");
+    const status = gate.match(/SOURCE_UNAVAILABLE = "([a-z_]+)"/)[1];
+    assert.equal(status, "source_unavailable_for_jurisdiction");
+    assert.ok(uiNotes().has(status), "no English note");
+    const ui = readFileSync(UI, "utf8");
+    const ur = ui.slice(ui.indexOf("const GROUNDING_NOTE_UR"));
+    assert.ok(ur.slice(0, ur.indexOf("};")).includes(`${status}:`), "no Urdu note");
+});

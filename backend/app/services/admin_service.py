@@ -19,6 +19,7 @@ from app.db.collections import (
 )
 from app.repositories.case_repo import CaseRepository
 from app.repositories.user_repo import UserRepository
+from app.services.auth_service import initial_kyc_fields
 from app.services.notification_service import create_notification
 from app.utils.email import send_kyc_result_email
 from app.utils.validators import PASSWORD_POLICY, validate_password_strength
@@ -321,8 +322,8 @@ async def create_user(full_name: str, email: str, role: str, password: str,
         "province": None,
         "avatar_url": None,
         "is_active": True,
-        "lawyer_profile": {"bar_number": None, "specializations": [], "kyc_verified": False,
-                           "kyc_status": KycStatus.PENDING.value,
+        "lawyer_profile": {"bar_number": None, "specializations": [],
+                           **initial_kyc_fields(),
                            "rating": 0.0, "total_reviews": 0, "availability": True, "bio": None,
                            "experience_years": 0, "hourly_rate": None} if role == "lawyer" else None,
         "created_at": datetime.now(timezone.utc),

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Analysis report</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap">
+<style>
+body{margin:0;background:#0f2228;font-family:Inter,system-ui,sans-serif;color:#e6f1f2}
+a{color:#3fd6c6}a:hover{color:#8ff0e5}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:10px;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;box-sizing:border-box;font-family:inherit}
+.btn-primary{background:#3fd6c6;color:#0b2a2d;border:none}
+.btn-primary:hover{background:#6fe3d6;color:#0b2a2d}
+.btn-ghost{background:transparent;color:#d3e6e8;border:1px solid #3a5e68}
+.btn-ghost:hover{background:#21414a;color:#fff}
+.tab{min-height:44px;padding:0 12px;background:transparent;border:none;border-bottom:2px solid transparent;color:#93aeb4;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+.hl{display:block;width:100%;text-align:left;font:inherit;color:inherit;border:none;border-radius:6px;padding:6px 8px;margin:0 -8px 8px;cursor:pointer}
+.risk{display:block;width:100%;text-align:left;font:inherit;color:#e6f1f2;padding:12px 14px;border-radius:12px;background:#172f36;border:1px solid #28464f;cursor:pointer}
+.risk:hover{border-color:#3fd6c6}
+p{margin:0 0 8px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; overflow: hidden; background: #0f2228">
+<header style="height: 60px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 22px; border-bottom: 1px solid #22404a; background: #132a31">
+<a href="Analyzer.dc.html" style="font-size: 14px; text-decoration: none">← Document analyzer</a>
+<div style="font-family: Fraunces, Georgia, serif; font-size: 18px; font-weight: 600; color: #f2f8f8; margin-left: 6px">Shop rent agreement.pdf</div>
+<span style="font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #26434b; color: #cfe3e6">Rent agreement · you are the Tenant</span>
+<span style="font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #4a2226; color: #f5a3a8">High risk for you</span>
+<div style="flex-grow: 1"></div>
+<a class="btn btn-ghost" href="Submit.dc.html">Ask a lawyer</a>
+<a class="btn btn-primary" href="Workspace.dc.html">Fix in a new draft</a>
+</header>
+
+<div style="flex-grow: 1; display: flex; overflow: hidden">
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center; padding: 22px 0; background: #0c1d22">
+<article style="width: 620px; height: 1200px; background: #ffffff; color: #1d2a2e; border-radius: 6px; padding: 44px 50px; box-sizing: border-box; font-family: 'Source Serif 4', Georgia, serif; font-size: 14px; line-height: 1.7">
+<h2 style="margin: 0 0 16px; text-align: center; font-size: 18px; letter-spacing: .12em; font-weight: 600">TENANCY AGREEMENT</h2>
+<p>1. The Landlord lets the shop at [shop address], Lahore, to the Tenant for eleven (11) months from 1 October 2026.</p>
+<p>2. Rent is PKR 85,000 per month, payable by the 5th of each month.</p>
+<button class="hl" type="button" onClick="{{pickR3}}" style="background: {{r3Bg}}; outline: {{r3Outline}}">4. The Landlord may increase the rent by up to twenty percent (20%) at any time at the Landlord's discretion.</button>
+<button class="hl" type="button" onClick="{{pickR4}}" style="background: {{r4Bg}}; outline: {{r4Outline}}">5. The Tenant shall bear the cost of all repairs to the premises, including structural repairs.</button>
+<button class="hl" type="button" onClick="{{pickR1}}" style="background: {{r1Bg}}; outline: {{r1Outline}}">6. The Landlord may terminate this tenancy by giving seven (7) days' notice, for any reason.</button>
+<p>7. The Tenant shall not sub-let the premises without the Landlord's written consent.</p>
+<button class="hl" type="button" onClick="{{pickR2}}" style="background: {{r2Bg}}; outline: {{r2Outline}}">9. The security deposit of three months' rent is non-refundable.</button>
+<p>11. Signed at Lahore in the presence of two witnesses.</p>
+</article>
+</div>
+
+<aside style="width: 470px; flex-shrink: 0; border-left: 1px solid #22404a; background: #132a31; display: flex; flex-direction: column; overflow: hidden">
+<div role="tablist" style="display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid #22404a">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<button class="tab" type="button" role="tab" onClick="{{t.pick}}" style="color: {{t.color}}; border-bottom-color: {{t.line}}">{{t.name}}</button>
+</sc-for>
+</div>
+
+<div style="flex-grow: 1; overflow: hidden; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<sc-if value="{{isSummary}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 14px; background: #172f36; border: 1px solid #28464f">
+<div style="width: 64px; height: 64px; border-radius: 50%; border: 6px solid #f07a7a; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700">72</div>
+<div><div style="font-size: 15px; font-weight: 600">Risk score for the tenant</div><div style="font-size: 12.5px; color: #93aeb4">2 high · 2 medium · 2 missing clauses</div></div>
+</div>
+<div style="font-size: 14px; line-height: 1.65; color: #dce9eb">An 11-month shop lease in Lahore at PKR 85,000 a month. It favours the landlord: eviction on 7 days' notice, a non-refundable deposit, open-ended rent increases, and structural repairs on you.</div>
+<div style="font-size: 13px; color: #93aeb4">Governing law detected: Punjab Rented Premises Act, 2009.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isRisks}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{risks}}" as="r" hint-placeholder-count="4">
+<button class="risk" type="button" onClick="{{r.pick}}" style="border-color: {{r.border}}">
+<span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: {{r.sevBg}}; color: {{r.sevFg}}">{{r.sev}}</span><span style="font-size: 14px; font-weight: 600">{{r.title}}</span></span>
+<sc-if value="{{r.open}}" hint-placeholder-val="{{false}}">
+<span style="display: block; margin-top: 8px; font-size: 13px; line-height: 1.55; color: #cfe3e6">{{r.why}}</span>
+<span style="display: block; margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: #102a2c; font-size: 13px; color: #bff3ec"><b>Suggested fix:</b> {{r.fix}}</span>
+<span style="display: block; margin-top: 6px; font-size: 12px; color: #7fe0a8">{{r.cite}}</span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isMissing}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12.5px; color: #93aeb4">Compared with the rent-agreement playbook.</div>
+<div class="risk" style="cursor: default"><div style="font-size: 14px; font-weight: 600">Tenant's right to end the lease</div><div style="font-size: 13px; color: #a9c3c8; margin-top: 4px">Only the landlord can terminate. Add a notice period for you too.</div></div>
+<div class="risk" style="cursor: default"><div style="font-size: 14px; font-weight: 600">Registration with the Rent Registrar</div><div style="font-size: 13px; color: #a9c3c8; margin-top: 4px">The 2009 Act expects the agreement to be filed with the Rent Registrar.</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isTerms}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{terms}}" as="k" hint-placeholder-count="6">
+<div style="padding: 12px 14px; border-radius: 12px; background: #172f36; border: 1px solid #28464f"><div style="font-size: 12px; color: #93aeb4">{{k.label}}</div><div style="font-size: 15px; font-weight: 600; margin-top: 3px">{{k.value}}</div></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isCites}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="risk" style="cursor: default"><div style="font-size: 14px; font-weight: 600">Punjab Rented Premises Act, 2009</div><div style="font-size: 12.5px; color: #7fe0a8; margin-top: 4px">Verified in the statute library · used for 3 findings</div></div>
+<div class="risk" style="cursor: default"><div style="font-size: 14px; font-weight: 600">Contract Act, 1872</div><div style="font-size: 12.5px; color: #7fe0a8; margin-top: 4px">Verified · used for 1 finding</div></div>
+</div>
+</sc-if>
+</div>
+
+<div style="padding: 14px 18px; border-top: 1px solid #22404a; display: flex; gap: 10px">
+<a class="btn btn-primary" href="Workspace.dc.html" style="flex-grow: 1">Apply fixes in a new draft</a>
+<a class="btn btn-ghost" href="#">Download report</a>
+</div>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: 'risks', sel: 1 }; }
+  renderVals() {
+    var s = this.state;
+    var hi = ['#4a2226', '#f5a3a8'], med = ['#4a3a1c', '#f7cf7d'];
+    var list = [
+      { id: 1, sev: 'HIGH', c: hi, title: 'Clause 6 · Eviction on 7 days’ notice',
+        why: 'The landlord can end the lease for any reason within a week. For a shop, that can cost you your business and fit-out.',
+        fix: 'Require a stated ground and at least 60 days’ notice, and give the tenant the same right.',
+        cite: 'Punjab Rented Premises Act, 2009 · verified' },
+      { id: 2, sev: 'HIGH', c: hi, title: 'Clause 9 · Deposit is non-refundable',
+        why: 'Three months’ rent (PKR 255,000) is lost even if you leave the shop in good order.',
+        fix: 'Refund the deposit within 30 days of handover, less documented damage.',
+        cite: 'Contract Act, 1872 · verified' },
+      { id: 3, sev: 'MEDIUM', c: med, title: 'Clause 4 · Rent increase at any time',
+        why: 'Up to 20% whenever the landlord chooses, with no limit on how often.',
+        fix: 'Allow one increase, on renewal only, capped at 10%.',
+        cite: 'Punjab Rented Premises Act, 2009 · verified' },
+      { id: 4, sev: 'MEDIUM', c: med, title: 'Clause 5 · Structural repairs on the tenant',
+        why: 'Roof, walls and foundations are normally the owner’s responsibility.',
+        fix: 'Tenant handles day-to-day repairs; the landlord handles structural ones.',
+        cite: 'Punjab Rented Premises Act, 2009 · verified' }
+    ];
+    var mark = (id, c) => ({ bg: s.sel === id ? (c === hi ? '#fde2e2' : '#fdf0cf') : (c === hi ? '#fdeeee' : '#fdf7e6'),
+                             outline: s.sel === id ? (c === hi ? '2px solid #d9534f' : '2px solid #e0a82e') : 'none' });
+    var m1 = mark(1, hi), m2 = mark(2, hi), m3 = mark(3, med), m4 = mark(4, med);
+    var pickRisk = (id) => () => this.setState({ tab: 'risks', sel: id });
+    var tabNames = [['summary', 'Summary'], ['risks', 'Risks · 4'], ['missing', 'Missing · 2'], ['terms', 'Key terms'], ['cites', 'Citations']];
+    return {
+      tabs: tabNames.map(t => ({ name: t[1], pick: () => this.setState({ tab: t[0] }),
+        color: s.tab === t[0] ? '#3fd6c6' : '#93aeb4', line: s.tab === t[0] ? '#3fd6c6' : 'transparent' })),
+      isSummary: s.tab === 'summary', isRisks: s.tab === 'risks', isMissing: s.tab === 'missing',
+      isTerms: s.tab === 'terms', isCites: s.tab === 'cites',
+      pickR1: pickRisk(1), pickR2: pickRisk(2), pickR3: pickRisk(3), pickR4: pickRisk(4),
+      r1Bg: m1.bg, r1Outline: m1.outline, r2Bg: m2.bg, r2Outline: m2.outline,
+      r3Bg: m3.bg, r3Outline: m3.outline, r4Bg: m4.bg, r4Outline: m4.outline,
+      risks: list.map(r => ({ ...r, sevBg: r.c[0], sevFg: r.c[1], open: s.sel === r.id,
+        border: s.sel === r.id ? '#3fd6c6' : '#28464f', pick: pickRisk(r.id) })),
+      terms: [
+        { label: 'Monthly rent', value: 'PKR 85,000' }, { label: 'Due date', value: '5th of each month' },
+        { label: 'Term', value: '11 months from 1 Oct 2026' }, { label: 'Ends', value: '31 Aug 2027' },
+        { label: 'Deposit', value: 'PKR 255,000 (3 months)' }, { label: 'Landlord notice', value: '7 days' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

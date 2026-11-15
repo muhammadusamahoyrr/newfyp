@@ -342,7 +342,7 @@ async def test_request_time_kyc_still_refuses_an_unverified_lawyer(p):
     await get_users_col().update_one(
         {"_id": p["lawyer_id"]}, {"$set": {"lawyer_profile.kyc_verified": False}})
     appt_id = await seed_completed_appointment(p["client_id"], p["lawyer_id"])
-    with pytest.raises(AppValidationError, match="KYC"):
+    with pytest.raises(AppValidationError, match="not approved"):
         await engagement_service.request_engagement(
             p["client_id"], _payload(p, appt_id))
     await _assert_nothing_written(p)

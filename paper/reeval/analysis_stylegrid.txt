@@ -1,0 +1,43 @@
+
+== content uqa128  model general
+  original      n=128  base  52.3  gener  54.7  d= +2.3 CI[-6.2,+10.9]  b= 17 c= 14 p=0.72
+  urdu          n=128  base  18.0  gener  42.2  d=+24.2 CI[+15.6,+32.8]  b= 37 c=  6 p=1.6e-06
+  layperson_en  n=127  base  46.5  gener  52.8  d= +6.3 CI[-3.1,+15.7]  b= 21 c= 13 p=0.23
+  roman_urdu    n=126  base  21.4  gener  38.9  d=+17.5 CI[+8.7,+26.2]  b= 29 c=  7 p=0.00031
+  keyword       n=126  base  37.3  gener  44.4  d= +7.1 CI[-0.8,+15.1]  b= 18 c=  9 p=0.12
+
+== content uqa128  model constitutional  (NOT clean for this model)
+  original      n=128  base  52.3  const  76.6  d=+24.2 CI[+15.6,+33.6]  b= 36 c=  5 p=7.8e-07
+  urdu          n=128  base  18.0  const  42.2  d=+24.2 CI[+16.4,+32.8]  b= 33 c=  2 p=3.7e-08
+  layperson_en  n=127  base  46.5  const  74.0  d=+27.6 CI[+18.1,+37.0]  b= 40 c=  5 p=7.9e-08
+  roman_urdu    n=126  base  21.4  const  34.9  d=+13.5 CI[+6.3,+20.6]  b= 21 c=  4 p=0.00091
+  keyword       n=126  base  37.3  const  50.0  d=+12.7 CI[+3.2,+22.2]  b= 27 c= 11 p=0.014
+
+== content dev23  model general
+  original      n= 23  base  17.4  gener  56.5  d=+39.1 CI[+21.7,+60.9]  b=  9 c=  0 p=0.0039
+  urdu          n= 20  base   5.0  gener  35.0  d=+30.0 CI[+10.0,+50.0]  b=  6 c=  0 p=0.031
+  layperson_en  n= 22  base  27.3  gener  50.0  d=+22.7 CI[+4.5,+40.9]  b=  5 c=  0 p=0.062
+  roman_urdu    n= 22  base  22.7  gener  50.0  d=+27.3 CI[+9.1,+45.5]  b=  6 c=  0 p=0.031
+  keyword       n= 22  base  18.2  gener  54.5  d=+36.4 CI[+18.2,+59.1]  b=  8 c=  0 p=0.0078
+
+== content dev23  model constitutional  (NOT clean for this model)
+  original      n= 23  base  17.4  const  17.4  d= +0.0 CI[-17.4,+17.4]  b=  2 c=  2 p=1
+  urdu          n= 20  base   5.0  const  10.0  d= +5.0 CI[+0.0,+15.0]  b=  1 c=  0 p=1
+  layperson_en  n= 22  base  27.3  const  31.8  d= +4.5 CI[-18.2,+27.3]  b=  4 c=  3 p=1
+  roman_urdu    n= 22  base  22.7  const  13.6  d= -9.1 CI[-27.3,+9.1]  b=  1 c=  3 p=0.62
+  keyword       n= 22  base  18.2  const  13.6  d= -4.5 CI[-18.2,+9.1]  b=  1 c=  2 p=1
+
+== content uqa121  model constitutional
+  original      n=121  base  43.8  const  59.5  d=+15.7 CI[+7.4,+24.0]  b= 24 c=  5 p=0.00055
+  urdu          n=121  base  11.6  const  28.9  d=+17.4 CI[+10.7,+24.8]  b= 22 c=  1 p=5.7e-06
+  layperson_en  n=120  base  42.5  const  57.5  d=+15.0 CI[+6.7,+24.2]  b= 25 c=  7 p=0.0021
+  roman_urdu    n=119  base  17.6  const  29.4  d=+11.8 CI[+5.0,+19.3]  b= 17 c=  3 p=0.0026
+  keyword       n=120  base  27.5  const  34.2  d= +6.7 CI[-2.5,+15.8]  b= 19 c= 11 p=0.2
+
+== content uqa121  model general  (NOT clean for this model)
+  original      n=121  base  43.8  gener  68.6  d=+24.8 CI[+15.7,+33.9]  b= 35 c=  5 p=1.4e-06
+  urdu          n=121  base  11.6  gener  53.7  d=+42.1 CI[+33.1,+51.2]  b= 52 c=  1 p=1.2e-14
+  layperson_en  n=120  base  42.5  gener  64.2  d=+21.7 CI[+11.7,+31.7]  b= 34 c=  8 p=6.9e-05
+  roman_urdu    n=119  base  17.6  gener  44.5  d=+26.9 CI[+18.5,+35.3]  b= 34 c=  2 p=1.9e-08
+  keyword       n=120  base  27.5  gener  51.7  d=+24.2 CI[+14.2,+33.3]  b= 36 c=  7 p=9e-06
+{'base': 'intfloat/multilingual-e5-base', 'constitutional': 'usama1111/e5-pak-legal-constitutional@6aec3e7a sha256 9761c235d497c6c3 OK', 'general': 'usama1111/e5-pakistani-legal@0efe7b2b sha256 a3e7e4c1b650051b OK'}

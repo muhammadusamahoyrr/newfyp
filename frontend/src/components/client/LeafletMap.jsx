@@ -63,6 +63,8 @@ function makeIcon(L, l, state) {
  * show all) in place of Leaflet's zoom box. "My location" asks the browser
  * once, on the click; the position goes to `onLocate({lat,lng})` (or
  * `onLocate(null, message)`) and nowhere else -- never to the server. */
+/* Opened on a selected lawyer (from their profile, 2026-10-19), the map starts
+ * at that office; locating yourself then frames both of you. */
 export default function LeafletMap({ lawyers = [], onSelect, height = 340, selectedId = null, hoveredId = null, dark = true, leftInset = 0, controls = false, onLocate }) {
     const containerRef = useRef(null);
     const stateRef     = useRef(null); // { L, map, tiles }
@@ -71,6 +73,8 @@ export default function LeafletMap({ lawyers = [], onSelect, height = 340, selec
     selectRef.current  = onSelect;
     const insetRef     = useRef(leftInset);
     insetRef.current   = leftInset;
+    const selectedRef  = useRef(selectedId);
+    selectedRef.current = selectedId;
     const meRef        = useRef(null);        // the "you are here" marker
     const [mapDark, setMapDark] = useState(dark);
     const [locating, setLocating] = useState(false);
@@ -139,6 +143,9 @@ export default function LeafletMap({ lawyers = [], onSelect, height = 340, selec
             markersRef.current.set(id, { marker, lawyer: l });
         });
         if (!fit) return;
+        // Opened on one lawyer (from their profile): their office, at street level.
+        const chosen = selectedRef.current != null && markersRef.current.get(String(selectedRef.current));
+        if (chosen) { s.map.setView(chosen.marker.getLatLng(), 15); return; }
         const pad = { paddingTopLeft: [60 + insetRef.current, 60], paddingBottomRight: [60, 60], maxZoom: 9 };
         if (pins.length > 1) s.map.fitBounds(s.L.latLngBounds(pins.map(l => [l.lat, l.lng])), pad);
         else if (pins.length === 1) s.map.fitBounds(s.L.latLngBounds([[pins[0].lat, pins[0].lng]]), { ...pad, maxZoom: 7 });
@@ -167,7 +174,13 @@ export default function LeafletMap({ lawyers = [], onSelect, height = 340, selec
                 icon: s.L.divIcon({ className: '', html: '<div class="lm-me"><b></b><i></i></div>', iconSize: [0, 0] }),
                 title: 'You are here', zIndexOffset: 2000, keyboard: false,
             }).addTo(s.map);
-            s.map.flyTo([here.lat, here.lng], Math.max(s.map.getZoom(), 10), { duration: 0.8 });
+            const chosen = selectedRef.current != null && markersRef.current.get(String(selectedRef.current));
+            if (chosen) {
+                s.map.flyToBounds(s.L.latLngBounds([[here.lat, here.lng], chosen.marker.getLatLng()]),
+                    { paddingTopLeft: [80 + insetRef.current, 80], paddingBottomRight: [80, 80], maxZoom: 15, duration: 0.8 });
+            } else {
+                s.map.flyTo([here.lat, here.lng], Math.max(s.map.getZoom(), 10), { duration: 0.8 });
+            }
             onLocate?.(here);
         }, err => {
             setLocating(false);

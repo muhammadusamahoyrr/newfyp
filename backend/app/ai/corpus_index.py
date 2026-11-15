@@ -45,6 +45,19 @@ _COLLECTIONS = (
     "constitutional_collection",
 )
 
+# The lawyer drafter's index (2026-10-15): the same statutes, read from the
+# versioned IDENTITY collections -- CPC Order rules and Limitation Schedule
+# articles are no longer filed under section numbers (civil ident_v1), CrPC
+# schedule rows are de-sectioned and lettered sections restored (criminal
+# sec_v2). On the base index every CPC number held dozens of "provisions", so
+# no CPC section could ever be checked. Read-only; nothing is re-indexed.
+_DRAFTER_COLLECTIONS = (
+    "criminal_collection__sec_v2",
+    "civil_collection__ident_v2",     # 2026-10-15: CPC labels repaired from the official text (rollback: ident_v1)
+    "family_collection",
+    "constitutional_collection",
+)
+
 # Not a real section number anywhere in Pakistani law — see module docstring.
 _ARTIFACT_MIN = 1000
 
@@ -393,7 +406,10 @@ class CorpusIndex:
         return sorted(self._coverage)
 
     def canonical(self, statute: str) -> str | None:
-        key = re.sub(r"\s+", " ", (statute or "").strip()).lower()
+        # "Contract Act, 1872" is "Contract Act 1872": the comma before the year
+        # left the drafter's guard unable to find an Act the citation checker
+        # found (it strips the comma itself) -- eval base_r1, 2026-10-14.
+        key = re.sub(r",\s*(?=\d{4}\b)", " ", re.sub(r"\s+", " ", (statute or "").strip())).lower()
         if key in self._by_lower:
             return self._by_lower[key]
         # "Limitation Act of 1908" and "Limitation Act" both mean the same act.
@@ -411,7 +427,7 @@ class CorpusIndex:
         return sum(c.artifacts for c in self._coverage.values())
 
 
-def build_index() -> CorpusIndex:
+def build_index(collections: tuple[str, ...] = _COLLECTIONS) -> CorpusIndex:
     """Read every statute chunk's metadata and fold it into a coverage map."""
     from app.ai.statute_omissions import get_records, omitted_for
     from app.db.chroma import get_chroma
@@ -421,7 +437,7 @@ def build_index() -> CorpusIndex:
     dropped: dict[str, int] = {}
     seen_headings: dict[tuple[str, str], list[str]] = {}
 
-    for name in _COLLECTIONS:
+    for name in collections:
         try:
             col = client.get_collection(name)
         except Exception as exc:                   # collection may not exist yet
@@ -490,6 +506,35 @@ def get_index(*, refresh: bool = False) -> CorpusIndex:
         if _cache is None or refresh:
             _cache = build_index()
         return _cache
+
+
+_drafter_cache: CorpusIndex | None = None
+
+
+def get_drafter_index(*, refresh: bool = False) -> CorpusIndex:
+    """The lawyer drafter's index (identity collections), built once.
+
+    Requires the VERIFIED identity collections (2026-10-16): a missing,
+    unreadable or unverified one raises IdentityIndexUnavailable. It used to
+    fall back to the base collection silently, and the legal check then judged
+    citations against the labels the identity build exists to repair."""
+    global _drafter_cache
+    with _lock:
+        if _drafter_cache is None or refresh:
+            from app.ai import index_health
+            from app.db.chroma import get_chroma
+            # Identity builds verified; family / constitutional (no identity
+            # build exists) only required to exist and read. require_all here
+            # refused every request, so the legal check never had its index.
+            names = index_health.require_drafter(_DRAFTER_COLLECTIONS, get_chroma())
+            _drafter_cache = build_index(tuple(names))
+        return _drafter_cache
+
+
+def set_drafter_index(index: CorpusIndex | None) -> None:
+    global _drafter_cache
+    with _lock:
+        _drafter_cache = index
 
 
 def set_index(index: CorpusIndex | None) -> None:

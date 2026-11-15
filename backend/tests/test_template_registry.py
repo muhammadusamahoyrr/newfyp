@@ -47,28 +47,44 @@ def _derive() -> dict[str, set[str]]:
             for key, value in zip(node.value.keys, node.value.values):
                 names[key.value] = value.id
 
-    derived: dict[str, set[str]] = {}
-    for template, fname in names.items():
-        fn = funcs[fname]
-        params = [a.arg for a in fn.args.args]
-        holder = params[1] if len(params) > 1 else "f"
-
+    def reads(fn: ast.FunctionDef, holder: str, seen: frozenset[str]) -> set[str]:
         keys: set[str] = set()
         for node in ast.walk(fn):
-            if not isinstance(node, ast.Call) or not node.args:
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            # A module helper handed the field dict reads it too:
+            # `_complainant_block(story, s, f)` prints four complainant keys.
+            # Not following it is how those keys went missing from FIELDS and
+            # were dropped before generation (2026-10-19).
+            if (isinstance(func, ast.Name) and func.id in funcs
+                    and func.id not in seen):
+                for i, arg in enumerate(node.args):
+                    if isinstance(arg, ast.Name) and arg.id == holder:
+                        helper = funcs[func.id]
+                        hparams = [a.arg for a in helper.args.args]
+                        if i < len(hparams):
+                            keys |= reads(helper, hparams[i], seen | {func.id})
+            if not node.args:
                 continue
             first = node.args[0]
             if not (isinstance(first, ast.Constant)
                     and isinstance(first.value, str)):
                 continue
-            func = node.func
             if (isinstance(func, ast.Attribute) and func.attr == "get"
                     and isinstance(func.value, ast.Name)
                     and func.value.id == holder):
                 keys.add(first.value)
             elif isinstance(func, ast.Name) and func.id in _CLOSURES:
                 keys.add(first.value)
-        derived[template] = keys
+        return keys
+
+    derived: dict[str, set[str]] = {}
+    for template, fname in names.items():
+        fn = funcs[fname]
+        params = [a.arg for a in fn.args.args]
+        holder = params[1] if len(params) > 1 else "f"
+        derived[template] = reads(fn, holder, frozenset({fname}))
     return derived
 
 
@@ -85,6 +101,7 @@ async def test_the_field_map_matches_what_the_builders_read():
         "a builder was added or removed without updating FIELDS"
     )
     for template, keys in sorted(derived.items()):
+        keys = keys - reg.SYSTEM_SUPPLIED
         assert set(reg.FIELDS[template]) == keys, (
             f"{template}: registry has {sorted(reg.FIELDS[template])}, "
             f"the builder reads {sorted(keys)}"
@@ -201,3 +218,19 @@ async def test_structured_fields_are_declared_as_such():
         assert structured <= reg.FIELDS[template], (
             f"{template} declares a structured field its builder never reads")
         assert set(reg.spec(template)["structured_fields"]) == set(structured)
+
+
+async def test_complainant_identity_reaches_the_complaint_builders():
+    # Regression (2026-10-19): `_complainant_block` prints the complainant's
+    # name, CNIC, address and phone, but the drift check did not follow helper
+    # calls, so these keys were missing from FIELDS. The client form then
+    # marked them "unused" and dropped them before generation, and the PDF's
+    # complainant block came out blank.
+    identity = {"complainant_name", "complainant_cnic",
+                "complainant_address", "complainant_phone"}
+    for template in ("fir_application", "complaint_154_3",
+                     "fia_cybercrime", "petition_22a"):
+        assert identity <= reg.FIELDS[template], template
+    # Server-supplied keys are never offered as form fields.
+    for template, fields in reg.FIELDS.items():
+        assert not (fields & reg.SYSTEM_SUPPLIED), template

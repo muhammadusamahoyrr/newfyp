@@ -78,7 +78,9 @@ test("lawyer and analyzer screens use their own copies of the once-shared UI and
 test("every client RevisionHistory draws its own rows", () => {
     const uses = [...files(path.join(SRC, "components/client"))].map(rel)
         .flatMap(r => [...read(r).matchAll(/<RevisionHistory\b[\s\S]*?\/>/g)].map(m => [r, m[0]]));
-    assert.ok(uses.length >= 2, "expected the drafting workspace and the guided flow");
+    // The drafting workspace; the template guided flow that drew a second one
+    // was removed on 2026-10-19 (one workspace for every draft).
+    assert.ok(uses.length >= 1, "expected the drafting workspace");
     for (const [r, jsx] of uses) assert.match(jsx, /renderRow=/, `${r} relies on RevisionHistory's default (lawyer) look`);
 });
 

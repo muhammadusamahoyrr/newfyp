@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review the lawyer's changes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap">
+<style>
+body{margin:0;background:#0f2228;font-family:Inter,system-ui,sans-serif;color:#e6f1f2}
+a{color:#3fd6c6}a:hover{color:#8ff0e5}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:10px;font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;box-sizing:border-box;font-family:inherit}
+.btn-primary{background:#3fd6c6;color:#0b2a2d;border:none}
+.btn-primary:hover{background:#6fe3d6;color:#0b2a2d}
+.btn-ghost{background:transparent;color:#d3e6e8;border:1px solid #3a5e68}
+.btn-ghost:hover{background:#21414a;color:#fff}
+.para{display:block;width:100%;text-align:left;font:inherit;color:inherit;background:transparent;border:none;border-radius:8px;padding:6px 10px;margin:0 -10px 10px;cursor:pointer}
+.mk{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-family:Inter,sans-serif;font-size:10.5px;font-weight:800;margin-right:4px;vertical-align:2px}
+.card{display:flex;flex-direction:column;gap:9px;padding:14px 16px;border-radius:14px;background:#172f36;border:1px solid #28464f}
+.field{width:100%;background:#0f2429;border:1px solid #33555e;border-radius:10px;color:#e6f1f2;font:inherit;font-size:13.5px;padding:9px 11px;box-sizing:border-box}
+p{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; overflow: hidden; background: #0f2228">
+<header style="height: 62px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 24px; border-bottom: 1px solid #22404a; background: #132a31">
+<a href="Main.dc.html" style="font-size: 14px; text-decoration: none">← Documents</a>
+<div style="font-family: Fraunces, Georgia, serif; font-size: 19px; font-weight: 600; color: #f2f8f8; margin-left: 6px">Legal Notice — unpaid rent</div>
+<span style="font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #4a3a1c; color: #f7cf7d">Changes requested</span>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 120px; height: 6px; border-radius: 3px; background: #26434b; overflow: hidden"><div style="height: 100%; width: {{pct}}; background: #3fd6c6"></div></div>
+<span style="font-size: 13px; color: #cfe3e6">{{progress}}</span>
+</div>
+<sc-if value="{{notDone}}" hint-placeholder-val="{{true}}"><button class="btn btn-ghost" type="button" onClick="{{acceptAll}}">Accept all</button></sc-if>
+<sc-if value="{{allDone}}" hint-placeholder-val="{{false}}"><a class="btn btn-primary" href="Submit.dc.html">Resubmit for review</a></sc-if>
+<sc-if value="{{notDone}}" hint-placeholder-val="{{true}}"><span class="btn" aria-disabled="true" style="background: #26434b; color: #7c979d; cursor: not-allowed">Resubmit for review</span></sc-if>
+</header>
+
+<div style="flex-grow: 1; display: flex; overflow: hidden">
+<div style="flex-grow: 1; overflow: hidden; display: flex; justify-content: center; padding: 24px 0; background: #0c1d22">
+<article style="width: 640px; height: 1100px; background: #ffffff; color: #1d2a2e; border-radius: 8px; padding: 46px 54px; box-sizing: border-box; font-family: 'Source Serif 4', Georgia, serif; font-size: 14.5px; line-height: 1.8">
+<h2 style="margin: 0 0 20px; text-align: center; font-size: 18px; letter-spacing: .14em; font-weight: 600">LEGAL NOTICE</h2>
+<sc-for list="{{paras}}" as="p" hint-placeholder-count="6">
+<button class="para" type="button" onClick="{{p.pick}}" style="background: {{p.bg}}; outline: {{p.outline}}">
+<sc-if value="{{p.hasChange}}" hint-placeholder-val="{{false}}"><span class="mk" style="background: {{p.mkBg}}; color: {{p.mkFg}}">{{p.n}}</span></sc-if>{{p.pre}}<sc-if value="{{p.showOld}}" hint-placeholder-val="{{false}}"><span style="text-decoration: {{p.oldDeco}}; color: {{p.oldColor}}">{{p.before}}</span></sc-if><sc-if value="{{p.showBoth}}" hint-placeholder-val="{{false}}"> </sc-if><sc-if value="{{p.showNew}}" hint-placeholder-val="{{false}}"><span style="background: {{p.newBg}}; color: {{p.newColor}}">{{p.after}}</span></sc-if>{{p.post}}
+</button>
+</sc-for>
+</article>
+</div>
+
+<aside style="width: 430px; flex-shrink: 0; border-left: 1px solid #22404a; background: #132a31; display: flex; flex-direction: column; overflow: hidden">
+<div style="padding: 16px 18px; border-bottom: 1px solid #22404a; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; gap: 12px">
+<span style="width: 38px; height: 38px; border-radius: 50%; background: #1f4a4f; color: #bff3ec; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0">LA</span>
+<div><div style="font-size: 14px; font-weight: 600">[Lawyer A] <span style="font-weight: 400; color: #93aeb4">· today</span></div><div style="font-size: 13.5px; line-height: 1.55; color: #dce9eb; margin-top: 3px">Good draft. Name the exact months, give 15 days instead of 7, and state the law you rely on.</div></div>
+</div>
+<div style="display: flex; gap: 8px; align-items: center; padding: 4px 4px 4px 12px; border-radius: 10px; background: #0f2429; border: 1px solid #33555e">
+<label for="reply" style="position: absolute; left: -9999px">Reply to the lawyer</label>
+<input id="reply" placeholder="Reply to [Lawyer A]…" style="flex-grow: 1; background: transparent; border: none; color: #e6f1f2; font: inherit; font-size: 13.5px; outline: none; min-height: 34px">
+<button type="button" aria-label="Send reply" style="width: 34px; height: 34px; border-radius: 8px; border: none; background: #1f4a4f; color: #3fd6c6; cursor: pointer">➤</button>
+</div>
+</div>
+
+<div style="flex-grow: 1; overflow: hidden; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+<div class="card" style="border-color: {{c.border}}; background: {{c.bg}}">
+<button type="button" onClick="{{c.pick}}" style="display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: #e6f1f2; font: inherit; text-align: left; cursor: pointer; padding: 0; min-height: 28px">
+<span class="mk" style="background: {{c.mkBg}}; color: {{c.mkFg}}; margin: 0">{{c.n}}</span>
+<span style="font-size: 14px; font-weight: 600; flex-grow: 1">{{c.title}}</span>
+<span style="font-size: 12px; font-weight: 600; color: {{c.stateColor}}">{{c.stateText}}</span>
+</button>
+<div style="font-size: 13px; color: #a9c3c8; line-height: 1.5">{{c.why}}</div>
+<sc-if value="{{c.isOpen}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; gap: 8px"><button class="btn btn-primary" type="button" onClick="{{c.accept}}" style="min-height: 36px">Accept</button><button class="btn btn-ghost" type="button" onClick="{{c.startReject}}" style="min-height: 36px">Reject</button></div>
+</sc-if>
+<sc-if value="{{c.isRejecting}}" hint-placeholder-val="{{false}}">
+<label for="{{c.fid}}" style="font-size: 12.5px; color: #cfe3e6">Tell the lawyer why (they will see this)</label>
+<input id="{{c.fid}}" class="field" placeholder="e.g. The tenant already paid March.">
+<div style="display: flex; gap: 8px"><button class="btn btn-ghost" type="button" onClick="{{c.confirmReject}}" style="min-height: 36px; border-color: #b85c63; color: #f5a3a8">Reject change</button><button class="btn btn-ghost" type="button" onClick="{{c.undo}}" style="min-height: 36px">Cancel</button></div>
+</sc-if>
+<sc-if value="{{c.isDecided}}" hint-placeholder-val="{{false}}">
+<div><button class="btn btn-ghost" type="button" onClick="{{c.undo}}" style="min-height: 32px; font-size: 12.5px">Undo</button></div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+<div style="padding: 12px 18px; border-top: 1px solid #22404a; font-size: 12.5px; color: #93aeb4; line-height: 1.5">The version the lawyer reviewed stays unchanged. Your decisions create version 3, which you resubmit.</div>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { d: [null, null, null], sel: 0 }; }
+  renderVals() {
+    var s = this.state, d = s.d;
+    var set = (i, v) => () => { var n = d.slice(); n[i] = v; this.setState({ d: n, sel: i }); };
+    var changes = [
+      { title: 'Amount and period', why: 'A notice must state the exact sum and the months it covers.', before: 'rent for the last several months', after: 'rent for March to August 2026, totalling PKR 480,000' },
+      { title: 'Time to pay', why: 'Seven days is unusually short and weakens the notice.', before: 'within seven (7) days', after: 'within fifteen (15) days of receiving this notice' },
+      { title: 'Legal basis', why: 'Name the statute the landlord relies on.', before: 'under the law', after: 'under the Punjab Rented Premises Act, 2009' }
+    ];
+    var P = [
+      { text: 'To: [Tenant name], [Shop address], Lahore.' },
+      { text: 'Through: [Landlord name], owner of the above premises.' },
+      { c: 0, pre: '1. You have failed to pay ', post: ', despite repeated requests.' },
+      { c: 1, pre: '2. You are called upon to pay the outstanding amount ', post: '.' },
+      { c: 2, pre: '3. If you fail to do so, eviction proceedings will be initiated against you ', post: ', at your risk as to costs.' },
+      { text: 'Dated: [date]' }
+    ];
+    var decided = d.filter(x => x === 'a' || x === 'r').length;
+    var mk = (i) => d[i] === 'a' ? ['#1d4a36', '#8ff0b5'] : d[i] === 'r' ? ['#4a2226', '#f5a3a8'] : ['#f2b84b', '#3b2600'];
+    return {
+      progress: decided + ' of 3 decided', pct: Math.round(decided / 3 * 100) + '%',
+      allDone: decided === 3, notDone: decided !== 3,
+      acceptAll: () => this.setState({ d: d.map(x => (x === 'a' || x === 'r') ? x : 'a') }),
+      paras: P.map((p, idx) => {
+        if (p.c === undefined) return { hasChange: false, pre: p.text, post: '', showOld: false, showNew: false, showBoth: false, bg: 'transparent', outline: 'none', pick: () => {} };
+        var i = p.c, st = d[i], ch = changes[i];
+        var pending = st !== 'a' && st !== 'r';
+        return { hasChange: true, n: i + 1, mkBg: mk(i)[0], mkFg: mk(i)[1], pre: p.pre, post: p.post,
+          before: ch.before, after: ch.after,
+          showOld: pending || st === 'r', showNew: pending || st === 'a', showBoth: pending,
+          oldDeco: pending ? 'line-through' : 'none', oldColor: pending ? '#b3261e' : 'inherit',
+          newBg: pending ? '#e2f5e6' : 'transparent', newColor: pending ? '#1b5e20' : 'inherit',
+          bg: s.sel === i ? '#fff8e6' : 'transparent', outline: s.sel === i ? '2px solid #e9c46a' : 'none',
+          pick: () => this.setState({ sel: i }) };
+      }),
+      cards: changes.map((c, i) => ({ ...c, n: i + 1, fid: 'why_' + i, mkBg: mk(i)[0], mkFg: mk(i)[1],
+        isOpen: d[i] === null, isRejecting: d[i] === 'rejecting', isDecided: d[i] === 'a' || d[i] === 'r',
+        stateText: d[i] === 'a' ? 'Accepted' : d[i] === 'r' ? 'Rejected' : d[i] === 'rejecting' ? 'Rejecting…' : 'To decide',
+        stateColor: d[i] === 'a' ? '#8ff0b5' : d[i] === 'r' ? '#f5a3a8' : '#f7cf7d',
+        border: s.sel === i ? '#3fd6c6' : '#28464f', bg: s.sel === i ? '#173a3f' : '#172f36',
+        pick: () => this.setState({ sel: i }),
+        accept: set(i, 'a'), startReject: set(i, 'rejecting'), confirmReject: set(i, 'r'), undo: set(i, null) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

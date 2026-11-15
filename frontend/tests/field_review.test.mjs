@@ -35,6 +35,11 @@ test("acronyms are not sentence-cased into nonsense", () => {
     assert.equal(humanise("fir_no"), "FIR no");
     assert.equal(humanise("cnic"), "CNIC");
     assert.equal(humanise("case_no"), "Case no");
+    assert.equal(humanise("fia_office_city"), "FIA office city");
+    assert.equal(humanise("minor_dob"), "Minor DOB");
+    assert.equal(humanise("sp_complaint_date"), "SP complaint date");
+    assert.equal(humanise("complainant_cnic"), "Complainant CNIC");
+    assert.equal(humanise("party_a"), "Party A");
 });
 
 test("a missing or empty name does not throw", () => {

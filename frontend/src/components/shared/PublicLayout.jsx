@@ -164,6 +164,8 @@ export function PublicFooter() {
     { label: 'Get in Touch', href: '/touch' },
     { label: 'About Us', href: '/about' },
     { label: 'Refund Policy', href: '/faqs#pricing' },
+    { label: 'Terms of Use', href: '/terms' },
+    { label: 'Privacy Policy', href: '/privacy' },
   ];
 
   return (

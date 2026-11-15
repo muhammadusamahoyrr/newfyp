@@ -151,7 +151,7 @@ test("the real actions survive the removal", async () => {
     const ui = await mountAppointments([appointment({ status: "confirmed" })]);
 
     const labels = ui.labels();
-    for (const real of ["Done", "No Show"]) {
+    for (const real of ["Record outcome", "No Show"]) {   // "Complete" became "Record outcome" (2026-10-19)
         assert.ok(labels.includes(real), `${real} was removed too: ${labels}`);
     }
     await ui.unmount();
@@ -167,7 +167,7 @@ test("a pending appointment still offers Accept and Reject", async () => {
 
     const labels = ui.labels();
     assert.ok(labels.includes("Accept"), `Accept missing: ${labels}`);
-    assert.ok(labels.includes("Reject"), `Reject missing: ${labels}`);
+    assert.ok(labels.includes("Decline"), `Decline missing: ${labels}`);
     await ui.unmount();
 });
 
@@ -231,9 +231,18 @@ function pending(over = {}) {
 async function clickAccept(ui) {
     const btn = [...ui.container.querySelectorAll("button")]
         .find(b => b.textContent.trim() === "Accept");
+    const confirmsBefore = api.__calls("confirmAppointment").length;
     assert.ok(btn, "Accept is not offered");
     await act(async () => {
         btn.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    // Accept opens a dialog showing what is agreed to (2026-10-12); nothing
+    // is sent until the lawyer confirms there.
+    const confirm = ui.container.querySelector("[data-accept-confirm]");
+    assert.ok(confirm, "Accept did not open its dialog");
+    assert.equal(api.__calls("confirmAppointment").length, confirmsBefore, "confirmed before the dialog");
+    await act(async () => {
+        confirm.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }));
     });
     await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
     return btn;
@@ -378,7 +387,7 @@ test("a confirmed video appointment with a link offers the stored link", async (
         .find(a => a.getAttribute("href") === VIDEO_LINK);
     assert.ok(anchor, "the stored link is not offered as a real link");
     assert.equal(anchor.getAttribute("target"), "_blank");
-    assert.match(anchor.textContent, /Open link/);
+    assert.match(anchor.textContent, /Join call/);
     await ui.unmount();
 });
 

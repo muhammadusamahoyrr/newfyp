@@ -1,0 +1,63 @@
+{
+ "payloads": 4,
+ "source_8word_runs_total": 2,
+ "pii_matches_total": 0,
+ "per_payload": [
+  {
+   "0:system": {
+    "chars": 4060,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 362,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4361,
+    "source_8word_runs": 1,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 353,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4373,
+    "source_8word_runs": 1,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 348,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4248,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 556,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  }
+ ]
+}

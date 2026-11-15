@@ -17,12 +17,17 @@ from app.api.v1.routes import (
     admin,
     agreements,
     ai,
+    appointment_files,
+    appointment_video,
+    lawyer_clients,
+    appointment_threads,
     appointments,
     auth,
     bail,
     billing,
     calculators,
     case_files,
+    case_consultations,
     cases,
     causelist,
     citator,
@@ -39,6 +44,7 @@ from app.api.v1.routes import (
     labeling,
     lawyer_events,
     lawyers,
+    meeting_proposals,
     notifications,
     payments,
     conversations,
@@ -402,6 +408,14 @@ async def _warmup_models():
         # who did.
         from app.ai.pipelines.retriever import _embeddings
         await asyncio.to_thread(_embeddings)
+
+        # The statute graph and corpus index are the same story (2026-10-12):
+        # both cached, both loaded on first use, and measured at ~14 s and
+        # ~5 s inside the FIRST intake conversion after a restart.
+        from app.ai.pipelines.law_graph import get_graph
+        await asyncio.to_thread(get_graph)
+        from app.ai.corpus_index import get_index
+        await asyncio.to_thread(get_index)
     except Exception:
         logging.getLogger(__name__).exception("Background model warmup failed")
 
@@ -649,6 +663,12 @@ app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(users.router, prefix=API_PREFIX)
 app.include_router(cases.router, prefix=API_PREFIX)
 app.include_router(case_files.router, prefix=API_PREFIX)  # a lawyer's private files on a case
+app.include_router(case_consultations.router, prefix=API_PREFIX)  # a case's originating + linked consultations
+app.include_router(appointment_files.router, prefix=API_PREFIX)  # a client's files on an appointment
+app.include_router(appointment_video.router, prefix=API_PREFIX)  # in-app video (Daily), off without a key
+app.include_router(lawyer_clients.router, prefix=API_PREFIX)  # lawyer's Clients index, computed
+app.include_router(lawyer_clients.actions_router, prefix=API_PREFIX)  # what waits on the lawyer, counted once
+app.include_router(appointment_threads.router, prefix=API_PREFIX)  # thread read receipts + unread summary
 app.include_router(quick_review.router, prefix=API_PREFIX)  # one-off review by a lawyer not hired
 app.include_router(intake.router, prefix=API_PREFIX)
 app.include_router(lawyers.router, prefix=API_PREFIX)
@@ -668,6 +688,7 @@ app.include_router(notifications.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
 app.include_router(voice.router, prefix=API_PREFIX)
 app.include_router(appointments.router, prefix=API_PREFIX)
+app.include_router(meeting_proposals.router, prefix=API_PREFIX)
 app.include_router(engagements.router, prefix=API_PREFIX)
 app.include_router(causelist.router, prefix=API_PREFIX)
 app.include_router(lawyer_events.router, prefix=API_PREFIX)

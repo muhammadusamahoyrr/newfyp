@@ -131,7 +131,7 @@ export default function ModDisputes() {
         setBusy(false);
         if (error || !data || data.error) return toast.show(data?.error || error?.detail || "Could not draft", "danger");
         setPetition(data);
-        if (data.document_id) await downloadDocumentFile(data.document_id, "special-court-petition", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
+        if (data.document_id) await downloadDocumentFile(data.document_id, "special-court-petition.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         toast.show("Draft petition generated", "success");
     };
     const sendToLawyer = async () => {
@@ -142,7 +142,7 @@ export default function ModDisputes() {
         if (error || !data || data.error) return toast.show(data?.error || error?.detail || "Could not send to a lawyer", "danger");
         // reflect the sent state locally so the button can't be clicked again
         setResult(r => ({ ...r, assigned_lawyer_id: data.assigned_lawyer?.id, assigned_lawyer: data.assigned_lawyer, sent_to_lawyer_at: data.sent_to_lawyer_at }));
-        toast.show(data.already_sent ? `Already with ${data.assigned_lawyer?.name || "a lawyer"}` : `Sent to ${data.assigned_lawyer?.name || "a verified lawyer"}`, "success");
+        toast.show(data.already_sent ? `Already with ${data.assigned_lawyer?.name || "a lawyer"}` : `Sent to ${data.assigned_lawyer?.name || "a lawyer"}`, "success");
         loadDisputes();
     };
     // Open a prior dispute back into the result view so it can be sent / drafted.
@@ -160,7 +160,7 @@ export default function ModDisputes() {
     const handoffBlock = () => (
         result?.assigned_lawyer_id ? (
             <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 10, border: `1px solid #3b82f655`, background: "#3b82f610", fontSize: 12.5, color: t.text }}>
-                <b style={{ color: "#3b82f6" }}>✓ Sent to {result.assigned_lawyer?.name || "a verified lawyer"}</b>
+                <b style={{ color: "#3b82f6" }}>✓ Sent to {result.assigned_lawyer?.name || "a lawyer"}</b>
                 {" — they can now open your full case brief"}{result.petition_shared ? " and the draft petition" : ""}. They'll be in touch through the platform.
             </div>
         ) : (
@@ -340,7 +340,7 @@ export default function ModDisputes() {
                                 {(result.hold_reasons || []).map((r, i) => <li key={i} style={{ display: "list-item", fontSize: 12.5, color: t.textMuted, marginBottom: 5 }}>{r}</li>)}
                             </ul>
                             <div style={{ fontSize: 12.5, color: t.textMuted, marginBottom: 12 }}>{result.triage_notified_at ? "We've sent you a notification with the next step." : ""}</div>
-                            <BtnPrimary onClick={() => { window.location.href = "/lawyers"; }}>Find a verified lawyer →</BtnPrimary>
+                            <BtnPrimary onClick={() => { window.location.href = "/lawyers"; }}>Find a lawyer →</BtnPrimary>
                             {handoffBlock()}
                         </>
                     )

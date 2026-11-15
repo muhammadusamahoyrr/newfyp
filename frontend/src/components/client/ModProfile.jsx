@@ -372,7 +372,7 @@ const ModProfile = () => {
                                 <h2 className="pc-h" style={{ marginBottom: 12 }}>Your account at a glance</h2>
                                 <div className="pc-glance">
                                     {[[cases.length, cases.length === 1 ? "Case" : "Cases", "var(--brand-text)", "/tracking"],
-                                      [apptTotal, apptTotal === 1 ? "Appointment" : "Appointments", "#6addeb", "/tracking"],
+                                      [apptTotal, apptTotal === 1 ? "Appointment" : "Appointments", "#6addeb", "/appointments"],
                                       [docCount ?? "—", docCount === "1" ? "Document" : "Documents", "#b9a6f2", "/documents"]].map(([n, label, c, path]) => (
                                         <button key={label} type="button" className="pc-well" style={{ "--c": c }} onClick={() => go(path)}>
                                             <b style={{ fontFamily: DOCS_FONT }}>{n}</b>

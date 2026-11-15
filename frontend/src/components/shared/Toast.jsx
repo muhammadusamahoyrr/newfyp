@@ -21,8 +21,8 @@ export const ToastContainer = ({ theme, children }) => {
 
     const colors = {
         success: { bg: theme.badgeSuccess.bg, border: theme.badgeSuccess.border, color: theme.badgeSuccess.color, icon: "check" },
-        danger: { bg: theme.badgeDanger.bg, border: theme.badgeDanger.border, color: theme.badgeDanger.color, icon: "check" },
-        warn: { bg: theme.badgeWarn.bg, border: theme.badgeWarn.border, color: theme.badgeWarn.color, icon: "check" },
+        danger: { bg: theme.badgeDanger.bg, border: theme.badgeDanger.border, color: theme.badgeDanger.color, icon: "xcircle" },
+        warn: { bg: theme.badgeWarn.bg, border: theme.badgeWarn.border, color: theme.badgeWarn.color, icon: "alert" },
         info: { bg: theme.badgeInfo.bg, border: theme.badgeInfo.border, color: theme.badgeInfo.color, icon: "msg" },
     };
     // ~45 call sites pass "error"; it had no entry and fell back to the

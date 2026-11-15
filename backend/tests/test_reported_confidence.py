@@ -92,6 +92,43 @@ def test_a_refusal_reports_a_real_zero():
     assert confidence_band(0.0) == "low"
 
 
+@pytest.mark.parametrize("state", [
+    {"claim_assessments": [{"support": "unsupported"}]},
+    {"claim_assessments": [{"support": "partial"}]},
+    {"convergence_status": "max_attempts"},
+    {"is_grounded": False},
+])
+def test_post_generation_failures_cannot_keep_a_high_confidence_badge(state):
+    payload = confidence_payload(_answered(arbitration_confidence=0.43, **state))
+    assert payload["confidence_band"] == "low"
+    assert payload["confidence"] < 0.2
+
+
+def test_unrepaired_language_mismatch_keeps_answer_but_lowers_badge():
+    payload = confidence_payload(_answered(arbitration_confidence=0.43, language_mismatch=True))
+    assert payload["confidence_band"] == "low"
+
+
+def test_off_topic_client_citation_caps_badge_without_refusing():
+    state = _answered(
+        surface="client", query="My rent deposit was not returned",
+        arbitration_confidence=0.43,
+        claim_assessments=[{"support": "supported", "source_ids": ["1"]}],
+        generation_evidence=[{"id": "1", "kind": "statute", "statute": "Land Revenue Act",
+                              "section": "91", "content": "An arrear of land revenue may be recovered."}],
+    )
+    payload = confidence_payload(state)
+    assert payload["confidence_band"] != "high"
+    assert state["claim_assessments"][0]["support"] == "supported"
+
+
+def test_optional_relevance_check_failure_does_not_hide_the_answer():
+    state = _answered(surface="client", query="My rent deposit was not returned",
+                      claim_assessments=[{"support": "supported", "source_ids": ["1"]}],
+                      generation_evidence=[{}])
+    assert user_facing_confidence(state) == 0.34
+
+
 # ── 3. The self-report never overrides the calibrated number ──────────────────
 
 def test_model_self_report_does_not_override_calibration():

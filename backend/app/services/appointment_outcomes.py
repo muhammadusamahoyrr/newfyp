@@ -170,6 +170,12 @@ async def outstanding_outcomes(
             "pass back the whole cursor")
     if cutoff is None:
         cutoff = cutoff_for(now, grace)
+    else:
+        # A cutoff names an instant that has passed. One in the future would
+        # list meetings that have not ended as owing an outcome.
+        aware = cutoff if cutoff.tzinfo else cutoff.replace(tzinfo=timezone.utc)
+        if aware > (now or datetime.now(timezone.utc)):
+            raise AppValidationError("cutoff cannot be in the future")
 
     # One more than the page, to learn whether a next page exists without
     # running a second query or a count.
@@ -203,6 +209,7 @@ async def outstanding_outcomes_for_response(
     after_end_at: datetime | None = None,
     after_id: str | None = None,
     cutoff: datetime | None = None,
+    grace: timedelta = DEFAULT_GRACE,
 ) -> dict:
     """The queue as an API response: sanitised rows, named parties, a cursor.
 
@@ -224,12 +231,14 @@ async def outstanding_outcomes_for_response(
 
     page = await outstanding_outcomes(
         lawyer_id=lawyer_id, page_size=page_size,
-        after_end_at=after_end_at, after_id=after_id, cutoff=cutoff)
+        after_end_at=after_end_at, after_id=after_id, cutoff=cutoff, grace=grace)
 
     rows = page["items"]
     by_id = await _names_for(rows)
     items = [_enrich(_sanitize(row, for_lawyer=True), _names_from(row, by_id))
              for row in rows]
+    from app.services.appointment_service import mark_case_meetings
+    await mark_case_meetings(items, rows)
 
     return {"items": items, "next_cursor": page["next_cursor"],
             "cutoff": page["cutoff"]}

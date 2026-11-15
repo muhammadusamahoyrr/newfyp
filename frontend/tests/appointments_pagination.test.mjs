@@ -404,7 +404,8 @@ test("a stale answer from the previous filter is ignored", async () => {
 test("the dashboard total comes from the server, not the first page", async () => {
     // It used to fetch fifty rows, count the pending and confirmed ones among
     // them, and show that as "Appointments — Pending + Confirmed". For anyone
-    // with more than fifty it under-reported work, silently.
+    // with more than fifty it under-reported work, silently. Since 2026-10-20
+    // the counts are the server's one action count (GET /lawyer-actions).
     const { DashboardPage } =
         await import("../src/components/lawyer/DashboardPage.jsx");
     const { NotifCtx, CaseCtx } = await import("../src/components/lawyer/theme.js");
@@ -418,6 +419,8 @@ test("the dashboard total comes from the server, not the first page", async () =
         return pageOf([], { total: 73, pages: 3 });
     });
     api.__respond("listCases", { data: { items: [] } });
+    api.__respond("getLawyerActions", { data: { appointment_requests: 61, outcomes_to_record: 0, hire_requests: 0,
+        upcoming: 12, waiting_for_client: 0, to_do: 61, next: {} }, error: null });
 
     const container = dom.window.document.createElement("div");
     dom.window.document.body.appendChild(container);
@@ -434,11 +437,11 @@ test("the dashboard total comes from the server, not the first page", async () =
     });
     await act(async () => { await new Promise(r => realSetTimeout(r, 80)); });
 
-    // 61 + 12 = 73, which no single page of rows could have told it.
-    assert.match(container.textContent, /73/,
+    // Figures no single page of rows could have told it.
+    assert.match(container.textContent, /61 appointment requests to answer/,
                  "the dashboard did not use the server's totals");
-    const counted = seen.filter(a => a.status && a.page_size === 1);
-    assert.equal(counted.length, 2, "totals were not read with bounded requests");
+    assert.match(container.textContent, /12 upcoming in total/);
+    assert.equal(seen.filter(a => a.status).length, 0, "it still counted appointment rows itself");
     await act(async () => root.unmount());
 });
 

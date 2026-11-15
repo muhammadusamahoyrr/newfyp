@@ -1,0 +1,24 @@
+{
+ "about": "Pre-switch retrieval gate for ident_v2 (2026-10-15). Representative CIVIL drafting requests; expected provision = what the official Pakistan Code CPC text (pdf administrator6598dab..., 'Under Review') headings show for the request -- developer labels, provisional, not lawyer-reviewed. Topics of the locked holdout v3 are deliberately excluded (temporary injunction, local commission, execution attachment, superdari, acquittal, bail cancellation, dower, guardianship, eviction, earnest money, defamation). The dev cases V01-V08 are added by the gate script from cases_v2.jsonl.",
+ "template": "court application civil",
+ "queries": [
+  {"id": "Q01", "instruction": "Draft grounds seeking rejection of the plaint because it discloses no cause of action.", "expect": ["Order VII Rule 11"]},
+  {"id": "Q02", "instruction": "Draft grounds asking the court to return the plaint for presentation to the proper court.", "expect": ["Order VII Rule 10"]},
+  {"id": "Q03", "instruction": "Draft grounds asking the court to strike out a wrongly joined defendant and add a necessary party.", "expect": ["Order I Rule 10"]},
+  {"id": "Q04", "instruction": "Draft grounds to set aside an ex parte decree because the summons was not duly served on the defendant.", "expect": ["Order IX Rule 13"]},
+  {"id": "Q05", "instruction": "Draft grounds to restore a suit dismissed for the plaintiff's non-appearance.", "expect": ["Order IX Rule 9"]},
+  {"id": "Q06", "instruction": "Draft an application for amendment of the plaint before the trial begins.", "expect": ["Order VI Rule 17"]},
+  {"id": "Q07", "instruction": "Draft an application to withdraw the suit with permission to file a fresh suit on the same cause of action.", "expect": ["Order XXIII Rule 1"]},
+  {"id": "Q08", "instruction": "Draft an application for leave to appear and defend a summary suit on a promissory note.", "expect": ["Order XXXVII Rule 3"]},
+  {"id": "Q09", "instruction": "Draft an application to bring the legal representatives of the deceased plaintiff on record.", "expect": ["Order XXII Rule 3"]},
+  {"id": "Q10", "instruction": "Draft grounds for review of the judgment on discovery of new and important evidence.", "expect": ["Order XLVII Rule 1"]},
+  {"id": "Q11", "instruction": "Draft an application to sue as a pauper because the plaintiff cannot pay the court fee.", "expect": ["Order XXXIII Rule 1"]},
+  {"id": "Q12", "instruction": "Draft an application for appointment of a receiver of the disputed property.", "expect": ["Order XL Rule 1"]},
+  {"id": "Q13", "instruction": "Draft an application asking the court to pronounce judgment because the defendant failed to file a written statement.", "expect": ["Order VIII Rule 10"]},
+  {"id": "Q14", "instruction": "Draft a ground that the suit is barred by res judicata.", "expect": ["Section 11"]},
+  {"id": "Q15", "instruction": "Draft an application invoking the inherent powers of the court to secure the ends of justice.", "expect": ["Section 151"]},
+  {"id": "Q16", "instruction": "Draft an application to deliver interrogatories to the opposite party.", "expect": ["Order XI Rule 1"]},
+  {"id": "Q17", "instruction": "Draft an application for adjournment of the hearing on payment of costs.", "expect": ["Order XVII Rule 1"]},
+  {"id": "Q18", "instruction": "Draft an application asking the court to frame the issues arising from the pleadings.", "expect": ["Order XIV Rule 1"]}
+ ]
+}

@@ -1,0 +1,866 @@
+{
+  "version": "candidate-registry-v0.2",
+  "generated": "2026-10-16",
+  "status": "CANDIDATE. URL checks and document identities verified by the developer on 2026-10-16 from official sites; legal status NOT lawyer-validated. Nothing here is ingested, and no entry is a claim of 'current law'.",
+  "verification_method": "Automated fetch of each official URL (no login, no form submission), plus local text extraction of PDFs served by Pakistan Code and FCCP. 403/JS-only pages are recorded as blocked/unverified, never filled from memory or secondary sources.",
+  "feeds": [
+    {
+      "feed_id": "feed.pakistan-code",
+      "family": "A",
+      "title": "The Pakistan Code (federal laws)",
+      "issuer": "Ministry of Law and Justice",
+      "url": "https://pakistancode.gov.pk/english/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "public_official_information_only",
+      "licence_note": "Site disclaimer: content 'for information purposes only, and is currently under review'; the Gazette notification governs. Gazette route: Document Retrieval System https://drs.molaw.gov.pk/Home (loads; IHC rules not found there).",
+      "notes": "CPC, CrPC and PPC are flagged '(Under Review)'. PPC PDF header reads 'Last Amended on 2017-02-16'."
+    },
+    {
+      "feed_id": "feed.na-acts",
+      "family": "A",
+      "title": "National Assembly - Acts of Parliament (enacted, by tenure)",
+      "issuer": "National Assembly of Pakistan",
+      "url": "https://www.na.gov.pk/en/acts-tenure.php",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Enacted Acts with Act numbers (not the bills list). Latest seen: No. 126, Defense Forces of Pakistan Act, 2026 (Act No. XLVII of 2026), 20 Aug 2026. Lists PECA (Amendment) Act 2025 (Act No. II of 2025), 29 Jan 2025."
+    },
+    {
+      "feed_id": "feed.punjab-laws",
+      "family": "A",
+      "title": "Punjab Laws Online",
+      "issuer": "Provincial Assembly of the Punjab",
+      "url": "https://punjablaws.gov.pk/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Has 'Law Gazette', chronological/alphabetical, 'Repealed Laws'. The CPC (Punjab Amendment) 'As Passed' link laws/2706.html: see secondary_urls -- 404 three times on 2026-10-16 (HEAD, GET, and http:// redirected to https://) = not_found_unconfirmed; the user saw a timeout on another check. A search engine still indexes it under the title 'The Code of Civil Procedure (Punjab Amendment) Act 2018' -- the page may have moved; the instrument itself is NOT shown missing.",
+      "secondary_urls": [
+        {
+          "url": "https://punjablaws.gov.pk/laws/2706.html",
+          "url_status": "not_found_unconfirmed",
+          "url_checks": [
+            {
+              "checked_at": "2026-10-16T13:35:32Z",
+              "result": 404,
+              "method": "HEAD"
+            },
+            {
+              "checked_at": "2026-10-16T13:35:45Z",
+              "result": 404,
+              "method": "GET"
+            },
+            {
+              "checked_at": "2026-10-16T13:36:08Z",
+              "result": 404,
+              "method": "HEAD",
+              "note": "http:// URL, redirected to https://"
+            }
+          ],
+          "user_check": "timeout (separate check reported by the user, time not recorded)"
+        }
+      ]
+    },
+    {
+      "feed_id": "feed.sindh-laws",
+      "family": "A",
+      "title": "Sindh Laws and Gazette Legislation",
+      "issuer": "Law, Parliamentary Affairs & Criminal Prosecution Dept, Sindh",
+      "url": "https://www.sindhlaws.gov.pk/SindhIndex.aspx",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Gazette Legislation (Act/Ordinance/Bills), codified laws, by tenure. Latest Act seen 30 Sep 2026. Hosts an AI chatbot with its own disclaimer - not a source."
+    },
+    {
+      "feed_id": "feed.kp-code",
+      "family": "A",
+      "title": "Khyber Pakhtunkhwa Code",
+      "issuer": "Government of Khyber Pakhtunkhwa",
+      "url": "https://kpcode.kp.gov.pk/homepage/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "Reachable (HTTP 200, text/html) on 2026-10-16 13:35Z; the user also reached it in a separate check. Batch-1 recorded 'not_found' from ONE failed fetch -- that was wrong and is withdrawn. Page content, KP CPC amendments and licence NOT yet read.",
+      "url_checks": [
+        {
+          "checked_at": "2026-10-16T13:35:28Z",
+          "result": 200,
+          "method": "HEAD"
+        },
+        {
+          "checked_at": "2026-10-16T13:35:29Z",
+          "result": 200,
+          "method": "HEAD",
+          "note": "https://kpcode.kp.gov.pk/ root"
+        }
+      ]
+    },
+    {
+      "feed_id": "feed.balochistan-code",
+      "family": "A",
+      "title": "Balochistan Code",
+      "issuer": "Law & Parliamentary Affairs Dept, Balochistan",
+      "url": "https://balochistancode.gob.pk/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Acts, Ordinances, Rules, Regulations, Gazette Notifications."
+    },
+    {
+      "feed_id": "feed.fccp-judgments",
+      "family": "B",
+      "title": "Federal Constitutional Court - Judgments/Orders",
+      "issuer": "Federal Constitutional Court of Pakistan",
+      "url": "https://www.fccp.gov.pk/judgements",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "120 entries; fields: case no., title, author judge, Judgement/Order, Approved for Reporting (Yes/No), UPLOAD date (not decision date). No bench or citation column."
+    },
+    {
+      "feed_id": "feed.fccp-notifications",
+      "family": "B",
+      "title": "FCCP Notifications",
+      "issuer": "Federal Constitutional Court of Pakistan",
+      "url": "https://www.fccp.gov.pk/notifications",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse"
+    },
+    {
+      "feed_id": "feed.fsc-judgments",
+      "family": "B",
+      "title": "Federal Shariat Court - judgments",
+      "issuer": "Federal Shariat Court",
+      "url": "https://federalshariatcourt.gov.pk/alljud.php",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Criminal case files, mostly 1996-2009 in the readable rows; decision-date and citation columns empty in the readable text."
+    },
+    {
+      "feed_id": "feed.ihc-legislation",
+      "family": "B",
+      "title": "IHC legislation notices",
+      "issuer": "Islamabad High Court",
+      "url": "https://mis.ihc.gov.pk/frmDetail?Id=1160",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "public_official_information_only",
+      "notes": "Item 1160 = IHC Practice & Procedure Rules 2025 notice (image only). Disclaimer 'for information only'."
+    },
+    {
+      "feed_id": "feed.ihc-forms",
+      "family": "B",
+      "title": "IHC judicial forms",
+      "issuer": "Islamabad High Court",
+      "url": "https://mis.ihc.gov.pk/frmDownloads",
+      "url_status": "unverified",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "List loads by JavaScript; not readable automatically. Page says forms 'may be drafts or templates'. A form is never proof a draft is complete."
+    },
+    {
+      "feed_id": "feed.lhc-rules-orders",
+      "family": "B",
+      "title": "LHC Rules and Orders, Vols I-V (+ amendment PDFs)",
+      "issuer": "Lahore High Court",
+      "url": "https://library.lhc.gov.pk/Home/RulesAndOrders",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "restricted_download_without_permission",
+      "licence_note": "Site footer: material 'should not be downloaded without prior agreement'. BLOCKS ingestion until LHC permission.",
+      "notes": "Vol 1 civil courts; Vol 2 civil special jurisdiction & accounts; Vol 3 criminal courts; Vol 4 civil & criminal; Vol 5 proceedings in the High Court. Each has an amendment_VolN.pdf."
+    },
+    {
+      "feed_id": "feed.sindh-labour",
+      "family": "C",
+      "title": "Sindh Labour Department - laws and notified rules",
+      "issuer": "Directorate General of Labour, Sindh",
+      "url": "https://dglabour.gos.pk/laws-Policies/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "public_official_no_restriction_stated",
+      "notes": "25 Acts, 26 rules; rules show year only (no notification no./date); several download links are '#' placeholders (Acts 1-5, 18; Rules 1-15, 18, 21)."
+    },
+    {
+      "feed_id": "feed.nirc",
+      "family": "C",
+      "title": "NIRC judgments, Acts & Rules, forms",
+      "issuer": "National Industrial Relations Commission",
+      "url": "https://www.nirc.gov.pk/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Single Bench (latest 09-03-2026) and Full Bench (latest 21.02.2024) judgments; set up under s.53 IRA 2012."
+    },
+    {
+      "feed_id": "feed.fospah",
+      "family": "C",
+      "title": "FOSPAH legal framework and decisions",
+      "issuer": "Federal Ombudsperson for Protection against Harassment",
+      "url": "https://fospah.gov.pk/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Decisions carry dates only in filenames. Act title differs between menu ('...at Workplace Act, 2010') and body ('...of Women at the Workplace Act, 2010') - verify from the Act."
+    },
+    {
+      "feed_id": "feed.nepra",
+      "family": "C",
+      "title": "NEPRA SROs, Authority decisions, consumer affairs",
+      "issuer": "National Electric Power Regulatory Authority",
+      "url": "https://nepra.org.pk/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Consumer decisions index per DISCO at nepra.org.pk/consumer affairs/Authority Decisions.php. Consultation items headed 'Public Notice for Seeking Comments' - must be excluded as non-operative."
+    },
+    {
+      "feed_id": "feed.ccp-orders",
+      "family": "C",
+      "title": "Competition Commission orders",
+      "issuer": "Competition Commission of Pakistan",
+      "url": "https://cc.gov.pk/home/orders",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "notes": "Order date + nature of violation; PDFs served from http://appadminccp.cc.gov.pk (plain http - hash on retrieval)."
+    },
+    {
+      "feed_id": "feed.fto",
+      "family": "C",
+      "title": "Federal Tax Ombudsman - Reported Decisions",
+      "issuer": "Federal Tax Ombudsman",
+      "url": "https://fto.gov.pk/decisions.aspx",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "244 entries with complaint number only (e.g. 07345/LHR/IT/2026); no date or outcome in the listing. Non-precedential."
+    },
+    {
+      "feed_id": "feed.sbp-circulars",
+      "family": "D",
+      "title": "SBP circulars",
+      "issuer": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/circulars",
+      "url_status": "blocked",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "HTTP 403 to automated access. Verify in a browser."
+    },
+    {
+      "feed_id": "feed.sbp-consumer",
+      "family": "D",
+      "title": "SBP consumer protection",
+      "issuer": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/our-operations/consumer-protection",
+      "url_status": "blocked",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "HTTP 403. A search snippet of this page still shows a 45-day bank-response period (see Banking Mohtasib conflict)."
+    },
+    {
+      "feed_id": "feed.sbp-sunwai",
+      "family": "D",
+      "title": "SBP Sunwai",
+      "issuer": "State Bank of Pakistan",
+      "url": "https://sunwai.sbp.org.pk/about-us.html",
+      "url_status": "blocked",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown"
+    },
+    {
+      "feed_id": "feed.secp",
+      "family": "D",
+      "title": "SECP laws, regulations, circulars, forms",
+      "issuer": "Securities and Exchange Commission of Pakistan",
+      "url": "https://www.secp.gov.pk/",
+      "url_status": "blocked",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "HTTP 403; sub-URLs and draft separation not established."
+    },
+    {
+      "feed_id": "feed.fbr-sros",
+      "family": "D",
+      "title": "FBR SROs (by department)",
+      "issuer": "Federal Board of Revenue",
+      "url": "https://www.fbr.gov.pk/sros",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "licence_note": "Terms of Use at /Term-of-Use/544 not yet read.",
+      "notes": "Listing rows load by script (SRONumber | Title | Issue Date | Related To). Latest seen on home: S.R.O. 1829(I)/2026 (amends 2402(I)/2025)."
+    },
+    {
+      "feed_id": "feed.nccia",
+      "family": "E",
+      "title": "NCCIA FAQs and complaint forms",
+      "issuer": "National Cyber Crime Investigation Agency",
+      "url": "https://nccia.gov.pk/faqs.php",
+      "url_status": "blocked",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "faqs.php and download.php: HTTP 403 to automated access. NCCIA's creation is by PECA (Amendment) Act 2025 (statute verified; the service pages are not)."
+    },
+    {
+      "feed_id": "feed.banking-mohtasib",
+      "family": "E",
+      "title": "Banking Mohtasib complaint lodgement",
+      "issuer": "Banking Mohtasib Pakistan",
+      "url": "https://www.bankingmohtasib.gov.pk/Website/preComplaintForm.aspx",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "States a complaint must first be lodged with the bank; gives NO day count. Procedure and FAQ pages are 404. See blocker on the 30/45-day period."
+    },
+    {
+      "feed_id": "feed.nadra",
+      "family": "E",
+      "title": "NADRA succession services",
+      "issuer": "NADRA",
+      "url": "https://www.nadra.gov.pk/",
+      "url_status": "blocked",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "HTTP 403. No CNIC or personal data to be collected from it."
+    },
+    {
+      "feed_id": "feed.plra",
+      "family": "E",
+      "title": "Punjab Land Records Authority",
+      "issuer": "PLRA",
+      "url": "https://punjab-zameen.gov.pk/",
+      "url_status": "unverified",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "JS-rendered; services not readable automatically."
+    },
+    {
+      "feed_id": "feed.punjab-estamping",
+      "family": "E",
+      "title": "Punjab e-stamping (via Dastak)",
+      "issuer": "Board of Revenue Punjab / Dastak",
+      "url": "https://dastak.punjab.gov.pk/eng-site/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "BOR Punjab states e-stamping runs through Dastak. estamping.punjab.gov.pk does not resolve; es.punjab.gov.pk unreachable. Steps/fees JS-loaded, unverified."
+    },
+    {
+      "feed_id": "feed.laja",
+      "family": "E",
+      "title": "Legal Aid and Justice Authority",
+      "issuer": "LAJA",
+      "url": "https://laja.gov.pk/",
+      "url_status": "unverified",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "JS shell; services/eligibility not readable."
+    },
+    {
+      "feed_id": "feed.pbc-verification",
+      "family": "F",
+      "title": "Punjab Bar Council - online certificate verification",
+      "issuer": "Punjab Bar Council",
+      "url": "https://pbbarcouncil.com/online-certificate-verification/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "MARKETPLACE VERIFICATION, never RAG. Inputs not visible (links to portal.pbbarcouncil.com, plain http). No terms/rate limits found. Never scrape, never auto-verify a lawyer."
+    },
+    {
+      "feed_id": "feed.ibc-verification",
+      "family": "F",
+      "title": "Islamabad Bar Council - lawyers' verification",
+      "issuer": "Islamabad Bar Council",
+      "url": "https://www.ibc.org.pk/lawyers-verification/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "licence_status": "unknown",
+      "notes": "MARKETPLACE VERIFICATION, never RAG. Inputs not visible; no terms found."
+    }
+  ],
+  "documents": [
+    {
+      "source_id": "pk.fed.court-fees-act-1870",
+      "family": "A",
+      "priority": 1,
+      "title": "The Court-Fees Act, 1870 (Pakistan Code consolidated text)",
+      "issuer": "Ministry of Law and Justice",
+      "source_type": "statute_consolidated",
+      "jurisdiction": "federal",
+      "official_url": "https://pakistancode.gov.pk/pdffiles/administrator9d60b89fa3dd51147d677e764c8772e3.pdf",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "document_hash": "a5cdc51c4422c82d8ed15d75c7dbc0a2729bdc3647ac8e6ad011c9aee078d596",
+      "commencement_evidence": "on_enactment_clause",
+      "commencement_date": "1870-04-01",
+      "licence_status": "public_official_information_only",
+      "ocr_quality": "text_layer",
+      "blockers": [
+        "amended-up-to date of this consolidation is not stated",
+        "rates for provincial courts are set by the 'Appropriate Government' - provincial amendments not yet identified and must be separate records",
+        "pilot found inserted ss.1A, 19H, 35A filed under the preceding section and asterisk-omitted ss.2, 16, 24, 31 recorded as live sections"
+      ],
+      "notes": "Identity verified from text: s.1 'Court-fees Act, 1870 ... extends to the whole of Pakistan ... come into force on the first day of April, 1870'. Footnotes name Act 6 of 1905, Act 21 of 1960, Ord. 52 of 1962, Act 27 of 1981.",
+      "text_authority": "official_consolidated_informational"
+    },
+    {
+      "source_id": "pk.fed.peca-2016",
+      "family": "A",
+      "priority": 2,
+      "title": "The Prevention of Electronic Crimes Act, 2016 (Pakistan Code consolidated text incl. 2025 amendment)",
+      "issuer": "Ministry of Law and Justice",
+      "source_type": "statute_consolidated",
+      "jurisdiction": "federal",
+      "official_url": "https://www.pakistancode.gov.pk/pdffiles/administrator6a061efe0ed5bd153fa8b79b8eb4cba7.pdf",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "document_hash": "b096696f758d4b1ec5e764ac500462667ba70e9daba7342050239395171d19f8",
+      "commencement_evidence": "unverified",
+      "licence_status": "public_official_information_only",
+      "ocr_quality": "text_layer",
+      "blockers": [
+        "original 2016 commencement not yet read from the Act/Gazette",
+        "constitutional petitions against the 2025 amendment reported (secondary sources); outcome unknown",
+        "pilot found 8 inserted provisions (22A, 24A, 26A, 30A, 43A, 45A, 50A, 51A) filed under the preceding section, and Authority ss.2E-2K, 2S, 2T, 2W not split"
+      ],
+      "notes": "Text contains Chapter 1A (Authority, ss.2A ff.) and references to Act II of 2025 and Act XXXVII of 2023.",
+      "text_authority": "official_consolidated_informational"
+    },
+    {
+      "source_id": "pk.fed.peca-amendment-2025",
+      "family": "A",
+      "priority": 3,
+      "title": "The Prevention of Electronic Crimes (Amendment) Act, 2025 (Act No. II of 2025)",
+      "issuer": "Parliament",
+      "source_type": "amendment_instrument",
+      "jurisdiction": "federal",
+      "amendment_of": "pk.fed.peca-2016",
+      "instrument_number": "Act No. II of 2025",
+      "official_url": "https://na.gov.pk/uploads/documents/679b243193585_457.pdf",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "blockers": [
+        "NA PDF reachable (HTTP 200 application/pdf) but NOT downloaded or read: identity, Act number and commencement clause unverified from the document itself",
+        "Gazette (Extraordinary) 29 Jan 2025 and 'come into force at once' reported only by secondary sources (law-firm summary, news)"
+      ],
+      "notes": "NA Acts list (official) shows the Act dated 29 Jan 2025. Creates NCCIA (replacing FIA cyber wing) and the Authority; s.26A offence.",
+      "url_checks": [
+        {
+          "checked_at": "2026-10-16T13:43:49Z",
+          "result": 200,
+          "method": "HEAD"
+        }
+      ],
+      "text_authority": "unverified"
+    },
+    {
+      "source_id": "pk.punjab.cpc-amendment-2018",
+      "family": "A",
+      "priority": 4,
+      "title": "The Code of Civil Procedure (Punjab Amendment) Act 2018 (XIV of 2018) - Bill No. 7 of 2018 (passed 14 Mar 2018)",
+      "issuer": "Provincial Assembly of the Punjab",
+      "source_type": "amendment_instrument",
+      "jurisdiction": "punjab",
+      "amendment_of": "pk.fed.cpc-1908",
+      "official_url": "https://www.pap.gov.pk/bills/details/en/20/267",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "blockers": [
+        "Act number and Gazette citation (Punjab Gazette (Extraordinary), 20 March 2018, pp. 6695-6698) come from the Punjab Code consolidation's footnotes and the bill record -- the Gazette itself has NOT been read",
+        "commencement clause not read (the Act text is not available: punjablaws.gov.pk/laws/2706.html is 404, unconfirmed)",
+        "official_url is the BILL record, not the enacted text",
+        "CPC (Punjab Amendment) Ordinance 2020 seen only on a law-firm site; status (lapsed/enacted) unknown"
+      ],
+      "notes": "India's Punjab has its own 'CPC (Punjab Amendment)' bills - country check mandatory.",
+      "url_checks": [
+        {
+          "checked_at": "2026-10-16T13:43:51Z",
+          "result": 200,
+          "method": "HEAD"
+        }
+      ],
+      "text_authority": "official_bill_record",
+      "instrument_number": "Act XIV of 2018",
+      "publication_date": "2018-03-20"
+    },
+    {
+      "source_id": "pk.fed.cpc-1908",
+      "family": "A",
+      "priority": 5,
+      "title": "The Code of Civil Procedure, 1908 (federal text)",
+      "issuer": "Ministry of Law and Justice",
+      "source_type": "statute_consolidated",
+      "jurisdiction": "federal",
+      "official_url": "https://pakistancode.gov.pk/english/",
+      "url_status": "unverified",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "public_official_information_only",
+      "blockers": [
+        "Pakistan Code flags CPC '(Under Review)'",
+        "federal text not yet fetched or hashed",
+        "the INDEXED CPC (sha256 528384...) is the Punjab Code text -- see pk.punjab.cpc-1908-punjab-code; it must not stand in for the federal text (Islamabad, Sindh, KP, Balochistan have their own amendment histories)"
+      ]
+    },
+    {
+      "source_id": "pk.punjab.labour-code-2026",
+      "family": "A",
+      "priority": 6,
+      "title": "The Punjab Labour Code, 2026 (Act IX of 2026)",
+      "issuer": "Provincial Assembly of the Punjab",
+      "source_type": "statute_original",
+      "jurisdiction": "punjab",
+      "instrument_number": "Act IX of 2026",
+      "official_url": "https://punjablaws.gov.pk/",
+      "url_status": "unverified",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "not_notified",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "blockers": [
+        "COMMENCEMENT NOT ESTABLISHED: secondary sources conflict (some say notified May 2026, a law-firm note says not yet); no Gazette notification number or date found",
+        "official text URL not located",
+        "repeals six laws (s.435 per repo reviewer notes) - those must not be marked superseded until commencement is verified",
+        "Indian 'Punjab labour code' rules appear in searches - country check mandatory"
+      ],
+      "notes": "Assent/publication 10 Feb 2026 per secondary sources. Never label 'currently in force'."
+    },
+    {
+      "source_id": "pk.fed.constitution-current",
+      "family": "A",
+      "priority": 7,
+      "title": "Constitution of the Islamic Republic of Pakistan (consolidated through the 27th Amendment)",
+      "issuer": "National Assembly / Ministry of Law and Justice",
+      "source_type": "constitution",
+      "jurisdiction": "federal",
+      "official_url": "https://pakistancode.gov.pk/english/",
+      "url_status": "unverified",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "public_official_information_only",
+      "blockers": [
+        "the INDEXED Constitution is the NA text 'as modified up to 28 Feb 2012'",
+        "no current official CONSOLIDATED text located; the 27th Amendment Gazette is recorded separately (pk.fed.constitution-27th-amendment-2025) -- a consolidation must be checked against the full amendment chain (18th-27th), not assembled by us",
+        "whether any amendment after the 27th has been enacted is NOT verified from an official source (secondary sources, mid-2026: 28th Amendment only proposed)"
+      ],
+      "notes": "27th Amendment (Nov 2025) created the FCCP (Arts 175E/175F per secondary text) and moved constitutional jurisdiction from the Supreme Court."
+    },
+    {
+      "source_id": "pk.fccp.practice-procedure-rules-2026",
+      "family": "B",
+      "priority": 8,
+      "title": "Federal Constitutional Court (Practice and Procedure) Rules, 2026",
+      "issuer": "Federal Constitutional Court of Pakistan",
+      "source_type": "court_rules",
+      "forum": "FCCP",
+      "jurisdiction": "federal",
+      "instrument_number": "S.R.O. 1580(I)/2026",
+      "official_url": "https://www.fccp.gov.pk/notifications",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "publication_date": "2026-09-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "ocr_quality": "text_layer",
+      "blockers": [
+        "commencement clause not yet read (106-page PDF)",
+        "download URL is an encrypted token - record the hash of the retrieved copy on approved retrieval"
+      ],
+      "notes": "Verified from the PDF's first page: Gazette of Pakistan Part II, Wednesday 16 Sep 2026; notification dated 14 Sep 2026; S.R.O. 1580(I)/2026; made under Article 191."
+    },
+    {
+      "source_id": "pk.ihc.practice-procedure-rules-2025",
+      "family": "B",
+      "priority": 9,
+      "title": "Practice & Procedure Rules of the Islamabad High Court & Subordinate Courts, 2025 (Vols I-V)",
+      "issuer": "Islamabad High Court",
+      "source_type": "court_rules",
+      "forum": "IHC",
+      "jurisdiction": "islamabad_capital_territory",
+      "instrument_number": "S.R.O. 169(I)/2025",
+      "official_url": "https://mis.ihc.gov.pk/frmDetail?Id=1160",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "publication_date": "2025-02-18",
+      "commencement_evidence": "unverified",
+      "licence_status": "public_official_information_only",
+      "blockers": [
+        "rules TEXT not found on any official page (IHC notice is an image; DRS has no copy)",
+        "w.e.f. 04-02-2025 is stated on the IHC notice, not yet read from the S.R.O."
+      ],
+      "notes": "Supersedes earlier IHC rules - which earlier rules, and from when, must be verified from the S.R.O."
+    },
+    {
+      "source_id": "pk.lhc.rules-orders",
+      "family": "B",
+      "priority": 10,
+      "title": "Lahore High Court Rules and Orders, Volumes I-V (+ amendment PDFs)",
+      "issuer": "Lahore High Court",
+      "source_type": "court_rules",
+      "forum": "LHC",
+      "jurisdiction": "punjab",
+      "official_url": "https://library.lhc.gov.pk/Home/RulesAndOrders",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "restricted_download_without_permission",
+      "blockers": [
+        "LHC site: 'should not be downloaded without prior agreement' - written permission required before ingestion",
+        "amended-up-to state of each volume unknown"
+      ]
+    },
+    {
+      "source_id": "pk.fsc.procedure-rules",
+      "family": "B",
+      "priority": 11,
+      "title": "Federal Shariat Court Procedure Rules",
+      "issuer": "Federal Shariat Court",
+      "source_type": "court_rules",
+      "forum": "FSC",
+      "jurisdiction": "federal",
+      "official_url": "https://www.federalshariatcourt.gov.pk/en/procedure-rules/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "blockers": [
+        "no date or notification number on the page; file path suggests 2018 (not proof)"
+      ]
+    },
+    {
+      "source_id": "pk.fed.banking-companies-ordinance-82d",
+      "family": "E",
+      "priority": 12,
+      "title": "Banking Companies Ordinance, 1962, s.82D (Banking Mohtasib) - bank-response period",
+      "issuer": "Parliament",
+      "source_type": "statute_consolidated",
+      "jurisdiction": "federal",
+      "official_url": "https://www.bankingmohtasib.gov.pk/Website/preComplaintForm.aspx",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "unknown",
+      "blockers": [
+        "CONFLICT: news reports (Nov 2024) say s.82D(2) was amended from 45 to 30 days and gazetted; the Mohtasib's 2011 complaint form and an SBP page snippet still say 45; the official pages that would settle it are 404/403",
+        "do NOT hard-code 30 or 45 until the amending instrument and its date are read from the Gazette"
+      ]
+    },
+    {
+      "source_id": "pk.fed.ira-2012",
+      "family": "C",
+      "priority": 13,
+      "title": "Industrial Relations Act, 2012 (NIRC Acts & Rules)",
+      "issuer": "Parliament",
+      "source_type": "statute_consolidated",
+      "jurisdiction": "islamabad_capital_territory",
+      "official_url": "https://www.nirc.gov.pk/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "blockers": [
+        "territorial application (ICT / trans-provincial) to be verified - provinces have their own IR Acts",
+        "document not fetched or hashed"
+      ]
+    },
+    {
+      "source_id": "pk.fed.harassment-act-2010",
+      "family": "C",
+      "priority": 14,
+      "title": "Protection against Harassment of Women at the Workplace Act, 2010 (+ Amendment Act 2022)",
+      "issuer": "Parliament",
+      "source_type": "statute_original",
+      "jurisdiction": "federal",
+      "official_url": "https://fospah.gov.pk/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "blockers": [
+        "two titles in use on the official site; read the Act",
+        "provincial harassment Acts/Ombudspersons exist - jurisdiction split needed",
+        "document not fetched or hashed"
+      ]
+    },
+    {
+      "source_id": "pk.sindh.labour-laws-set",
+      "family": "C",
+      "priority": 15,
+      "title": "Sindh labour Acts (25) and notified rules (26)",
+      "issuer": "Directorate General of Labour, Sindh",
+      "source_type": "statute_original",
+      "jurisdiction": "sindh",
+      "official_url": "https://dglabour.gos.pk/laws-Policies/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "unverified",
+      "licence_status": "public_official_no_restriction_stated",
+      "blockers": [
+        "rules listed without notification number/date",
+        "many download links are placeholders",
+        "one record per instrument required - this is a set, not an instrument"
+      ]
+    },
+    {
+      "source_id": "pk.fccp.judgments",
+      "family": "B",
+      "priority": 16,
+      "title": "FCCP judgments and orders (feed)",
+      "issuer": "Federal Constitutional Court of Pakistan",
+      "source_type": "judgment",
+      "forum": "FCCP",
+      "jurisdiction": "federal",
+      "official_url": "https://www.fccp.gov.pk/judgements",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "not_applicable",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "blockers": [
+        "listing shows upload date, not decision date; bench not shown",
+        "reuse terms not stated",
+        "authority of FCCP vs Supreme Court decisions after the 27th Amendment needs a lawyer's statement before any ranking rule"
+      ]
+    },
+    {
+      "source_id": "pk.svc.nccia-complaint",
+      "family": "E",
+      "priority": 17,
+      "title": "NCCIA cybercrime complaint guidance and forms",
+      "issuer": "National Cyber Crime Investigation Agency",
+      "source_type": "service_guide",
+      "jurisdiction": "federal",
+      "official_url": "https://nccia.gov.pk/faqs.php",
+      "url_status": "blocked",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "not_applicable",
+      "licence_status": "unknown",
+      "recheck_after_days": 90,
+      "blockers": [
+        "HTTP 403 to automated access - verify manually in a browser"
+      ]
+    },
+    {
+      "source_id": "pk.svc.punjab-estamping",
+      "family": "E",
+      "priority": 18,
+      "title": "Punjab e-stamping route (Dastak / Board of Revenue)",
+      "issuer": "Board of Revenue Punjab",
+      "source_type": "service_guide",
+      "jurisdiction": "punjab",
+      "official_url": "https://dastak.punjab.gov.pk/eng-site/",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "not_applicable",
+      "licence_status": "unknown",
+      "recheck_after_days": 90,
+      "blockers": [
+        "steps and fees load by JavaScript - unverified"
+      ]
+    },
+    {
+      "source_id": "eval.zenodo.21672295",
+      "family": "G",
+      "priority": 19,
+      "title": "Pakistan Supreme Court and Islamabad High Court Judgment and Headnote Dataset for Abstractive Legal Text Summarization",
+      "issuer": "Sarwar, Ul-Hasan, Shafait (NUST / NCAI)",
+      "source_type": "evaluation_dataset",
+      "jurisdiction": "federal",
+      "official_url": "https://zenodo.org/records/21672295",
+      "url_status": "ok",
+      "verification_date": "2026-10-16",
+      "commencement_evidence": "not_applicable",
+      "licence_status": "third_party_licence",
+      "licence_note": "CC-BY-4.0 (Zenodo API). Attribution required: Sarwar et al., ICECCME 2022, DOI 10.5281/zenodo.21672295.",
+      "blockers": [
+        "EVALUATION ONLY - never legal authority, never in the retrieval corpus",
+        "headnotes are 'human-written' but the reporter/source is not named - copyright of headnotes in law reports may belong to the publisher; confirm before even evaluation use beyond research",
+        "429 pairs (345/42/42); md5 d550b3f2b3cfa3fcb8aaf55e682c67e3 per Zenodo"
+      ]
+    },
+    {
+      "source_id": "pk.fed.constitution-27th-amendment-2025",
+      "family": "A",
+      "priority": 7,
+      "title": "Constitution (Twenty-seventh Amendment) Act, 2025 (Act No. XXXII of 2025)",
+      "issuer": "Majlis-e-Shoora (Parliament); published by Senate Secretariat",
+      "source_type": "amendment_instrument",
+      "jurisdiction": "federal",
+      "amendment_of": "pk.fed.constitution-current",
+      "instrument_number": "Act No. XXXII of 2025",
+      "official_url": "https://www.na.gov.pk/uploads/documents/691ec19a6a212_270.pdf",
+      "url_status": "ok",
+      "url_checks": [
+        {
+          "checked_at": "2026-10-16T13:36:10Z",
+          "result": 200,
+          "method": "HEAD"
+        },
+        {
+          "checked_at": "2026-10-16T13:42:38Z",
+          "result": 200,
+          "method": "GET",
+          "note": "single document fetched for verification"
+        }
+      ],
+      "verification_date": "2026-10-16",
+      "document_hash": "303d09fab0516c1fd723f36f5a401fbab872091fe1b5213a192e172b39b275d1",
+      "text_authority": "gazette",
+      "gazette_reference": "Gazette of Pakistan, Extraordinary, Part I, Islamabad, Thursday 13 Nov 2025 [2307(2025)/Ex. Gaz.]; Senate Secretariat No.F.9(10)/2025-Legis.",
+      "publication_date": "2025-11-13",
+      "commencement_evidence": "on_enactment_clause",
+      "commencement_date": "2025-11-13",
+      "licence_status": "all_rights_reserved_unclear_reuse",
+      "ocr_quality": "ocr_poor",
+      "blockers": [
+        "scanned Gazette; OCR text layer is poor ('Coult', 'l8,l') -- never index this text; read provisions from the image",
+        "verifies the 27th Amendment only; a consolidated Constitution incorporating it is not verified",
+        "FCCP provisions (new Chapter, s.21; Art.175E original jurisdiction; omission of Art.184, s.29; Art.199 amended, s.40) located by heading only -- their wording and effect need a lawyer's reading",
+        "the Balochistan Assembly copy of the same Act (pabalochistan.gov.pk) returned 404 on 2026-10-16 (unconfirmed)"
+      ],
+      "notes": "Verified from the PDF itself: assent 13 Nov 2025; s.1(2) 'shall come into force at once'; 23 pages; 56 amending sections. The Senate's INTRODUCED bill (8 Nov 2025) differs and is not authority."
+    },
+    {
+      "source_id": "pk.punjab.cpc-1908-punjab-code",
+      "family": "A",
+      "priority": 5,
+      "title": "The Code of Civil Procedure, 1908 as applied in Punjab (Punjab Code consolidated text)",
+      "issuer": "Government of the Punjab (Punjab Code)",
+      "source_type": "statute_consolidated",
+      "jurisdiction": "punjab",
+      "official_url": "https://punjabcode.punjab.gov.pk/uploads/articles/THE_CODE_OF_CIVIL_PROCEDURE,_1908.pdf",
+      "url_status": "ok",
+      "url_checks": [
+        {
+          "checked_at": "2026-10-16T13:35:31Z",
+          "result": 200,
+          "method": "HEAD"
+        }
+      ],
+      "verification_date": "2026-10-16",
+      "document_hash": "528384375982b48f0398da46e70606524a8e3db7590dbf087e9b6b86d926a795",
+      "text_authority": "official_consolidated_informational",
+      "commencement_evidence": "unverified",
+      "licence_status": "unknown",
+      "ocr_quality": "text_layer",
+      "blockers": [
+        "THIS is the text the live index holds labelled as the federal CPC -- relabel to Punjab before any reuse (needs approval; not done)",
+        "amended-up-to date of the consolidation not stated",
+        "Punjab amending instruments are cited only in its footnotes; each must be its own amendment record",
+        "Punjab Code licence/reuse terms not read",
+        "the user saw this URL time out in a separate check; it answered 200 on 2026-10-16 13:35Z"
+      ],
+      "notes": "Read from this PDF's own footnotes (2026-10-16): 20 citations of the Code of Civil Procedure (Punjab Amendment) Act 2018 (XIV of 2018), 'published in the Punjab Gazette (Extraordinary), dated: 20 March 2018, pp. 6695-6698' (e.g. s.2 substitutes 'Court of Small Causes'; s.3 omits a provision). Older Punjab/West Pakistan instruments also cited (Punjab Relief of Indebtedness Act 1934; W.P. Act XVI of 1957). Latest federal amendment cited: CPC (Amendment) Ordinance 2002 (XXXIV of 2002). Whether any Punjab amendment AFTER 2018 exists is not verified."
+    }
+  ],
+  "url_status_rule": "url_status is derived from url_checks (registry.url_status_from_checks): latest check decides; 403/401/429 = blocked; timeout = timeout; a 404 is not_found_confirmed only after 2+ consecutive 404/410 checks at least 24h apart with no success since. A single failed fetch never makes a source 'missing'. Checks below are HEAD/GET status probes from the developer's machine; 'user_check' notes record checks reported by the user."
+}

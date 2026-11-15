@@ -1,9 +1,11 @@
 """Both lawyer AI surfaces must send the case's DATABASE id, and only that.
 
-There are two places a lawyer can ask the AI about a case: the AI Legal page
-(with a case selector) and the case workspace's AI tab. Both call
-`aiResearch`, and both used to hand the model case FACTS composed in the
-browser — a `caseContext` object of title, description and parties, dropped
+A lawyer asks the AI about a case on the AI Legal page (with a case selector).
+It calls `aiResearch`. (The case workspace's AI tab was a second surface until
+commit 1ba40e7 deleted it as never rendered -- 2026-10-17 contract update: the
+AI Legal page is the ONE research surface, and any new `aiResearch` call site
+must be declared below so it cannot bypass this contract.) Surfaces used to
+hand the model case FACTS composed in the browser — a `caseContext` object of title, description and parties, dropped
 into `history` as free text. That meant the client, not the server, decided
 what the model believed about a matter, with nothing checking the sender was
 assigned to it.
@@ -28,10 +30,15 @@ import pytest
 
 FRONTEND = Path(__file__).resolve().parents[2] / "frontend" / "src"
 
+# Every component that calls `aiResearch` -- enforced by
+# test_every_research_call_site_is_a_declared_surface below.
 SURFACES = {
     "AI Legal page": FRONTEND / "components" / "lawyer" / "AILegalPage.jsx",
-    "case workspace AI tab": FRONTEND / "components" / "lawyer" / "CasesPage.jsx",
 }
+# The case workspace no longer has an AI tab (commit 1ba40e7). It must still
+# never compose case facts for a model; if a research entry returns there, it
+# must be added to SURFACES (the discovery test fails until it is).
+CASE_WORKSPACE = FRONTEND / "components" / "lawyer" / "CasesPage.jsx"
 
 # The `case_id:` line inside an aiResearch(...) options object.
 _CASE_ID_ARG = re.compile(r"case_id:\s*([^,\n]+)")
@@ -79,3 +86,25 @@ def test_the_api_helper_forwards_case_id_and_nothing_else():
     assert "case_id" in text, "the helper drops case_id before it reaches the server"
     for leak in ("case_context", "caseContext", "description", "client_name"):
         assert leak not in text, f"the helper sends {leak} to the server"
+
+
+def test_every_research_call_site_is_a_declared_surface():
+    """A new place that calls aiResearch (e.g. a restored case-workspace tab)
+    is held to the same contract: it must be listed in SURFACES."""
+    if not FRONTEND.exists():
+        pytest.skip("frontend source not present")
+    callers = {p.resolve() for p in FRONTEND.rglob("*.jsx")
+               if "aiResearch(" in p.read_text(encoding="utf-8", errors="replace")}
+    callers |= {p.resolve() for p in (FRONTEND / "components").rglob("*.js")
+                if "aiResearch(" in p.read_text(encoding="utf-8", errors="replace")}
+    declared = {p.resolve() for p in SURFACES.values()}
+    undeclared = sorted(str(p) for p in callers - declared)
+    assert not undeclared, f"aiResearch is called from undeclared surfaces: {undeclared}"
+    assert declared <= callers, "a declared research surface no longer calls aiResearch"
+
+
+def test_the_case_workspace_sends_no_case_facts():
+    assert "caseContext" not in _source(CASE_WORKSPACE), (
+        "the case workspace builds a case-facts payload -- case facts must come from the "
+        "authorised server-side record, not the client")
+

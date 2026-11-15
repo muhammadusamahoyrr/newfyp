@@ -8,6 +8,7 @@ from app.schemas.intake import (
     IntakeConvertRequest,
     IntakeDetailResponse,
     IntakeResponse,
+    IntakeRetryAnalysisResponse,
     IntakeStartResponse,
     IntakeStepData,
     OcrConfirmRequest,
@@ -214,3 +215,16 @@ async def convert_to_case(
         language=language,
         urgency=urgency,
     )
+
+
+@router.post("/{token}/retry-analysis", response_model=IntakeRetryAnalysisResponse)
+@limiter.limit(_LIMIT_CONVERT)
+async def retry_analysis(
+    request: Request,
+    token: str,
+    body: IntakeConvertRequest | None = Body(default=None),
+    current_user: dict = Depends(require_client),
+):
+    """Re-run a FAILED intake analysis for the client's own draft case."""
+    return await intake_service.retry_analysis(
+        token, current_user["_id"], language=body.language if body else "en")

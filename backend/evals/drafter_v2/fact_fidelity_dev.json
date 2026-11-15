@@ -1,0 +1,1335 @@
+{
+ "about": "Dev labels (2026-10-15, developer, provisional -- not lawyer-reviewed) for input-fact fidelity. 'invented': the sentence states a case fact or contract term the request does not give; 'ok': restates the request, argues law, undertakes, or leaves a [placeholder]. Sentences are the model's own outputs in v2_r3_dev / v2_r2_dev (synthetic cases) plus a synthetic Urdu probe. Used to MEASURE methods; never for release claims.",
+ "rows": [
+  {
+   "n": 0,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the plaint does not disclose any cause of action, contrary to the requirement of Order VII Rule 11 CPC.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 1,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, accordingly, the plaint must be rejected under Order VII Rule 11 CPC.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 2,
+   "case": "V02",
+   "input": "Draft grounds for returning the plaint because this court lacks territorial jurisdiction. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "1. That the plaint is returned to the plaintiff on the ground that this Court lacks territorial jurisdiction over the cause of action, and the suit should be instituted in the Court having jurisdiction, in accordance with Order VII Rule 10 CPC.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 3,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the suit is presently pending before this Hon’ble Court and the applicant’s interest is directly affected, rendering him a necessary party for the complete adjudication of the matter.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 4,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, pursuant to Order I Rule 10 CPC, the Court may at any stage of the suit, if satisfied that the addition of a party is necessary to enable the Court to adjudicate upon and settle all questions involved, order that such person be added as a party.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 5,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant is a person who ought to have been joined as a plaintiff/defendant, and his presence before the Court is essential to enable the Court to effectually and completely determine the rights and liabilities of the parties.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 6,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, in accordance with Section 22 Limitation Act 1908, the addition of the applicant as a party shall be deemed to have instituted the suit against him at the date of his addition, thereby ensuring that no limitation bar is raised by such addition.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 7,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, under Order XIV Rule 5 CPC, the Court may amend the parties before passing a decree, and such amendment is necessary to prevent multiplicity of proceedings and to secure the ends of justice.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 8,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the decree was obtained by fraud and misrepresentation, and accordingly, under Article 95 of the First Schedule of the Limitation Act 1908, it may be set aside.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 9,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the fraud was discovered within three years from the date of the decree, thereby satisfying the limitation period prescribed in Article 95 of the First Schedule of the Limitation Act 1908.",
+   "label": "invented",
+   "fact": "fraud discovered within three years"
+  },
+  {
+   "n": 10,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the decree was passed ex parte without the plaintiff being given a proper opportunity to appear, and pursuant to Order IX Rule 12 CPC, the plaintiff may seek the setting aside of the decree for failure to appear without sufficient cause.",
+   "label": "invented",
+   "fact": "no proper opportunity to appear"
+  },
+  {
+   "n": 11,
+   "case": "V07",
+   "input": "Draft an application asking the court to fix an early hearing date using its inherent powers. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the Plaintiff respectfully prays that this Hon’ble Court, by virtue of its inherent powers under Section 151 CPC, fix an early date for hearing of the present application so as to prevent undue delay and to ensure the ends of justice.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 12,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the appellant was unable to file the appeal within the period prescribed under the Code of Civil Procedure, 1908, due to bona‑fide reasons beyond his control.",
+   "label": "invented",
+   "fact": "bona fide reasons beyond control"
+  },
+  {
+   "n": 13,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the appeal was filed 12 days after the expiry of the prescribed period of limitation.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 14,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, in accordance with Section 14 of the Limitation Act 1908, the period of delay should be excluded as the appellant was prosecuting a related proceeding in good faith.",
+   "label": "invented",
+   "fact": "prosecuting a related proceeding"
+  },
+  {
+   "n": 15,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, pursuant to Order XLVII Rule 7 CPC, an order granting an application may be objected to on the ground that the application was filed after the expiration of the period of limitation, and the appellant therefore seeks condonation of the said delay.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 16,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the appellant prays that this Hon’ble Court may condone the 12‑day delay and admit the appeal.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 17,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "1. That the continuation of the criminal proceedings constitutes an abuse of the process of law and, in order to prevent such abuse, the High Court should exercise its inherent jurisdiction to quash the proceedings under Section 561A CrPC.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 18,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "2. That the accused, though not insane, is unable to understand the proceedings, and the trial’s continuation therefore contravenes the provisions of Section 341 CrPC, rendering the proceedings invalid and an abuse of process.",
+   "label": "invented",
+   "fact": "not insane / unable to understand"
+  },
+  {
+   "n": 19,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "3. That the further prosecution of the accused would result in a miscarriage of justice, and the High Court, by virtue of its inherent power under Section 561A CrPC, is empowered to intervene and prevent the abuse of the judicial process.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 20,
+   "case": "V11",
+   "input": "Draft a ground for pre-arrest (protective) bail citing mala fide on the part of the complainant. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant is entitled to protective bail on the ground of mala fide conduct on the part of the complainant, and that such bail may be granted under Section 498 of the Criminal Procedure Code, 1898, which empowers the Court to direct admission to bail where the circumstances of the case so warrant.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 21,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "1. That the applicant is a surety who executed a bond in accordance with Section 499 CrPC 1898, guaranteeing the appearance of the accused [ACCUSED’S NAME] before the Court.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 22,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "2. That the applicant now seeks to be discharged from the said bail bond on the grounds that [state grounds, e.g., change of circumstances, undue hardship, etc.].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 23,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "3. That under Section 122 CrPC 1898 a Magistrate is empowered to reject or discharge any surety who is deemed unfit, and the applicant respectfully submits that the circumstances herein satisfy the criteria for such discharge.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 24,
+   "case": "V13",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔ IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That مزید انکوائری کی ضرورت ہے کیونکہ ملزم پر لاگو ہونے والا الزام سیکشن 141، پاکستان پینل کوڈ کے تحت غیر قانونی اجتماع کا ہے۔",
+   "label": "invented",
+   "fact": "charge under s.141 unlawful assembly"
+  },
+  {
+   "n": 25,
+   "case": "V15",
+   "input": "Draft a ground in a custody petition that the minor's welfare requires custody with the mother. Cite the law. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the welfare of the minor child requires that she be placed in the custody of her mother, who is best positioned to ensure her support, health, education and overall welfare as mandated by Section 24 Guardians and Wards Act 1890, and that the Court may, under Section 41 Divorce Act 1869, make such an order for custody, maintenance and education.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 26,
+   "case": "V16",
+   "input": "Draft the jurisdiction paragraph for a suit for maintenance of a wife and minor children before the Family Court. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the Family Court at [PLACE] has jurisdiction to entertain the present suit for maintenance of the petitioner wife and minor children under Section 7 of the Family Courts Act 1964, and pursuant to Section 41 of the Divorce Act 1869 the Court may make such orders as to custody, maintenance and education of the minor children; further, the provisions of the Code of Civil Procedure shall not apply to these proceedings as per Section 17 of the West Pakistan Family Courts Act 1964.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 27,
+   "case": "V17",
+   "input": "Draft a paragraph calling on a tenant to vacate for non-payment of rent, citing the governing law. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That you are required to vacate the premises located at [ADDRESS] within [NUMBER] days of receipt of this notice, on account of your failure to pay rent due under the tenancy, pursuant to [applicable provincial rent law -- choose jurisdiction].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 28,
+   "case": "V19",
+   "input": "Add a clause that the sale deed of the immovable property shall be registered, citing the law. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "The sale deed of the immovable property shall be executed by a registered instrument and duly registered in accordance with Section 54 of the Transfer of Property Act, 1882.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 29,
+   "case": "V20",
+   "input": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2.1 The Consultant covenants that for a period of twelve (12) months following the termination of this Agreement, he/she shall not, within the Federal Capital Territory, directly or indirectly engage in any activity that competes with the business of [PARTY A].",
+   "label": "invented",
+   "fact": "twelve months; Federal Capital Territory"
+  },
+  {
+   "n": 30,
+   "case": "V20",
+   "input": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2.2 The parties agree that this restriction is reasonable and enforceable under Pakistani law to the extent it is limited in duration and geographic scope [placeholder].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 31,
+   "case": "V22",
+   "input": "Add a clause that disputes go to arbitration in Karachi. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "That any dispute arising out of or in connection with this Agreement shall be referred to and finally resolved by arbitration in Karachi, in accordance with [applicable Sindh law -- verify].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 32,
+   "case": "V23",
+   "input": "Draft the paragraph stating this is the statutory notice required before suing the Federal Government. Cite the provision. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That this notice constitutes the statutory notice required under CPC 1908 — provision not identified before instituting any suit against the Federal Government.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 33,
+   "case": "V23",
+   "input": "Draft the paragraph stating this is the statutory notice required before suing the Federal Government. Cite the provision. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "(CPC 1908 — provision not identified)",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 34,
+   "case": "V24",
+   "input": "Draft a paragraph demanding payment of a dishonoured cheque within fifteen days and warning of criminal proceedings. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That you are hereby required to pay the sum of Rs.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 35,
+   "case": "V24",
+   "input": "Draft a paragraph demanding payment of a dishonoured cheque within fifteen days and warning of criminal proceedings. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "______, being the amount covered by Cheque No. ______ dated ______ drawn on ______, which has been dishonoured on presentation.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 36,
+   "case": "V24",
+   "input": "Draft a paragraph demanding payment of a dishonoured cheque within fifteen days and warning of criminal proceedings. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "You are further put on notice that, if such payment is not made within fifteen (15) days from the receipt of this notice, legal action will be instituted against you, including criminal proceedings under Section 489F of the Pakistan Penal Code, 1860.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 37,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "1. That the plaint filed by the plaintiff does not disclose any cause of action against the defendant.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 38,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "2. That, in accordance with Order VII Rule 11 CPC, a plaint shall be rejected where it does not disclose a cause of action.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 39,
+   "case": "V02",
+   "input": "Draft grounds for returning the plaint because this court lacks territorial jurisdiction. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "1. That the plaint is returned to the Court in which the suit should have been instituted, as the present Court lacks territorial jurisdiction over the subject matter, in accordance with Order VII Rule 10 CPC.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 40,
+   "case": "V02",
+   "input": "Draft grounds for returning the plaint because this court lacks territorial jurisdiction. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "2. That, pursuant to Order VII Rule 10 CPC, the Judge shall endorse the date of presentation and return, the name of the party presenting it, and a brief statement of the reasons for returning it.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 41,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the present suit concerns [brief description of the subject matter] and the applicant’s legal right or interest is directly affected, making his presence before the Court necessary for a complete adjudication of the dispute.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 42,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, in accordance with Order I Rule 10 CPC, the Court may at any stage of the suit, if satisfied that the suit has been instituted through a bona‑fide mistake and that it is necessary for the determination of the real matter in dispute, order any other person to be added as a party.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 43,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant is a person whose interest is such that, if not joined, the Court would be unable to fully and effectively settle all questions involved in the suit, and therefore his addition is required to enable the Court to adjudicate upon and settle all the matters in controversy.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 44,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, pursuant to Section 22 Limitation Act 1908, the addition of the applicant as a party shall be deemed to have instituted the suit with respect to him at the time he is so made a party, and consequently the limitation period will not be prejudiced by his inclusion.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 45,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the decree was obtained by fraud and material misrepresentation, and under Article 95 of the First Schedule of the Limitation Act, 1908, a decree obtained by fraud may be set aside within three years from the time the fraud becomes known to the aggrieved party.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 46,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the plaintiff only became aware of the fraud on [date], and the present application is filed within the three‑year limitation period prescribed by Article 95 of the Limitation Act, 1908.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 47,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the decree was passed ex parte without the plaintiff being given a proper opportunity to be heard, and pursuant to Section 96(2) CPC an original decree passed ex parte may be challenged, thereby justifying the setting aside of the decree on the ground of fraud.",
+   "label": "invented",
+   "fact": "no proper opportunity to be heard"
+  },
+  {
+   "n": 48,
+   "case": "V07",
+   "input": "Draft an application asking the court to fix an early hearing date using its inherent powers. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, by virtue of its inherent powers under Section 151 CPC, the Court may, after recording reasons in writing, make such order as is necessary for the ends of justice, and therefore be pleased to fix an early date for hearing this application to prevent any abuse of the process.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 49,
+   "case": "V07",
+   "input": "Draft an application asking the court to fix an early hearing date using its inherent powers. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, in accordance with Order XLI Rule 12 CPC, the Court fix a day for hearing the application, taking into account the urgency of the matter and the need to allow the parties sufficient time to appear.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 50,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the appeal against the decree dated __________ was filed twelve (12) days after the prescribed period of limitation.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 51,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the delay was caused by __________ and, in accordance with Section 14 Limitation Act 1908, the period during which the plaintiff was prosecuting a bona‑fide civil proceeding on the same cause of action should be excluded from the limitation period.",
+   "label": "invented",
+   "fact": "prosecuting a civil proceeding"
+  },
+  {
+   "n": 52,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "(Section 14 Limitation Act 1908)",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 53,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the appellant respectfully prays that this Hon’ble Court condone the delay and admit the appeal.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 54,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the learned trial Court proceeded with the trial despite the accused’s inability to understand the proceedings, thereby rendering the process oppressive and contrary to the principles of natural justice; such circumstances fall within the ambit of an abuse of process (Section 561-A CrPC).",
+   "label": "invented",
+   "fact": "trial proceeded despite inability to understand"
+  },
+  {
+   "n": 55,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the High Court, by virtue of its inherent jurisdiction under Section 561-A CrPC, is empowered to intervene and quash criminal proceedings where the process is being misused or employed to harass the accused, and the present proceedings unmistakably constitute such misuse.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 56,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the continuation of the present criminal proceedings would result in a miscarriage of justice, as the accused has been denied a fair opportunity to defend himself, thereby violating the fundamental right to a fair trial and invoking the High Court’s power to prevent abuse of process under Section 561-A CrPC.",
+   "label": "invented",
+   "fact": "denied a fair opportunity to defend"
+  },
+  {
+   "n": 57,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the petitioner's request for quashing the proceedings is made bona fide and is necessary to secure the ends of justice, as contemplated by the inherent powers conferred upon the High Court by Section 561-A CrPC.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 58,
+   "case": "V11",
+   "input": "Draft a ground for pre-arrest (protective) bail citing mala fide on the part of the complainant. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant is not in custody and the complaint has been instituted mala fide by the complainant; consequently, in exercise of the power conferred by Section 498 of the Criminal Procedure Code, 1898, this Hon’ble Court may direct admission to protective bail.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 59,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant, [Surety Name], executed a bail bond as surety for the accused [Accused Name] in accordance with Section 499 CrPC 1898.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 60,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant now seeks to be discharged from the said bond.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 61,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That under Section 122 CrPC 1898 a Magistrate may refuse to accept or may reject any surety who is unfit, and may order the discharge of such surety from the bond.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 62,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant is [state grounds for discharge, e.g., no longer able to fulfill the obligations imposed by the bond].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 63,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant prays that this Hon’ble Court order the discharge of the applicant from the bail bond pursuant to Section 122 CrPC 1898.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 64,
+   "case": "V13",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔ IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That مزید تفتیش کی ضرورت ہے کیونکہ یہ عمل صرف ملزم کی مجرمانہ علم یا نیت کی وجہ سے جرم ہے اور پاکستان پینل کوڈ کے سیکشن 35 کے تحت ہر شریک کو اسی طرح ذمہ دار ٹھہرایا جاتا ہے (Section 35 PPC 1860).",
+   "label": "invented",
+   "fact": "offence of criminal knowledge; s.35 participants"
+  },
+  {
+   "n": 65,
+   "case": "V15",
+   "input": "Draft a ground in a custody petition that the minor's welfare requires custody with the mother. Cite the law. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the welfare of the minor child requires that custody be placed with the mother, who as guardian of the person is charged with the custody, support, health and education of the child under Section 24 Guardians and Wards Act 1890, and the Court may make such an order pursuant to Section 41 Divorce Act 1869.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 66,
+   "case": "V16",
+   "input": "Draft the jurisdiction paragraph for a suit for maintenance of a wife and minor children before the Family Court. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That this Honourable Family Court at [PLACE] has jurisdiction to entertain the present suit for maintenance of the petitioner wife and minor children under Section 7 of the Family Courts Act 1964 and as may be provided by [applicable Sindh law -- verify].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 67,
+   "case": "V17",
+   "input": "Draft a paragraph calling on a tenant to vacate for non-payment of rent, citing the governing law. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "You are hereby required to vacate the premises within [number] days from the date of this notice due to your failure to pay the rent due under the tenancy agreement, pursuant to [applicable provincial rent law -- choose jurisdiction].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 68,
+   "case": "V20",
+   "input": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2.1 The Consultant shall not, for a period of twelve (12) months following the termination of this Agreement, directly or indirectly engage in any business or provide services that compete with the business of [PARTY A] within the Federal Capital Territory.",
+   "label": "invented",
+   "fact": "twelve months"
+  },
+  {
+   "n": 69,
+   "case": "V20",
+   "input": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2.2 The parties acknowledge that, under Pakistani law, a post‑termination non‑compete is enforceable only if it is reasonable in duration, geographic scope and necessary to protect legitimate business interests [placeholder].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 70,
+   "case": "V22",
+   "input": "Add a clause that disputes go to arbitration in Karachi. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2.1 Any dispute, controversy or claim arising out of or relating to this Agreement, including its existence, validity, interpretation, performance, breach or termination, shall be finally resolved by arbitration in Karachi in accordance with the provisions of [applicable Sindh law -- verify].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 71,
+   "case": "V23",
+   "input": "Draft the paragraph stating this is the statutory notice required before suing the Federal Government. Cite the provision. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That this notice constitutes the statutory notice required under CPC 1908 — provision not identified before instituting any suit against the Federal Government.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 72,
+   "case": "V24",
+   "input": "Draft a paragraph demanding payment of a dishonoured cheque within fifteen days and warning of criminal proceedings. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That you are hereby required to pay the full amount represented by cheque No. ______ dated ______ drawn on ______ Bank, which has been dishonoured on presentation, within fifteen (15) days of receipt of this notice; failing which we will commence criminal proceedings against you under Section 489F of the Pakistan Penal Code, 1860, for dishonestly issuing a cheque, and the burden of proving any arrangement with your bank to honour the cheque shall rest upon you.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 73,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the plaint discloses no cause of action and is therefore liable to be rejected under [placeholder].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 74,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, if the Court rejects the plaint, such rejection shall not of its own force preclude the plaintiff from presenting a fresh plaint in respect of the same cause of action, pursuant to Order VII Rule 13 CPC.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 75,
+   "case": "V02",
+   "input": "Draft grounds for returning the plaint because this court lacks territorial jurisdiction. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "1. That the plaint is returned to the plaintiff because this Court lacks territorial jurisdiction over the cause of action, in accordance with Order VII Rule 10 CPC.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 76,
+   "case": "V02",
+   "input": "Draft grounds for returning the plaint because this court lacks territorial jurisdiction. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "2. That the facts set out in the plaint demonstrate that the cause of action arose outside the territorial limits of this Court, and therefore the Court is without jurisdiction, as required by the CPC Appendix.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 77,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant, [NAME OF APPLICANT], is a person having a direct and pecuniary interest in the subject matter of the pending suit and therefore is a necessary party within the meaning of the Code of Civil Procedure, 1908;",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 78,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the continuation of the suit without the presence of the applicant would risk a multiplicity of proceedings and may result in a decree that is not binding upon the applicant, contrary to the principles of justice and equity;",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 79,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant seeks to be impleaded as an intervener pursuant to the provisions of the Code of Civil Procedure, 1908, which empower the Court to add a necessary party to ensure that all interests affected by the suit are adequately represented;",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 80,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant’s inclusion as a necessary party will enable the Court to adjudicate the dispute comprehensively and avoid any future litigation on the same cause of action;",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 81,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant is ready to comply with any directions of the Court, including furnishing security, filing an address for service, and bearing costs as may be ordered.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 82,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "[placeholder] (CPC provision governing addition of necessary parties).",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 83,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the decree was obtained by fraud and misrepresentation, the fraud being material and having induced the Court to pass the ex parte decree; such fraud falls within the ambit of Article 95 of the Limitation Act 1908, which provides a cause of action to set aside a decree obtained by fraud.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 84,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the fraud and misrepresentation were discovered by the plaintiff within the period prescribed by Article 95 Limitation Act 1908, and the plaintiff has filed this application within three years from the date such fraud became known, thereby satisfying the limitation period.",
+   "label": "invented",
+   "fact": "fraud discovered within three years"
+  },
+  {
+   "n": 85,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, pursuant to Order XXXVII Rule 4 CPC, the Court has the power, in special circumstances, to set aside a decree and, if necessary, stay or set aside its execution, and may grant leave to the defendant to appear and defend the suit.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 86,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the plaintiff is entitled to the relief sought under the foregoing provisions, namely the setting aside of the ex parte decree and any consequential orders.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 87,
+   "case": "V07",
+   "input": "Draft an application asking the court to fix an early hearing date using its inherent powers. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the Applicant respectfully prays that this Honorable Court, by virtue of its inherent powers under Section 151 CPC, fix an early date for the hearing of this application and issue such notice as may be necessary to ensure the ends of justice.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 88,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the appellant was served with the judgment on [date] and, pursuant to Section 12 Limitation Act 1908, the day of service is excluded in computing the period of limitation for filing an appeal.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 89,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the prescribed period for filing the appeal expired on [date]; the appellant filed the appeal on [date], thereby incurring a delay of twelve (12) days.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 90,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the delay was caused by [brief description of reasonable cause] and the appellant exercised all due diligence to file the appeal within the prescribed period.",
+   "label": "invented",
+   "fact": "exercised all due diligence"
+  },
+  {
+   "n": 91,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, in accordance with Order XLVII Rule 7 CPC, an order granting an application may be objected to on the ground that the application was filed after the expiration of the period of limitation, and the Court may, at its discretion, condone such delay.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 92,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the appellant respectfully prays that this Hon’ble Court condone the twelve‑day delay and allow the appeal to be heard on its merits.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 93,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the criminal proceedings instituted against the Applicant constitute an abuse of process and ought to be quashed.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 94,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That, pursuant to Section 526 of the Code of Criminal Procedure, 1898, this Hon’ble Court has the authority to set aside the proceedings on the ground of abuse of process.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 95,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That, in exercise of its inherent jurisdiction under Section 561A of the Code of Criminal Procedure, 1898, this Hon’ble Court may make such order as is necessary to prevent the abuse of process and to secure the ends of justice.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 96,
+   "case": "V11",
+   "input": "Draft a ground for pre-arrest (protective) bail citing mala fide on the part of the complainant. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the complaint filed against the Applicant is mala fide, lacking any sufficient ground for proceeding, and consequently, in accordance with Section 203 CrPC, the Court may dismiss the complaint and grant pre‑arrest (protective) bail.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 97,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant, [NAME OF SURETY], is a surety for the attendance and appearance of the accused, [NAME OF ACCUSED], who has been released on bail.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 98,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant hereby applies to the Hon’ble Magistrate for discharge of the bail bond executed under Section 502 CrPC, and alternatively under Section 126 CrPC, and seeks to be released from any further liability as surety.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 99,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant has complied with all conditions of the bond and there is no prejudice to the prosecution or the public interest in granting the discharge.",
+   "label": "invented",
+   "fact": "complied with all conditions; no prejudice"
+  },
+  {
+   "n": 100,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "The applicant prays that this Hon’ble Court may be pleased to:",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 101,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "1. Discharge the applicant as surety from the bail bond executed under Section 502 CrPC (or Section 126 CrPC); and",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 102,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "2. Order that the applicant be released from any further liability in respect of the said bond.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 103,
+   "case": "V13",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔ IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That مزید انکوائری کی ضرورت کے پیش نظر، ملزم کے خلاف گرفتاری کے بعد اس کی ضمانت کی درخواست کی جاتی ہے۔",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 104,
+   "case": "V15",
+   "input": "Draft a ground in a custody petition that the minor's welfare requires custody with the mother. Cite the law. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the welfare of the minor, as defined under Section 24 Guardians and Wards Act 1890, necessitates that the minor be placed in the custody of the mother, and the Court may, pursuant to Section 41 Divorce Act 1869, make such interim and final orders regarding custody, maintenance and education accordingly.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 105,
+   "case": "V16",
+   "input": "Draft the jurisdiction paragraph for a suit for maintenance of a wife and minor children before the Family Court. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the Family Court at [PLACE] has jurisdiction to entertain this suit for maintenance of the wife and minor children pursuant to Section 7 of the Family Courts Act 1964 and Section 17 of the West Pakistan Family Courts Act 1964.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 106,
+   "case": "V17",
+   "input": "Draft a paragraph calling on a tenant to vacate for non-payment of rent, citing the governing law. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That the Tenant is required to vacate the premises within [number] days from the date of this notice due to non‑payment of rent, pursuant to [applicable provincial rent law -- choose jurisdiction].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 107,
+   "case": "V19",
+   "input": "Add a clause that the sale deed of the immovable property shall be registered, citing the law. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2. REGISTRATION OF SALE DEED. The parties agree that the sale deed of the immovable property shall be executed as a registered instrument in accordance with Section 54 Transfer of Property Act 1882.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 108,
+   "case": "V20",
+   "input": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2. NON-COMPETE. The Consultant agrees that for a period of twelve (12) months following the termination of this Agreement, he/she shall not, directly or indirectly, engage in any business or provide consulting services that are in competition with the business of [PARTY A] within the Federal Capital Territory of Islamabad. The Consultant further agrees not to solicit or induce any client, customer, or employee of [PARTY A] to terminate or alter their relationship with [PARTY A] during such period.",
+   "label": "invented",
+   "fact": "twelve months"
+  },
+  {
+   "n": 109,
+   "case": "V20",
+   "input": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "Enforceability under Pakistani law is limited to reasonable restraints of trade and is subject to judicial scrutiny; see [placeholder].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 110,
+   "case": "V22",
+   "input": "Add a clause that disputes go to arbitration in Karachi. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "That any dispute, controversy or claim arising out of or relating to this Agreement, including its existence, validity, interpretation, performance or breach, shall be finally resolved by arbitration in Karachi in accordance with the applicable federal arbitration law [placeholder], and the arbitral award shall be binding on the parties.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 111,
+   "case": "V24",
+   "input": "Draft a paragraph demanding payment of a dishonoured cheque within fifteen days and warning of criminal proceedings. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That the payor shall pay the full amount due on the dishonoured cheque within fifteen (15) days of receipt of this notice, failing which criminal proceedings will be instituted against him under Section 489F of the Pakistan Penal Code, 1860.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 112,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the plaint filed by the plaintiff fails to disclose any cause of action against the defendant, as it does not allege any legal right infringed or any factual basis for relief.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 113,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, in accordance with Order VII Rule [placeholder] CPC, a plaint which does not disclose a cause of action is liable to be rejected.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 114,
+   "case": "V01",
+   "input": "Draft the grounds for an application seeking rejection of the plaint because it discloses no cause of action. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, pursuant to Order VII Rule 13 CPC, the rejection of the plaint shall not preclude the plaintiff from presenting a fresh plaint, if any, but the present plaint must be dismissed for the said deficiency.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 115,
+   "case": "V02",
+   "input": "Draft grounds for returning the plaint because this court lacks territorial jurisdiction. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the plaint is returned to the plaintiff under Order VII Rule 10 CPC, as this Court lacks territorial jurisdiction over the cause of action.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 116,
+   "case": "V02",
+   "input": "Draft grounds for returning the plaint because this court lacks territorial jurisdiction. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the cause of action arose in a jurisdiction other than that of this Court, as demonstrated by the facts set out in the CPC Appendix, and therefore the appropriate Court with territorial jurisdiction is elsewhere.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 117,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant is a person whose legal rights and interests are directly affected by the subject matter of the suit.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 118,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant is a necessary party within the meaning of the Code of Civil Procedure, 1908, and his presence is indispensable for a complete and effective adjudication of the dispute.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 119,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant has a direct and substantial interest in the relief sought and any judgment rendered without his participation would be incomplete and potentially prejudicial.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 120,
+   "case": "V04",
+   "input": "Draft grounds for an application to be added as a necessary party (intervener) to a pending suit. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the applicant seeks an order under the provisions of the Code of Civil Procedure, 1908, for his addition as a necessary party to the suit.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 121,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the decree was passed ex parte without the plaintiff being served notice as required by law.",
+   "label": "invented",
+   "fact": "not served notice"
+  },
+  {
+   "n": 122,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the decree was obtained by fraud and material misrepresentation made by the defendant, which induced the Court to pass the decree.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 123,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "(Article 95 Limitation Act 1908)",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 124,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That the fraud was discovered by the plaintiff within three years of the decree, thereby falling within the limitation period prescribed in Article 95 of the Limitation Act 1908.",
+   "label": "invented",
+   "fact": "fraud discovered within three years"
+  },
+  {
+   "n": 125,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, pursuant to Order XXXVII Rule 4 CPC, the Court has power to set aside the decree and, if necessary, stay or set aside its execution.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 126,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "(Order XXXVII Rule 4 CPC)",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 127,
+   "case": "V05",
+   "input": "Draft grounds to set aside an ex parte decree obtained by fraud and misrepresentation. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "That, in the interest of justice, the decree should be set aside and the matter remitted for trial on the merits.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 128,
+   "case": "V07",
+   "input": "Draft an application asking the court to fix an early hearing date using its inherent powers. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "2. That the Applicant respectfully prays that this Honorable Court, exercising its inherent powers under Section 151 CPC, fix an early date for the hearing of this application.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 129,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "1. That the appellant was required to file the memorandum of appeal within the period prescribed by law, but the appeal was filed 12 days after the expiry of such period.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 130,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "2. That, in computing the period of limitation, the day on which the judgment was pronounced is excluded pursuant to Section 12 Limitation Act 1908.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 131,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "3. That the appellant was unable to file within the prescribed period due to [reason], and therefore respectfully prays that this Hon’ble Court may condone the delay in accordance with Order XLVII Rule 7 CPC, which permits an application to be entertained on the ground that the application was filed after the expiration of the period of limitation prescribed.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 132,
+   "case": "V08",
+   "input": "Draft an application for condonation of a 12-day delay in filing an appeal. Cite the provision. IN THE COURT OF [COURT]\n[SUIT NUMBER]\n[PLAINTIFF] ... Plaintiff\nVERSUS\n[DEFENDANT] ... Defendant\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]\n\n[ADVOCATE]",
+   "sentence": "4. That the appellant undertakes to pay any costs that may be incurred due to the condonation.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 133,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the criminal proceedings instituted against the applicant constitute an abuse of the process of law, being without reasonable basis and intended to harass the applicant, and the High Court is empowered to quash such proceedings under Section 561A of the Code of Criminal Procedure, 1898.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 134,
+   "case": "V09",
+   "input": "Draft grounds for a petition to the High Court to quash criminal proceedings that are an abuse of process. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the applicant seeks to invoke the power of the High Court to set aside the present criminal proceedings under Section 526 of the Code of Criminal Procedure, 1898, which authorises the High Court, upon acceptance of the application, to have the proceedings held afresh, thereby effecting a quash of the current proceedings.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 135,
+   "case": "V11",
+   "input": "Draft a ground for pre-arrest (protective) bail citing mala fide on the part of the complainant. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the complaint lodged by the complainant is mala fide, being devoid of any substantive basis and filed with an ulterior motive to harass the accused; consequently, the accused is entitled to pre‑arrest protective bail and the application is filed pursuant to Section 526 CrPC 1898.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 136,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "1. That the Applicant, [NAME OF SURETY], is a surety who executed a bond for the attendance and appearance of the accused, [NAME OF ACCUSED], in the case bearing FIR No. ________, dated ________, before the [Name of Magistrate] Court, Sindh.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 137,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "2. That the Applicant now seeks to be discharged from the said bond pursuant to Section 502 of the Code of Criminal Procedure, 1898, which provides that a surety may at any time apply to a Magistrate for discharge of the bond, either wholly or insofar as it relates to the applicant.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 138,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "3. That the Applicant also relies upon Section 126 of the Code of Criminal Procedure, 1898, which authorises any surety for the peaceable conduct or good behaviour of another person to apply to the concerned Magistrate of the First Class to cancel any bond executed under this Chapter within the local limits of his jurisdiction.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 139,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "4. That the Applicant has complied with all conditions of the bond and there is no pending liability or forfeiture that would prejudice the discharge.",
+   "label": "invented",
+   "fact": "complied with all conditions; no forfeiture"
+  },
+  {
+   "n": 140,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "5. That the Applicant respectfully requests that this Hon’ble Court issue a warrant directing the accused to appear before the Magistrate, as required under Section 502(2) CrPC, and thereafter order the discharge of the Applicant from all obligations under the bail bond.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 141,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "The Applicant prays that this Hon’ble Court may be pleased to:",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 142,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "a) Issue a warrant of arrest directing the accused to appear before the Magistrate as per Section 502(2) CrPC; and",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 143,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "b) Discharge the Applicant from the bail bond executed in favour of the accused, in accordance with Sections 502 and 126 of the Code of Criminal Procedure, 1898; and",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 144,
+   "case": "V12",
+   "input": "Draft an application by a surety asking to be discharged from the bail bond. Cite the provision. IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "c) Pass such further order(s) as may be deemed just and proper.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 145,
+   "case": "V13",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔ IN THE COURT OF [COURT]\n[CASE / FIR DETAILS]\n[APPLICANT] ... Applicant\nVERSUS\nThe State ... Respondent\n\nAPPLICATION UNDER [PROVISION]\n\nRespectfully submitted:\n\n1. [GROUNDS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That ملزم کے خلاف مزید انکوائری درکار ہے، اس لیے ضمانت کی درخواست سیکشن 526، CrPC 1898 کے تحت کی جاتی ہے۔",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 146,
+   "case": "V15",
+   "input": "Draft a ground in a custody petition that the minor's welfare requires custody with the mother. Cite the law. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That the welfare of the minor necessitates that she be placed in the custody of her mother, in accordance with Section 24 Guardians and Wards Act 1890 and Section 41 Divorce Act 1869.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 147,
+   "case": "V16",
+   "input": "Draft the jurisdiction paragraph for a suit for maintenance of a wife and minor children before the Family Court. IN THE FAMILY COURT AT [PLACE]\n[PETITIONER] ... Petitioner\nVERSUS\n[RESPONDENT] ... Respondent\n\nSUIT FOR [RELIEF]\n\n1. [FACTS]\n\nPRAYER\n[PRAYER]",
+   "sentence": "That this Honourable Family Court has jurisdiction to entertain the present suit for maintenance of the wife and minor children under Section 7 of the Family Courts Act 1964 and may make such maintenance orders pursuant to Section 41 of the Divorce Act 1869; and that, as provided by Section 17 of the West Pakistan Family Courts Act 1964, the provisions of the Code of Civil Procedure shall not apply to these proceedings.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 148,
+   "case": "V17",
+   "input": "Draft a paragraph calling on a tenant to vacate for non-payment of rent, citing the governing law. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That you are hereby required to vacate the premises located at [ADDRESS] within [NUMBER] days from the date of this notice due to your failure to pay rent for the months of [MONTHS], in breach of the lease agreement and pursuant to [applicable provincial rent law -- choose jurisdiction].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 149,
+   "case": "V19",
+   "input": "Add a clause that the sale deed of the immovable property shall be registered, citing the law. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2. REGISTERED SALE DEED. The parties agree that the sale deed of the immovable property shall be executed as a registered instrument in accordance with Section 54 of the Transfer of Property Act, 1882.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 150,
+   "case": "V20",
+   "input": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2.1 The Consultant shall not, for a period of twelve (12) months following the termination of this Agreement, directly or indirectly engage in any business or provide services that are in competition with the business of [PARTY A] within the Federal Capital Territory.",
+   "label": "invented",
+   "fact": "twelve months"
+  },
+  {
+   "n": 151,
+   "case": "V20",
+   "input": "Add a non-compete clause for after the consultant leaves, and note in one line how far Pakistani law enforces it. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "2.2 The parties acknowledge that such a restriction is enforceable under Pakistani law to the extent permitted by the courts [placeholder].",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 152,
+   "case": "V22",
+   "input": "Add a clause that disputes go to arbitration in Karachi. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "Any dispute, controversy or claim arising out of or relating to this Agreement, including the existence, validity, interpretation, performance, breach or termination thereof, shall be finally settled by arbitration in Karachi in accordance with the Arbitration Act, 1940, as amended, and the procedural rules then in force of the Karachi Centre for Arbitration.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 153,
+   "case": "V22",
+   "input": "Add a clause that disputes go to arbitration in Karachi. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "The language of the arbitration shall be English.",
+   "label": "invented",
+   "fact": "language English"
+  },
+  {
+   "n": 154,
+   "case": "V22",
+   "input": "Add a clause that disputes go to arbitration in Karachi. [TITLE OF AGREEMENT]\nThis agreement is made on [DATE] between [PARTY A] and [PARTY B].\n\n1. [TERMS]\n\nSigned: [PARTY A]   [PARTY B]\nWitnesses: [WITNESS 1] [WITNESS 2]",
+   "sentence": "The award of the arbitrator(s) shall be final and binding upon the parties.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 155,
+   "case": "V23",
+   "input": "Draft the paragraph stating this is the statutory notice required before suing the Federal Government. Cite the provision. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That this notice is served in accordance with Order XI Rule 17 CPC, which mandates that a statutory notice be given to the Federal Government prior to instituting any suit against it.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": 156,
+   "case": "V24",
+   "input": "Draft a paragraph demanding payment of a dishonoured cheque within fifteen days and warning of criminal proceedings. LEGAL NOTICE\nDate: [DATE]\nTo: [ADDRESSEE]\nSubject: [SUBJECT]\n\n[BODY]\n\n[SENDER / ADVOCATE]",
+   "sentence": "That the payor, having issued a cheque which has been dishonoured on presentation, is hereby required to make full payment of the amount due within fifteen (15) days from receipt of this notice, failing which criminal proceedings will be instituted against him under Section 489F PPC 1860.",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": "U1",
+   "case": "URDU-PROBE",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔",
+   "sentence": "ملزم ذہنی مریض ہے اور مقدمے کی کارروائی نہیں سمجھ سکتا۔",
+   "label": "invented",
+   "fact": "mentally ill"
+  },
+  {
+   "n": "U2",
+   "case": "URDU-PROBE",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔",
+   "sentence": "ملزم کو 3 مارچ 2025 کو گرفتار کیا گیا۔",
+   "label": "invented",
+   "fact": "arrest date"
+  },
+  {
+   "n": "U3",
+   "case": "URDU-PROBE",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔",
+   "sentence": "مدعی نے گواہوں کو دھمکیاں دی ہیں۔",
+   "label": "invented",
+   "fact": "threats"
+  },
+  {
+   "n": "U4",
+   "case": "URDU-PROBE",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔",
+   "sentence": "ملزم کا کوئی سابقہ مجرمانہ ریکارڈ نہیں ہے۔",
+   "label": "invented",
+   "fact": "no prior record"
+  },
+  {
+   "n": "U5",
+   "case": "URDU-PROBE",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔",
+   "sentence": "ملزم کے خلاف مزید انکوائری درکار ہے۔",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": "U6",
+   "case": "URDU-PROBE",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔",
+   "sentence": "یہ ضمانت کی درخواست گرفتاری کے بعد دائر کی جا رہی ہے۔",
+   "label": "ok",
+   "fact": ""
+  },
+  {
+   "n": "U7",
+   "case": "URDU-PROBE",
+   "input": "درخواست ضمانت بعد از گرفتاری کے لیے ایک وجہ اردو میں لکھیں کہ ملزم کے خلاف مزید انکوائری درکار ہے، اور متعلقہ دفعہ لکھیں۔",
+   "sentence": "یہ درخواست دفعہ 497 ضابطہ فوجداری کے تحت دائر کی جاتی ہے۔",
+   "label": "ok",
+   "fact": ""
+  }
+ ],
+ "urdu_boundaries": [
+  {
+   "text": "یہ کہ ملزم کی درخواست سیکشن 354، CrPC 1898 کے تحت کی جاتی ہے۔ دوسرا جملہ۔",
+   "expect_units": 2
+  },
+  {
+   "text": "یہ کہ دفعہ 497 ضابطہ فوجداری کے تحت ضمانت دی جائے۔ مزید انکوائری درکار ہے۔ ملزم بے گناہ ہے۔",
+   "expect_units": 3
+  },
+  {
+   "text": "That bail be granted under Sec. 497 CrPC. The inquiry is incomplete.",
+   "expect_units": 2
+  },
+  {
+   "text": "یہ کہ FIR No. 12/2026 درج کی گئی۔ سیکشن 154 CrPC کے تحت۔",
+   "expect_units": 2
+  }
+ ]
+}

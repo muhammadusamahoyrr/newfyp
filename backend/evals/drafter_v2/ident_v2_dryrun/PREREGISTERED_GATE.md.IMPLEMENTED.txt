@@ -1,0 +1,5 @@
+Implemented 2026-10-15 (gate file unchanged, sha 04806e18...):
+- scripts/build_ident_v2.py: refuses unless PREREGISTERED_GATE.md matches its lock; HNSW floor 4569 replaces "new >= source"; report records gate_sha256 and hnsw_floor.
+- scripts/ident_v2_retrieval_gate.py: refuses unless the gate is locked; expected found >= 19, 0 lost, 0 rule-not-shown, 0 mislabelled.
+- tests/test_build_ident_v2.py: 16 (floor, gate-lock tamper, shipped lock, default floor).
+Isolated end-to-end (fresh copy of backup 2): build post_checks_passed true (233 changes, 0 over 1 ULP, exact top-10 4648/4648, HNSW 4588 >= 4569, ident_v1 987f36c7 unchanged); gate C passed (19/25, 0 lost, rule-not-shown 0, 0 mislabelled). Live store byte-identical. No live retry, no switch.

@@ -1,16 +1,17 @@
 /* ModDocuments — the actual component, mounted.
  *
- * This is the file the refresh-restoration bug lived in, and the one every
- * previous attempt to test it stopped short of. The hook tests prove the
- * lifecycle logic is right; they cannot prove the component passes it the right
- * case id, or that it saves under the value it just resolved rather than the
- * state it has not yet re-rendered with. Those were the two actual defects.
- *
- * So this mounts the real thing. `next build` proving the file parses is not
- * the same as knowing the effect fires.
+ * Since 2026-10-19 the module is a thin shell: the Documents home, the drafting
+ * workspace and the Vault. The template guided flow (Draft details, Review,
+ * Send to lawyer, Final & export) was removed: a template's details are filled
+ * on its own text in the template editor, and "Create draft" makes the
+ * document and opens it in the drafting workspace -- the one editor for every
+ * draft. The tests of that flow's internals (field review, regenerate, retry
+ * keys, refresh-resume, the case selector, its citation badge) went with it;
+ * the workspace's own behaviour is tested in docs_drafts_*,
+ * docs_send_from_workspace and review_requests_*.
  *
  * The component reaches for a lot of context, so the providers it needs are
- * stubbed here — but the component under test is unmodified.
+ * the real ones; only the API is stubbed.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -25,16 +26,15 @@ function define(name, value) {
 }
 for (const name of ["window", "document", "navigator", "HTMLElement",
                     "Element", "Node", "Event", "CustomEvent",
-                    "MutationObserver", "getComputedStyle", "localStorage",
+                    "MutationObserver", "getComputedStyle", "localStorage", "sessionStorage", "DOMParser",
                     "requestAnimationFrame", "cancelAnimationFrame"]) {
     define(name, dom.window[name]);
 }
 define("IS_REACT_ACT_ENVIRONMENT", true);
 
-/* ModDocuments polls the review status on a setInterval. Component code uses
- * the GLOBAL timers (Node's), not jsdom's, so `window.close()` does not release
- * them and the process stays alive past the runner's timeout — every test
- * passing while the file reports failure. Tracked here and cleared at the end. */
+/* Component code uses the GLOBAL timers (Node's), not jsdom's, so
+ * `window.close()` does not release them and the process stays alive past the
+ * runner's timeout. Tracked here and cleared at the end. */
 const liveTimers = new Set();
 const realSetInterval = globalThis.setInterval;
 const realClearInterval = globalThis.clearInterval;
@@ -57,21 +57,32 @@ const React = (await import("react")).default;
 const { act } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const api = await import("./support/api-stub.mjs");
+const { resetTemplateTextCache } = await import("../src/components/client/documents/TemplateEditor.jsx");
 const { rememberDraft, DRAFT_KEY_PREFIX } =
     await import("../src/lib/documentResume.js");
+const { requestDocumentsView } = await import("../src/lib/documentsNav.js");
 
 const { createElement: h } = React;
 
 /* jsdom gives a real localStorage; clear it between tests so one test's
-   remembered draft cannot satisfy another's assertion. */
-function clearDrafts() {
+   remembered draft or saved template copy cannot satisfy another's assertion. */
+function clearStorage() {
     for (const key of Object.keys(dom.window.localStorage)) {
-        if (key.startsWith(DRAFT_KEY_PREFIX)) dom.window.localStorage.removeItem(key);
+        if (key.startsWith(DRAFT_KEY_PREFIX) || key.startsWith("attorney.templateCopy.")) {
+            dom.window.localStorage.removeItem(key);
+        }
     }
 }
 
 const CASES = [{ _id: "case-1", title: "A matter" },
                { _id: "case-2", title: "Another matter" }];
+const SHA = "a".repeat(64);
+const BAIL = { template_type: "bail_application", label: "Bail Application",
+    category: "Criminal", description: "Application for bail.",
+    fields: ["accused_name", "grounds"], structured_fields: [], drafting_mode: "manual" };
+const NOTICE = { template_type: "legal_notice", label: "Legal Notice",
+    category: "Civil", description: "A formal legal notice.",
+    fields: ["sender_name", "demand"], structured_fields: [], drafting_mode: "ai" };
 
 async function mountDocuments() {
     const { default: ModDocuments } =
@@ -87,8 +98,7 @@ async function mountDocuments() {
     dom.window.document.body.appendChild(container);
     const root = createRoot(container);
     // The REAL providers, not fakes: a stubbed context can satisfy a component
-    // that would break against the real one, which is the failure this whole
-    // file exists to stop happening again.
+    // that would break against the real one.
     await act(async () => {
         root.render(h(
             AuthProvider, null,
@@ -106,26 +116,59 @@ async function mountDocuments() {
         settle: async (ms = 40) => { await act(async () => {
             await new Promise(r => setTimeout(r, ms));
         }); },
-        unmount: async () => { await act(async () => root.unmount()); },
+        unmount: async () => { await act(async () => root.unmount()); container.remove(); },
     };
 }
 
+const buttons = (el, text) => [...el.querySelectorAll("button")]
+    .filter(b => (b.textContent || "").includes(text));
+const byLabel = (el, label) => [...el.querySelectorAll("button")]
+    .find(b => b.getAttribute("aria-label") === label);
+async function press(p, el) {
+    assert.ok(el, "nothing to click");
+    await act(async () => {
+        el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+    });
+    await p.settle();
+}
+async function type(p, input, value) {
+    assert.ok(input, "no such field");
+    const proto = input.tagName === "TEXTAREA" ? dom.window.HTMLTextAreaElement.prototype
+        : input.tagName === "SELECT" ? dom.window.HTMLSelectElement.prototype
+        : dom.window.HTMLInputElement.prototype;
+    await act(async () => {
+        Object.getOwnPropertyDescriptor(proto, "value").set.call(input, value);
+        input.dispatchEvent(new dom.window.Event(input.tagName === "SELECT" ? "change" : "input", { bubbles: true }));
+    });
+    await p.settle(10);
+}
+const editor = () => document.querySelector('[aria-label="Customize template"]');
 
+/* The drafting workspace opens on the document it is given. */
+function respondWorkspace(id, templateType = "bail_application") {
+    api.__respond("getDocumentWorkspaceV2", { data: {
+        document_id: id, title: "Bail Application draft", source: "structured_fields",
+        template_type: templateType, fields: { accused_name: "Ali Raza" }, body_html: null,
+        base_revision_id: "rev-1", base_version: 1, content_epoch: 0, review_status: "none" } });
+    api.__respond("getDocumentV2", { data: {
+        id, title: "Bail Application draft", template_type: templateType, review_status: "none",
+        current_version: 1, current_revision: { revision_id: "rev-1", pdf_sha256: SHA, version: 1,
+            created_at: "2026-10-19T10:00:00Z", compliance: null, verification: { ran: true, counts: { total: 0 } } } } });
+}
 
 test.beforeEach(() => {
     // The open document rides in the address (?doc=); each test starts clean.
     dom.window.history.replaceState(null, "", "/");
     api.__reset();
-    clearDrafts();
+    resetTemplateTextCache();
+    clearStorage();
     // Signed in through the stub, so the REAL CaseProvider actually fetches.
     api.__respond("bootstrapAuth", true);
     api.__respond("getMe", { data: { _id: "u1", role: "client" } });
-    api.__respond("listTemplates", {
-        data: [{ template_type: "legal_notice", label: "Legal Notice",
-                 category: "Civil", description: "A formal legal notice.",
-                 fields: ["sender_name", "demand"], structured_fields: [],
-                 drafting_mode: "ai" }],
-    });
+    api.__respond("listCases", { data: CASES });
+    api.__respond("getCases", { data: CASES });
+    api.__respond("myDocumentsV2", { data: { items: [], has_more: false } });
+    api.__respond("listTemplates", { data: [BAIL, NOTICE] });
 });
 
 test.after(() => {
@@ -134,212 +177,27 @@ test.after(() => {
     dom.window.close();
 });
 
-/* ── the defect: restoration never ran ────────────────────────────────────── */
+/* ── the home ─────────────────────────────────────────────────────────────── */
 
-test("a browser reload stays on Documents home instead of reopening review", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
+test("Documents opens on the home, never on a remembered draft", async () => {
+    // A remembered draft used to take over the page and drop the user into the
+    // old flow's review step. The draft stays one click away in My Documents.
     rememberDraft("case-1", "doc-remembered", dom.window.localStorage);
-    api.__respond("getDocumentV2", { data: {
-        id: "doc-remembered", case_id: "case-1", title: "Do not auto-open me",
-        review_status: "none", current_version: 1,
-        current_revision: { revision_id: "rev-1", pdf_sha256: "a".repeat(64) },
-    } });
-
-    const originalGetEntriesByType = globalThis.performance.getEntriesByType;
-    Object.defineProperty(globalThis.performance, "getEntriesByType", {
-        value: () => [{ type: "reload" }], configurable: true,
-    });
-    let p;
-    try {
-        p = await mountDocuments();
-        assert.equal(api.__calls("getDocumentV2").length, 0,
-                     "reload fetched and reopened the remembered document");
-        assert.match(p.text(), /Start from a template/);
-        assert.doesNotMatch(p.text(), /Do not auto-open me/);
-    } finally {
-        if (p) await p.unmount();
-        Object.defineProperty(globalThis.performance, "getEntriesByType", {
-            value: originalGetEntriesByType, configurable: true,
-        });
-    }
-});
-
-test("a remembered document is fetched on mount", async () => {
-    // THE BUG. Restoration keyed off `genCaseId`, which only a generation ever
-    // sets. After a refresh it was null, the effect returned early, and
-    // `getDocumentV2` was never called — while a source test asserting the
-    // string "getDocumentV2" appeared in this file passed the whole time.
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    rememberDraft("case-1", "doc-remembered", dom.window.localStorage);
-
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "doc-remembered", title: "A restored notice",
-            review_status: "returned", current_version: 2,
-            current_revision: { revision_id: "rev-2", pdf_sha256: "a".repeat(64) },
-        },
-    });
-
     const p = await mountDocuments();
-    const asked = api.__calls("getDocumentV2");
-    assert.equal(asked.length, 1, "the remembered document was never requested");
-    assert.equal(asked[0].args[0], "doc-remembered");
+    assert.match(p.text(), /Start from a template/);
+    assert.equal(api.__calls("getDocumentV2").length, 0, "a remembered draft was fetched and opened");
+    assert.equal(api.__calls("getDocumentWorkspaceV2").length, 0);
     await p.unmount();
 });
 
-test("nothing is fetched when nothing was remembered", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-
+test("a sidebar 'New document' request shows the home", async () => {
+    requestDocumentsView("new");
     const p = await mountDocuments();
-    assert.equal(api.__calls("getDocumentV2").length, 0);
+    assert.match(p.text(), /Start from a template/);
     await p.unmount();
 });
-
-test("a remembered document for another case is not fetched", async () => {
-    // The draft belongs to case-2; the resolved case is case-1 (the first).
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    rememberDraft("case-2", "doc-other-case", dom.window.localStorage);
-
-    const p = await mountDocuments();
-    const asked = api.__calls("getDocumentV2").map(c => c.args[0]);
-    assert.ok(!asked.includes("doc-other-case"),
-              "restored a document belonging to a case that is not open");
-    await p.unmount();
-});
-
-test("a restored document's title reaches the screen", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    rememberDraft("case-1", "doc-remembered", dom.window.localStorage);
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "doc-remembered", title: "Restored Legal Notice",
-            review_status: "none", current_version: 1,
-            current_revision: { revision_id: "rev-1", pdf_sha256: "b".repeat(64) },
-        },
-    });
-
-    const p = await mountDocuments();
-    assert.match(p.text(), /Restored Legal Notice/,
-                 "the restored document is not shown anywhere");
-    await p.unmount();
-});
-
-test("with V2 off, a legacy document is reopened through the legacy route", async () => {
-    // THE DEFAULT CONFIGURATION. Generation fell back to legacy, the id was
-    // remembered, and restoration asked only the V2 route — which answers
-    // `feature_disabled` to everything. The document never came back.
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    rememberDraft("case-1", "legacy-doc", dom.window.localStorage);
-    api.__respond("getDocumentV2", {
-        data: null, status: 404,
-        error: { code: "feature_disabled", message: "Not found." },
-    });
-    api.__respond("getDocumentLegacy", {
-        data: { _id: "legacy-doc", case_id: "case-1", title: "Legacy Legal Notice",
-                template_type: "legal_notice", status: "generated",
-                compliance: { checked: false } },
-        status: 200,
-    });
-
-    const p = await mountDocuments();
-    assert.deepEqual(api.__calls("getDocumentLegacy").map(c => c.args[0]), ["legacy-doc"]);
-    assert.match(p.text(), /Legacy Legal Notice/, "the legacy document was not reopened");
-    // No revision to name, so the preview takes the legacy download route.
-    const previews = api.__calls("fetchRevisionPreview").filter(c => c.args[0] === "legacy-doc");
-    assert.ok(previews.length > 0, "the reopened document was never previewed");
-    assert.equal(previews[0].args[1]?.revisionId ?? null, null);
-    await p.unmount();
-});
-
-test("a submitted V2 document learns the lawyer's decision by polling its own detail", async () => {
-    // THE BUG. Polling searched the legacy case list, whose response model
-    // requires `status` — absent on a V2 document — so the decision never
-    // arrived and the client kept reading "waiting for lawyer".
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    rememberDraft("case-1", "doc-sub", dom.window.localStorage);
-    let asked = 0;
-    const revision = { revision_id: "rev-1", pdf_sha256: "d".repeat(64) };
-    api.__respond("getDocumentV2", () => {
-        asked += 1;
-        return { status: 200, error: null, data: asked === 1
-            ? { id: "doc-sub", case_id: "case-1", title: "Submitted notice",
-                review_status: "submitted", review_note: "Client's own note",
-                current_version: 1, current_revision: revision }
-            : { id: "doc-sub", case_id: "case-1", title: "Submitted notice",
-                review_status: "returned", review_note: "Add the respondent's address.",
-                current_version: 1, current_revision: revision } };
-    });
-
-    const p = await mountDocuments();
-    await p.settle(60);
-    assert.ok(asked >= 2, "the submitted document was never polled");
-    assert.equal(api.__calls("listDocuments").length, 0, "polled the legacy case list");
-    assert.match(p.text(), /Add the respondent's address\./, "the lawyer's decision never arrived");
-    assert.doesNotMatch(p.text(), /Client's own note/);
-    await p.unmount();
-});
-
-/* The estate's four real citation outcomes (docs/v2-activation-evidence/
- * citation-verification.md). The client badge fell through to a green
- * "✓ 0 found" for the second and third — 14 of the 15 migrated documents with
- * no positive citation evidence would have looked verified to their owners. */
-const ESTATE_OUTCOMES = [
-    ["verified", { ran: true, counts: { total: 2, verified: 2, not_in_corpus: 0, omitted: 0, unverifiable: 0 } }, true],
-    ["no checkable citation", { ran: true, counts: { total: 0, verified: 0, not_in_corpus: 0, omitted: 0, unverifiable: 0 } }, false],
-    ["statute outside the corpus", { ran: true, counts: { total: 2, verified: 0, not_in_corpus: 0, omitted: 0, unverifiable: 2 } }, false],
-    ["unverifiable by design", { ran: false, reason: "urdu_corpus_unsupported", counts: {} }, false],
-    ["a repealed section", { ran: true, counts: { total: 1, verified: 0, not_in_corpus: 0, omitted: 1, unverifiable: 0 } }, false],
-];
-
-for (const [label, verification, mayBeGreen] of ESTATE_OUTCOMES) {
-    test(`client citation badge — ${label}: ${mayBeGreen ? "may" : "must not"} read as verified`, async () => {
-        api.__respond("listCases", { data: CASES });
-        api.__respond("getCases", { data: CASES });
-        rememberDraft("case-1", "doc-cite", dom.window.localStorage);
-        api.__respond("getDocumentV2", { status: 200, error: null, data: {
-            id: "doc-cite", case_id: "case-1", title: "A notice", review_status: "none",
-            current_version: 1,
-            current_revision: { revision_id: "rev-c", pdf_sha256: "e".repeat(64), verification },
-        } });
-        const p = await mountDocuments();
-        try {
-            const row = [...p.container.querySelectorAll("span")]
-                .find(s => s.textContent.trim() === "Citation check");
-            assert.ok(row, "the citation row is not on screen");
-            const badge = row.parentElement.textContent.replace("Citation check", "").trim();
-            assert.equal(/✓/.test(badge), mayBeGreen, `badge read "${badge}"`);
-            assert.doesNotMatch(badge, /✓ 0 found/);
-        } finally {
-            await p.unmount();
-        }
-    });
-}
-
-test("a V2 network failure is not retried against the legacy route", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    rememberDraft("case-1", "doc-x", dom.window.localStorage);
-    api.__respond("getDocumentV2", {
-        data: null, status: 0, error: { message: "Network error." },
-    });
-
-    const p = await mountDocuments();
-    assert.equal(api.__calls("getDocumentLegacy").length, 0);
-    await p.unmount();
-});
-
-/* ── the client's own history is on the page ──────────────────────────────── */
 
 test("the document dashboard lists documents the client owns", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
     api.__respond("myDocumentsV2", {
         data: {
             items: [{ id: "own-1", title: "An earlier notice",
@@ -349,7 +207,6 @@ test("the document dashboard lists documents the client owns", async () => {
             has_more: false,
         },
     });
-
     const p = await mountDocuments();
     assert.ok(api.__calls("myDocumentsV2").length >= 1,
               "the client's own documents were never requested");
@@ -358,806 +215,164 @@ test("the document dashboard lists documents the client owns", async () => {
     await p.unmount();
 });
 
-
-/* ── the field review stands between extraction and the document ─────────── */
-
-test("generation stops for review instead of drafting straight through", async () => {
-    // THE DEFECT. `extractDocumentFields` fed `_generateViaV2` directly, so a
-    // model's reading of a free-text case — parties, amounts, dates — became a
-    // legal document nobody had checked. The review that follows generation
-    // looks at the finished PDF, where a wrong figure is far harder to spot.
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("listTemplates", {
-        data: [{ template_type: "legal_notice", label: "Legal Notice",
-                 category: "Civil", fields: ["sender_name", "demand"] }],
-    });
-    api.__respond("extractDocumentFields", {
-        data: { fields: { sender_name: "Ayesha Khan", demand: "500000" } },
-    });
-
+test("opening a row in My Documents opens it in the drafting workspace", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [{ id: "own-1", title: "Bail Application draft",
+        review_status: "none", revision_id: "rev-1", pdf_sha256: SHA, version: 1, downloadable: true }], has_more: false } });
+    respondWorkspace("own-1");
     const p = await mountDocuments();
-
-    // Nothing has been drafted yet, and nothing may be until a human looks.
-    assert.equal(api.__calls("generateRevisionV2").length, 0);
-    assert.equal(api.__calls("generateDocument").length, 0);
+    const open = [...p.container.querySelectorAll("#my-documents button")].find(b => b.textContent.trim() === "Open");
+    await press(p, open);
+    await p.settle(60);
+    assert.ok(p.container.querySelector("[data-document-workspace]"), "Open did not go to the workspace");
+    assert.equal(api.__calls("getDocumentWorkspaceV2").at(-1)?.args[0], "own-1");
+    assert.doesNotMatch(p.text(), /Draft details|Final & export/, "the old guided flow is back");
     await p.unmount();
 });
 
-/* ── previewing a row must preview THAT row's document (issue 3) ──────────── */
-
-test("previewing a row previews that row's own document", async () => {
-    // THE DEFECT. `onPreview={(id, actions) => setViewRev({...})}` accepted the
-    // row's document id and ignored it, and the preview effect asks for
-    // `docId` — whatever the page currently has open. So the request carried
-    // one document's id with another document's revision: a pair belonging to
-    // no document at all, saved from showing the wrong bytes only by the hash
-    // guard rejecting it. With nothing open it asked for nothing, and the
-    // Preview button silently did nothing at all.
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("myDocumentsV2", {
-        data: {
-            items: [{ id: "other-doc", title: "Another notice",
-                      review_status: "none", revision_id: "rev-other",
-                      pdf_sha256: "d".repeat(64), version: 1,
-                      downloadable: true }],
-            has_more: false,
-        },
-    });
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "other-doc", title: "Another notice", review_status: "none",
-            case_id: "case-1", current_version: 1,
-            current_revision: { revision_id: "rev-other",
-                                pdf_sha256: "d".repeat(64) },
-        },
-    });
-
+test("previewing a row previews that row's own document, in the Vault", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [{ id: "other-doc", title: "Another notice",
+        review_status: "none", revision_id: "rev-other", pdf_sha256: "d".repeat(64), version: 1,
+        downloadable: true }], has_more: false } });
+    api.__respond("getDocumentV2", { data: { id: "other-doc", title: "Another notice", review_status: "none",
+        current_version: 1, current_revision: { revision_id: "rev-other", pdf_sha256: "d".repeat(64) } } });
     const p = await mountDocuments();
-
-    const previewBtn = [...p.container.querySelectorAll("button")]
+    const previewBtn = [...p.container.querySelectorAll("#my-documents button")]
         .find(b => b.textContent.includes("Preview"));
     assert.ok(previewBtn, "no Preview control was rendered");
-    await act(async () => {
-        previewBtn.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-        await new Promise(r => setTimeout(r, 40));
-    });
-
-    const previews = api.__calls("fetchRevisionPreview");
-    assert.ok(previews.length > 0,
-              "Preview requested nothing — the row's document id was ignored");
-    const [docArg, opts] = previews.at(-1).args;
-    assert.equal(docArg, "other-doc",
-                 "previewed a different document from the row that was clicked");
-    assert.equal(opts.revisionId, "rev-other");
+    await press(p, previewBtn);
+    await p.settle(60);
+    assert.ok(p.container.querySelector("[data-client-vault]"), "Preview did not open the Vault");
+    assert.ok(api.__calls("getDocumentV2").some(c => c.args[0] === "other-doc"),
+              "previewed a different document from the row that was clicked");
     await p.unmount();
 });
 
-/* ── a standalone document is not filed under a case (issue 1) ────────────── */
+/* ── a template becomes a draft in the workspace (2026-10-19) ─────────────── */
 
-test("opening a caseless document does not file it under the selected case", async () => {
-    // THE DEFECT. `restored.caseId || resumeCaseId` cannot tell a deliberate
-    // null from a missing value. `restoreStateFromDocument` returns null
-    // precisely to say "this belongs to no case", and the fallback then filed a
-    // standalone draft under whichever matter happened to be on screen —
-    // re-creating, for caseless documents, the exact wrong-matter bug the
-    // caseId was added to fix.
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("myDocumentsV2", {
-        data: {
-            items: [{ id: "standalone-doc", title: "A standalone notice",
-                      review_status: "none", revision_id: "rev-alone",
-                      pdf_sha256: "f".repeat(64), version: 1,
-                      downloadable: true }],
-            has_more: false,
-        },
-    });
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "standalone-doc", title: "A standalone notice",
-            review_status: "none", case_id: null, current_version: 1,
-            current_revision: { revision_id: "rev-alone",
-                                pdf_sha256: "f".repeat(64) },
-        },
-    });
-
+test("Use template → Create draft makes the document and opens it in the workspace", async () => {
+    api.__respond("createDocumentV2", { data: { id: "doc-new" } });
+    api.__respond("generateRevisionV2", { data: { revision_id: "rev-1", pdf_sha256: SHA, version: 1 } });
+    respondWorkspace("doc-new");
     const p = await mountDocuments();
-    const openBtn = [...p.container.querySelectorAll("button")]
-        .find(b => b.textContent.trim() === "Open");
-    assert.ok(openBtn, "no Open control was rendered");
-    await act(async () => {
-        openBtn.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-        await new Promise(r => setTimeout(r, 40));
-    });
+    const card = p.container.querySelector('[data-template="bail_application"]');
+    await press(p, buttons(card, "Use template")[0]);
+    assert.ok(editor(), "Use template did not open the template to fill");
+    assert.equal(api.__calls("createDocumentV2").length, 0, "a document was made before any detail");
 
-    assert.equal(dom.window.localStorage.getItem("attorneyai.draft.case-1"), null,
-                 "a standalone document was filed as case-1's draft");
-    assert.equal(dom.window.localStorage.getItem("attorneyai.draft.no-case"),
-                 "standalone-doc");
+    await type(p, editor().querySelector("#cz_accused_name"), "Ali Raza");
+    await type(p, editor().querySelector("#cz_grounds"), "The applicant was in Lahore.");
+    await press(p, buttons(editor(), "Create draft")[0]);
+    await p.settle(60);
+
+    const [created, createKey] = api.__calls("createDocumentV2")[0].args;
+    assert.equal(created.templateType, "bail_application");
+    assert.equal(created.caseId, null, "a standalone draft was filed under a case");
+    const [docId, gen] = api.__calls("generateRevisionV2")[0].args;
+    assert.equal(docId, "doc-new");
+    assert.deepEqual(gen.fields, { accused_name: "Ali Raza", grounds: "The applicant was in Lahore." });
+    assert.ok(createKey, "the create carried no idempotency key");
+    assert.equal(editor(), null, "the editor stayed open");
+    assert.ok(p.container.querySelector("[data-document-workspace]"), "the draft did not open in the workspace");
+    assert.equal(api.__calls("getDocumentWorkspaceV2").at(-1)?.args[0], "doc-new");
+    assert.equal(api.__calls("saveDocumentWorkspaceV2").length, 0, "unchanged wording made an edited revision");
+    assert.doesNotMatch(p.text(), /Draft details|Final & export/, "the old guided flow is back");
     await p.unmount();
 });
 
-/* ── the selector follows the document (issue 4) ──────────────────────────── */
-
-async function _openFromMyDocuments(p) {
-    const openBtn = [...p.container.querySelectorAll("button")]
-        .find(b => b.textContent.trim() === "Open");
-    assert.ok(openBtn, "no Open control was rendered");
-    await act(async () => {
-        openBtn.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-        await new Promise(r => setTimeout(r, 40));
-    });
-}
-
-test("opening another case's document moves the case selector to it", async () => {
-    // THE DEFECT. Opening a case-2 document set `genCaseId` to case-2 and left
-    // `selectedCaseId` on case-1, so the picker named one matter while the
-    // document on screen belonged to another — and `resumeCaseId`, derived from
-    // the picker, then aimed the resume hook back at case-1.
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("myDocumentsV2", {
-        data: {
-            items: [{ id: "case2-doc", title: "A case-2 notice",
-                      review_status: "none", revision_id: "rev-c2",
-                      pdf_sha256: "a".repeat(64), version: 1,
-                      downloadable: true }],
-            has_more: false,
-        },
-    });
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "case2-doc", title: "A case-2 notice", review_status: "none",
-            case_id: "case-2", current_version: 1,
-            current_revision: { revision_id: "rev-c2", pdf_sha256: "a".repeat(64) },
-        },
-    });
-
+test("a draft filled from a case is made under that case", async () => {
+    api.__respond("extractDocumentFields", { data: { fields: { sender_name: "Ayesha Khan", demand: "Pay Rs 500,000" } } });
+    api.__respond("createDocumentV2", { data: { id: "doc-case" } });
+    api.__respond("generateRevisionV2", { data: { revision_id: "rev-1", pdf_sha256: SHA, version: 1 } });
+    respondWorkspace("doc-case", "legal_notice");
     const p = await mountDocuments();
-    await _openFromMyDocuments(p);
-
-    // Remembered under its OWN case, and only that one.
-    assert.equal(dom.window.localStorage.getItem("attorneyai.draft.case-2"),
-                 "case2-doc");
-    assert.equal(dom.window.localStorage.getItem("attorneyai.draft.case-1"), null,
-                 "the case-2 document was also filed under case-1");
+    await press(p, buttons(p.container.querySelector('[data-template="legal_notice"]'), "Use template")[0]);
+    await type(p, editor().querySelector("#te-case"), "case-1");
+    await press(p, buttons(editor(), "Fill")[0]);
+    assert.deepEqual(api.__calls("extractDocumentFields")[0].args, ["case-1", "legal_notice"]);
+    assert.equal(editor().querySelector("#cz_sender_name").value, "Ayesha Khan");
+    assert.match(editor().textContent, /Filled 2 details from the case\. Check each one\./);
+    await press(p, buttons(editor(), "Create draft")[0]);
+    await p.settle(60);
+    assert.equal(api.__calls("createDocumentV2")[0].args[0].caseId, "case-1");
+    assert.deepEqual(api.__calls("generateRevisionV2")[0].args[1].fields,
+        { sender_name: "Ayesha Khan", demand: "Pay Rs 500,000" });
     await p.unmount();
 });
 
-test("a standalone document selects the explicit no-case option", async () => {
-    // "" would fall through to the first case in the list and drag the
-    // document into a matter it does not belong to.
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("myDocumentsV2", {
-        data: {
-            items: [{ id: "alone-doc", title: "Standalone", review_status: "none",
-                      revision_id: "rev-a", pdf_sha256: "b".repeat(64),
-                      version: 1, downloadable: true }],
-            has_more: false,
-        },
-    });
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "alone-doc", title: "Standalone", review_status: "none",
-            case_id: null, current_version: 1,
-            current_revision: { revision_id: "rev-a", pdf_sha256: "b".repeat(64) },
-        },
-    });
-
-    const p = await mountDocuments();
-    await _openFromMyDocuments(p);
-
-    assert.equal(dom.window.localStorage.getItem("attorneyai.draft.no-case"),
-                 "alone-doc");
-    for (const c of ["case-1", "case-2"]) {
-        assert.equal(dom.window.localStorage.getItem(`attorneyai.draft.${c}`), null,
-                     `a standalone document was filed under ${c}`);
-    }
-    await p.unmount();
-});
-
-test("a document opened from another case stays on screen", async () => {
-    // THE CONSEQUENCE of the selector not following the document, and the one
-    // a user would actually see.
-    //
-    // `resumeCaseId` comes from the selector. Leaving it on case-1 while the
-    // open document belongs to case-2 aims the resume hook at case-1, which
-    // has no draft — so it reports null, the parent sees `genCaseId !== forCase`
-    // and clears the screen. The document the user just opened vanishes on its
-    // own, a beat after they clicked Open.
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("myDocumentsV2", {
-        data: {
-            items: [{ id: "case2-doc", title: "A case-2 notice",
-                      review_status: "none", revision_id: "rev-c2",
-                      pdf_sha256: "a".repeat(64), version: 1,
-                      downloadable: true }],
-            has_more: false,
-        },
-    });
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "case2-doc", title: "A case-2 notice", review_status: "none",
-            case_id: "case-2", current_version: 1,
-            current_revision: { revision_id: "rev-c2", pdf_sha256: "a".repeat(64) },
-        },
-    });
-
-    const p = await mountDocuments();
-    await _openFromMyDocuments(p);
-    // Let any follow-up restore attempt run to completion.
-    await act(async () => { await new Promise(r => setTimeout(r, 60)); });
-
-    assert.match(p.text(), /A case-2 notice/,
-                 "the document was cleared moments after being opened");
-    await p.unmount();
-});
-
-
-/* ── restoration waits for the case list to settle ────────────────────────── */
-
-test("standalone restoration does not start before case loading settles", async () => {
-    // THE DEFECT. `ready: Array.isArray(cases)` was true from the first render
-    // because `cases` is initialised to []. With `null` meaning "no case", an
-    // unsettled empty list read as "standalone", so the no-case draft was
-    // fetched a beat before the user's real case arrived — and briefly put
-    // somebody else's kind of document on screen.
-    //
-    // The real CaseProvider is mounted with its genuine initial state; only the
-    // network is stubbed.
-    let releaseCases;
-    api.__respond("listCases", () => new Promise(r => { releaseCases = r; }));
-    rememberDraft(null, "standalone-doc", dom.window.localStorage);
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "standalone-doc", title: "A standalone notice",
-            review_status: "none", case_id: null, current_version: 1,
-            current_revision: { revision_id: "rev-s", pdf_sha256: "c".repeat(64) },
-        },
-    });
-
-    const p = await mountDocuments();
-
-    assert.deepEqual(api.__calls("getDocumentV2"), [],
-                     "restored a standalone draft before the case list settled");
-
-    await act(async () => { releaseCases({ data: { items: CASES } }); });
-    await p.settle();
-
-    // With real cases present, the screen is in case-1 — never standalone.
-    const asked = api.__calls("getDocumentV2").map(c => c.args[0]);
-    assert.ok(!asked.includes("standalone-doc"),
-              "a standalone draft was restored while a real case was in view");
-    await p.unmount();
-});
-
-test("a user with zero cases settles without claiming to be ready", async () => {
-    api.__respond("listCases", { data: { items: [] } });
-
-    const p = await mountDocuments();
-    await p.settle();
-    assert.doesNotMatch(p.text(), /Loading your cases/,
-                        "still reported loading after the list settled empty");
-    await p.unmount();
-});
-
-test("a failed case load says so rather than 'no case linked'", async () => {
-    // "Complete your Legal Intake first" is false and alarming for a user who
-    // has cases the app simply could not fetch.
-    api.__respond("listCases", { error: { message: "Network unreachable" } });
-
-    const p = await mountDocuments();
-    await p.settle();
-    assert.doesNotMatch(p.text(), /complete your Legal Intake first/i);
-    await p.unmount();
-});
-
-/* ── visible recovery from a failed case load ─────────────────────────────── */
-
-async function _gotoDraftStep(p) {
-    // Step 0 lists templates; one "Use template" reaches the form where the
-    // readiness strip and its retry live.
-    const use = [...p.container.querySelectorAll("button")]
-        .find(b => b.textContent.trim() === "Use template");
-    assert.ok(use, "no Use template control");
-    await act(async () => {
-        use.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-        await new Promise(r => setTimeout(r, 30));
-    });
-}
-
-function _retryButton(p) {
-    return [...p.container.querySelectorAll("button")]
-        .find(b => /Try again|Retrying/.test(b.textContent));
-}
-
-test("a failed case load offers a visible retry", async () => {
-    // Without it the only recovery is a full page reload, which also throws
-    // away whatever document is open.
-    api.__respond("listCases", { error: { message: "Network unreachable" } });
-
-    const p = await mountDocuments();
-    await _gotoDraftStep(p);
-
-    assert.ok(_retryButton(p), "a failed case load offered no way to try again");
-    assert.match(p.text(), /could not load your cases/i);
-    assert.doesNotMatch(p.text(), /complete your Legal Intake first/i);
-    await p.unmount();
-});
-
-test("retrying recovers the cases and clears the error", async () => {
-    api.__respond("listCases", { error: { message: "Network unreachable" } });
-    const p = await mountDocuments();
-    await _gotoDraftStep(p);
-
-    api.__respond("listCases", { data: { items: CASES } });
-    await act(async () => {
-        _retryButton(p).dispatchEvent(
-            new dom.window.MouseEvent("click", { bubbles: true }));
-        await new Promise(r => setTimeout(r, 40));
-    });
-
-    assert.doesNotMatch(p.text(), /could not load your cases/i,
-                        "the error survived a successful retry");
-    assert.equal(_retryButton(p), undefined, "the retry control outlived the error");
-
-    // caseSelection recomputed immediately: the recovered cases are selectable.
-    // ("ready to draft" additionally requires a document TYPE, which this test
-    // never picks — asserting it would be testing a different control.)
-    const options = [...p.container.querySelectorAll("option")]
-        .map(o => o.getAttribute("value"));
-    assert.ok(options.includes("case-1"),
-              "the recovered cases never reached the selector");
-    await p.unmount();
-});
-
-test("a failed retry keeps the message and the button", async () => {
-    api.__respond("listCases", { error: { message: "First failure" } });
-    const p = await mountDocuments();
-    await _gotoDraftStep(p);
-
-    api.__respond("listCases", { error: { message: "Still down" } });
-    await act(async () => {
-        _retryButton(p).dispatchEvent(
-            new dom.window.MouseEvent("click", { bubbles: true }));
-        await new Promise(r => setTimeout(r, 40));
-    });
-
-    assert.match(p.text(), /could not load your cases/i);
-    assert.doesNotMatch(p.text(), /complete your Legal Intake first/i,
-                        "a failed retry claimed the user has no cases");
-    assert.ok(_retryButton(p), "the retry control vanished after a failed retry");
-    await p.unmount();
-});
-
-test("impatient clicking does not start concurrent loads", async () => {
-    api.__respond("listCases", { error: { message: "Network" } });
-    const p = await mountDocuments();
-    await _gotoDraftStep(p);
-
-    let release;
-    let calls = 0;
-    api.__respond("listCases", () => {
-        calls++;
-        return new Promise(r => { release = r; });
-    });
-
-    const btn = _retryButton(p);
-    await act(async () => {
-        for (let i = 0; i < 4; i++) {
-            btn.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-        }
-    });
-    assert.equal(calls, 1, `four clicks started ${calls} loads`);
-    assert.match(p.text(), /Trying your cases again|Retrying/,
-                 "no progress was shown while the retry ran");
-
-    await act(async () => {
-        release({ data: { items: CASES } });
-        await new Promise(r => setTimeout(r, 40));
-    });
-    assert.doesNotMatch(p.text(), /could not load your cases/i);
-    await p.unmount();
-});
-
-test("cases arriving late do not destroy the document already open", async () => {
-    // The property behind "a retry preserves the open document": a case-list
-    // change must not take the draft off the screen. Exercised through the
-    // INITIAL load rather than the retry button, because opening a document
-    // moves to the preview step where that button does not exist — and a test
-    // that cannot reach its control proves nothing.
-    let releaseCases;
-    api.__respond("listCases", () => new Promise(r => { releaseCases = r; }));
-    api.__respond("myDocumentsV2", {
-        data: {
-            items: [{ id: "open-doc", title: "An open notice", review_status: "none",
-                      revision_id: "rev-o", pdf_sha256: "a".repeat(64),
-                      version: 1, downloadable: true }],
-            has_more: false,
-        },
-    });
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "open-doc", title: "An open notice", review_status: "none",
-            case_id: "case-1", current_version: 1,
-            current_revision: { revision_id: "rev-o", pdf_sha256: "a".repeat(64) },
-        },
-    });
-
-    const p = await mountDocuments();
-    await _openFromMyDocuments(p);
-    assert.match(p.text(), /An open notice/);
-
-    await act(async () => {
-        releaseCases({ data: { items: CASES } });
-        await new Promise(r => setTimeout(r, 50));
-    });
-
-    assert.match(p.text(), /An open notice/,
-                 "the open document was cleared when the case list arrived");
-    await p.unmount();
-});
-
-/* ── a refused generate must be visible where it was refused ────────────────
- *
- * The V2 failure banner lived on step 2 only, and generation runs on step 1.
- * A refused create (every browser create, while the proxy turned it into a
- * 405) cleared the spinner and showed nothing: the button looked dead. */
-
-function findButton(container, text) {
-    return [...container.querySelectorAll("button")]
-        .find(b => (b.textContent || "").includes(text));
-}
-
-async function press(p, el) {
-    await act(async () => {
-        el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-    });
-    await p.settle();
-}
-
-test("a refused V2 generate is shown on the field review, not swallowed", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("listTemplates", {
-        data: [{ template_type: "legal_notice", label: "Legal Notice",
-                 category: "Civil", fields: ["sender_name", "demand"] }],
-    });
-    api.__respond("extractDocumentFields", {
-        data: { fields: { sender_name: "Ayesha Khan", demand: "500000" } },
-    });
-    api.__respond("createDocumentV2", {
-        data: null, status: 405, error: { message: "Method Not Allowed" },
-    });
-
-    const p = await mountDocuments();
-    await press(p, findButton(p.container, "Use template"));
-
-    const picker = [...p.container.querySelectorAll("select")]
-        .find(s => [...s.options].some(o => o.value === "legal_notice"));
-    assert.ok(picker, "the document-type picker did not render");
-    await act(async () => {
-        picker.value = "legal_notice";
-        picker.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
-    });
-    await p.settle();
-
-    await press(p, findButton(p.container, "Generate Draft"));
-    const generate = findButton(p.container, "generate →");
-    assert.ok(generate, "the field review did not open");
-    await press(p, generate);
-
-    assert.equal(api.__calls("createDocumentV2").length, 1);
-    // The button used to pass its click EVENT as the retry key, which reached
-    // the server as "[object Object]" and was refused (422).
-    // (`idempotencyKey` is itself stubbed here, so only "not the event" is
-    // checkable; the real key's format is covered in documents_v2.test.mjs.)
-    const key = api.__calls("createDocumentV2")[0].args[1];
-    assert.ok(!(key && typeof key === "object" && "nativeEvent" in key),
-        "the click event was sent as the idempotency key");
-    assert.match(p.text(), /Method Not Allowed/,
-        "the refusal reached nobody: step 1 rendered no error");
-    await p.unmount();
-});
-
-test("no handler that takes a retry key is wired straight to onClick", async () => {
-    // `onClick={submitToLawyer}` passes the click event as `retryKey`; it became
-    // the Idempotency-Key and every Submit to Lawyer was refused.
-    const { readFileSync } = await import("node:fs");
-    const src = readFileSync(new URL("../src/components/client/ModDocuments.jsx",
-                                      import.meta.url), "utf8");
-    const keyed = [...src.matchAll(/const (\w+) = async \(retryKey/g)].map(m => m[1]);
-    assert.ok(keyed.includes("submitToLawyer") && keyed.includes("handleGenerate"));
-    for (const fn of keyed) {
-        assert.ok(!src.includes(`onClick={${fn}}`), `${fn} receives the click event as its key`);
-    }
-});
-
-test("a scalar template without an extractor opens an honest manual form", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("listTemplates", {
-        data: [{ template_type: "bail_application", label: "Bail Application",
-                 category: "Criminal", description: "Application for bail.",
-                 fields: ["accused_name", "grounds"], structured_fields: [],
-                 drafting_mode: "manual" }],
-    });
-
-    const p = await mountDocuments();
-    await press(p, findButton(p.container, "Use template"));
-    await press(p, findButton(p.container, "Generate Draft"));
-
-    assert.equal(api.__calls("extractDocumentFields").length, 0,
-        "a missing backend prompt was called anyway");
-    assert.match(p.text(), /no safe automatic extractor/i);
-    assert.match(p.text(), /Accused name/);
-    await p.unmount();
-});
-
-test("standalone V2 drafting creates a caseless document without extraction", async () => {
-    api.__respond("listCases", { data: [] });
-    api.__respond("getCases", { data: [] });
-    api.__respond("listTemplates", {
-        data: [{ template_type: "bail_application", label: "Bail Application",
-                 category: "Criminal", description: "Application for bail.",
-                 fields: ["accused_name"], structured_fields: [],
-                 drafting_mode: "manual" }],
-    });
-    api.__respond("createDocumentV2", { data: { id: "standalone-1" } });
-    api.__respond("generateRevisionV2", {
-        data: { revision_id: "standalone-rev-1", pdf_sha256: "a".repeat(64), version: 1 },
-    });
-
-    const p = await mountDocuments();
-    await press(p, findButton(p.container, "Use template"));
-
-    const casePicker = [...p.container.querySelectorAll("select")]
-        .find(s => [...s.options].some(o => o.value === "__no_case__"));
-    assert.ok(casePicker, "standalone choice is missing");
-    await act(async () => {
-        casePicker.value = "__no_case__";
-        casePicker.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
-    });
-    await p.settle();
-    await press(p, findButton(p.container, "Generate Draft"));
-
-    const accusedLabel = [...p.container.querySelectorAll("label")]
-        .find(label => label.textContent.includes("Accused name"));
-    const accused = accusedLabel?.querySelector("input");
-    assert.ok(accused, "manual field was not rendered");
-    await act(async () => {
-        Object.getOwnPropertyDescriptor(
-            dom.window.HTMLInputElement.prototype, "value").set.call(accused, "Ali Khan");
-        accused.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-    });
-    await p.settle();
-    await press(p, findButton(p.container, "Generate with my corrections"));
-
-    assert.equal(api.__calls("extractDocumentFields").length, 0);
-    assert.equal(api.__calls("createDocumentV2")[0].args[0].caseId, null);
-    assert.equal(api.__calls("generateRevisionV2")[0].args[0], "standalone-1");
-    await p.unmount();
-});
-
-test("Regenerate appends to the same V2 document", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("extractDocumentFields", {
-        data: { fields: { sender_name: "Ayesha", demand: "500000" } },
-    });
-    api.__respond("createDocumentV2", { data: { id: "doc-1" } });
-    let version = 0;
+test("a refused generate keeps the editor open, and a retry reuses the same document", async () => {
+    api.__respond("createDocumentV2", { data: { id: "doc-retry" } });
+    let attempt = 0;
     api.__respond("generateRevisionV2", () => {
-        version += 1;
-        return { data: { revision_id: `rev-${version}`,
-                         pdf_sha256: String(version).repeat(64), version } };
+        attempt += 1;
+        return attempt === 1
+            ? { data: null, error: { message: "The revision could not be generated.", code: "generation_failed" }, status: 503 }
+            : { data: { revision_id: "rev-1", pdf_sha256: SHA, version: 1 } };
     });
-
+    respondWorkspace("doc-retry");
     const p = await mountDocuments();
-    await press(p, findButton(p.container, "Use template"));
-    await press(p, findButton(p.container, "Generate Draft"));
-    await press(p, findButton(p.container, "generate →"));
-    await p.settle(350);
+    await press(p, buttons(p.container.querySelector('[data-template="bail_application"]'), "Use template")[0]);
+    await type(p, editor().querySelector("#cz_accused_name"), "Ali Raza");
+    await press(p, buttons(editor(), "Create draft")[0]);
+    assert.ok(editor(), "the editor closed on a refused generate");
+    assert.match(editor().querySelector('[role="alert"]').textContent, /could not be generated/);
+    assert.equal(p.container.querySelector("[data-document-workspace]"), null, "a failed draft was reported as made");
 
-    await press(p, findButton(p.container, "Regenerate"));
-    await press(p, findButton(p.container, "generate →"));
-    await p.settle(350);
-
-    assert.equal(api.__calls("createDocumentV2").length, 1,
-        "Regenerate created a second document identity");
-    assert.deepEqual(api.__calls("generateRevisionV2").map(c => c.args[0]),
-                     ["doc-1", "doc-1"]);
+    await press(p, buttons(editor(), "Create draft")[0]);
+    await p.settle(60);
+    const creates = api.__calls("createDocumentV2");
+    assert.equal(creates.length, 2);
+    assert.equal(creates[0].args[1], creates[1].args[1], "the retry made a second document");
+    const gens = api.__calls("generateRevisionV2");
+    assert.notEqual(gens[0].args[2], gens[1].args[2], "a failed generate's key was replayed");
+    assert.ok(p.container.querySelector("[data-document-workspace]"));
     await p.unmount();
 });
 
-/* ── the AI's reading of the case is reported, not disguised ───────────────
- *
- * A failed extraction used to reach the client as blank fields — the same form
- * as a case that simply does not mention them. */
-
-test("extractionNotice tells a failed read from an empty one", async () => {
-    const { extractionNotice } = await import("../src/components/client/ModDocuments.jsx");
-    assert.equal(extractionNotice({ extraction_status: "ok", truncated: false }), null);
-    assert.match(extractionNotice({ extraction_status: "failed" }).message, /could not read your case/);
-    assert.match(extractionNotice({ extraction_status: "empty" }).message, /found none of these details/);
-    assert.match(extractionNotice({ extraction_status: "ok", truncated: true }).message, /only its first part/);
-    assert.equal(extractionNotice(undefined), null);   // an older server: no status, no claim
+test("with Documents V2 off, Create draft says so instead of failing silently", async () => {
+    api.__respond("createDocumentV2", { data: null, error: { message: "Not found", code: "feature_disabled" }, status: 404 });
+    const p = await mountDocuments();
+    await press(p, buttons(p.container.querySelector('[data-template="bail_application"]'), "Use template")[0]);
+    await type(p, editor().querySelector("#cz_accused_name"), "Ali Raza");
+    await press(p, buttons(editor(), "Create draft")[0]);
+    assert.match(editor().querySelector('[role="alert"]').textContent, /needs Documents V2/);
+    assert.equal(api.__calls("generateRevisionV2").length, 0);
+    await p.unmount();
 });
 
-test("a failed AI read is announced above the field review", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    api.__respond("listTemplates", {
-        data: [{ template_type: "legal_notice", label: "Legal Notice", category: "Civil",
-                 fields: ["sender_name", "demand"], drafting_mode: "ai" }],
-    });
-    api.__respond("extractDocumentFields", {
-        data: { fields: {}, extraction_status: "failed", truncated: false },
-    });
+test("wording changed in the template editor becomes the drafted document's text", async () => {
+    api.__respond("templateText", { data: { template_type: "bail_application",
+        text_html: "<p>The applicant [[ACCUSED_NAME]] prays for bail.</p>" } });
+    api.__respond("createDocumentV2", { data: { id: "doc-edit" } });
+    api.__respond("generateRevisionV2", { data: { revision_id: "rev-1", pdf_sha256: SHA, version: 1 } });
+    respondWorkspace("doc-edit");
+    api.__respond("saveDocumentWorkspaceV2", { data: {
+        revision_id: "rev-2", pdf_sha256: "b".repeat(64), version: 2, template_type: "edited_document" } });
+
     const p = await mountDocuments();
-    await press(p, findButton(p.container, "Use template"));
-    const picker = [...p.container.querySelectorAll("select")]
-        .find(s => [...s.options].some(o => o.value === "legal_notice"));
+    await press(p, byLabel(p.container, "Edit Bail Application"));
+    const page = editor().querySelector('[aria-label="Document text"]');
+    assert.match(page.textContent, /prays for bail/);
+    // The client rewrites a sentence, keeping the detail's placeholder.
     await act(async () => {
-        picker.value = "legal_notice";
-        picker.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+        page.querySelector("p").firstChild.textContent = "Most respectfully, the applicant ";
+        page.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
     });
-    await p.settle();
-    await press(p, findButton(p.container, "Generate Draft"));
+    await type(p, editor().querySelector("#cz_accused_name"), "Ali <Khan>");
+    await press(p, buttons(editor(), "Create draft")[0]);
+    await p.settle(60);
 
-    const notice = p.container.querySelector('[data-extraction="failed"]');
-    assert.ok(notice, "a failed read produced a silent blank form");
-    assert.match(notice.textContent, /could not read your case/);
+    const saves = api.__calls("saveDocumentWorkspaceV2");
+    assert.equal(saves.length, 1, "the edited wording was dropped");
+    const [docId, payload] = saves[0].args;
+    assert.equal(docId, "doc-edit");
+    assert.match(payload.bodyHtml, /Most respectfully, the applicant Ali &lt;Khan&gt; prays for bail\./);
+    assert.equal(payload.expectedRevisionId, "rev-1");
+    assert.equal(payload.fields ?? null, null);
+    assert.ok(p.container.querySelector("[data-document-workspace]"));
     await p.unmount();
 });
 
-/* ── the template preview starts drafting in one action ──────────────────────
- *
- * "Use this template" in the preview selects and proceeds in the same click.
- * The parent must use the spec it is handed: its own `selectedType` is still
- * the previous value during that click, and reading it bounced the user back
- * with "Select a template first". */
-function findByLabel(container, label) {
-    return [...container.querySelectorAll("button")]
-        .find(b => (b.getAttribute("aria-label") || "") === label);
-}
-
-test("starting from the template preview opens drafting with that template", async () => {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-
-    const p = await mountDocuments();
-    await press(p, findByLabel(p.container, "Preview Legal Notice"));
-    // The preview is portalled to <body> (see documents/ui.jsx ModalPortal).
-    const start = findButton(document.body, "Use this template");
-    assert.ok(start, "the template preview did not open");
-    await press(p, start);
-
-    const picker = [...p.container.querySelectorAll("select")]
-        .find(s => [...s.options].some(o => o.value === "legal_notice"));
-    assert.ok(picker, "did not reach the drafting step");
-    assert.equal(picker.value, "legal_notice", "the chosen template was not carried over");
-    await p.unmount();
-});
-
-/* ── the sidebar's "New document" wins over the refresh-resume ───────────────
- *
- * With a remembered draft, opening Documents jumps to that draft's step. That
- * is right after a refresh and wrong when the user just chose "New document"
- * in the sidebar: they landed on the old draft's review with no way back to
- * the catalogue. The request is made before the module mounts. */
-function rememberedReturnedDraft() {
-    api.__respond("listCases", { data: CASES });
-    api.__respond("getCases", { data: CASES });
-    rememberDraft("case-1", "doc-remembered", dom.window.localStorage);
-    api.__respond("getDocumentV2", {
-        data: {
-            id: "doc-remembered", title: "A restored notice",
-            review_status: "returned", current_version: 2,
-            current_revision: { revision_id: "rev-2", pdf_sha256: "a".repeat(64) },
-        },
-    });
-}
-
-test("without a sidebar request, a remembered draft still resumes", async () => {
-    rememberedReturnedDraft();
-    const p = await mountDocuments();
-    assert.equal(p.container.querySelector("#tpl-search"), null,
-        "the refresh-resume no longer opens the remembered draft");
-    await p.unmount();
-});
-
-test("a sidebar 'New document' request keeps the catalogue on screen", async () => {
-    rememberedReturnedDraft();
-    const nav = await import("../src/lib/documentsNav.js");
-    nav.requestDocumentsView("new");
-
-    const p = await mountDocuments();
-    assert.ok(p.container.querySelector("#tpl-search"),
-        "the remembered draft replaced the catalogue the user asked for");
-    assert.equal(nav.peekPendingDocumentsView(), null,
-        "the request outlived the restore it held back");
-    await p.unmount();
-
-    // One-shot: the next visit resumes the draft again.
-    const again = await mountDocuments();
-    assert.equal(again.container.querySelector("#tpl-search"), null);
-    await again.unmount();
-});
-
-/* ── M2: a finished generation failure is not replayed forever ─────────────
- *
- * The server stores a failed revision under its key; the same key returns the
- * same 503 generation_failed on every retry. Only an UNKNOWN outcome (503
- * generation_incomplete / network) is retried under the same key. */
-
-async function reachManualGenerate(p) {
-    await press(p, findButton(p.container, "Use template"));
-    const casePicker = [...p.container.querySelectorAll("select")]
-        .find(s => [...s.options].some(o => o.value === "__no_case__"));
-    await act(async () => {
-        casePicker.value = "__no_case__";
-        casePicker.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
-    });
-    await p.settle();
-    await press(p, findButton(p.container, "Generate Draft"));
-    const accused = [...p.container.querySelectorAll("label")]
-        .find(label => label.textContent.includes("Accused name"))?.querySelector("input");
-    await act(async () => {
-        Object.getOwnPropertyDescriptor(
-            dom.window.HTMLInputElement.prototype, "value").set.call(accused, "Ali Khan");
-        accused.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-    });
-    await p.settle();
-    await press(p, findButton(p.container, "Generate with my corrections"));
-}
-
-function manualTemplateResponses(firstRevision) {
-    api.__respond("listCases", { data: [] });
-    api.__respond("getCases", { data: [] });
-    api.__respond("listTemplates", {
-        data: [{ template_type: "bail_application", label: "Bail Application",
-                 category: "Criminal", description: "Application for bail.",
-                 fields: ["accused_name"], structured_fields: [],
-                 drafting_mode: "manual" }],
-    });
-    api.__respond("createDocumentV2", { data: { id: "standalone-1" } });
-    let n = 0;
-    api.__respond("generateRevisionV2", () => {
-        n += 1;
-        return n === 1 ? firstRevision
-            : { data: { revision_id: "rev-ok", pdf_sha256: "b".repeat(64), version: 1 } };
-    });
-}
-
-test("Retry after generation_failed is a new attempt under a new key", async () => {
-    manualTemplateResponses({ data: null, status: 503,
-        error: { code: "generation_failed", message: "Document generation failed." } });
-    const p = await mountDocuments();
-    await reachManualGenerate(p);
-    assert.match(p.text(), /Document generation failed/);
-    await press(p, findButton(p.container, "Retry"));
-
-    const keys = api.__calls("generateRevisionV2").map(c => c.args[2]);
-    assert.equal(keys.length, 2, "Retry did not reach the server");
-    assert.ok(keys[0] && keys[1]);
-    assert.notEqual(keys[0], keys[1], "a final failure was replayed under the same key");
-    await p.unmount();
-});
-
-test("Retry after an unknown outcome still reuses the same key", async () => {
-    manualTemplateResponses({ data: null, status: 503,
-        error: { code: "generation_incomplete", message: "Still working; retry." } });
-    const p = await mountDocuments();
-    await reachManualGenerate(p);
-    await press(p, findButton(p.container, "Retry"));
-
-    const keys = api.__calls("generateRevisionV2").map(c => c.args[2]);
-    assert.equal(keys.length, 2);
-    assert.equal(keys[0], keys[1], "an in-flight render was duplicated under a new key");
-    await p.unmount();
+test("edited wording is filled as text, and a blank detail prints as a line", async () => {
+    const { fillWordingTokens } = await import("../src/components/client/ModDocuments.jsx");
+    assert.equal(fillWordingTokens("<p>[[A_B]] and [[C]]</p>", { a_b: "x & y" }), "<p>x &amp; y and ______</p>");
 });

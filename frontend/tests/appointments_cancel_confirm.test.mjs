@@ -152,7 +152,7 @@ async function type(el, value) {
 test("Reject asks first; nothing is cancelled until the lawyer confirms", async () => {
     api.__respond("cancelAppointment", { data: { success: true }, error: null });
     const ui = await mountAppointments([row()]);
-    await ui.click("Reject");
+    await ui.click("Decline");
     assert.ok(dialog(ui), "no confirmation dialog");
     assert.match(dialog(ui).textContent, /Decline this request\?/);
     assert.equal(api.__calls("cancelAppointment").length, 0, "cancelled before confirming");
@@ -166,7 +166,7 @@ test("Reject asks first; nothing is cancelled until the lawyer confirms", async 
 
 test("Keep closes the dialog and changes nothing", async () => {
     const ui = await mountAppointments([row()]);
-    await ui.click("Reject");
+    await ui.click("Decline");
     await press(ui, dialogButton(ui, "Keep request"));
     assert.equal(dialog(ui), null);
     assert.equal(api.__calls("cancelAppointment").length, 0);
@@ -188,7 +188,7 @@ test("cancelling a confirmed appointment is called a cancellation, not a rejecti
 test("a refused cancellation keeps the dialog open with the server's reason", async () => {
     api.__respond("cancelAppointment", { data: null, error: { message: "This appointment has already ended." }, status: 409 });
     const ui = await mountAppointments([row()]);
-    await ui.click("Reject");
+    await ui.click("Decline");
     await press(ui, dialogButton(ui, "Decline request"));
     assert.ok(dialog(ui), "the dialog closed on failure");
     assert.match(dialog(ui).textContent, /already ended/);

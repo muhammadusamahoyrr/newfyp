@@ -1,0 +1,84 @@
+{
+ "label": "on_r1_2026-10-14",
+ "method": "route-v1 (real ai_research)",
+ "started_utc": "2026-10-14T03:04:26.269997+00:00",
+ "research_answer_safeguards": true,
+ "dataset": {
+  "path": "evals/research/questions_v1.jsonl",
+  "sha256": "cda11d5bdc753db94ae737e52a733f702ed221dd59cbd4d974011f72baa09453",
+  "items": 29,
+  "turns": 33
+ },
+ "code": {
+  "source_fingerprint": "19f27141b41740ed3d634bdf7974f5f3cc21b0cbd2c7a5ab773acb9429c423f5",
+  "files_hashed": 366,
+  "key_files": {
+   "app/ai/answer_citations.py": "89d1651046a05be167b3045a9efee962fd9adf72f5eeef77914b14fc8dd59e48",
+   "app/ai/cache.py": "4f6e76872933fffa3fd4e1d1769024758b4b61cfdfb3c1d0e2a55d9f1c4b2d77",
+   "app/ai/graph/edges.py": "c68604953957840597d8cccafb2e658b33d9477467461a65da2acc641c34351f",
+   "app/ai/nodes/classifier_node.py": "43c3761d49463003588af04378af3551d6a96a261ac7a645576710f08190e239",
+   "app/ai/nodes/fact_gap_node.py": "dc6bd0e23d07ff1cc98e9e5fd6fddbe1a913df895777177b018f9bdfcf5d539f",
+   "app/ai/nodes/finalizer_node.py": "4f96bda1e49dff5840f1a15f48c585a47f81fb1cb4904b07dd93f391829c16e6",
+   "app/ai/nodes/generation_node.py": "bf47678f32bed67a6b8e1d98ec98eba929daa10dc4b7fa73e6e5ccddd67cc7bc",
+   "app/ai/nodes/hallucination_node.py": "b86f8c0da8072fee5a7e0245c62fe3c20c99ef9bebc6957ad14639776d1d52d9",
+   "app/ai/nodes/triage_node.py": "b0d4942b2be595d31dd1b2fc8ad2d1a62fdd4896d16a5631f52b133ca8e14a99",
+   "app/ai/period_support.py": "68626071daa22061f229fc628772fdf5fd9ca3054781488bca98a914be5482eb",
+   "app/ai/response_policy.py": "472f1912410b5da04a5692677638e1caf64b00c7baddc2fa9c7245a286dc7500",
+   "app/websockets/chat_socket.py": "792e8928113d29244af8a6b54839cc4dc22d34da9333dd6a81109c2fb6ab0e12"
+  },
+  "git_head": "af960e32467e552ebdc28270c619f3cbf7b01ed9",
+  "git_dirty": true,
+  "git_diff_sha256": "b622e2065671c928e6f2d50037faef31993cdcdbf6d52654afdea42325836e9c"
+ },
+ "corpus": {
+  "collections": {
+   "criminal_collection__ctx_v1": 3306,
+   "criminal_collection": 3306,
+   "family_collection": 989,
+   "civil_collection": 4648,
+   "constitutional_collection": 1736,
+   "lawyers_collection": 1,
+   "criminal_collection__sec_v2": 3305,
+   "judgments_collection": 23978,
+   "criminal_collection__sec_v1": 3306,
+   "statutes_collection": 0,
+   "civil_collection__ident_v1": 4648
+  },
+  "embedding_model": "intfloat/multilingual-e5-base",
+  "embedding_version": "intfloat/multilingual-e5-base/v1",
+  "chunking_version": "v2",
+  "decision_policy_version": "v6"
+ },
+ "effective_settings": {
+  "analyzer_ai_model": "openai/gpt-oss-120b",
+  "analyzer_ai_model_allowlist": "openai/gpt-oss-120b,openai/gpt-oss-20b,llama-3.3-70b-versatile",
+  "analyzer_ai_provider": "simulated",
+  "cerebras_model_fast": "gpt-oss-120b",
+  "cerebras_model_main": "gpt-oss-120b",
+  "chat_adaptive_length_client": false,
+  "embedding_cache_ttl": 3600,
+  "gemini_model_fast": "gemini-3.5-flash-lite",
+  "gemini_model_main": "gemini-3.5-flash-lite",
+  "llm_local_only": false,
+  "llm_provider": "openrouter",
+  "ollama_fast_model": "",
+  "ollama_model": "qwen2.5:7b",
+  "retrieval_index_variant": "base",
+  "retrieval_multi_query": false,
+  "voice_groq_model": "whisper-large-v3",
+  "voice_provider": "groq"
+ },
+ "chat_adaptive_length_client": false,
+ "response_policy_version": "resp-policy-v1",
+ "client_guard_version": "client-guard-v2",
+ "safety_guidance_version": "safety-v1",
+ "exact_provision_version": "exact-provision-v1",
+ "result_cache": "disabled for the run",
+ "env_overlay": ".env.analyzer-demo.local (values not recorded)",
+ "finished_utc": "2026-10-14T03:15:22.762673+00:00",
+ "provider_log_counts": {
+  "rate_limit": 10,
+  "429": 10
+ },
+ "checkpoints_deleted_for_threads": 29
+}

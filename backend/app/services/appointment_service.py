@@ -21,7 +21,7 @@ from app.core.exceptions import (
     NotFoundError,
 )
 from app.repositories.appointment_repo import AppointmentRepository
-from app.repositories.user_repo import UserRepository
+from app.repositories.user_repo import UserRepository, lawyer_profile_complete
 from app.services import appointment_expiry as expiry
 from app.services import lawyer_availability_service
 from app.services import appointment_transitions as transitions
@@ -92,7 +92,24 @@ _PUBLIC_FIELDS = frozenset({
     "duration_minutes", "status", "mode", "timezone", "schedule_version",
     "notes", "cancel_reason", "cancelled_by", "meeting_link", "created_at",
     "updated_at",
+    # The status a cancellation ended: "pending" means a declined or withdrawn
+    # REQUEST, "confirmed" a cancelled appointment. Absent on older rows.
+    "cancelled_from",
+    # Times the lawyer offered instead of the requested one (2026-10-19,
+    # services/appointment_suggestions.py): seen by both parties.
+    "time_suggestion",
+    # An open proposal to move a CONFIRMED appointment, and why an ended one
+    # was cancelled (2026-10-19, APPOINTMENT_FLOW_PLAN.md).
+    "reschedule_proposal",
+    "outcome_code",
+    # Accepted moves (from, to, who proposed, who accepted, when): both
+    # parties agreed to each, so both may see them in the timeline.
+    "reschedule_history",
 })
+
+# "a video consultation", "an in-person consultation": the article and the
+# words, not the stored enum value.
+_MODE_PHRASE = {"video": "a video", "in_person": "an in-person", "phone": "a phone"}
 
 # Fields that exist to make the guarantees work and are nobody's business
 # outside this service.
@@ -131,6 +148,18 @@ _PUBLIC_FIELDS = frozenset({
 # `extra="allow"`, so it strips nothing. This is the only boundary there is.
 
 
+def video_met(appt: dict) -> bool:
+    """Both the lawyer and the client were in the in-app video room together
+    near the meeting's time, as Daily's own record of the call shows
+    (`appointment_video.verify_attendance` writes `video_attended`). The
+    evidence that lets a consultation be completed before its scheduled end.
+
+    2026-10-21: `video_joined`, written when a TOKEN was handed out, no longer
+    counts -- asking to join is not joining."""
+    attended = appt.get("video_attended") or {}
+    return bool(attended.get("lawyer")) and bool(attended.get("client"))
+
+
 def _sanitize(appt: dict, *, for_lawyer: bool = False) -> dict:
     """The stored row as a response, for a given viewer.
 
@@ -140,6 +169,12 @@ def _sanitize(appt: dict, *, for_lawyer: bool = False) -> dict:
     """
     public = {key: appt[key] for key in _PUBLIC_FIELDS if key in appt}
     public["id"] = appt.get("_id", appt.get("id", ""))
+    # Whether both met in the in-app video (2026-10-20): the UI offers
+    # "It took place" from then, not only after the booked end.
+    public["video_met"] = video_met(appt)
+    # A meeting the lawyer proposed (2026-10-20): its `notes` is the lawyer's
+    # agenda, not something the client wrote. The id itself stays internal.
+    public["from_proposal"] = bool(appt.get("proposal_id"))
     if for_lawyer and "lawyer_notes" in appt:
         public["lawyer_notes"] = appt["lawyer_notes"]
     appt = public
@@ -275,6 +310,7 @@ async def _transition(
         scheduled_at=_as_utc(appt["scheduled_at"]),
         end_at=_as_utc(appt["end_at"]),
         now=datetime.now(timezone.utc),
+        met=video_met(appt),
     )
     if timing:
         raise AppValidationError(timing)
@@ -490,7 +526,12 @@ async def _get_verified_lawyer(lawyer_id: str) -> dict:
         raise AppValidationError("This lawyer is no longer active")
     lp = lawyer.get("lawyer_profile") or {}
     if not lp.get("kyc_verified"):
-        raise AppValidationError("Lawyer is not yet KYC-verified")
+        raise AppValidationError("This lawyer's account is not approved yet")
+    # Approved at sign-up (LAWYER_AUTO_APPROVE) is not the same as listed: an
+    # id from anywhere but the directory must not reach a lawyer who has not
+    # finished onboarding. Admin-approved accounts were reviewed already.
+    if lp.get("kyc_auto_approved") and not lawyer_profile_complete(lawyer):
+        raise AppValidationError("This lawyer has not finished their profile yet")
     return lawyer
 
 
@@ -589,7 +630,9 @@ async def book_appointment(
             replayed = await _replay(client_id, idempotency_key, fingerprint)
             if replayed is not None:
                 return replayed
-        raise AppValidationError(
+        # A conflict (409), like the index-level refusals below: the request
+        # was valid, the time is taken; the client marks that time as taken.
+        raise ConflictError(
             "This time slot is already booked. Please choose a different time."
         )
 
@@ -721,7 +764,7 @@ async def book_appointment(
         user_id=lawyer_id,
         type=NotificationType.APPOINTMENT_BOOKED,
         title="New Appointment Request",
-        body=f"{client_name} booked a {mode.value} consultation for {slot_str}.",
+        body=f"{client_name} requested {_MODE_PHRASE.get(mode.value, 'a')} consultation for {slot_str}.",
         payload={"appointment_id": doc["_id"]},
         # Stable and derived, so a replay cannot produce a second one. The id
         # is for DEDUP, not durability — delivery remains best-effort until a
@@ -739,6 +782,89 @@ async def book_appointment(
     )
 
     return _sanitize(doc)
+
+
+async def create_confirmed_from_proposal(
+    *,
+    client_id: str,
+    lawyer_id: str,
+    case_id: str,
+    scheduled_at: datetime,
+    duration_minutes: int,
+    mode: AppointmentMode,
+    notes: str | None,
+    meeting_link: str | None,
+    proposal_id: str,
+) -> dict:
+    """A meeting the LAWYER proposed and the CLIENT has just chosen a time for
+    (meeting proposals, 2026-10-12).
+
+    Both have agreed to this time, so it is created CONFIRMED -- there is no
+    request left to answer. From booking it takes the alignment, the
+    future-only rule, the slots and the unique indexes that keep either side
+    from being double-booked; a clash is refused as a conflict and nothing is
+    written. The lawyer's diary entries and hearings are checked by the
+    proposal service before this is called. Working hours are not applied:
+    the lawyer chose these times.
+    """
+    if scheduled_at.tzinfo is None or scheduled_at.utcoffset() is None:
+        raise AppValidationError("scheduled_at must include a UTC offset")
+    misaligned = alignment_error(scheduled_at)
+    if misaligned:
+        raise AppValidationError(misaligned)
+    if scheduled_at <= datetime.now(timezone.utc):
+        raise AppValidationError("That time has already passed. Please choose another.")
+    bad_duration = duration_error(duration_minutes)
+    if bad_duration:
+        raise AppValidationError(bad_duration)
+    await _get_verified_lawyer(lawyer_id)
+    if await appt_repo.has_conflict(lawyer_id, scheduled_at, duration_minutes):
+        raise ConflictError(
+            "That time is no longer free in the lawyer's diary. Please choose "
+            "another of the proposed times.")
+
+    now = datetime.now(timezone.utc)
+    doc = {
+        "_id":              secrets.token_urlsafe(16),
+        "client_id":        client_id,
+        "lawyer_id":        lawyer_id,
+        "case_id":          case_id,
+        "scheduled_at":     scheduled_at,
+        "end_at":           scheduled_at + timedelta(minutes=duration_minutes),
+        "duration_minutes": duration_minutes,
+        "status":           AppointmentStatus.CONFIRMED.value,
+        "mode":             mode.value,
+        "timezone":         BOOKING_TZ_NAME,
+        "occupied_slots":   occupied_slots(scheduled_at, duration_minutes),
+        "schedule_version": 0,
+        "expires_at":       expiry.deadline_for(now, scheduled_at),
+        "notes":            notes,
+        "lawyer_notes":     None,
+        "cancel_reason":    None,
+        "cancelled_by":     None,
+        "meeting_link":     meeting_link,
+        # Where it came from; internal, not in the public fields.
+        "proposal_id":      proposal_id,
+        "created_at":       now,
+        "updated_at":       now,
+    }
+    try:
+        await appt_repo.insert(doc)
+    except DuplicateKeyError as exc:
+        constraint = _duplicate_constraint(exc)
+        if constraint == "uniq_appointment_client_slot":
+            raise ConflictError(
+                "You already have an appointment during this time. Please "
+                "choose another of the proposed times.")
+        if constraint == "uniq_appointment_lawyer_slot":
+            raise ConflictError(
+                "That time was just booked. Please choose another of the "
+                "proposed times.")
+        logger.warning(
+            "appointment_proposal_insert_duplicate_unmapped constraint=%s",
+            constraint or "unknown")
+        raise ConflictError("This meeting could not be confirmed. Please try again.")
+    return _enrich(_sanitize(doc), await _names(doc))
 
 
 async def confirm_appointment(
@@ -823,8 +949,16 @@ async def cancel_appointment(
     user_id: str,
     user_role: str,
     reason: str | None,
+    outcome_code: str | None = None,
 ) -> dict:
     appt = await _load_for_actor(appt_id, user_id, user_role)
+    if outcome_code:
+        # Only the lawyer, only a CONFIRMED appointment, only once it has
+        # started: these say what became of a meeting, not why one is called off.
+        if user_role != "lawyer" or _current_status(appt) is not AppointmentStatus.CONFIRMED:
+            raise AppValidationError("That outcome can only be recorded by the lawyer on a confirmed appointment.")
+        if datetime.now(timezone.utc) < _as_utc(appt["scheduled_at"]):
+            raise AppValidationError("That outcome can only be recorded once the appointment time has started.")
 
     # THE CUTOFF PROTECTS A COMMITMENT, AND A PENDING REQUEST IS NOT ONE.
     #
@@ -856,10 +990,17 @@ async def cancel_appointment(
                 "time. Please contact your lawyer directly."
             )
 
+    was = _current_status(appt).value
     extra = {
         "cancel_reason": reason,
         "cancelled_by":  user_role,
+        "cancelled_from": was,
     }
+    if outcome_code:
+        extra["outcome_code"] = outcome_code
+    # A lawyer turning down a request is a decline, and the client is told so:
+    # "cancelled the appointment" read as if a confirmed meeting was called off.
+    declined = user_role == "lawyer" and was == AppointmentStatus.PENDING.value
     updated = await _transition(
         appt, AppointmentStatus.CANCELLED, user_id, user_role, extra)
 
@@ -882,8 +1023,17 @@ async def cancel_appointment(
             appt_id, "cancel",
             user_id=recipient,
             type=NotificationType.APPOINTMENT_CANCELLED,
-            title="Appointment Cancelled",
-            body=f"{canceller_name} cancelled the appointment scheduled for {slot_str}."
+            title=("Request Declined" if declined else
+                   "Your lawyer could not attend" if outcome_code == "lawyer_no_show" else
+                   "Appointment did not take place" if outcome_code == "did_not_take_place" else
+                   "Appointment Cancelled"),
+            body=(f"{canceller_name} declined your consultation request for {slot_str}."
+                  if declined else
+                  f"{canceller_name} could not attend the appointment on {slot_str}. You can book a new time."
+                  if outcome_code == "lawyer_no_show" else
+                  f"{canceller_name} recorded that the appointment on {slot_str} did not take place."
+                  if outcome_code == "did_not_take_place" else
+                  f"{canceller_name} cancelled the appointment scheduled for {slot_str}.")
                  + (f" Reason: {reason}" if reason else ""),
             payload={"appointment_id": appt_id},
         )
@@ -893,6 +1043,9 @@ async def cancel_appointment(
     # policy grants admins appointment notes — `_actor_filter` decides row
     # ACCESS, not field access, and reading one into the other is how a
     # privacy rule quietly widens.
+    # A cancelled appointment's video room goes too (best-effort, never raises).
+    from app.services import appointment_video
+    await appointment_video.close_room(appt_id)
     return _sanitize(updated, for_lawyer=user_role == "lawyer")
 
 
@@ -914,6 +1067,16 @@ async def complete_appointment(
     # at the exact moment that record became historical.
     if meeting_link:
         extra["meeting_link"] = meeting_link
+    # Completing BEFORE the booked end needs proof that both met in the video
+    # room. Asked of Daily here, server-side, so the evidence is never what a
+    # browser claimed (2026-10-21). After the end this is skipped: the clock
+    # alone allows completion, as it always has.
+    now = datetime.now(timezone.utc)
+    if (not video_met(appt) and str(appt.get("mode")) == "video"
+            and _as_utc(appt["scheduled_at"]) <= now < _as_utc(appt["end_at"])):
+        from app.services import appointment_video
+        if await appointment_video.verify_attendance(appt, now=now):
+            appt = await _load_for_actor(appt_id, lawyer_id, "lawyer")
     updated = await _transition(
         appt, AppointmentStatus.COMPLETED, lawyer_id, "lawyer", extra)
 
@@ -1030,7 +1193,8 @@ def _hire_refusal(appt: dict, lawyer_id: str) -> str | None:
                 AppointmentStatus.COMPLETED,
                 scheduled_at=_as_utc(scheduled_at),
                 end_at=_as_utc(end_at),
-                now=datetime.now(timezone.utc))):
+                now=datetime.now(timezone.utc),
+                met=video_met(appt))):
         return ("This consultation has not finished yet, so it cannot lead "
                 "to a hire.")
     return None
@@ -1046,20 +1210,30 @@ async def list_consultations_for_hire(client_id: str, lawyer_id: str) -> list[di
     two people have actually met.
 
     Offering is not authorising: `request_engagement` re-checks the chosen id
-    through `completed_consultation_for_hire`. Nothing here decides whether a
-    consultation already used for a request may be named again (NR-42), so
-    none is excluded for that reason.
+    through `completed_consultation_for_hire`. A consultation already named by
+    ANY engagement is left out (2026-10-12): the engagements index allows one
+    hire attempt per consultation whatever its outcome (NR-42), so offering it
+    again could only end in a refusal.
     """
     rows = await appt_repo.find_completed_between(client_id, lawyer_id)
     eligible = [a for a in rows if _hire_refusal(a, lawyer_id) is None]
+    if eligible:
+        from app.db.collections import get_engagements_col
+        used = {e["appointment_id"] async for e in get_engagements_col().find(
+            {"appointment_id": {"$in": [a["_id"] for a in eligible]}}, {"appointment_id": 1})}
+        eligible = [a for a in eligible if a["_id"] not in used]
     names_by_id = await _names_for(eligible)
     return [_enrich(_sanitize(a), _names_from(a, names_by_id)) for a in eligible]
 
 
 async def get_appointment(appt_id: str, user_id: str, user_role: str) -> dict:
     appt = await _load_for_actor(appt_id, user_id, user_role)
-    return _enrich(
+    out = _enrich(
         _sanitize(appt, for_lawyer=user_role == "lawyer"), await _names(appt))
+    await mark_case_meetings([out], [appt])
+    if user_role == "client":
+        out["lawyer_card"] = _lawyer_card(appt, await _lawyer_cards_for([appt]))
+    return out
 
 
 async def list_appointments(
@@ -1070,6 +1244,8 @@ async def list_appointments(
     page_size: int,
     starts_from: datetime | None = None,
     starts_before: datetime | None = None,
+    upcoming_only: bool = False,
+    order: str = "time",
 ) -> dict:
     # Stated per role, for the same reason the single-fetch rule is. An admin
     # used to fall into the `else` and be listed their OWN lawyer appointments,
@@ -1080,7 +1256,8 @@ async def list_appointments(
     if user_role == "client":
         result = await appt_repo.find_for_client(user_id, status, page, page_size, starts_from, starts_before)
     elif user_role == "lawyer":
-        result = await appt_repo.find_for_lawyer(user_id, status, page, page_size, starts_from, starts_before)
+        result = await appt_repo.find_for_lawyer(user_id, status, page, page_size, starts_from, starts_before,
+                                                 upcoming_only=upcoming_only, order=order)
     else:
         raise ForbiddenError(
             "Listing appointments requires a client or lawyer account.")
@@ -1088,13 +1265,22 @@ async def list_appointments(
     # One read for the whole page, then a pure pass over the rows. The ORDER is
     # the repository's — the map is only a lookup, so the sort the query
     # applied is preserved exactly.
-    names_by_id = await _names_for(result.items)
+    # ONE users read serves both the names and (for a client) the lawyer
+    # cards; a second read for the cards made the lookups grow per page.
+    users = await _users_for(result.items)
+    names_by_id = {uid: u.get("full_name", "") for uid, u in users.items()}
     enriched = [
         _enrich(
             _sanitize(appt, for_lawyer=user_role == "lawyer"),
             _names_from(appt, names_by_id))
         for appt in result.items
     ]
+    # The client's view also carries who the lawyer is (one read for the page).
+    if user_role == "client":
+        cards = _cards_from(users)
+        for row, appt in zip(enriched, result.items):
+            row["lawyer_card"] = _lawyer_card(appt, cards)
+    await mark_case_meetings(enriched, result.items)
 
     return {
         "items": enriched,
@@ -1148,6 +1334,20 @@ async def get_availability(lawyer_id: str, date_str: str) -> dict:
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
+async def _users_for(appts: list[dict]) -> dict[str, dict]:
+    """Every party's user row across a page of appointments, in ONE read."""
+    wanted = {
+        str(value)
+        for appt in appts
+        for value in (appt.get("client_id"), appt.get("lawyer_id"))
+        if value
+    }
+    if not wanted:
+        return {}
+    rows = await user_repo.find_many({"_id": {"$in": sorted(wanted)}})
+    return {str(row["_id"]): row for row in rows}
+
+
 async def _names_for(appts: list[dict]) -> dict[str, str]:
     """Full names for every party across a page of appointments, in ONE read.
 
@@ -1194,6 +1394,70 @@ async def _names(appt: dict) -> tuple[str, str]:
         (client or {}).get("full_name", ""),
         (lawyer or {}).get("full_name", ""),
     )
+
+
+async def _lawyer_cards_for(appts: list[dict]) -> dict[str, dict]:
+    """What a CLIENT is shown about each lawyer on their appointments, in one
+    read: practice, experience, rating, office. Public profile facts only --
+    the same the directory shows -- plus the phone number, which
+    `_lawyer_card` releases only for a confirmed phone consultation."""
+    ids = sorted({str(a["lawyer_id"]) for a in appts if a.get("lawyer_id")})
+    if not ids:
+        return {}
+    rows = await user_repo.find_many({"_id": {"$in": ids}})
+    return _cards_from({str(u["_id"]): u for u in rows})
+
+
+def _cards_from(users: dict[str, dict]) -> dict[str, dict]:
+    """The client-facing card for each LAWYER among already-read user rows."""
+    out = {}
+    for uid, u in users.items():
+        if u.get("role") not in (None, "lawyer"):
+            continue
+        lp = u.get("lawyer_profile") or {}
+        out[uid] = {
+            "specializations": list(lp.get("specializations") or [])[:3],
+            "experience_years": lp.get("experience_years"),
+            "rating": lp.get("rating"),
+            "total_reviews": lp.get("total_reviews"),
+            "avatar_url": u.get("avatar_url"),
+            "office_address": lp.get("address"),
+            "lat": lp.get("lat"), "lng": lp.get("lng"),
+            "province": u.get("province"),
+            "_phone": u.get("phone"),
+        }
+    return out
+
+
+def _lawyer_card(appt: dict, cards: dict[str, dict]) -> dict | None:
+    card = cards.get(str(appt.get("lawyer_id") or ""))
+    if not card:
+        return None
+    card = dict(card)
+    phone = card.pop("_phone", None)
+    # A number is handed over only once the lawyer has agreed to a call.
+    if appt.get("mode") == "phone" and appt.get("status") == "confirmed" and phone:
+        card["phone"] = phone
+    return card
+
+
+async def mark_case_meetings(rows: list[dict], raws: list[dict]) -> list[dict]:
+    """`case_meeting` (2026-10-20): the appointment is on a case this lawyer
+    is engaged on -- work on a matter, not a first consultation -- and that
+    case's number. One read for the page. A case the client owns but has not
+    given to this lawyer is not a case meeting."""
+    from app.db.collections import get_cases_col
+    ids = list({r.get("case_id") for r in raws if r.get("case_id")})
+    cases = {}
+    if ids:
+        async for c in get_cases_col().find({"_id": {"$in": ids}}, {"lawyer_id": 1, "case_number": 1}):
+            cases[c["_id"]] = c
+    for row, raw in zip(rows, raws):
+        case = cases.get(raw.get("case_id"))
+        on = bool(case and case.get("lawyer_id") and case.get("lawyer_id") == raw.get("lawyer_id"))
+        row["case_meeting"] = on
+        row["case_number"] = case.get("case_number") if on else None
+    return rows
 
 
 def _enrich(appt: dict, names: tuple[str, str]) -> dict:
@@ -1298,6 +1562,15 @@ async def reschedule_appointment(
         raise AppValidationError(
             "schedule_version is required — reload the appointment and send the "
             "version you are changing.")
+
+    # The NEW time has to be one the lawyer could have been booked at, by the
+    # same rule booking uses (2026-10-20): inside their working hours, not in
+    # court, not in their diary. A no-op while working hours are not enforced
+    # (the default), so the move behaves exactly as before there. Without it a
+    # client booked a valid hour and then moved the request onto a Sunday or a
+    # hearing, which booking itself would have refused.
+    await lawyer_availability_service.assert_bookable(
+        str(appt["lawyer_id"]), scheduled_at, duration)
 
     end_at = scheduled_at + timedelta(minutes=duration)
 

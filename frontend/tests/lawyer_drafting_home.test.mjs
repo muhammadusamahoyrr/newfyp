@@ -106,15 +106,34 @@ test("Use template opens that template; Preview shows its own starter body", asy
     assert.equal(document.querySelector('[role="dialog"]'), null, "the preview stayed open");
     await click(buttons(cards(p.container).find(c => /Plaint/.test(c.textContent)), /Use template/)[0]);
     assert.deepEqual(p.opened.map(t => t.name), ["Plaint — Civil Suit", "Plaint — Civil Suit"]);
+    assert.equal(p.opened[0].initialHtml, undefined, "an unedited preview passed its own text");
+    await p.unmount();
+});
+
+test("the preview scrolls on its own; Edit opens the editor on the Fill panel", async () => {
+    const p = await mount();
+    const plaint = cards(p.container).find(c => /Plaint/.test(c.textContent));
+    await click(buttons(plaint, /Preview/)[0]);
+    const dlg = document.querySelector('[role="dialog"]');
+    assert.ok(dlg.querySelector("[data-lenis-prevent]").contains(dlg.querySelector("[data-preview-text]")),
+        "the preview page is not in its own scroll area");
+    await click(dlg.querySelector("[data-preview-edit]"));
+    assert.equal(document.querySelector('[role="dialog"]'), null, "the preview stayed open");
+    assert.equal(p.opened.length, 1);
+    assert.equal(p.opened[0].name, "Plaint — Civil Suit");
+    assert.equal(p.opened[0].openFill, true, "Edit did not ask for the Fill panel");
     await p.unmount();
 });
 
 test("category chips, search and Clear filters narrow the real list", async () => {
     const p = await mount();
-    const fam = buttons(p.container, /^Family/)[0];
-    await click(fam);
-    assert.equal(fam.getAttribute("aria-pressed"), "true");
-    assert.deepEqual(cards(p.container).map(c => c.querySelector("h3").textContent), ["Dissolution of Marriage Application"]);
+    // 2026-10-14: the library's categories (Dissolution is an Application / Petition now);
+    // 2026-10-19: the SECP and Competition Commission complaints joined Business.
+    const biz = buttons(p.container, /^Business \/ Commercial/)[0];
+    await click(biz);
+    assert.equal(biz.getAttribute("aria-pressed"), "true");
+    assert.deepEqual(cards(p.container).map(c => c.querySelector("h3").textContent),
+                     ["Articles of Association", "Board Resolution", "Competition Commission Complaint", "SECP Complaint"]);
     await click(buttons(p.container, /Clear filters/)[0]);
     assert.equal(cards(p.container).length, TEMPLATES.length);
     await type(p.container.querySelector('input[type="search"]'), "order vii");
@@ -172,4 +191,16 @@ test("the page follows the lawyer theme, its Theme button switches it, and its C
         if (!sel) continue;
         for (const part of sel.split(",")) assert.match(part.trim(), /^\[data-drafting-home\]/, `unscoped: ${part}`);
     }
+});
+
+test("an area shows a zero 'coming' chip only while it has no template", async () => {
+    // 2026-10-14: Agreement, Application, Business and Letter have templates;
+    // 2026-10-19: Property too (deeds), so only Criminal keeps a zero chip.
+    const p = await mount();
+    const empty = [...p.container.querySelectorAll("[data-empty-category]")].map(b => b.textContent.replace(/\s*0$/, "").trim());
+    assert.deepEqual(empty.sort(), ["Criminal"]);
+    for (const c of ["Application / Petition", "Agreement / Contract", "Business / Commercial", "Notice / Letter", "Property"]) {
+        assert.ok(buttons(p.container, new RegExp("^" + c.replace(/[/]/g, "\/"))).length === 1, `one chip for ${c}`);
+    }
+    await p.unmount();
 });

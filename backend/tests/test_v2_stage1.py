@@ -170,3 +170,24 @@ async def test_reconcile_repoints_generated_revision(mongo, _store):
     d = await get_documents_col().find_one({"_id": doc["_id"]})
     assert d["current_version"] == 5
     assert d["current_revision_id"] == rev_id
+
+
+# ── one document per create intent (2026-10-20) ──────────────────────────────
+
+async def test_simultaneous_creates_with_one_key_make_one_document(mongo):
+    key = f"create-race-{datetime.now().timestamp()}"
+    made = await asyncio.gather(*[
+        v2.create_document(client_id="client-1", case_id=None, template_type="legal_notice",
+                           title="Legal Notice", idempotency_key=key)
+        for _ in range(8)])
+
+    assert len({d["_id"] for d in made}) == 1, "one click made several documents"
+    assert await get_documents_col().count_documents(
+        {"client_id": "client-1", "create_idempotency_key": key}) == 1
+
+
+async def test_legacy_documents_without_a_key_do_not_collide(mongo):
+    await get_documents_col().insert_many([
+        {"_id": f"legacy-a-{datetime.now().timestamp()}", "client_id": "client-1"},
+        {"_id": f"legacy-b-{datetime.now().timestamp()}", "client_id": "client-1"},
+    ])

@@ -67,6 +67,43 @@ def _qr_flowable(url: str, size_cm: float = 2.6) -> Drawing:
     return d
 
 
+def _as_items(value) -> list:
+    """A numbered-list field as a list of items, whatever shape it arrived in.
+
+    The client form sends free text, and iterating a string numbered every
+    CHARACTER ("1. T", "2. h", ...) -- found 2026-10-19 in bail grounds, POA
+    powers and dispute facts. Text is one item per line, with any numbering
+    or bullet the person typed removed (the builder numbers them itself).
+    """
+    if not value:
+        return []
+    if isinstance(value, str):
+        lines = (re.sub(r"^\s*(?:\d+[.)]|[-*•])\s*", "", ln).strip()
+                 for ln in value.splitlines())
+        return [ln for ln in lines if ln]
+    return list(value)
+
+
+def _verification_block(s: dict, what: str, name: str) -> list:
+    """Order VI Rule 15 CPC verification, completed and signed by hand.
+
+    Rule 15(2) requires the verifier to say which paragraphs are true to their
+    own knowledge and which are on information believed to be true, so those
+    numbers are left for them to write in rather than guessed.
+    """
+    return [
+        Spacer(1, 0.4 * cm),
+        P("VERIFICATION", s["heading"]),
+        P(f"Verified on oath at ____________ on ____________ that the contents of "
+          f"paragraphs ____ to ____ of this {what} are true to my own knowledge, and "
+          f"those of paragraphs ____ to ____ are based on information received and "
+          f"believed to be true.", s["body"]),
+        Spacer(1, 0.6 * cm),
+        P("______________________", s["body"]),
+        P(f"{name} (verifier)", s["small"]),
+    ]
+
+
 def _verify_block(f: dict, s: dict):
     """QR + caption pointing at the point-of-use verification page. Returns [] when
     no verify_url was supplied (older callers), so it never breaks a document."""
@@ -253,20 +290,26 @@ def legal_notice(doc_id: str, f: dict) -> Path:
     story += _field("To", f.get("recipient_name", "") + (f"\n{f.get('recipient_address', '')}" if f.get("recipient_address") else ""), s)
     story += [_hr()]
 
-    story += [P("SUBJECT: LEGAL NOTICE", s["heading"]), Spacer(1, 0.2 * cm)]
-    story += [P(f.get("notice_body", ""), s["body"])]
+    story += [P("SUBJECT: LEGAL NOTICE", s["heading"]), Spacer(1, 0.2 * cm),
+              P("Take notice of the following:", s["body"])]
+    # One numbered paragraph per line of the grievance (2026-10-19): it used
+    # to print as a single unbroken block.
+    story += [P(f"{i}. {x}", s["body"]) for i, x in enumerate(_as_items(f.get("notice_body")), 1)]
     story += [Spacer(1, 0.4 * cm)]
 
     if f.get("demand"):
         story += [
             P("DEMAND", s["heading"]),
+            P("You are hereby called upon to:", s["body"]),
             P(f.get("demand", ""), s["body"]),
             Spacer(1, 0.3 * cm),
         ]
 
     story += [
         P(f"If no response is received within <b>{esc(f.get('response_days', '15'))} days</b> of receipt of this notice, legal proceedings shall be initiated without further notice.", s["body"], raw=True),
-        Spacer(1, 0.8 * cm),
+        Spacer(1, 0.2 * cm),
+        P("A copy of this notice has been retained for record and for further action.", s["body"]),
+        Spacer(1, 0.6 * cm),
         P("Yours faithfully,", s["body"]),
         Spacer(1, 0.6 * cm),
         P(f.get("sender_name", "______________________"), s["body"]),
@@ -294,15 +337,45 @@ def plaint_civil(doc_id: str, f: dict) -> Path:
     story += _field("Defendant", f.get("defendant_name", "") + (f", {f.get("defendant_address", '')}" if f.get("defendant_address") else ""), s)
     story += [_hr()]
 
-    story += [P("PLAINT", s["title"]), Spacer(1, 0.2 * cm)]
+    story += [P("PLAINT", s["title"]), Spacer(1, 0.2 * cm),
+              P("The plaintiff above-named respectfully submits as follows:", s["body"]),
+              Spacer(1, 0.1 * cm)]
+
+    # The paragraphs of a pleading are numbered consecutively through every
+    # section (2026-10-19): the facts used to be one unnumbered block.
+    n = [0]
+
+    def para(text) -> Paragraph:
+        n[0] += 1
+        return P(f"{n[0]}. {text}", s["body"])
+
     story += [P("FACTS OF THE CASE", s["heading"])]
-    story += [P(f.get("facts", ""), s["body"])]
+    story += [para(x) for x in _as_items(f.get("facts"))]
     story += [Spacer(1, 0.3 * cm)]
 
     if f.get("cause_of_action"):
-        story += [P("CAUSE OF ACTION", s["heading"]), P(f.get("cause_of_action", ""), s["body"]), Spacer(1, 0.3 * cm)]
+        story += [P("CAUSE OF ACTION", s["heading"]), para(f["cause_of_action"]), Spacer(1, 0.3 * cm)]
 
-    story += [P("RELIEF SOUGHT", s["heading"]), P(f.get("relief_sought", ""), s["body"]), Spacer(1, 0.3 * cm)]
+    # Order VII Rule 1(f) and (i) CPC. pleading_rules has always asked for these
+    # two particulars under exactly these keys, but no builder printed them, so
+    # every plaint reported both missing and the form never asked for them.
+    if f.get("jurisdiction_facts"):
+        story += [P("JURISDICTION", s["heading"]), para(f["jurisdiction_facts"]), Spacer(1, 0.3 * cm)]
+    if f.get("valuation"):
+        story += [P("VALUATION AND COURT FEE", s["heading"]),
+                  para("Value of the subject-matter of the suit for the purposes of "
+                       f"jurisdiction and of court-fees: {f['valuation']}"),
+                  Spacer(1, 0.3 * cm)]
+
+    story += [P("RELIEF SOUGHT", s["heading"])]
+    if f.get("relief_sought"):
+        story += [P("It is, therefore, respectfully prayed that a decree may be passed in "
+                    "favour of the plaintiff and against the defendant for the following "
+                    "relief:", s["body"]),
+                  P(f["relief_sought"], s["body"]),
+                  P("Any other relief which this Honourable Court deems just and proper "
+                    "in the circumstances may also be granted.", s["body"])]
+    story += [Spacer(1, 0.3 * cm)]
 
     if f.get("applicable_laws"):
         story += [P("APPLICABLE LAW", s["heading"]), P(f.get("applicable_laws", ""), s["body"]), Spacer(1, 0.3 * cm)]
@@ -314,6 +387,7 @@ def plaint_civil(doc_id: str, f: dict) -> Path:
         P("______________________", s["body"]),
         P(f.get("plaintiff_name", "Plaintiff"), s["small"]),
     ]
+    story += _verification_block(s, "plaint", f.get("verified_by") or f.get("plaintiff_name") or "Plaintiff")
 
     doc.build(story)
     return out
@@ -336,12 +410,35 @@ def written_statement(doc_id: str, f: dict) -> Path:
     story += _field("Defendant", f.get("defendant_name", ""), s)
     story += [_hr()]
 
-    story += [P("WRITTEN STATEMENT", s["title"]), Spacer(1, 0.2 * cm)]
-    story += [P("PRELIMINARY OBJECTIONS", s["heading"]), P(f.get("preliminary_objections", ""), s["body"]), Spacer(1, 0.3 * cm)]
-    story += [P("REPLY ON MERITS", s["heading"]), P(f.get("reply_on_merits", ""), s["body"]), Spacer(1, 0.3 * cm)]
+    story += [P("WRITTEN STATEMENT", s["title"]), Spacer(1, 0.2 * cm),
+              P("Written statement on behalf of the defendant. The defendant "
+                "respectfully submits as follows:", s["body"]),
+              Spacer(1, 0.1 * cm)]
+
+    # Numbered consecutively through every section, as pleadings are.
+    n = [0]
+
+    def para(text) -> Paragraph:
+        n[0] += 1
+        return P(f"{n[0]}. {text}", s["body"])
+
+    story += [P("PRELIMINARY OBJECTIONS", s["heading"])]
+    story += [para(x) for x in _as_items(f.get("preliminary_objections"))]
+    story += [Spacer(1, 0.3 * cm)]
+    story += [P("REPLY ON MERITS", s["heading"])]
+    story += [para(x) for x in _as_items(f.get("reply_on_merits"))]
+    story += [Spacer(1, 0.3 * cm)]
 
     if f.get("additional_facts"):
-        story += [P("ADDITIONAL FACTS", s["heading"]), P(f.get("additional_facts", ""), s["body"]), Spacer(1, 0.3 * cm)]
+        story += [P("ADDITIONAL FACTS", s["heading"])]
+        story += [para(x) for x in _as_items(f["additional_facts"])]
+        story += [Spacer(1, 0.3 * cm)]
+
+    story += [P("PRAYER", s["heading"]),
+              P("It is, therefore, respectfully prayed that the suit of the plaintiff "
+                "may be dismissed with costs, in the light of the objections and the "
+                "reply set out above.", s["body"]),
+              Spacer(1, 0.3 * cm)]
 
     story += [
         _hr(),
@@ -350,6 +447,8 @@ def written_statement(doc_id: str, f: dict) -> Path:
         P("______________________", s["body"]),
         P(f.get("defendant_name", "Defendant"), s["small"]),
     ]
+    story += _verification_block(s, "written statement",
+                                 f.get("verified_by") or f.get("defendant_name") or "Defendant")
 
     doc.build(story)
     return out
@@ -911,7 +1010,7 @@ def bail_application(doc_id: str, f: dict) -> Path:
         "That the applicant is a respectable citizen with no prior criminal record and will not abscond or tamper with the evidence.",
         "That the applicant undertakes to join the investigation / trial and abide by any conditions imposed by this Honourable Court.",
     ]
-    for i, g in enumerate(grounds, 1):
+    for i, g in enumerate(_as_items(grounds), 1):
         story += [P(f"{i}. {g}", s["body"])]
 
     story += [
@@ -1028,7 +1127,7 @@ def power_of_attorney(doc_id: str, f: dict) -> Path:
 
     story += [P("POWERS GRANTED", s["heading"]),
               P("I hereby appoint the above-named Attorney to do the following acts on my behalf:", s["body"])]
-    powers = f.get("powers") or []
+    powers = _as_items(f.get("powers"))
     for i, p in enumerate(powers, 1):
         story += [P(f"{i}. {p}", s["body"])]
     if not powers:
@@ -1133,7 +1232,7 @@ def dispute_petition(doc_id: str, f: dict) -> Path:
     story += [_hr(), P("JURISDICTION", s["heading"]), P(f.get("jurisdiction_clause", ""), s["body"]), Spacer(1, 0.2 * cm)]
 
     story += [P("STATEMENT OF FACTS", s["heading"])]
-    for i, fact in enumerate(f.get("facts") or [], 1):
+    for i, fact in enumerate(_as_items(f.get("facts")), 1):
         story += [P(f"{i}. {fact}", s["body"])]
     if not f.get("facts"):
         story += [P("[Facts to be provided]", s["body"])]
@@ -1488,6 +1587,15 @@ def guardianship_petition(doc_id: str, f: dict) -> Path:
     if f.get("declaration_grounds"):
         story += [P(f"Grounds on which guardianship is claimed: "
                     f"{f['declaration_grounds']}", s["body"])]
+
+    # Order VI Rule 2 CPC, which s.10(1) applies by requiring a petition to be
+    # signed and verified as a plaint: the material facts relied on. The
+    # extraction prompt asked for them and pleading_rules checked for them,
+    # but the builder never printed them (2026-10-19).
+    facts = _as_items(f.get("facts"))
+    story += [P(head("MATERIAL FACTS"), s["heading"])]
+    story += ([P(f"({i}) {x}", s["body"]) for i, x in enumerate(facts, 1)]
+              or [P("[not stated]", s["body"])])
 
     # s.10(1)(k)
     story += [P(head("CAUSES LEADING TO THIS APPLICATION (s.10(1)(k))"), s["heading"]),
@@ -1927,7 +2035,8 @@ def _flowable_html(fl) -> str:
     return ""   # Spacer, Drawing (QR): layout, not words
 
 
-def template_html(template_type: str, fields: dict, *, placeholders: bool = True) -> str:
+def template_html(template_type: str, fields: dict, *, placeholders: bool = True,
+                  mark_all: bool = False) -> str:
     """The template's own wording as HTML, for reading and editing as text.
 
     Runs the builder with its document swapped for a story capture, so this
@@ -1936,6 +2045,14 @@ def template_html(template_type: str, fields: dict, *, placeholders: bool = True
     the text and can be filled there. A blank field the builder fills with its
     own default (today's date, "15 days") is NOT a placeholder: the text shows
     the default, because that is what the PDF prints.
+
+    `mark_all` is for showing the TEMPLATE itself, before anyone has a case
+    (the client's template preview, 2026-10-19): every field the text prints
+    becomes `[[FIELD_NAME]]`, including those the builder would otherwise fill
+    with a "______" default, so each blank names the detail that goes there.
+    A token is kept only if it appears in the output. A key that only switches
+    wording (`pre_arrest`) never prints, so the template keeps its default
+    branch instead of silently showing the other one.
     Raises ValueError for an unknown template.
     """
     from app.services import template_registry   # registry imports this module
@@ -1958,6 +2075,15 @@ def template_html(template_type: str, fields: dict, *, placeholders: bool = True
         structured = set(template_registry.STRUCTURED.get(template_type, frozenset()))
         for key in sorted(template_registry.fields_for(template_type) - structured):
             if str(values.get(key) or "").strip():
+                continue
+            if mark_all:
+                token = f"[[{key.upper()}]]"
+                trial = {**values, key: token}
+                try:
+                    if token in render(trial):
+                        values = trial
+                except Exception:
+                    pass
                 continue
             absent = {k: v for k, v in values.items() if k != key}
             try:
@@ -2144,6 +2270,16 @@ def edited_document(doc_id: str, f: dict) -> Path:
     return out
 
 
+def general_document(doc_id: str, f: dict) -> Path:
+    """A document the AI wrote from the client's description (2026-10-19).
+
+    Rendered exactly as an edited document -- the sanitised editor HTML rebuilt
+    block by block, nothing passed through as markup, no header (the text
+    carries its own heading). `title` names the document and is not printed.
+    """
+    return edited_document(doc_id, {"body_html": f.get("body_html"), "title": f.get("title")})
+
+
 _GENERATORS = {
     "payment_receipt":    payment_receipt,
     "urdu_pleading":      urdu_pleading,
@@ -2168,6 +2304,7 @@ _GENERATORS = {
     "wakalatnama_checklist":  wakalatnama_checklist,
     "lawyer_draft":           lawyer_draft,
     "edited_document":        edited_document,
+    "general_document":       general_document,
 }
 
 

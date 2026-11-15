@@ -57,11 +57,27 @@ for (const [name, path] of Object.entries(SURFACES)) {
         assert.match(code, /normaliseCitations\(/);
     });
 
-    test(`${name} shows the request id`, () => {
+    test(`${name} keeps each answer's request id`, () => {
         assert.match(code, /requestId/,
             `${name} drops request_id, so its answers cannot be named`);
-        assert.match(code, /shortRequestId|copyText/,
-            `${name} shows an id nobody can copy`);
+        if (name === "client chatbot") {
+            // The client no longer SHOWS the id (removed at the user's request,
+            // 2026-10-19: Copy / Helpful / Not helpful only, as chat apps do).
+            // It still travels with every rating, which is how a reported
+            // answer is found.
+            assert.match(code, /request_id: m\.requestId/,
+                `${name} rates answers without saying which one`);
+            assert.doesNotMatch(code, /ref \$\{shortRequestId/, `${name} shows the reference chip again`);
+        } else if (name === "lawyer AI Legal page") {
+            // The id chip became an "Audit trail" icon (2026-10-19, as on the
+            // client); the trail shows the full id, rating still sends it.
+            assert.match(code, /request_id: m\.requestId/, `${name} rates answers without saying which one`);
+            assert.match(code, /row\("Request", v\.request_id\)/, `${name} no longer shows the id in the audit trail`);
+            assert.match(code, /aria-label="Audit trail"/, `${name} lost the way to open the audit trail`);
+        } else {
+            assert.match(code, /shortRequestId|copyText/,
+                `${name} shows an id nobody can copy`);
+        }
     });
 
     test(`${name} never declares its own REPEALED constant`, () => {
@@ -96,17 +112,18 @@ test("the provenance helper targets the redacted view, not the raw record", () =
         "the request id is interpolated into a URL unescaped");
 });
 
-test("both client-visible surfaces still send case_id and no case facts", () => {
-    // Guarding the P3 property from a P8 edit: these files were both touched.
-    for (const path of ["components/lawyer/AILegalPage.jsx",
-                        "components/lawyer/CasesPage.jsx"]) {
-        const code = src(path);
-        assert.ok(!/caseContext/.test(code), `${path} rebuilt a case-facts payload`);
-        for (const m of code.matchAll(/case_id:\s*([^,\n]+)/g)) {
-            assert.match(m[1], /\._id/,
-                `${path} sends ${m[1].trim()} instead of the database id`);
-        }
-    }
+test("lawyer research binds only the database case id, and sends no case facts", () => {
+    // The P3 property, on the one lawyer AI surface left. CasesPage was here
+    // for its AI tab (`WorkspaceAI`), deleted as dead code; its remaining
+    // `case_id:` payloads are meeting proposals, and lawyer_cases_redesign
+    // proves those send the database id by mounting the page (2026-10-20).
+    const code = src("components/lawyer/AILegalPage.jsx");
+    assert.ok(!/caseContext/.test(code), "AILegalPage rebuilt a case-facts payload");
+    const sent = [...code.matchAll(/case_id:\s*([^,\n]+)/g)].map(m => m[1].trim());
+    assert.deepEqual(sent, ["activeCaseObj?._id || null"],
+        "the research request binds something other than the case's database id");
+    assert.ok(!/caseContext/.test(src("components/lawyer/CasesPage.jsx")),
+        "CasesPage rebuilt a case-facts payload");
 });
 
 test("no surface renders a credentialed API path as a plain anchor", () => {

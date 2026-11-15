@@ -157,7 +157,7 @@ test("no candidates renders the notice and no list", async () => {
 
     assert.equal(v.find('[data-testid="match-panel"]'), null);
     assert.match(v.find('[data-testid="match-notice"]').textContent,
-                 /No verified lawyers/i);
+                 /No registered lawyers/i);
     await v.unmount();
 });
 
@@ -166,7 +166,7 @@ test("unavailable never tells the client there are no lawyers", async () => {
 
     const text = v.text();
     assert.match(text, /unavailable/i);
-    assert.doesNotMatch(text, /No verified lawyers/i,
+    assert.doesNotMatch(text, /No (verified|registered) lawyers/i,
         "a failed lookup was reported as an absence of lawyers");
     await v.unmount();
 });
@@ -211,3 +211,25 @@ test("a non-array matchedLawyers is tolerated", async () => {
 });
 
 test.after(() => { dom.window.close(); });
+
+// ── provisional suggestions (client chat, no case) ─────────────────────────
+
+test("provisional suggestions show the lawyers WITH the reason they are provisional", async () => {
+    const v = await render({
+        matchedLawyers: [UNRANKED, { ...UNRANKED, id: "L10", full_name: "Adv Second" }],
+        matchResultKind: "provisional",
+        matchNotice: "Based on this conversation, these verified lawyers handle family matters in Sindh. They have not been matched to your facts.",
+        suggestLawyer: true,
+    });
+    assert.equal(v.all('[data-testid="match-lawyer"]').length, 2);
+    assert.match(v.find('[data-testid="match-notice"]').textContent, /not been matched to your facts/);
+    assert.doesNotMatch(v.find('[data-testid="match-heading"]').textContent, /match/i);
+    assert.doesNotMatch(v.text(), /%/, "a provisional list showed a score");
+    await v.unmount();
+});
+
+test("a low-confidence turn (unavailable, no notice) renders nothing", async () => {
+    const v = await render({ matchedLawyers: [], matchResultKind: "unavailable", matchNotice: "", suggestLawyer: true });
+    assert.equal(v.find('[data-testid="match-panel"]'), null);
+    await v.unmount();
+});

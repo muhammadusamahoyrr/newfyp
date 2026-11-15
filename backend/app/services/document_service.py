@@ -287,6 +287,8 @@ Extract these fields from the case description (JSON only):
   "court_name": "name of the court e.g. Civil Court Lahore",
   "facts": "detailed factual background of the case in 3-5 paragraphs",
   "cause_of_action": "legal cause of action and when it arose",
+  "jurisdiction_facts": "the facts showing this court has jurisdiction (where the cause of action arose, where the defendant resides, or where the property is), else empty",
+  "valuation": "the value of the suit for jurisdiction and court-fees ONLY if the case states it, else empty; never estimate",
   "relief_sought": "what relief or remedy the plaintiff seeks from the court",
   "applicable_laws": "relevant Pakistani statutes and sections",
   "date": "today's date in DD Month YYYY format"
@@ -428,7 +430,17 @@ async def extract_fields(case_id: str, client_id: str, template_type: str) -> di
     if not prompt:
         raise AppValidationError(f"No extraction prompt for template: {template_type}")
 
-    description = case.get("description") or case.get("ai_summary") or ""
+    # The client's own description first. Only without one is the AI summary
+    # used -- and only through the CPC jurisdiction check (batch 8): a summary
+    # written before it in a non-Punjab / unknown-province case, or one whose
+    # check cannot run, is NOT given to the model; the reply says what to do.
+    description = str(case.get("description") or "").strip()
+    if not description:
+        from app.ai.source_currency import SummaryUnusable, summary_for_model_input
+        try:
+            description = summary_for_model_input(case) or ""
+        except SummaryUnusable as exc:
+            raise AppValidationError(str(exc))
     if not description:
         raise AppValidationError("Case has no description to extract fields from")
 

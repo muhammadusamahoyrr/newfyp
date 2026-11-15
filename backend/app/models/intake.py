@@ -27,6 +27,9 @@ class AIStructuredCase(BaseModel):
     #   grounded | ungrounded | claims_disagree | citations_unverified
     #   | no_evidence_retrieved | no_bound_citations | no_actions
     #   | unparseable | judge_failed | pipeline_failed | unverified
+    #   | cpc_jurisdiction_unverified (batch 6: the only law left was the
+    #     Punjab-only CPC in a non-Punjab matter; see ai/source_currency.py,
+    #     which also adds `jurisdiction_notice` / `cpc_jurisdiction`)
     grounded: bool = False
     grounding_status: str = "unverified"
 

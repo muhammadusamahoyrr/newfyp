@@ -87,7 +87,7 @@ function InheritanceCalc() {
         const { data, error } = await inheritanceSettlementPdf(req, keyForIntent(settlementKey, req));
         setBusy(false);
         if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "PDF failed"), "danger");
-        await downloadDocumentFile(data.doc_id, "inheritance-share-statement", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
+        await downloadDocumentFile(data.doc_id, "inheritance-share-statement.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         toast.show("✅ Share statement downloaded", "success");
     };
 
@@ -104,7 +104,7 @@ function InheritanceCalc() {
         const { data, error } = await inheritanceDemandLetter(req, keyForIntent(demandKey, req));
         setBusy(false);
         if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "PDF failed"), "danger");
-        await downloadDocumentFile(data.doc_id, "inheritance-demand-notice", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
+        await downloadDocumentFile(data.doc_id, "inheritance-demand-notice.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         setDemandOpen(false);
         toast.show("✅ Demand notice downloaded", "success");
     };
@@ -264,7 +264,7 @@ function WasiyyatBuilder() {
         const { data, error } = await wasiyyatPdf(req, keyForIntent(willKey, req));
         setBusy(false);
         if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "PDF failed"), "danger");
-        await downloadDocumentFile(data.doc_id, "wasiyyat-nama", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
+        await downloadDocumentFile(data.doc_id, "wasiyyat-nama.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         toast.show("✅ Wasiyyat Nama downloaded", "success");
     };
 
@@ -511,7 +511,7 @@ function LabourDuesPanel() {
         const { data, error } = await labourDemandPdf(req, keyForIntent(labourKey, req));
         setBusy(false);
         if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "PDF failed"), "danger");
-        await downloadDocumentFile(data.doc_id, "labour-demand-notice", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
+        await downloadDocumentFile(data.doc_id, "labour-demand-notice.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         toast.show("✅ Demand notice downloaded", "success");
     };
 
@@ -672,7 +672,7 @@ function NadraNavigator() {
                         Because {answers.uncontested === false ? "the heirs are not in agreement" : answers.heirsKnown === false ? "not all heirs can consent" : "the deceased was not NADRA-registered"},
                         you'll need a <b>succession petition under the Succession Act, 1925</b> in the civil court of the district
                         where the deceased resided or the property is located. A lawyer is strongly recommended —
-                        use the <b>Lawyers</b> tab to find a verified inheritance lawyer, and generate a
+                        use the <b>Lawyers</b> tab to find an inheritance lawyer, and generate a
                         <b> demand notice</b> from the Calculator tab if a co-heir is withholding your share.
                     </div>
                 </Card>
@@ -754,7 +754,7 @@ function InstantDocs() {
                         {busy ? "✨ Drafting…" : "✨ Generate Document"}
                     </BtnPrimary>
                     {done && (
-                        <BtnOutline onClick={() => downloadDocumentFile(done.doc_id, done.title || "document", { revisionId: done.revision_id, expectedPdfSha256: done.pdf_sha256 })}>
+                        <BtnOutline onClick={() => downloadDocumentFile(done.doc_id, `${done.title || "document"}.pdf`, { revisionId: done.revision_id, expectedPdfSha256: done.pdf_sha256 })}>
                             📥 Download {done.title}
                         </BtnOutline>
                     )}

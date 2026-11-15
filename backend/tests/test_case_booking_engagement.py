@@ -202,11 +202,14 @@ async def test_an_appointment_can_be_booked(parties):
 
 
 async def test_a_taken_slot_is_refused_by_the_availability_check(parties):
-    """What an ordinary second client meets: the read-then-write pre-check."""
+    """What an ordinary second client meets: the read-then-write pre-check.
+
+    A conflict (409) since 2026-10-12, like the index-level refusal below: the
+    request was valid, the time is taken (the client marks it as taken)."""
     when = _slot()
     await _book(parties, when)
 
-    with pytest.raises(AppValidationError, match="already booked"):
+    with pytest.raises(ConflictError, match="already booked"):
         await _book(parties, when)
 
 
@@ -267,7 +270,7 @@ async def test_booking_an_unverified_lawyer_is_refused(parties):
         {"_id": parties["lawyer_id"]},
         {"$set": {"lawyer_profile.kyc_verified": False}})
 
-    with pytest.raises(AppValidationError, match="KYC"):
+    with pytest.raises(AppValidationError, match="not approved"):
         await _book(parties, _slot())
 
 

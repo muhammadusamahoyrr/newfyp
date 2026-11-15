@@ -1,4 +1,7 @@
-/* The lawyer's "Needs outcome" queue.
+/* The lawyer's "Needs outcome" queue -- since 2026-10-20 its own TAB on the
+ * Appointments list (it was a strip above the tabs), listed the moment a
+ * meeting ends (`immediate`), each row the ordinary appointment card with the
+ * one four-option "Record outcome" dialog.
  *
  * A CONFIRMED appointment goes nowhere on its own: only the lawyer can move it
  * to Completed or No Show, and if they never do it stays `confirmed` for ever.
@@ -34,7 +37,7 @@ function define(name, value) {
 for (const name of ["window", "document", "navigator", "HTMLElement",
                     "Element", "Node", "Event", "CustomEvent", "MouseEvent",
                     "KeyboardEvent", "MutationObserver", "getComputedStyle",
-                    "localStorage", "requestAnimationFrame",
+                    "localStorage", "sessionStorage", "requestAnimationFrame",
                     "cancelAnimationFrame"]) {
     define(name, dom.window[name]);
 }
@@ -94,7 +97,7 @@ function page(items, next_cursor = null) {
     };
 }
 
-async function mount() {
+async function mount({ tab = true } = {}) {
     const { AppointmentsPage } =
         await import("../src/components/lawyer/AppointmentsPage.jsx");
     const { NotifCtx } = await import("../src/components/lawyer/theme.js");
@@ -107,6 +110,12 @@ async function mount() {
                       h(AppointmentsPage)));
     });
     await act(async () => { await new Promise(r => realSetTimeout(r, 40)); });
+    if (tab) {
+        const t = [...container.querySelectorAll('[role="tab"]')].find(b => /^Needs outcome/.test(b.textContent.trim()));
+        assert.ok(t, "no Needs outcome tab");
+        await act(async () => { t.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+        await act(async () => { await new Promise(r => realSetTimeout(r, 40)); });
+    }
 
     const buttons = () => [...container.querySelectorAll("button")];
     const byText = (label) => buttons().find(b => b.textContent.trim() === label);
@@ -116,6 +125,18 @@ async function mount() {
         text: () => container.textContent,
         buttons,
         byText,
+        // ONE "Record outcome" on the row's card opens the four-option dialog;
+        // this records one of its choices.
+        record: async (choice) => {
+            const press = async (el) => {
+                assert.ok(el, "control missing");
+                await act(async () => { el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+                await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
+            };
+            await press([...container.querySelectorAll("button")].find(b => b.textContent.trim() === "Record outcome"));
+            await press([...container.querySelectorAll("[role=\"radio\"]")].find(b => b.textContent.trim() === choice));
+            await press(container.querySelector("[data-close-confirm]"));
+        },
         click: async (label) => {
             const btn = byText(label);
             assert.ok(btn, `no control labelled ${label}`);
@@ -133,12 +154,14 @@ async function mount() {
 }
 
 test.beforeEach(() => {
+    try { dom.window.sessionStorage.clear(); } catch { /* none */ }
     api.__reset();
     api.__respond("bootstrapAuth", true);
     api.__respond("getMe", { data: { _id: "l1", role: "lawyer" } });
     api.__respond("listAppointments", { data: { items: [] } });
     api.__respond("listCases", { data: { items: [] } });
     api.__respond("getNotifications", { data: { items: [] } });
+    api.__respond("getAppointment", { data: null, error: { message: "not stubbed" }, status: 404 });
     // The page now also loads the lawyer's working hours. Stubbed so these
     // tests exercise the outcome queue rather than an unrelated error panel.
     api.__respond("getMyWorkingHours", {
@@ -157,28 +180,56 @@ test.after(() => {
     dom.window.close();
 });
 
-/* ── the three states, kept apart ─────────────────────────────────────────── */
+/* ── the tab, and the three states kept apart ──────────────────────────────── */
 
-test("a genuine empty queue shows no section at all", async () => {
+test("the queue is its own tab: nothing is read for it, and no strip shows, until the tab is opened", async () => {
+    api.__respond("listPendingOutcomes", page([pending()]));
+    const ui = await mount({ tab: false });
+    assert.equal(api.__calls("listPendingOutcomes").length, 0, "the queue was read outside its tab");
+    assert.doesNotMatch(ui.text(), /Ayesha Bibi/);
+    await ui.unmount();
+});
+
+test("it is listed the moment a meeting ends: the queue is read with `immediate`", async () => {
+    api.__respond("listPendingOutcomes", page([pending()]));
+    const ui = await mount();
+    const calls = api.__calls("listPendingOutcomes");
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].args[0].immediate, true, "the two-hour reminder grace reached the list");
+    assert.match(ui.text(), /Ayesha Bibi/);
+    await ui.unmount();
+});
+
+test("the tab count is the shared server count; an unknown count is not shown as zero", async () => {
+    api.__respond("listPendingOutcomes", page([]));
+    api.__respond("getLawyerActions", { data: { outcomes_to_record: 3, appointment_requests: 0, hire_requests: 0, upcoming: 0, to_do: 3, next: {} }, error: null });
+    let ui = await mount({ tab: false });
+    const label = () => [...ui.container.querySelectorAll('[role="tab"]')].find(b => /^Needs outcome/.test(b.textContent.trim())).textContent;
+    assert.match(label(), /Needs outcome\s*\(3\)/);
+    await ui.unmount();
+    api.__respond("getLawyerActions", { data: null, error: { message: "down" }, status: 0 });
+    ui = await mount({ tab: false });
+    assert.doesNotMatch(label(), /\(0\)/, "a failed count read was shown as zero");
+    await ui.unmount();
+});
+
+test("a genuine empty queue says there is nothing waiting", async () => {
     api.__respond("listPendingOutcomes", page([]));
     const ui = await mount();
-
-    assert.doesNotMatch(ui.text(), /Needs outcome/);
-    assert.doesNotMatch(ui.text(), /No consultations are waiting on an outcome/);
+    assert.ok(ui.container.querySelector("[data-outcomes-empty]"), "an empty queue did not say so");
+    assert.doesNotMatch(ui.text(), /Could not load outstanding outcomes/);
     await ui.unmount();
 });
 
 test("a failed read is NOT reported as an empty queue", async () => {
-    // THE DEFECT THIS GUARDS. `apiFetch` resolves with `{data: null, error}` on
-    // failure, so an unchecked `data?.items || []` would render "nothing to do"
-    // out of a network error — and a lawyer would believe their record is
-    // clear because nobody managed to ask.
+    // `apiFetch` resolves with `{data: null, error}` on failure, so an
+    // unchecked `data?.items || []` would render "nothing to do" out of a
+    // network error.
     api.__respond("listPendingOutcomes",
                   { data: null, error: { message: "network down" }, status: 0 });
     const ui = await mount();
-
-    assert.match(ui.text(), /Needs outcome/, "a failed read hid the section like an empty queue");
     assert.match(ui.text(), /Could not load outstanding outcomes/);
+    assert.equal(ui.container.querySelector("[data-outcomes-empty]"), null, "a failed read looked like an empty queue");
     await ui.unmount();
 });
 
@@ -186,7 +237,6 @@ test("a failed read says it does not know, rather than guessing", async () => {
     api.__respond("listPendingOutcomes",
                   { data: null, error: { message: "boom" }, status: 500 });
     const ui = await mount();
-
     assert.match(ui.text(), /we do not know/i);
     assert.ok(ui.byText("Try again"), "no way to retry a failed read");
     await ui.unmount();
@@ -202,59 +252,45 @@ test("a failed read can be retried and then succeeds", async () => {
     });
     const ui = await mount();
     assert.match(ui.text(), /Could not load outstanding outcomes/);
-
     await ui.click("Try again");
-
-    assert.match(ui.text(), /Ayesha Bibi/);
-    await ui.unmount();
-});
-
-test("the queue is read from its own endpoint, not filtered from the list",
-     async () => {
-    // The appointment list fetches 50 rows and never pages. A filter over it
-    // would stop exactly where that page ends — which is where this backlog
-    // begins.
-    api.__respond("listPendingOutcomes", page([pending()]));
-    const ui = await mount();
-
-    assert.equal(api.__calls("listPendingOutcomes").length, 1);
     assert.match(ui.text(), /Ayesha Bibi/);
     await ui.unmount();
 });
 
 /* ── recording an outcome ─────────────────────────────────────────────────── */
 
-test("Completed goes through the guarded endpoint", async () => {
+test("the row's only outcome control is Record outcome -- no standalone No Show", async () => {
+    api.__respond("listPendingOutcomes", page([pending()]));
+    const ui = await mount();
+    assert.ok(ui.byText("Record outcome"));
+    const list = ui.container.querySelector(".lc-list");
+    assert.equal([...list.querySelectorAll("button")].filter(b => /^No[- ]?Show$/i.test(b.textContent.trim())).length, 0, "a standalone No Show button is back");
+    await ui.unmount();
+});
+
+test("It took place goes through the guarded endpoint", async () => {
     api.__respond("listPendingOutcomes", page([pending()]));
     api.__respond("completeAppointment", { data: { status: "completed" } });
     const ui = await mount();
-
-    await ui.click("Completed");
-
+    await ui.record("It took place");
     const calls = api.__calls("completeAppointment");
     assert.equal(calls.length, 1, "the existing complete endpoint was not used");
     assert.equal(calls[0].args[0], "apt-1");
     await ui.unmount();
 });
 
-test("No Show goes through the guarded endpoint", async () => {
+test("a no-show is recorded from the dialog, through the guarded endpoint", async () => {
     api.__respond("listPendingOutcomes", page([pending()]));
     api.__respond("markNoShow", { data: { status: "no_show" } });
     const ui = await mount();
-
-    await ui.click("No Show");
-
+    await ui.record("The client didn't attend");
     const calls = api.__calls("markNoShow");
     assert.equal(calls.length, 1);
     assert.equal(calls[0].args[0], "apt-1");
     await ui.unmount();
 });
 
-test("the queue is re-read from the server after an outcome is recorded",
-     async () => {
-    // Not patched locally. The server decides whether the transition happened,
-    // and re-reading is the only way to see the queue it now has — including a
-    // row promoted from a page this client never reached.
+test("after an outcome the queue, the list and the counts are all re-read", async () => {
     let call = 0;
     api.__respond("listPendingOutcomes", () => {
         call += 1;
@@ -262,47 +298,79 @@ test("the queue is re-read from the server after an outcome is recorded",
     });
     api.__respond("completeAppointment", { data: { status: "completed" } });
     const ui = await mount();
-
-    await ui.click("Completed");
-
-    assert.ok(api.__calls("listPendingOutcomes").length >= 2,
-              "the queue was not re-read from the server");
-    assert.doesNotMatch(ui.text(), /Needs outcome/, "the emptied queue is still shown");
+    const counts = api.__calls("getLawyerActions").length;
+    await ui.record("It took place");
+    await ui.settle(60);
+    assert.ok(api.__calls("listPendingOutcomes").length >= 2, "the queue was not re-read from the server");
+    assert.ok(api.__calls("getLawyerActions").length > counts, "the counts were not re-read");
+    assert.ok(ui.container.querySelector("[data-outcomes-empty]"), "the recorded row is still shown");
     await ui.unmount();
 });
 
-test("a refused outcome leaves the row in the queue", async () => {
-    // The server refuses a stale row — one already dealt with in another tab.
-    // Removing it locally would hide a consultation that may still need an
-    // outcome.
+test("an outcome already recorded in another tab: the dialog closes, it says so, the row is re-read", async () => {
     api.__respond("listPendingOutcomes", page([pending()]));
     api.__respond("completeAppointment",
                   { data: null, error: { message: "already completed" }, status: 409 });
     const ui = await mount();
-
-    await ui.click("Completed");
-
-    assert.match(ui.text(), /Ayesha Bibi/,
-                 "a refused outcome removed the row anyway");
+    const reads = api.__calls("listPendingOutcomes").length;
+    await ui.record("It took place");
+    await ui.settle(60);
+    assert.equal(dom.window.document.querySelector('[aria-label="Complete the consultation"]'), null, "the stale dialog stayed open");
+    assert.match(dom.window.document.body.textContent, /already completed/);
+    assert.ok(api.__calls("listPendingOutcomes").length > reads, "the stale row was not re-read");
     await ui.unmount();
 });
 
-test("a refused outcome says why, rather than silently reloading", async () => {
+test("a refused outcome for another reason keeps the dialog and says why", async () => {
     api.__respond("listPendingOutcomes", page([pending()]));
-    api.__respond("completeAppointment",
-                  { data: null, error: { message: "already completed" }, status: 409 });
+    api.__respond("completeAppointment", { data: null, error: { message: "server busy" }, status: 503 });
     const ui = await mount();
-    await ui.click("Completed");
-    assert.match(ui.text(), /already completed/);
+    await ui.record("It took place");
+    assert.ok(dom.window.document.querySelector("[data-outcome-refused]"), "the reason was not shown in the dialog");
+    assert.match(ui.text(), /Ayesha Bibi/, "a refused outcome removed the row anyway");
     await ui.unmount();
 });
 
 test("nothing is auto-completed by merely opening the queue", async () => {
     api.__respond("listPendingOutcomes", page([pending()]));
     const ui = await mount();
-
     assert.equal(api.__calls("completeAppointment").length, 0);
     assert.equal(api.__calls("markNoShow").length, 0);
+    await ui.unmount();
+});
+
+/* ── the Dashboard's deep link ────────────────────────────────────────────── */
+
+test("Record outcome from the Dashboard opens THAT meeting's dialog, and again after a refresh", async () => {
+    dom.window.sessionStorage.setItem("attorney:lawyer-record-outcome", "apt-7");
+    api.__respond("listPendingOutcomes", page([pending({ id: "apt-7", client_name: "Bilal Khan" })]));
+    api.__respond("getAppointment", { data: pending({ id: "apt-7", client_name: "Bilal Khan" }), error: null, status: 200 });
+    let ui = await mount({ tab: false });
+    await ui.settle(60);
+    const dlg = () => dom.window.document.querySelector('[aria-label="Complete the consultation"]');
+    assert.ok(dlg(), "the outcome dialog did not open");
+    assert.match(dlg().textContent, /Bilal Khan/);
+    assert.equal(api.__calls("getAppointment")[0].args[0], "apt-7");
+    const selected = [...ui.container.querySelectorAll('[role="tab"]')].find(b => b.getAttribute("aria-selected") === "true");
+    assert.match(selected.textContent, /^Needs outcome/);
+    await ui.unmount();
+    // A refresh with the dialog still open opens it again.
+    ui = await mount({ tab: false });
+    await ui.settle(60);
+    assert.ok(dlg(), "a refresh lost the deep link");
+    await ui.unmount();
+});
+
+test("a deep link to a meeting no longer needing an outcome falls back to the tab", async () => {
+    dom.window.sessionStorage.setItem("attorney:lawyer-record-outcome", "apt-gone");
+    api.__respond("listPendingOutcomes", page([]));
+    api.__respond("getAppointment", { data: pending({ id: "apt-gone", status: "completed" }), error: null, status: 200 });
+    const ui = await mount({ tab: false });
+    await ui.settle(60);
+    assert.equal(dom.window.document.querySelector('[aria-label="Complete the consultation"]'), null);
+    assert.match(dom.window.document.body.textContent, /no longer needs an outcome/);
+    assert.equal(dom.window.sessionStorage.getItem("attorney:lawyer-record-outcome"), null, "the stale link was kept");
+    assert.ok(ui.container.querySelector("[data-outcomes-empty]"), "it did not fall back to the Needs outcome tab");
     await ui.unmount();
 });
 
@@ -322,21 +390,15 @@ test("more rows are reachable than one page holds", async () => {
             : page([pending({ id: "apt-2", client_name: "Second Client" })]);
     });
     const ui = await mount();
-
     assert.match(ui.text(), /First Client/);
     assert.ok(!ui.text().includes("Second Client"));
-
     await ui.click("Load more");
-
     assert.match(ui.text(), /Second Client/);
     assert.match(ui.text(), /First Client/, "the first page was discarded");
     await ui.unmount();
 });
 
 test("the whole cursor is sent back, not half of it", async () => {
-    // The server refuses a partial cursor rather than silently restarting, so
-    // sending half would turn paging into an error — or, worse, a loop over
-    // page one if the server ever stopped refusing.
     const cursor = {
         after_end_at: new Date(Date.now() - 4 * 36e5).toISOString(),
         after_id: "apt-25",
@@ -348,19 +410,16 @@ test("the whole cursor is sent back, not half of it", async () => {
         return call === 1 ? page([pending()], cursor) : page([]);
     });
     const ui = await mount();
-
     await ui.click("Load more");
-
     const second = api.__calls("listPendingOutcomes")[1].args[0];
     assert.deepEqual(second.cursor, cursor);
+    assert.equal(second.immediate, true);
     await ui.unmount();
 });
 
-test("no Load more control when the server says there is no next page",
-     async () => {
+test("no Load more control when the server says there is no next page", async () => {
     api.__respond("listPendingOutcomes", page([pending()]));
     const ui = await mount();
-
     assert.equal(ui.byText("Load more"), undefined);
     await ui.unmount();
 });
@@ -379,12 +438,37 @@ test("a failed Load more keeps the rows already shown", async () => {
             : { data: null, error: { message: "down" }, status: 0 };
     });
     const ui = await mount();
-
     await ui.click("Load more");
+    assert.match(ui.text(), /Kept Client/, "a failed second page discarded the first");
+    assert.match(ui.text(), /down|Could not load more outcomes/i, "the failed second page was silent");
+    await ui.unmount();
+});
 
-    assert.match(ui.text(), /Kept Client/,
-                 "a failed second page discarded the first");
-    assert.match(ui.text(), /down|Could not load more outcomes/i,
-                 "the failed second page was silent");
+test("a 400 refusal is shown in the dialog, not treated as a stale row", async () => {
+    // QA 2026-10-20: only 404 (gone) and 409 (changed meanwhile) are stale.
+    api.__respond("listPendingOutcomes", page([pending()]));
+    api.__respond("completeAppointment", { data: null, error: { message: "Not yet ended" }, status: 400 });
+    const ui = await mount();
+    await ui.record("It took place");
+    assert.ok(dom.window.document.querySelector('[aria-label="Complete the consultation"]'), "the dialog closed on a 400");
+    assert.match(dom.window.document.querySelector("[data-outcome-refused]").textContent, /Not yet ended/);
+    assert.equal(ui.container.querySelector("[data-list-notice]"), null, "a 400 was reported as 'refreshed'");
+    await ui.unmount();
+});
+
+test("a refresh keeps the rows on screen instead of a Loading placeholder", async () => {
+    let release;
+    let call = 0;
+    api.__respond("listPendingOutcomes", () => {
+        call += 1;
+        return call === 1 ? page([pending()]) : new Promise(r => { release = () => r(page([pending()])); });
+    });
+    api.__respond("completeAppointment", { data: null, error: { message: "gone" }, status: 409 });
+    const ui = await mount();
+    await ui.record("It took place");          // stale -> refresh in flight
+    assert.match(ui.text(), /Ayesha Bibi/, "the rows were swapped for a placeholder during a refresh");
+    assert.doesNotMatch(ui.text(), /Loading meetings that need an outcome/);
+    release?.();
+    await ui.settle(40);
     await ui.unmount();
 });

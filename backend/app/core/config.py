@@ -83,6 +83,53 @@ class Settings(BaseSettings):
     # OpenRouter, which has no credit, and the 402 killed the whole graph run.
     # Optional: unset simply drops out of the chain like any unconfigured key.
     groq_api_key_2: str = ""
+    # Third and fourth Groq accounts (2026-10-13): more failover capacity and
+    # per-module primary keys -- see ai/llm.py `_GROQ_PRIMARY`.
+    groq_api_key_3: str = ""
+    groq_api_key_4: str = ""
+    # Fifth account (2026-10-14): a fresh key that drafting starts on.
+    groq_api_key_5: str = ""
+    # Gemini models (2026-10-13). Configurable because the provider's flash
+    # models were 503/timeout under load while the lite models answered; the
+    # free AI Studio tier serves no "pro" model.
+    gemini_model_main: str = "gemini-3.5-flash-lite"
+    gemini_model_fast: str = "gemini-3.5-flash-lite"
+    # Cerebras (2026-10-14): an OpenAI-compatible provider serving the SAME
+    # gpt-oss-120b the Groq keys use, on its own quota -- a lateral failover
+    # after the Groq keys (ai/llm.py). Empty key = skipped, behaviour unchanged.
+    cerebras_api_key: str = ""
+    cerebras_model_main: str = "gpt-oss-120b"
+    cerebras_model_fast: str = "gpt-oss-120b"
+
+    # Voice transcription (2026-10-12). "groq" = Groq-hosted whisper-large-v3
+    # (open model; measured far more accurate on Urdu than the local `base`),
+    # with the local faster-whisper model as the FALLBACK on any failure, so
+    # voice keeps working offline or when the free tier is exhausted.
+    # "local" = the local model only (no audio leaves the machine).
+    voice_provider: str = "groq"
+    # Retrieval index A/B (Batch 5, 2026-10-12): "base" = the production
+    # collections; "ctx_v1" = the deterministic contextual collections
+    # (<base>__ctx_v1), used only where they exist. Not promoted without
+    # measured improvement on the evaluation set.
+    retrieval_index_variant: str = "base"
+    # Intake multi-query retrieval (Batch 3) is an A/B arm, OFF by default:
+    # measured R@5 0.43 -> 0.41 on the dev silver set (inconclusive, LLM
+    # rewrite non-deterministic). Production keeps the single expanded query.
+    # A request's retrieval_policy["multi_query"] overrides this.
+    retrieval_multi_query: bool = False
+    # Bounded agentic issue decomposition (app/ai/agentic_decomposition.py) is
+    # an OFFLINE experiment. Not wired into any route; leave False.
+    agentic_decomposition_enabled: bool = False
+    # Adaptive answer length for CLIENT chat (ai/response_policy.py). Off =
+    # the previous IRAC prompts. Lawyer research is not affected either way.
+    chat_adaptive_length_client: bool = False
+    # Lawyer RESEARCH answer safeguards (ai/answer_safeguards.py, 2026-10-14):
+    # versioned identity index, exact provisions, period / misattribution /
+    # issue-relevance checks, Urdu citations, foreign-law guard, follow-ups.
+    # Separate from the client length flag. Off = previous research behaviour
+    # (rollback), which is NOT a statement that those answers are reliable.
+    research_answer_safeguards: bool = False
+    voice_groq_model: str = "whisper-large-v3"
     openrouter_api_key: str = ""
     llm_provider: str = "groq"
 
@@ -128,6 +175,21 @@ class Settings(BaseSettings):
     # default forever and the operator's env var is ignored with no error. The
     # sweep is cheap when the index already agrees, so 6h is a fine default.
     lawyer_reconcile_hours: int = 6
+
+    # Demo policy (FYP, never deployed): every new lawyer account is approved
+    # at creation instead of waiting in the admin KYC queue. The UI must then
+    # never claim a Bar license was verified, because nobody checked it.
+    # The directory still lists only complete profiles (bar number + practice
+    # area); see UserRepository.lawyer_filter. Set False to restore the queue.
+    lawyer_auto_approve: bool = True
+
+    # New accounts confirm their email address before they can sign in. Only
+    # enforced when SMTP is configured: with no way to send the link, a new
+    # account could never get in, so registration then marks it confirmed and
+    # logs a warning. Production refuses to start in that state (see
+    # validate_production_transport). Accounts created before this existed have
+    # no `email_verified` field and are treated as confirmed.
+    email_verification_required: bool = True
 
     # Citator ingest streaming (Redis Streams; requires Redis 5.0+, and the
     # XAUTOCLAIM-based recovery of dead consumers needs 6.2+). Consumer-group
@@ -289,6 +351,15 @@ class Settings(BaseSettings):
     # consequence of deploying.
     appointment_working_hours_enforced: bool = False
 
+    # ── IN-APP VIDEO (Daily.co, services/appointment_video.py) ─────────────────
+    # Empty key = video is simply not offered; the paste-a-link path stays.
+    # The key never leaves the backend: the browser only ever receives a
+    # short-lived meeting token for one room. Daily bills past its free minutes,
+    # so a monthly participant-minute budget refuses new joins once spent.
+    daily_api_key: str = ""
+    daily_api_base: str = "https://api.daily.co/v1"
+    daily_monthly_minutes_budget: int = Field(default=8000, ge=0, le=100000)
+
     # ── APPOINTMENT SCHEDULER ──────────────────────────────────────────────────
     # Both OFF by default, and independently. The reminder and outcome-nudge
     # mechanisms exist and are tested; nothing runs them until somebody turns
@@ -297,6 +368,9 @@ class Settings(BaseSettings):
     # Enabling either sends messages to real people, so the defaults here are
     # the safety property — not a placeholder to be flipped by a deployment.
     appointment_reminders_enabled: bool = False
+    # A local demo has no Redis and runs ONE process; this lets the scheduler's
+    # strict lock fall back to an in-process lock there. Never with >1 worker.
+    scheduler_single_process: bool = False
 
     # COURT HEARING REMINDERS, the day before (services/hearing_reminders.py).
     # OFF, for the same reason: it messages real people. Runs in the in-process
@@ -530,6 +604,13 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_transport(self):
+        if self.app_env.lower() == "production" and self.lawyer_auto_approve:
+            # Demo-only policy: nobody checks the Bar license. A production
+            # deployment must run the admin KYC queue instead.
+            raise ValueError("LAWYER_AUTO_APPROVE must be false in production")
+        if (self.app_env.lower() == "production" and self.email_verification_required
+                and not self.smtp_user):
+            raise ValueError("EMAIL_VERIFICATION_REQUIRED needs SMTP configured in production")
         if self.app_env.lower() == "production" and not self.frontend_url.startswith("https://"):
             raise ValueError("FRONTEND_URL must use HTTPS in production")
         if (

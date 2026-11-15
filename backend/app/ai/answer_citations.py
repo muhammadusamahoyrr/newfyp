@@ -413,21 +413,57 @@ _STRUCTURAL = re.compile(
 SUPPORT_VALUES = frozenset({"supported", "partial", "unsupported", "unassessed"})
 
 
+def distinct_sections_first(chunks: list[dict] | None) -> list[dict]:
+    """Each section's best-ranked chunk first, its other chunks after (2026-10-22).
+
+    A long section is stored as several chunks, and they rank together: "chori
+    ki saza kya hai?" filled the 4-source retry window with PPC s.108 twice and
+    Police Order s.4, and PPC s.379 -- retrieved, ranked fifth -- never reached
+    the answer, which then said the provision was not provided. Nothing is
+    dropped: a section's further chunks keep their order and take the slots
+    left once every section ranked has one. A provision the user named
+    (exact_provision) or the issue's governing provision (issue_provision)
+    keeps its place, every chunk of it; chunks without a section are never
+    grouped.
+    """
+    first: list[dict] = []
+    later: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for chunk in chunks or []:
+        section = str(chunk.get("section_number") or "").strip()
+        if not section or chunk.get("exact_provision") or chunk.get("issue_provision"):
+            first.append(chunk)
+            if section:
+                seen.add((normalise_statute(chunk.get("statute") or ""), canonical_section(section)))
+            continue
+        key = (normalise_statute(chunk.get("statute") or ""), canonical_section(section))
+        if key in seen:
+            later.append(chunk)
+        else:
+            seen.add(key)
+            first.append(chunk)
+    return first + later
+
+
 def build_generation_evidence(
     statute_chunks: list[dict] | None,
     case_law_chunks: list[dict] | None = None,
     tool_results: list[dict] | None = None,
     statute_limit: int = 8,
+    distinct_first: bool = False,
 ) -> list[dict]:
     """The exact evidence handed to the model, in one numbered id space.
 
     `statute_limit` mirrors generation_node's own truncation (8 normally, 4 on a
     grounding retry) so the ids describe what was actually formatted into the
-    prompt — not what retrieval happened to return.
+    prompt — not what retrieval happened to return. `distinct_first` (chat and
+    research generation) orders the chunks by distinct_sections_first before
+    that cut; intake keeps the ranked order.
     """
     evidence: list[dict] = []
 
-    for chunk in (statute_chunks or [])[:statute_limit]:
+    ordered = distinct_sections_first(statute_chunks) if distinct_first else (statute_chunks or [])
+    for chunk in ordered[:statute_limit]:
         evidence.append({
             "id":       str(len(evidence) + 1),
             "kind":     "statute",
@@ -437,6 +473,13 @@ def build_generation_evidence(
             "source":   chunk.get("source_file", ""),
             "province": chunk.get("province", ""),
             "content":  chunk.get("content", ""),
+            # Identity-index chunks that are NOT sections ("Order XI Rule 17",
+            # "First Schedule, Articles 57-62"); their `section` is empty, so
+            # a "Section N" citation cannot resolve to them.
+            **({"label": chunk["provision_label"]} if chunk.get("provision_label") else {}),
+            # Lawyer research: this chunk was fetched as the provision whose
+            # own heading governs the question's issue (ai/issue_lookup.py).
+            **({"issue_provision": chunk["issue_provision"]} if chunk.get("issue_provision") else {}),
         })
 
     for chunk in case_law_chunks or []:
@@ -503,13 +546,37 @@ def _marker_ids(sentence: str, valid: set[str]) -> list[str]:
     return out
 
 
-def split_claims(answer: str, evidence: list[dict] | None) -> list[dict]:
+_MARKERS_ONLY = re.compile(r"^\s*(?:\[\d{1,2}(?:\s*,\s*\d{1,2})*\]\s*)+$")
+
+
+def attach_trailing_markers(parts: list[str]) -> list[str]:
+    """Fold a fragment that is ONLY source markers ("[4][1]") into the text
+    before it. Models often write "...payment. [4][1]"; the sentence splitter
+    cuts before "[", so the markers became a "claim" of their own -- judged as
+    the bare text "[4][1]" -- and the sentence they belong to cited nothing
+    and was never checked. Observed on a client answer whose unchecked
+    sentence asserted a limitation period its source did not support."""
+    out: list[str] = []
+    for part in parts:
+        if out and out[-1].strip() and _MARKERS_ONLY.match(part or ""):
+            out[-1] = f"{out[-1].rstrip()} {part.strip()}"
+        else:
+            out.append(part)
+    return out
+
+
+def split_claims(answer: str, evidence: list[dict] | None,
+                 attach_markers: bool = False) -> list[dict]:
     """Sentences of the answer that cite something, each tied to its sources.
 
     A "claim" is a sentence carrying at least one citation — a bracketed source
     id or a textual statutory citation. Sentences citing nothing are not claims
     to assess: there is no source to check them against, and inventing an
     association would be worse than declining to make one.
+
+    `attach_markers` folds marker-only fragments into the preceding sentence
+    (see attach_trailing_markers). Client chat only for now (2026-10-13): the
+    lawyer research path keeps its existing claim boundaries in this batch.
 
     Fully deterministic. No model decides what a claim is.
     """
@@ -518,8 +585,12 @@ def split_claims(answer: str, evidence: list[dict] | None) -> list[dict]:
     by_id = {item["id"]: item for item in entries}
     index = evidence_index(entries)
 
+    parts = _SENTENCE_SPLIT.split(answer or "")
+    if attach_markers:
+        parts = attach_trailing_markers(parts)
+
     claims: list[dict] = []
-    for raw in _SENTENCE_SPLIT.split(answer or ""):
+    for raw in parts:
         sentence = raw.strip()
         if not sentence or _STRUCTURAL.match(sentence):
             continue
@@ -842,7 +913,8 @@ def format_evidence_for_prompt(evidence: list[dict] | None) -> str:
     for item in evidence or []:
         if item["kind"] == "statute":
             head = item["statute"] + (
-                f" Section {item['section']}" if item["section"] else "")
+                f" Section {item['section']}" if item["section"]
+                else (f" — {item['label']}" if item.get("label") else ""))
         elif item["kind"] == "judgment":
             head = f"{item['statute']} ({item.get('title', '')}) [judgment]"
         else:

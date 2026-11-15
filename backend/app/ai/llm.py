@@ -1,6 +1,8 @@
 """LLM factory with an automatic provider fallback chain.
 
-Order: Gemini → Groq → OpenRouter → friendly error.
+Order: Groq keys (groq, groq2, groq3, groq4; each module starts on its own,
+see `_GROQ_PRIMARY`) → Cerebras (same gpt-oss-120b, own quota) → Gemini →
+OpenRouter (paid, last) → friendly error.
 
 A provider is "available" only if BOTH its client library is importable AND its
 API key is configured. This means a missing package (e.g. langchain-google-genai
@@ -9,7 +11,7 @@ instead of crashing the request.
 
 Set LLM_PROVIDER=ollama to prefer a local Ollama server first (it still falls
 back to the cloud chain if Ollama is unavailable). Any other LLM_PROVIDER value
-just uses the standard Gemini → Groq → OpenRouter chain.
+just uses the standard Groq → Gemini → OpenRouter chain.
 
 Set LLM_LOCAL_ONLY=true to drop the cloud chain altogether. Use this for
 anything that must not spend money — bulk runs, warmup traffic, offline work.
@@ -37,9 +39,46 @@ _OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 # The cloud fallback chain, in priority order. groq2 sits directly behind groq:
 # it is the same models on a separate daily token budget, so it absorbs a
 # rate-limit overflow without changing which model answers. OpenRouter stays
-# last — it is a different model family AND currently has no credit, so falling
-# to it is a real degradation, not a lateral move.
-_FALLBACK_ORDER = ["gemini", "groq", "groq2", "openrouter"]
+# last — it is a different model family AND it is paid, so falling to it is a
+# real degradation, not a lateral move.
+# Gemini sits AFTER the four Groq keys (2026-10-13): a free-tier AI Studio key
+# added as one more free fallback before the paid OpenRouter, not as a new
+# primary that would silently change every module's model.
+# Cerebras sits directly after the Groq keys (2026-10-14): it serves the same
+# gpt-oss-120b on a separate free quota, so it absorbs Groq 429s -- and Groq's
+# structured-output 400s (`tool_use_failed`, a malformed "functions.X" tool
+# name) -- without changing which model answers. A lateral move, before the
+# different-family fallbacks.
+_FALLBACK_ORDER = ["groq", "groq2", "groq3", "groq4", "groq5", "cerebras", "gemini", "openrouter"]
+
+# ── Per-module primary Groq key (2026-10-13) ────────────────────────────────
+# Every chain still holds EVERY configured Groq key (and OpenRouter, the paid
+# one, last), so no module is stuck when one key hits its per-minute or
+# per-day limit. What differs per module is which key it STARTS on, so one
+# busy module does not drain the quota the others start from:
+#   chat / research -- the heaviest traffic -- starts on groq3, the
+#   highest-capacity key (measured 2026-10-13: 250k tokens/min, 500k req/day
+#   against 8k/min, 1k/day on the others); intake starts on groq; drafting on
+#   groq2; the shared retrieval nodes (query rewrite, grader) and anything
+#   unlabelled on groq4. Purposes are per NODE, so a node shared by chat and
+#   intake (query expansion, the retrieval grader) has one group.
+_GROQ_POOL = ["groq", "groq2", "groq3", "groq4", "groq5"]
+_GROQ_PRIMARY = {
+    # chat / research
+    "answer_generation": "groq3", "direct_chat": "groq3", "gatekeeper": "groq3",
+    "intent_classification": "groq3", "triage": "groq3", "fact_gap": "groq3",
+    "grounding_judge": "groq3", "answer_reformat": "groq3", "tool_selection": "groq3",
+    # intake
+    "intake_extraction": "groq", "intake_grounding": "groq", "clarification": "groq",
+    "dispute_classification": "groq",
+    # drafting -- starts on groq5, a fresh account added 2026-10-14 so the
+    # Legal Draft module is not sharing a key the evals had drained; groq2 and
+    # the rest stay behind it in the chain.
+    "document_drafting": "groq5", "petition_drafting": "groq5", "draft_stream": "groq5",
+    "pleading_urdu": "groq5",
+    # shared retrieval and the rest
+    "query_expansion": "groq4", "retrieval_grader": "groq4", "model_compare": "groq4",
+}
 
 # Model per provider for the main (capable) and fast (cheap) tiers.
 #
@@ -52,9 +91,19 @@ _FALLBACK_ORDER = ["gemini", "groq", "groq2", "openrouter"]
 # NOTE: the retrieval and citation numbers in paper/ were measured against
 # Llama-3.3-70B. They do not carry over to a different model family unmeasured.
 _MODELS = {
-    "gemini":     {"main": "gemini-2.0-flash",                  "fast": "gemini-2.0-flash"},
+    # gemini-2.x answers 404 "no longer available" for this account
+    # (2026-10-13). Live probes: 3.5/3.6/3.7/3.8-flash were 503 or timed out
+    # under load; 3.5-flash-lite answered in ~1.5 s. As a FALLBACK it is chosen
+    # for reliability; GEMINI_MODEL_MAIN / _FAST override it (settings).
+    "gemini":     {"main": settings.gemini_model_main,          "fast": settings.gemini_model_fast},
     "groq":       {"main": "openai/gpt-oss-120b",               "fast": "openai/gpt-oss-20b"},
     "groq2":      {"main": "openai/gpt-oss-120b",               "fast": "openai/gpt-oss-20b"},
+    "groq3":      {"main": "openai/gpt-oss-120b",               "fast": "openai/gpt-oss-20b"},
+    "groq4":      {"main": "openai/gpt-oss-120b",               "fast": "openai/gpt-oss-20b"},
+    "groq5":      {"main": "openai/gpt-oss-120b",               "fast": "openai/gpt-oss-20b"},
+    # Cerebras model ids per inference-docs.cerebras.ai (checked 2026-10-14):
+    # `gpt-oss-120b` on the free tier (65k context). No gpt-oss-20b there.
+    "cerebras":   {"main": settings.cerebras_model_main,        "fast": settings.cerebras_model_fast},
     "openrouter": {"main": "meta-llama/llama-3.3-70b-instruct", "fast": "meta-llama/llama-3.1-8b-instruct"},
 }
 
@@ -108,6 +157,12 @@ def _build_gemini(model: str):
         google_api_key=settings.gemini_api_key,
         temperature=0.1,
         max_output_tokens=MAX_OUTPUT_TOKENS,
+        # A fallback must fail FAST: the library's default of several retries
+        # with backoff on a 503 ("high demand") held a call for minutes instead
+        # of letting the chain move on. REST avoids a gRPC channel stall.
+        max_retries=1,
+        timeout=60,
+        transport="rest",
     )
 
 
@@ -147,6 +202,41 @@ def _build_groq2(model: str):
     )
 
 
+def _groq_account(setting: str, name: str):
+    """A builder for one more Groq account (same models, its own limits)."""
+    def build(model: str):
+        key = getattr(settings, setting, "")
+        if not _key_ok(key):
+            raise _ProviderUnavailable(f"{name}: {setting.upper()} is not configured")
+        return ChatGroq(model=model, api_key=key, temperature=0.1, max_tokens=MAX_OUTPUT_TOKENS)
+    return build
+
+
+_build_groq3 = _groq_account("groq_api_key_3", "groq3")
+_build_groq4 = _groq_account("groq_api_key_4", "groq4")
+_build_groq5 = _groq_account("groq_api_key_5", "groq5")
+
+
+_CEREBRAS_BASE = "https://api.cerebras.ai/v1"
+
+
+def _build_cerebras(model: str):
+    """Cerebras Inference through its OpenAI-compatible endpoint (official
+    docs: base URL https://api.cerebras.ai/v1, key CEREBRAS_API_KEY)."""
+    if not _key_ok(settings.cerebras_api_key):
+        raise _ProviderUnavailable("cerebras: CEREBRAS_API_KEY is not configured")
+    return ChatOpenAI(
+        model=model,
+        openai_api_key=settings.cerebras_api_key,
+        openai_api_base=_CEREBRAS_BASE,
+        temperature=0.1,
+        max_tokens=MAX_OUTPUT_TOKENS,
+        # A failover must fail fast rather than retry for minutes.
+        max_retries=1,
+        timeout=60,
+    )
+
+
 def _build_openrouter(model: str):
     if not _key_ok(settings.openrouter_api_key):
         raise _ProviderUnavailable("openrouter: OPENROUTER_API_KEY is not configured")
@@ -176,12 +266,16 @@ _BUILDERS = {
     "gemini": _build_gemini,
     "groq": _build_groq,
     "groq2": _build_groq2,
+    "groq3": _build_groq3,
+    "groq4": _build_groq4,
+    "groq5": _build_groq5,
+    "cerebras": _build_cerebras,
     "openrouter": _build_openrouter,
     "ollama": _build_ollama,
 }
 
 
-def _provider_order() -> list[str]:
+def _provider_order(purpose: str | None = None) -> list[str]:
     """Providers to try, in order.
 
     LLM_PROVIDER=ollama prepends local Ollama but still falls back to the cloud
@@ -197,6 +291,13 @@ def _provider_order() -> list[str]:
     if settings.llm_local_only:
         return ["ollama"]
     order = list(_FALLBACK_ORDER)
+    primary = _GROQ_PRIMARY.get(purpose or "", "groq4" if purpose else None)
+    if primary:
+        # The module's own key first, then every other Groq key in the usual
+        # order; non-Groq providers keep their places (OpenRouter stays last).
+        groq = [primary, *[p for p in _GROQ_POOL if p != primary]]
+        it = iter(groq)
+        order = [next(it) if p in _GROQ_POOL else p for p in order]
     if (settings.llm_provider or "").lower() == "ollama":
         order = ["ollama", *order]
     return order
@@ -238,6 +339,14 @@ def _failover_exceptions() -> tuple:
     except Exception:
         pass
     try:
+        # REST transport (Gemini): a stalled or refused HTTP call must fail
+        # over, not end the chain (observed: a 60 s ReadTimeout on an
+        # overloaded Gemini model).
+        import requests
+        excs += [requests.exceptions.Timeout, requests.exceptions.ConnectionError]
+    except Exception:
+        pass
+    try:
         # Gemini SDK is optional/absent in this env — best-effort, NOT spike-verified.
         from google.api_core import exceptions as _gexc
         excs += [_gexc.ServiceUnavailable, _gexc.DeadlineExceeded,
@@ -265,11 +374,32 @@ class _Candidate:
     raw: Any
 
 
-def _candidates(tier: str) -> list[_Candidate]:
+# Built chat models, reused (2026-10-12). Building a Groq client costs ~1.5 s
+# (measured), and the chain was rebuilt on EVERY call: ~3 s per call with two
+# Groq keys, ~20 s of one intake conversion. Eligibility (cooldowns) is still
+# decided per call below; only construction is cached. Keyed by the builder
+# too, so a test that swaps `_BUILDERS` never receives a stale model.
+_MODEL_CACHE: dict[tuple, Any] = {}
+
+
+def _built_model(provider: str, model: str):
+    builder = _BUILDERS[provider]
+    key = (provider, model, builder)
+    if key not in _MODEL_CACHE:
+        _MODEL_CACHE[key] = builder(model)
+    return _MODEL_CACHE[key]
+
+
+def _candidates(tier: str, purpose: str | None = None) -> list[_Candidate]:
     """Eligible providers for `tier`, in chain order, with raw models attached."""
     built: list[_Candidate] = []
     errors: list[str] = []
-    for provider in _provider_order():
+    for provider in _provider_order(purpose):
+        if provider not in _BUILDERS:
+            # Named in the chain but not registered (a stripped-down test
+            # registry, or a removed account): unavailable, never a crash.
+            errors.append(f"{provider}: not registered")
+            continue
         model = (_ollama_models() if provider == "ollama" else _MODELS[provider])[tier]
 
         # A configured key is NOT proof a provider is usable, and eligibility is
@@ -283,7 +413,7 @@ def _candidates(tier: str) -> list[_Candidate]:
                         provider, model, remaining, reason)
             continue
         try:
-            built.append(_Candidate(provider, model, _BUILDERS[provider](model)))
+            built.append(_Candidate(provider, model, _built_model(provider, model)))
             logger.info("LLM provider available: %s (%s, %s)", provider, tier, model)
         except _ProviderUnavailable as exc:
             errors.append(str(exc))
@@ -300,8 +430,8 @@ def _raise_unavailable(errors: list[str]) -> None:
         "langchain-ollama, start the Ollama server, and pull the model named "
         f"by OLLAMA_MODEL ({_ollama_models()['main']})."
         if settings.llm_local_only else
-        "Configure at least one of GEMINI_API_KEY, GROQ_API_KEY, or "
-        "OPENROUTER_API_KEY."
+        "Configure at least one of GROQ_API_KEY, CEREBRAS_API_KEY, "
+        "GEMINI_API_KEY, or OPENROUTER_API_KEY."
     )
     raise RuntimeError(f"No language model is available right now. {fix} ({detail})")
 
@@ -316,7 +446,7 @@ def available_models(tier: str, purpose: str = provider_health.PURPOSE_UNKNOWN
     return [
         (c.provider, c.model,
          _health_tracked(c.raw, c.provider, c.model, tier, purpose, is_fallback=i > 0))
-        for i, c in enumerate(_candidates(tier))
+        for i, c in enumerate(_candidates(tier, purpose))
     ]
 
 
@@ -398,6 +528,14 @@ def get_fast_llm(purpose: str = provider_health.PURPOSE_UNKNOWN):
     return _with_failover(_build_available("fast", purpose))
 
 
+def _structured_kwargs(provider: str) -> dict:
+    """Cerebras: tool calling, the same mechanism ChatGroq uses. Its gpt-oss-120b
+    rejects a request carrying BOTH `tools` and `response_format` (Cerebras
+    docs), so one mechanism per request, chosen explicitly rather than left to
+    the client library's default."""
+    return {"method": "function_calling"} if provider == "cerebras" else {}
+
+
 def get_structured_llm(schema, fast: bool = False,
                        purpose: str = provider_health.PURPOSE_UNKNOWN):
     """LLM constrained to `schema` via .with_structured_output, WITH provider failover.
@@ -413,8 +551,8 @@ def get_structured_llm(schema, fast: bool = False,
     # the structured runnable rather than the other way round. _candidates keeps
     # the RAW model, so nothing has to unwrap a RunnableBinding to get here.
     structured = [
-        _health_tracked(c.raw.with_structured_output(schema),
+        _health_tracked(c.raw.with_structured_output(schema, **_structured_kwargs(c.provider)),
                         c.provider, c.model, tier, purpose, is_fallback=i > 0)
-        for i, c in enumerate(_candidates(tier))
+        for i, c in enumerate(_candidates(tier, purpose))
     ]
     return _with_failover(structured)

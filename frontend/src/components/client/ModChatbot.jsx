@@ -1,6 +1,8 @@
 'use client';
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import VoiceButton, { SendArrow } from "@/components/shared/VoiceButton.jsx";
+import RichText from "@/components/shared/RichText.jsx";
+import { useClientRouter as useRouter } from "./clientNav.js";
 import { useT } from "./theme.js";
 import { useToast } from "@/components/shared/Toast.jsx";
 import { useCase } from "@/components/shared/CaseContext.jsx";
@@ -23,12 +25,14 @@ import { useAuth } from "@/context/AuthContext.jsx";
 import Ic from "./Ic.jsx";
 import LawyerMatchPanel from "./LawyerMatchPanel.jsx";
 import { Badge, Tooltip } from "@/components/shared/shared.jsx";
+import { MessageActions, BUBBLE_CSS } from "@/components/shared/ChatPieces.jsx";
+export { MessageActions };
 /* Shared with both lawyer AI surfaces so the three cannot describe the same
    backend fields differently — the client used to drop `source` and `url`
    entirely, leaving every chip unclickable. */
 import {
     CITATION_GROUPS, REPEALED, normaliseCitations, citationsInGroup,
-    citationSummary, shortRequestId, copyText, auditNotice,
+    citationSummary, copyText, auditNotice,
 } from "@/lib/trust.js";
 
 /* Calibrated-confidence bands come from the server (ai/answer_confidence.py).
@@ -65,33 +69,55 @@ const repealNote = (c) => {
     return bits ? `Repealed by ${bits}` : "";
 };
 
-/* The id naming one answer's audit record, copyable in one click.
-   A client has no audit view — that is lawyer-only — but "this answer was
-   wrong" is unactionable without a way to say which answer, and the id is not
-   something anyone will retype from a screen. */
-function RequestId({ id, t }) {
-    const [copied, setCopied] = useState(false);
-    return (
-        <button
-            onClick={async () => {
-                const ok = await copyText(id);
-                setCopied(ok);
-                setTimeout(() => setCopied(false), 1600);
-            }}
-            title={`Copy the reference for this answer (${id})`}
-            style={{
-                marginLeft: "auto", border: `1px solid ${t.border}`,
-                background: "transparent", color: t.textFaint, borderRadius: 6,
-                cursor: "pointer", fontSize: 10, padding: "2px 7px",
-                fontFamily: "inherit",
-            }}
-        >{copied ? "reference copied ✓" : `ref ${shortRequestId(id)}`}</button>
-    );
-}
 
 /* ══════════════════════════════════════════════════════
    MODULE: AI CHATBOT  (WebSocket-backed)
 ══════════════════════════════════════════════════════ */
+// The history list, styled like the lawyer AI Assistant's (2026-10-19), in the
+// client theme's own variables so light mode follows.
+// The composer, styled like the lawyer AI Assistant's (2026-10-19).
+
+const CHAT_BOX_CSS = `
+[data-chat-box]{width:100%;max-width:980px;box-sizing:border-box;padding:10px 12px 8px 16px;border-radius:18px;border:1px solid var(--line-strong);background:var(--surface);box-shadow:0 30px 60px -30px rgba(0,0,0,.8)}
+[data-chat-box]:focus-within{border-color:color-mix(in srgb,var(--brand-text) 55%,transparent)}
+[data-chat-box] input::placeholder{color:var(--faint)}
+[data-chat-box] .cb-chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+[data-chat-box] .cb-chip:hover{border-color:var(--hover-line);color:var(--hover-ink)}
+[data-chat-box] .cb-chip[aria-pressed="true"]{border-color:var(--hover-line);color:var(--brand-text);background:var(--brand-soft)}
+[data-chat-box] select.cb-chip{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 13px) 14px,calc(100% - 9px) 14px;background-size:4px 4px;background-repeat:no-repeat}
+[data-chat-box] select.cb-chip.on{color:var(--brand-text)}
+[data-chat-box] select.cb-chip option{background:var(--surface);color:var(--ink)}
+[data-chat-box] .cb-seg{display:inline-flex;height:32px;padding:2px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2)}
+[data-chat-box] .cb-seg button{border:0;border-radius:999px;padding:0 11px;background:none;color:var(--muted);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+[data-chat-box] .cb-seg button[aria-pressed="true"]{background:var(--brand-solid);color:var(--on-brand)}
+[data-chat-box] .cb-mic{width:42px;height:42px;display:grid;place-items:center;border:1px solid transparent;border-radius:50%;background:none;color:var(--faint);cursor:pointer;transition:color .15s,background .15s}
+[data-chat-box] .cb-mic:hover{border-color:var(--line-strong);color:var(--hover-ink)}
+[data-chat-box] .cb-mic.on{color:var(--danger);background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+[data-chat-box] .cb-send{width:34px;height:34px;display:grid;place-items:center;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:none;color:var(--faint);cursor:default;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
+[data-chat-box] .cb-send:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+[data-chat-box] .cb-send.typed{color:var(--teal)}
+[data-chat-box] .cb-send.on{cursor:pointer;border-color:transparent;background:var(--brand-solid);color:var(--on-brand,#fff);box-shadow:0 6px 16px -8px rgba(46,196,214,.7)}
+[data-chat-box] .cb-send.on:hover{transform:translateY(-1px)}
+`;
+
+const CHAT_HIST_CSS = `
+[data-chat-hist] .ch-g{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:12px 8px 6px}
+[data-chat-hist] .ch-cv{display:flex;align-items:center;gap:4px;padding:8px 9px;border-radius:10px;border:1px solid transparent;margin-bottom:2px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+[data-chat-hist] .ch-cv:hover{background:var(--hover-tint);color:var(--ink)}
+[data-chat-hist] .ch-cv.on{background:var(--surface-2);border-color:var(--line-strong);color:var(--ink)}
+[data-chat-hist] .ch-more{flex:none;width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:7px;background:none;color:var(--faint);cursor:pointer;opacity:0}
+[data-chat-hist] .ch-cv:hover .ch-more,[data-chat-hist] .ch-cv.on .ch-more,[data-chat-hist] .ch-more[aria-expanded="true"]{opacity:1}
+[data-chat-hist] .ch-more:hover,[data-chat-hist] .ch-more[aria-expanded="true"]{background:var(--surface-2);color:var(--ink)}
+[data-chat-hist] .ch-menu{position:absolute;z-index:60;padding:3px;display:flex;flex-direction:column;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);box-shadow:0 18px 36px -12px rgba(0,0,0,.6)}
+[data-chat-hist] .ch-menu button{display:flex;align-items:center;gap:7px;padding:6px 12px 6px 8px;border:0;border-radius:6px;background:none;color:var(--ink);font-size:12.5px;cursor:pointer;text-align:left}
+[data-chat-hist] .ch-menu button:hover{background:var(--surface-2)}
+[data-chat-hist] .ch-menu button svg{width:13px;height:13px;color:var(--faint)}
+[data-chat-hist] .ch-menu button.danger,[data-chat-hist] .ch-menu button.danger svg{color:var(--danger)}
+[data-chat-hist] .ch-foot{padding:10px 14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--faint);display:flex;justify-content:space-between;gap:10px;white-space:nowrap}
+[data-chat-hist] .ch-foot>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+[data-chat-hist] .ch-foot>span:last-child{flex-shrink:0}
+`;
+
 const ModChatbot = () => {
     const t = useT();
     const toast = useToast();
@@ -103,9 +129,11 @@ const ModChatbot = () => {
     const [msgs, setMsgs] = useState([]);
     const [inp, setInp] = useState("");
     const [typing, setTyping] = useState(false);
-    const [lang, setLang] = useState("EN");
+    // No EN/UR switch on the composer (2026-10-19). Voice (2026-10-20) writes
+    // Urdu speech in Urdu script; the backend answers in the question's language.
     const [sideOpen, setSideOpen] = useState(true);
-    const [webSearch, setWebSearch] = useState(false);
+    // Web search is not offered on the client chat (2026-10-19).
+    const webSearch = false;
     // Jurisdiction. The client used to send province: null on every message,
     // which the backend resolved to "unknown" — and the province filter turned
     // that into federal-only, hiding ~1,600 provincial sections. Retrieval no
@@ -136,6 +164,14 @@ const ModChatbot = () => {
     const [listMore, setListMore] = useState(false);
     const [listLoading, setListLoading] = useState(false);
     const [search, setSearch] = useState("");
+    // The "⋯" menu of one history row: { item, x, y } inside the sidebar.
+    const [rowMenu, setRowMenu] = useState(null);
+    useEffect(() => {
+        if (!rowMenu) return undefined;
+        const close = (e) => { if (!e.target.closest?.("[data-row-menu], .ch-more")) setRowMenu(null); };
+        document.addEventListener("mousedown", close);
+        return () => document.removeEventListener("mousedown", close);
+    }, [rowMenu]);
     // Conversations matched by what was SAID in them, as opposed to by title.
     // Kept separate from `rows` because they are a different question with a
     // different answer shape — a title match is a row, a message match is a row
@@ -457,9 +493,13 @@ const ModChatbot = () => {
                     time: now,
                     refs: [],
                     isClarification: true,
-                    matchedLawyers: msg.matched_lawyers || [],
-                    matchResultKind: msg.match_result_kind || "",
-                    matchNotice: msg.match_notice || "",
+                    // No matching status under a clarifying question: the
+                    // conversation is still working out what the matter is.
+                    // (The server no longer sends any; an older one did, and
+                    // its "unavailable" line sat under every question.)
+                    matchedLawyers: [],
+                    matchResultKind: "",
+                    matchNotice: "",
                 }]);
 
             } else if (msg.type === "error") {
@@ -757,8 +797,12 @@ const ModChatbot = () => {
     };
 
     /* ── Send message ─────────────────────────────────────────────────── */
-    const send = () => {
-        if (!inp.trim()) return;
+    // `override`: the text to send instead of the box's (Regenerate). A click
+    // hands an event, which is not text, so the box is used then.
+    const send = (override) => {
+        const fromBox = typeof override !== "string";
+        const txt = (fromBox ? inp : override).trim();
+        if (!txt) return;
         // One question at a time. The server refuses a second concurrent turn
         // anyway; refusing it here means the user sees why instead of watching
         // their message vanish into a refusal frame.
@@ -775,10 +819,9 @@ const ModChatbot = () => {
         }
 
         const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        const txt = inp.trim();
 
         setMsgs(m => [...m, { role: "user", text: txt, time: now }]);
-        setInp("");
+        if (fromBox) setInp("");
 
         // The sidebar reflects the server's list, so it is refreshed rather
         // than guessed at locally. The first question becomes the conversation's
@@ -802,42 +845,31 @@ const ModChatbot = () => {
             // "" (not null) when unset: the backend treats unknown as "search
             // every jurisdiction and say so", never as federal.
             province: province || null,
-            language: lang === "UR" ? "ur" : "en",
+            language: "en",
             web_search: webSearch,
         }));
     };
 
-    /* ── Voice input ─────────────────────────────────────────────────── */
-    const startVoice = () => {
-        const SR = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
-        if (!SR) { toast.show("Voice input not supported in this browser.", "warn", 3000); return; }
-        if (listening) return;
+    /* Regenerate (2026-10-19): offered on the LAST answer only, and asks the
+     * question that led to it again as a new turn -- the server keeps both. */
+    const lastAiIndex = msgs.map(x => x.role).lastIndexOf("ai");
+    const questionFor = i => {
+        for (let j = i - 1; j >= 0; j--) if (msgs[j].role === "user") return msgs[j].text;
+        return null;
+    };
 
-        const rec = new SR();
-        rec.lang = lang === "UR" ? "ur-PK" : "en-US";
-        rec.continuous = false;
-        rec.interimResults = false;
-
-        rec.onstart = () => { setListening(true); listeningRef.current = true; };
-        rec.onend = () => {
-            setListening(false);
-            listeningRef.current = false;
-            // Reconnect WS if it dropped while mic was active
-            if (!socket.isOpen()) {
-                retryCount.current = 0;
-                connect();
-            }
-        };
-        rec.onerror = () => {
-            setListening(false);
-            listeningRef.current = false;
-            toast.show("Voice recognition failed — please try again.", "error", 2500);
-        };
-        rec.onresult = (e) => {
-            const transcript = e.results[0][0].transcript;
-            setInp(prev => prev ? `${prev} ${transcript}` : transcript);
-        };
-        rec.start();
+    /* ── Voice input (2026-10-20): the shared VoiceButton. While it listens
+     * the socket is left alone (Chrome can drop it); when it stops, a dropped
+     * socket is reconnected. ── */
+    const wasListening = useRef(false);
+    const onListening = (v) => {
+        setListening(v);
+        listeningRef.current = v;
+        if (wasListening.current && !v && !socket.isOpen()) {
+            retryCount.current = 0;
+            connect();
+        }
+        wasListening.current = v;
     };
 
     const hasMessages = msgs.length > 0;
@@ -874,13 +906,16 @@ const ModChatbot = () => {
                 flexShrink: 0, overflow: "hidden",
                 transition: "width 0.3s cubic-bezier(0.4,0,0.2,1), min-width 0.3s cubic-bezier(0.4,0,0.2,1)",
                 background: t.surface, borderRight: `1px solid ${t.border}`,
-                display: "flex", flexDirection: "column",
-            }}>
+                display: "flex", flexDirection: "column", position: "relative",
+            }} data-chat-hist>
+                <style>{CHAT_HIST_CSS}</style>
                 {/* New Chat */}
                 <div style={{ padding: "14px 14px 10px" }}>
                     <button onClick={newChat} style={{
                         width: "100%", padding: "10px 18px", borderRadius: 50,
-                        background: t.primary, color: t.mode === "dark" ? "#1A2E35" : "#fff",
+                        // The client theme's brand gradient (2026-10-19), as on the
+                        // lawyer AI Assistant; light mode gets its own from the theme.
+                        background: "var(--brand-solid)", color: "var(--on-brand)",
                         border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer",
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                         fontFamily: "'Inter',sans-serif", transition: "opacity 0.2s",
@@ -979,20 +1014,11 @@ const ModChatbot = () => {
                     </div>
                 )}
 
-                {/* History list */}
-                <div style={{ flex: 1, overflowY: "auto", padding: "4px 10px 8px" }}>
+                {/* History list. Scrolls without a visible bar, as on the lawyer page. */}
+                <div className="hide-scrollbar" style={{ flex: 1, overflowY: "auto", padding: "4px 10px 8px" }}>
                     {history.map((g, gi) => (
                         <div key={gi} style={{ marginBottom: 14 }}>
-                            <div style={{
-                                fontSize: 11, fontWeight: 600, color: t.textMuted,
-                                padding: "6px 6px 4px", display: "flex", alignItems: "center", gap: 5,
-                                textTransform: "uppercase", letterSpacing: "0.6px",
-                            }}>
-                                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polyline points="6 9 12 15 18 9" />
-                                </svg>
-                                {g.group}
-                            </div>
+                            <div className="ch-g">{g.group}</div>
                             {/* Real conversations. Clicking one reopens it with its
                                 full history; the previous list put the raw text of
                                 a past question into the input box, which was the
@@ -1003,42 +1029,23 @@ const ModChatbot = () => {
                                     <div key={item.session_id}
                                         onClick={() => openConversation(item.session_id)}
                                         title={item.title}
-                                        style={{
-                                            padding: "8px 10px", borderRadius: 10, fontSize: 12.5,
-                                            color: active ? t.text : t.textDim, cursor: "pointer",
-                                            transition: "all 0.15s", marginBottom: 2,
-                                            background: active ? t.inputBg : "transparent",
-                                            display: "flex", alignItems: "center", gap: 6,
-                                        }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = t.inputBg; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = active ? t.inputBg : "transparent"; }}
-                                    >
-                                        <span style={{
-                                            flex: 1, whiteSpace: "nowrap", overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                        }}>{item.title}</span>
-                                        <button
-                                            title="Rename"
+                                        className={`ch-cv${active ? " on" : ""}`}>
+                                        <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</span>
+                                        <button type="button" className="ch-more" title="More actions"
+                                            aria-label={`Actions for ${item.title}`} aria-haspopup="menu"
+                                            aria-expanded={rowMenu?.item.session_id === item.session_id}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                const next = window.prompt("Rename this conversation", item.title);
-                                                if (next && next.trim()) renameActive(item.session_id, next.trim());
-                                            }}
-                                            style={{
-                                                border: "none", background: "transparent", cursor: "pointer",
-                                                color: t.textFaint, fontSize: 11, padding: "0 2px",
-                                            }}>✎</button>
-                                        <button
-                                            title="Delete"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (window.confirm("Delete this conversation and its messages?"))
-                                                    removeConversation(item.session_id);
-                                            }}
-                                            style={{
-                                                border: "none", background: "transparent", cursor: "pointer",
-                                                color: t.textFaint, fontSize: 11, padding: "0 2px",
-                                            }}>🗑</button>
+                                                // Inside the sidebar, under the button (above it near the bottom).
+                                                const r = e.currentTarget.getBoundingClientRect();
+                                                const box = e.currentTarget.closest("[data-chat-hist]").getBoundingClientRect();
+                                                const below = r.bottom - box.top + 4;
+                                                const y = below + 70 > box.height ? r.top - box.top - 70 : below;
+                                                setRowMenu(m => m?.item.session_id === item.session_id ? null
+                                                    : { item, x: Math.min(r.left - box.left, box.width - 130), y });
+                                            }}>
+                                            <svg width={15} height={15} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>
+                                        </button>
                                     </div>
                                 );
                             })}
@@ -1070,6 +1077,27 @@ const ModChatbot = () => {
                         </div>
                     )}
                 </div>
+
+                {rowMenu && (
+                    <div role="menu" data-row-menu className="ch-menu" style={{ left: Math.max(8, rowMenu.x), top: Math.max(8, rowMenu.y) }}>
+                        <button type="button" role="menuitem" onClick={() => {
+                            const item = rowMenu.item; setRowMenu(null);
+                            const next = window.prompt("Rename this conversation", item.title);
+                            if (next && next.trim()) renameActive(item.session_id, next.trim());
+                        }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+                            Rename
+                        </button>
+                        <button type="button" role="menuitem" className="danger" onClick={() => {
+                            const item = rowMenu.item; setRowMenu(null);
+                            if (window.confirm("Delete this conversation and its messages?")) removeConversation(item.session_id);
+                        }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                            Delete
+                        </button>
+                    </div>
+                )}
+                <div className="ch-foot"><span>Private to you</span><span>{rows.length}{listMore ? "+" : ""} chat{rows.length === 1 ? "" : "s"}</span></div>
 
                 {/* Sidebar footer */}
                 <div style={{ padding: "10px 14px 14px", borderTop: `1px solid ${t.border}` }}>
@@ -1103,17 +1131,19 @@ const ModChatbot = () => {
                     display: "flex", alignItems: "center", gap: 10, pointerEvents: "none",
                 }}>
                     {!sideOpen && (
-                        <button onClick={() => setSideOpen(true)} style={{
-                            width: 36, height: 36, borderRadius: "50%",
-                            background: t.primary, border: "none",
+                        // Theme colours, not a fixed mint disc (2026-10-19).
+                        <button onClick={() => setSideOpen(true)} aria-label="Show history" title="Show history" style={{
+                            width: 34, height: 34, borderRadius: "50%",
+                            background: "var(--surface)", border: "1px solid var(--line-strong)",
+                            color: "var(--teal)",
                             display: "flex", alignItems: "center", justifyContent: "center",
                             cursor: "pointer", pointerEvents: "auto",
-                            boxShadow: `0 4px 14px ${t.primaryGlow}`, transition: "opacity 0.2s",
+                            transition: "border-color 0.15s, background 0.15s",
                         }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-                            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--teal)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; }}
                         >
-                            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={t.mode === "dark" ? "#1A2E35" : "#fff"} strokeWidth="2.5">
+                            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M9 18l6-6-6-6" />
                             </svg>
                         </button>
@@ -1135,7 +1165,7 @@ const ModChatbot = () => {
                 {/* Top-right: Upgrade pill */}
                 <div style={{ position: "absolute", top: 12, right: 18, zIndex: 10 }}>
                     <button style={{
-                        background: t.primary, color: t.mode === "dark" ? "#1A2E35" : "#fff",
+                        background: "var(--brand-solid)", color: "var(--on-brand)",
                         border: "none", borderRadius: 50, padding: "10px 22px",
                         fontSize: 13, fontWeight: 700, cursor: "pointer",
                         fontFamily: "'Inter',sans-serif",
@@ -1185,7 +1215,8 @@ const ModChatbot = () => {
                             )}
                         </div>
                     ) : (
-                        <div style={{ width: "100%", maxWidth: 820, display: "flex", flexDirection: "column", gap: 18 }}>
+                        <div style={{ width: "100%", maxWidth: 980, display: "flex", flexDirection: "column", gap: 18 }}>
+                            <style>{BUBBLE_CSS}</style>
                             {/* Older messages, on demand.
                                 A conversation opens at its END, so this is the
                                 only way back — and it is at the TOP of the
@@ -1208,41 +1239,41 @@ const ModChatbot = () => {
                                 </div>
                             )}
                             {msgs.map((m, i) => (
-                                <div key={i} style={{
+                                <div key={i} data-msg-role={m.role} style={{
                                     display: "flex",
                                     flexDirection: m.role === "user" ? "row-reverse" : "row",
                                     gap: 10, alignItems: "flex-start",
                                 }}>
                                     {m.role === "ai" && (
+                                        // The icon alone, no box round it (2026-10-19).
                                         <div style={{
-                                            width: 36, height: 36, borderRadius: 10,
-                                            background: m.isError ? "#fee2e2" : t.primaryGlow,
-                                            border: `1px solid ${m.isError ? "#fca5a5" : t.primary + "30"}`,
+                                            width: 36, height: 36,
                                             flexShrink: 0,
                                             display: "flex", alignItems: "center", justifyContent: "center",
                                             overflow: "hidden",
                                         }}>
                                             {m.isError
                                                 ? <Ic n="scale" s={16} c="#ef4444" />
-                                                : <img src="/chatbot.gif" alt="AI" style={{ width: 30, height: 30, objectFit: "contain" }} />
+                                                : <span data-ai-avatar role="img" aria-label="Attorney.AI"><span /></span>
                                             }
                                         </div>
                                     )}
-                                    <div style={{ maxWidth: "75%" }}>
-                                        <div style={{
-                                            background: m.role === "user" ? t.grad1 : t.surface,
-                                            border: m.role === "ai" ? `1px solid ${m.isClarification ? t.primary : t.border}` : "none",
-                                            borderRadius: m.role === "user" ? "18px 18px 6px 18px" : "18px 18px 18px 6px",
-                                            padding: "13px 17px", fontSize: 13.5, lineHeight: 1.8,
+                                    <div style={{ maxWidth: m.role === "user" ? "75%" : "calc(100% - 44px)", minWidth: 0 }}>
+                                        <div data-bubble={m.role === "user" ? "user" : "ai"} dir="auto" style={{
+                                            // Solid, so the tail is the same colour as the bubble (2026-10-19;
+                                            // a gradient left a seam where they meet). The theme is set later.
+                                            "--bub": m.role === "user" ? (t.mode === "light" ? "#0B7A8C" : "#2EC4D6") : t.surface,
+                                            padding: m.role === "user" ? "8px 16px" : "12px 20px", fontSize: 15, lineHeight: 1.7,
                                             color: m.role === "user" ? (t.mode === "dark" ? "#1A2E35" : "#fff") : t.text,
-                                            whiteSpace: "pre-wrap",
+                                            // An answer is markdown (2026-10-20): bold, headings, lists.
+                                            whiteSpace: m.role === "user" ? "pre-wrap" : "normal",
                                         }}>
                                             {m.isClarification && (
                                                 <div style={{ fontSize: 11, color: t.primary, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                                                     Clarification needed
                                                 </div>
                                             )}
-                                            {m.text}
+                                            {m.role === "user" ? m.text : <RichText text={m.text} />}
                                         </div>
                                         {/* Statement checks. Surfaced ABOVE the sources panel and
                                             with a always-visible warning line, because the finding
@@ -1351,12 +1382,13 @@ const ModChatbot = () => {
                                             plainly rather than quietly meaning
                                             federal. */}
                                         {m.role === "ai" && !m.isError && m.jurisdictionBasis
-                                            && m.jurisdictionBasis !== "not_applicable" && (
+                                            && m.jurisdictionBasis !== "not_applicable"
+                                            // "No jurisdiction filter …" was noise under every answer (2026-10-19).
+                                            && m.jurisdictionBasis !== "unspecified" && (
                                             <div style={{
                                                 marginTop: 8, fontSize: 11, color: t.textMuted,
                                                 display: "flex", alignItems: "center", gap: 6,
                                             }}>
-                                                <span aria-hidden>⚖️</span>
                                                 {m.jurisdictionBasis === "unspecified" ? (
                                                     <span>
                                                         No jurisdiction filter — all jurisdictions in the
@@ -1501,43 +1533,24 @@ const ModChatbot = () => {
                                                 </div>
                                             );
                                         })()}
-                                        {/* Rating — every substantive AI answer */}
-                                        {m.role === "ai" && !m.isError && !m.isNotice && !m.isClarification && m.text && (
-                                            <div style={{ marginTop: 6, display: "flex", gap: 4, alignItems: "center" }}>
-                                                {m.rated ? (
-                                                    <span style={{ fontSize: 11, color: t.textMuted }}>
-                                                        {m.rated === "up" ? "Thanks for the feedback 👍" : "Thanks — we'll use this to improve 👎"}
-                                                    </span>
-                                                ) : (
-                                                    ["up", "down"].map(r => (
-                                                        <button key={r}
-                                                            onClick={() => {
-                                                                setMsgs(prev => prev.map((x, xi) => xi === i ? { ...x, rated: r } : x));
-                                                                rateAnswer({
-                                                                    session_id: sessionIdRef.current || "unknown",
-                                                                    rating: r,
-                                                                    answer_preview: (m.text || "").slice(0, 300),
-                                                                    question_preview: (msgs[i - 1]?.text || "").slice(0, 300),
-                                                                    source: "chat",
-                                                                }).catch(() => { });
-                                                            }}
-                                                            style={{
-                                                                width: 26, height: 26, borderRadius: 7, cursor: "pointer",
-                                                                border: `1px solid ${t.border}`, background: "transparent",
-                                                                fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center",
-                                                            }}
-                                                            title={r === "up" ? "Helpful" : "Not helpful"}
-                                                        >{r === "up" ? "👍" : "👎"}</button>
-                                                    ))
-                                                )}
-                                                {/* The id of this answer's audit record. A client
-                                                    cannot open the audit view — that is the
-                                                    machinery behind the findings, and it is
-                                                    lawyer-only — but "this answer was wrong" is
-                                                    unactionable without a way to say WHICH
-                                                    answer. */}
-                                                {m.requestId && <RequestId id={m.requestId} t={t} />}
-                                            </div>
+                                        {/* Copy, and the rating on every substantive answer. The
+                                            rating carries the answer's request id, so a reported
+                                            answer can still be found (the visible id was removed). */}
+                                        {m.role === "ai" && !m.isError && !m.isNotice && m.text && (
+                                            <MessageActions t={t} text={m.text} rated={m.rated}
+                                                onRegenerate={i === lastAiIndex && questionFor(i) ? () => send(questionFor(i)) : null}
+                                                canRate={!m.isClarification && Boolean(m.requestId) && m.auditSaved !== false && !m.auditPending}
+                                                onRate={r => {
+                                                    rateAnswer({
+                                                        request_id: m.requestId,
+                                                        session_id: sessionIdRef.current || "unknown",
+                                                        rating: r,
+                                                        source: "chat",
+                                                    }).then(({ error }) => {
+                                                        if (!error) setMsgs(prev => prev.map((x, xi) => xi === i ? { ...x, rated: r } : x));
+                                                        else toast.show("Feedback could not be saved.", "error", 2500);
+                                                    });
+                                                }} />
                                         )}
                                         {/* Lawyer connect card — shown on HITL or max_attempts.
                                             Extracted so it can be mounted and asserted on without a
@@ -1549,16 +1562,12 @@ const ModChatbot = () => {
                                         />
                                         <div style={{ fontSize: 10, color: t.textFaint, marginTop: 5, textAlign: m.role === "user" ? "right" : "left" }}>
                                             {m.time}
-                                            {m.role === "ai" && !m.isError && !m.isClarification && m.text && (
-                                                m.confidenceBand ? (
-                                                    <span style={{ marginLeft: 8, color: CONF_COLOR[m.confidenceBand] || t.textMuted }}>
-                                                        ⬤ {CONF_LABEL[m.confidenceBand]} confidence
-                                                    </span>
-                                                ) : (
-                                                    <span style={{ marginLeft: 8, color: t.textFaint }}>
-                                                        Confidence not calibrated
-                                                    </span>
-                                                )
+                                            {/* A confidence band only when there is one; no
+                                                "not calibrated" jargon for clients (2026-10-19). */}
+                                            {m.role === "ai" && !m.isError && !m.isClarification && m.text && m.confidenceBand && (
+                                                <span style={{ marginLeft: 8, color: CONF_COLOR[m.confidenceBand] || t.textMuted }}>
+                                                    ⬤ {CONF_LABEL[m.confidenceBand]} confidence
+                                                </span>
                                             )}
                                         </div>
                                     </div>
@@ -1567,18 +1576,18 @@ const ModChatbot = () => {
 
                             {/* Typing indicator */}
                             {typing && (
-                                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                                    <div style={{ width: 34, height: 34, borderRadius: 10, background: t.primaryGlow, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                        <Ic n="scale" s={16} c={t.primary} />
+                                // Same avatar and bubble as an answer (2026-10-19).
+                                <div data-typing style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                                    <div style={{ width: 36, height: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                        <span data-ai-avatar role="img" aria-label="Attorney.AI"><span /></span>
                                     </div>
-                                    <div style={{
-                                        background: t.surface, border: `1px solid ${t.border}`,
-                                        borderRadius: "18px 18px 18px 6px", padding: "14px 18px",
-                                        display: "flex", gap: 5, alignItems: "center",
+                                    <div data-bubble="ai" style={{
+                                        "--bub": t.surface,
+                                        padding: "13px 18px", display: "flex", gap: 5, alignItems: "center",
                                     }}>
                                         {[0, 1, 2].map(d => (
                                             <div key={d} style={{
-                                                width: 7, height: 7, borderRadius: "50%", background: t.primary,
+                                                width: 7, height: 7, borderRadius: "50%", background: "var(--teal)",
                                                 animation: `pulse 1.2s ease ${d * 0.2}s infinite`,
                                             }} />
                                         ))}
@@ -1599,13 +1608,8 @@ const ModChatbot = () => {
                                         )}
                                         <button
                                             onClick={stop}
-                                            title="Stop generating"
-                                            style={{
-                                                background: "none", cursor: "pointer",
-                                                border: `1px solid ${t.border}`,
-                                                borderRadius: 8, padding: "3px 10px",
-                                                fontSize: 11.5, color: t.textMuted,
-                                            }}>
+                                            title="Stop generating" className="stop-gen">
+                                            <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: "currentColor" }} />
                                             Stop
                                         </button>
                                     </div>
@@ -1621,87 +1625,25 @@ const ModChatbot = () => {
                     padding: "0 28px 20px",
                     display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0,
                 }}>
-                    <div style={{
-                        width: "100%", maxWidth: 820,
-                        background: t.mode === "dark" ? "rgba(20,42,50,0.97)" : t.surface,
-                        border: `1.5px solid ${t.border}`,
-                        borderRadius: 18, padding: "14px 16px 12px 20px",
-                        boxShadow: t.shadowCard,
-                    }}>
+                    <style>{CHAT_BOX_CSS}</style>
+                    <div data-chat-box>
                         <input
                             value={inp}
+                            dir="auto"
                             onChange={e => setInp(e.target.value)}
                             onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
                             placeholder={wsStatus === "connected" ? "Ask Attorney AI..." : wsStatus === "connecting" ? "Connecting..." : "Offline — reconnecting..."}
                             style={{
                                 width: "100%", background: "transparent", border: "none", outline: "none",
-                                color: t.text, fontSize: 15, fontFamily: "'Inter',sans-serif",
-                                padding: "4px 0 12px", lineHeight: 1.6,
+                                color: t.text, fontSize: 15, padding: "2px 2px 8px", lineHeight: 1.5,
                             }}
                         />
 
-                        {/* Bottom toolbar */}
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            {/* Toggle sidebar */}
-                            <button onClick={() => setSideOpen(o => !o)} style={{
-                                display: "flex", alignItems: "center", gap: 7,
-                                background: t.inputBg, border: `1px solid ${t.border}`,
-                                borderRadius: 50, padding: "7px 16px",
-                                fontSize: 13, color: t.textMuted, cursor: "pointer",
-                                fontFamily: "'Inter',sans-serif", transition: "all 0.15s",
-                            }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = t.primary; e.currentTarget.style.color = t.primary; }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.textMuted; }}
-                            >
-                                <Ic n="clock" s={14} c="currentColor" />
-                                History
-                            </button>
-
-                            {/* Right controls */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                {/* Web search toggle */}
-                                <button
-                                    onClick={() => setWebSearch(s => !s)}
-                                    title={webSearch ? "Web search ON — click to disable" : "Enable web search"}
-                                    style={{
-                                        display: "flex", alignItems: "center", gap: 6,
-                                        background: webSearch ? `${t.primary}18` : t.inputBg,
-                                        border: `1px solid ${webSearch ? t.primary : t.border}`,
-                                        borderRadius: 50, padding: "7px 14px",
-                                        fontSize: 12, color: webSearch ? t.primary : t.textMuted,
-                                        cursor: "pointer", fontFamily: "'Inter',sans-serif",
-                                        transition: "all 0.15s", fontWeight: webSearch ? 700 : 400,
-                                    }}
-                                    onMouseEnter={e => { if (!webSearch) { e.currentTarget.style.borderColor = t.primary; e.currentTarget.style.color = t.primary; } }}
-                                    onMouseLeave={e => { if (!webSearch) { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.textMuted; } }}
-                                >
-                                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                                    </svg>
-                                    Web
-                                </button>
-
-                                {/* Mic button */}
-                                <button
-                                    onClick={startVoice}
-                                    title={listening ? "Listening…" : "Voice input"}
-                                    style={{
-                                        width: 36, height: 36, borderRadius: 10,
-                                        background: listening ? `${t.primary}22` : t.inputBg,
-                                        border: `1.5px solid ${listening ? t.primary : t.border}`,
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                        cursor: "pointer", transition: "all 0.2s",
-                                        animation: listening ? "pulse 1s ease infinite" : "none",
-                                    }}
-                                >
-                                    <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={listening ? t.primary : t.textMuted} strokeWidth="2">
-                                        <rect x="9" y="2" width="6" height="11" rx="3" />
-                                        <path d="M5 10a7 7 0 0 0 14 0" />
-                                        <line x1="12" y1="19" x2="12" y2="23" />
-                                        <line x1="8" y1="23" x2="16" y2="23" />
-                                    </svg>
-                                </button>
-
+                        {/* Toolbar: the options on the left, voice and send on the right. */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", minWidth: 0 }}>
+                                {/* History and Web chips removed (2026-10-19): the
+                                    sidebar has its own collapse / open control. */}
                                 {/* Jurisdiction selector.
                                     Province materially changes the governing
                                     law — a shop-eviction question is answered
@@ -1710,17 +1652,11 @@ const ModChatbot = () => {
                                     "All Pakistan" is honest about searching
                                     every jurisdiction; it is NOT "federal". */}
                                 <select
+                                    className={`cb-chip${province ? " on" : ""}`}
                                     value={province}
                                     onChange={e => setProvince(e.target.value)}
                                     title="Jurisdiction — which province's law applies to your question"
-                                    aria-label="Jurisdiction"
-                                    style={{
-                                        padding: "5px 8px", fontSize: 11, fontWeight: 600,
-                                        borderRadius: 8, border: `1px solid ${t.border}`,
-                                        background: t.inputBg,
-                                        color: province ? t.primary : t.textMuted,
-                                        cursor: "pointer", fontFamily: "'Inter',sans-serif",
-                                    }}>
+                                    aria-label="Jurisdiction">
                                     <option value="">No jurisdiction filter</option>
                                     <option value="punjab">Punjab</option>
                                     <option value="sindh">Sindh</option>
@@ -1729,36 +1665,22 @@ const ModChatbot = () => {
                                     <option value="federal">Federal only</option>
                                 </select>
 
-                                {/* EN/UR switcher */}
-                                <div style={{
-                                    display: "flex", borderRadius: 8, overflow: "hidden",
-                                    border: `1px solid ${t.border}`, background: t.inputBg,
-                                }}>
-                                    {["EN", "UR"].map(l => (
-                                        <button key={l} onClick={() => setLang(l)} style={{
-                                            padding: "5px 12px", fontSize: 11, fontWeight: 700,
-                                            border: "none", cursor: "pointer",
-                                            background: lang === l ? t.primary : "transparent",
-                                            color: lang === l ? (t.mode === "dark" ? "#1A2E35" : "#fff") : t.textMuted,
-                                            transition: "all 0.15s", fontFamily: "'Inter',sans-serif",
-                                        }}>{l}</button>
-                                    ))}
-                                </div>
+                            </div>
 
-                                {/* Send */}
-                                <button
-                                    onClick={send}
-                                    disabled={!inp.trim() || wsStatus !== "connected"}
-                                    style={{
-                                        width: 36, height: 36, borderRadius: 10,
-                                        background: inp.trim() && wsStatus === "connected" ? t.primary : t.inputBg,
-                                        border: `1.5px solid ${inp.trim() && wsStatus === "connected" ? t.primary : t.border}`,
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                        cursor: inp.trim() && wsStatus === "connected" ? "pointer" : "default",
-                                        transition: "all 0.2s", transform: "rotate(45deg)",
-                                        boxShadow: inp.trim() && wsStatus === "connected" ? `0 4px 12px ${t.primaryGlow}` : "none",
-                                    }}>
-                                    <Ic n="send" s={16} c={inp.trim() && wsStatus === "connected" ? (t.mode === "dark" ? "#1A2E35" : "#fff") : t.textMuted} />
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
+                                {/* Speak Urdu or English (2026-10-20): our server tells them
+                                    apart and writes Urdu in Urdu script; the answer follows the
+                                    language of the question. Click to start, click to finish. */}
+                                <VoiceButton value={inp} onText={setInp} className="cb-mic" onListening={onListening}
+                                    mode="server" serverLanguage="auto"
+                                    onError={msg => toast.show(msg, "warn", 4000)}
+                                    onNotice={msg => toast.show(msg, "info", 6000)} />
+
+                                <button type="button" onClick={send} aria-label="Send"
+                                    disabled={!(inp.trim() && wsStatus === "connected")}
+                                    className={`cb-send${inp.trim() ? " typed" : ""}${inp.trim() && wsStatus === "connected" ? " on" : ""}`}>
+                                    {/* An upward arrow (2026-10-20), in place of the turned logo mark. */}
+                                    <SendArrow />
                                 </button>
                             </div>
                         </div>

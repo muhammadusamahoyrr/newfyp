@@ -1,0 +1,146 @@
+{
+ "schema": "artifact-manifest-v1",
+ "note": "Superseded artifacts are kept as audit evidence and are NOT final results. Final results carry a provenance block and are listed under 'final'.",
+ "superseded": [
+  {
+   "file": "generations_2026-10-13.jsonl",
+   "status": "superseded",
+   "reason": "before gate v3 / output guard (structural unsafe 8/34 when reassessed)",
+   "modified": "2026-10-13T08:46:43"
+  },
+  {
+   "file": "generations_2026-10-13_v2.jsonl",
+   "status": "superseded",
+   "reason": "before formal-action classifier, provision-level eval and visible-mismatch guard",
+   "modified": "2026-10-13T11:06:59"
+  },
+  {
+   "file": "generations_final_r1.jsonl",
+   "status": "superseded",
+   "reason": "unpaced; Groq/OpenRouter limits; before final guard",
+   "modified": "2026-10-13T12:07:59"
+  },
+  {
+   "file": "generations_final_r2.jsonl",
+   "status": "superseded",
+   "reason": "unpaced; provider failures; before final guard",
+   "modified": "2026-10-13T12:11:07"
+  },
+  {
+   "file": "generations_final_r3.jsonl",
+   "status": "superseded",
+   "reason": "unpaced; provider failures; before final guard",
+   "modified": "2026-10-13T12:14:32"
+  },
+  {
+   "file": "generations_final2_r1.jsonl",
+   "status": "superseded",
+   "reason": "Groq daily limit hit (6 pipeline failures); before final guard",
+   "modified": "2026-10-13T12:36:33"
+  },
+  {
+   "file": "generations_final2_r2.jsonl",
+   "status": "superseded",
+   "reason": "Groq daily limit hit (7/8 failed)",
+   "modified": "2026-10-13T12:40:45"
+  },
+  {
+   "file": "generations_final2_r3.jsonl",
+   "status": "superseded",
+   "reason": "Groq daily limit hit (8/8 failed)",
+   "modified": "2026-10-13T12:44:40"
+  },
+  {
+   "file": "generations_stab_r1.jsonl",
+   "status": "superseded",
+   "reason": "before partial-summary rule, visible-mismatch guard, Gemini/4-key routing; no provenance",
+   "modified": "2026-10-13T13:16:50"
+  },
+  {
+   "file": "generations_stab_r2.jsonl",
+   "status": "superseded",
+   "reason": "same as stab_r1",
+   "modified": "2026-10-13T13:24:36"
+  },
+  {
+   "file": "generations_stab_r3.jsonl",
+   "status": "superseded",
+   "reason": "same as stab_r1",
+   "modified": "2026-10-13T13:29:37"
+  },
+  {
+   "file": "generations_m004fix_r1.jsonl",
+   "status": "superseded",
+   "reason": "after partial-summary rule but before visible-mismatch guard and llm.py changes; no provenance",
+   "modified": "2026-10-13T13:34:38"
+  },
+  {
+   "file": "generations_m004fix_r2.jsonl",
+   "status": "superseded",
+   "reason": "same as m004fix_r1",
+   "modified": "2026-10-13T13:36:19"
+  },
+  {
+   "file": "generations_m004fix_r3.jsonl",
+   "status": "superseded",
+   "reason": "same as m004fix_r1",
+   "modified": "2026-10-13T13:37:36"
+  },
+  {
+   "file": "stability_2026-10-13.json",
+   "status": "superseded",
+   "reason": "built from generations_final_r1-3 (stale)",
+   "modified": "2026-10-13T12:14:47"
+  },
+  {
+   "file": "stability_2026-10-13_final.json",
+   "status": "superseded",
+   "reason": "built from generations_stab_r1-3 before the final guard; reports unsafe_runs_total=1 that the later fix addressed; single ambiguous 'stable' flag",
+   "modified": "2026-10-13T13:30:08"
+  },
+  {
+   "file": "generation_eval_2026-10-13_before.json",
+   "status": "superseded",
+   "reason": "assessment of generations_2026-10-13.jsonl with an earlier evaluator",
+   "modified": "2026-10-13T11:10:34"
+  },
+  {
+   "file": "generation_eval_2026-10-13_after.json",
+   "status": "superseded",
+   "reason": "assessment of generations_2026-10-13_v2.jsonl with an earlier evaluator",
+   "modified": "2026-10-13T11:10:36"
+  },
+  {
+   "file": "generation_eval_2026-10-13_final.json",
+   "status": "superseded",
+   "reason": "assessment of generations_final2_r1.jsonl (provider failures) with an earlier evaluator",
+   "modified": "2026-10-13T12:45:42"
+  }
+ ],
+ "final": [
+  {
+   "file": "generations_closure_r1.jsonl",
+   "source_fingerprint": "e88222fce28867a7",
+   "evaluator_version": "generation-eval-v3",
+   "status": "final"
+  },
+  {
+   "file": "generations_closure_r2.jsonl",
+   "source_fingerprint": "e88222fce28867a7",
+   "evaluator_version": "generation-eval-v3",
+   "status": "final"
+  },
+  {
+   "file": "generations_closure_r3.jsonl",
+   "source_fingerprint": "e88222fce28867a7",
+   "evaluator_version": "generation-eval-v3",
+   "status": "final"
+  },
+  {
+   "file": "stability_closure_2026-10-13.json",
+   "source_fingerprint": "e88222fce28867a7",
+   "evaluator_version": "generation-eval-v3",
+   "status": "final"
+  }
+ ]
+}

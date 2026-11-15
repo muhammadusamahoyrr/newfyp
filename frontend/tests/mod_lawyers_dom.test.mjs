@@ -931,7 +931,7 @@ test("booking sends only a time the client picked from the offered slots", async
     api.__respond("bookAppointment", { data: { id: "a1", status: "pending" }, error: null });
     const ui = await mountLawyers();
     const body = await openBookingFor(ui);
-    const confirm = () => [...body.querySelectorAll("button")].find(b => b.textContent.includes("Confirm Appointment"));
+    const confirm = () => [...body.querySelectorAll("button")].find(b => b.textContent.includes("Send request"));
 
     // Nothing picked yet: no default 10:00 is sent.
     await act(async () => { confirm().dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
@@ -948,15 +948,136 @@ test("booking sends only a time the client picked from the offered slots", async
     await ui.unmount();
 });
 
+test("a refused time is explained inside the dialog and cannot be sent again (2026-10-12)", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    api.__respond("getBookableSlots", slotsFor(["11:00", "11:30"]));
+    api.__respond("bookAppointment", { data: null, status: 409,
+        error: { message: "You already have an appointment during this time. Please choose a different time." } });
+    const ui = await mountLawyers();
+    const body = await openBookingFor(ui);
+    const send = () => [...body.querySelectorAll("button")].find(b => b.textContent.includes("Send request"));
+    const slot = () => [...body.querySelectorAll("[data-booking-dialog] button")].find(b => b.textContent.trim() === "11:00");
+    assert.equal(send().disabled, true, "Send request was enabled with no time chosen");
+
+    await act(async () => { slot().dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    assert.equal(send().disabled, false);
+    await act(async () => { send().dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle();
+
+    const alert = body.querySelector("[data-booking-error]");
+    assert.ok(alert, "the refusal was not shown in the dialog");
+    assert.match(alert.textContent, /already have an appointment/);
+    assert.equal(slot().disabled, true, "the refused time can be picked again");
+    assert.equal(send().disabled, true, "the refused time is still selected");
+    await ui.unmount();
+});
+
 test("a lawyer with no published hours cannot be booked at a guessed time", async () => {
     api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
     api.__respond("getBookableSlots", { data: { configured: false, enforced: false, days: [] }, error: null });
     const ui = await mountLawyers();
     const body = await openBookingFor(ui);
-    const confirm = [...body.querySelectorAll("button")].find(b => b.textContent.includes("Confirm Appointment"));
+    const confirm = [...body.querySelectorAll("button")].find(b => b.textContent.includes("Send request"));
     await act(async () => { confirm.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
     await ui.settle();
     assert.equal(api.__calls("bookAppointment").length, 0);
+    await ui.unmount();
+});
+
+/* The booking dialog, 2026-10-12: times re-read on every open, the case
+ * chosen in the dialog, and the earliest open time one click away. */
+test("reopening the booking for the same lawyer and day asks for the times again", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    api.__respond("getBookableSlots", slotsFor(["11:00"]));
+    const ui = await mountLawyers();
+    await openProfile(ui);
+    // Same lawyer, same (default) day both times: nothing the old effect
+    // depended on changes between the two opens.
+    const book = () => [...ui.container.querySelectorAll("button")].find(b => b.textContent.trim() === "Book Appointment");
+    await act(async () => { book().dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle(80);
+    const close = dom.window.document.body.querySelector('[data-booking-dialog] button[aria-label="Close"]');
+    await act(async () => { close.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle();
+    const before = api.__calls("getBookableSlots").length;
+    await act(async () => { book().dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle(80);
+    assert.ok(api.__calls("getBookableSlots").length > before, "the times were not fetched again");
+    const body = dom.window.document.body;
+    assert.doesNotMatch(body.querySelector("[data-booking-dialog]").textContent, /Choose a date to see times/);
+    await ui.unmount();
+});
+
+test("the booking is about the case the client picks, and only cases that can take one are offered", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    api.__respond("getBookableSlots", slotsFor(["11:00"]));
+    api.__respond("listCases", { data: { items: [
+        hireableCase("C1", { title: "Bail matter" }),
+        hireableCase("C2", { title: "Old draft", status: "draft" }),
+        hireableCase("C3", { title: "Finished", status: "closed" }),
+    ] } });
+    api.__respond("bookAppointment", { data: { id: "a1", status: "pending" }, error: null });
+    const ui = await mountLawyers();
+    await ui.settle();
+    const body = await openBookingFor(ui);
+    const select = body.querySelector("[data-appt-case]");
+    const labels = [...select.options].map(o => o.textContent);
+    assert.equal(select.value, "", "a general consultation unless the client says otherwise");
+    assert.ok(labels.some(l => l.includes("Bail matter")));
+    assert.ok(!labels.some(l => l.includes("Old draft") || l.includes("Finished")), `offered: ${labels}`);
+    setNativeValue(select, "C1");
+    await act(async () => { select.dispatchEvent(new dom.window.Event("change", { bubbles: true })); });
+    const slot = [...body.querySelectorAll("button")].find(b => b.textContent.trim() === "11:00");
+    await act(async () => { slot.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    const send = [...body.querySelectorAll("button")].find(b => b.textContent.includes("Send request"));
+    await act(async () => { send.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle();
+    assert.equal(api.__calls("bookAppointment")[0].args[0].case_id, "C1");
+    await ui.unmount();
+});
+
+test("the earliest open time can be taken in one click", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    const { pktToday } = await import("../src/lib/bookingTime.js");
+    const d = new Date(`${pktToday()}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    const day = d.toISOString().slice(0, 10);
+    api.__respond("getBookableSlots", { data: { configured: true, enforced: false,
+        days: [{ date: day, slots: [{ start: "s1", local_time: "09:30" }] }] }, error: null });
+    const ui = await mountLawyers();
+    const body = await openBookingFor(ui);   // opens on tomorrow already
+    const chip = body.querySelector("[data-earliest]");
+    assert.ok(chip, "no earliest-time shortcut");
+    assert.match(chip.textContent, /09:30/);
+    await act(async () => { chip.querySelector("button").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle();
+    const picked = [...body.querySelectorAll('[data-booking-dialog] [aria-pressed="true"]')].map(b => b.textContent.trim());
+    assert.ok(picked.includes("09:30"), `picked: ${picked}`);
+    await ui.unmount();
+});
+
+test("a lawyer with no published hours can be ASKED for a time the client picks, while hours are not enforced", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    api.__respond("getBookableSlots", { data: { configured: false, enforced: false, days: [] }, error: null });
+    api.__respond("bookAppointment", { data: { id: "a1", status: "pending" }, error: null });
+    const ui = await mountLawyers();
+    const body = await openBookingFor(ui);
+    // A future date, so every request time is still open.
+    const date = body.querySelector("#appt-date");
+    await act(async () => {
+        Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value").set.call(date, "2099-01-05");
+        date.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+    });
+    await ui.settle();
+    const slot = [...body.querySelectorAll("button")].find(b => b.textContent.trim() === "15:00");
+    assert.ok(slot, "no time to request was offered");
+    await act(async () => { slot.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    const send = [...body.querySelectorAll("button")].find(b => b.textContent.includes("Send request"));
+    await act(async () => { send.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle();
+    const sent = api.__calls("bookAppointment");
+    assert.equal(sent.length, 1);
+    assert.match(sent[0].args[0].scheduled_at, /2099-01-05T10:00:00/, "15:00 PKT is 10:00 UTC");
     await ui.unmount();
 });
 
@@ -972,11 +1093,17 @@ test("a sent booking is reported as a request, and the real appointments are re-
     const before = api.__calls("listAppointments").length;
     const slot = [...body.querySelectorAll("button")].find(b => b.textContent.trim() === "11:00");
     await act(async () => { slot.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
-    const confirm = [...body.querySelectorAll("button")].find(b => b.textContent.includes("Confirm Appointment"));
+    const confirm = [...body.querySelectorAll("button")].find(b => b.textContent.includes("Send request"));
     await act(async () => { confirm.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
     await ui.settle(60);
     assert.equal(api.__calls("bookAppointment").length, 1);
     assert.match(body.textContent, /Request sent/);
+    // The dialog says what happens next and leads to the appointment itself.
+    const sent = body.querySelector("[data-booking-sent]");
+    assert.ok(sent, "no Request sent view");
+    assert.match(sent.textContent, /confirms or declines/);
+    await act(async () => { sent.querySelector("[data-view-appointment]").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    assert.equal(globalThis.__nav.pushed.at(-1), "/appointments?appointment=a1");
     assert.doesNotMatch(body.textContent, /Appointment booked!/);
     assert.ok(api.__calls("listAppointments").length > before, "the appointments were not re-read after booking");
     await ui.unmount();
@@ -999,5 +1126,157 @@ test("declined and ended engagements stay visible, with the reason", async () =>
     assert.match(text, /The engagement was ended\. Reason: Moved to another city/);
     assert.ok(text.indexOf("Adv Bilal") < text.indexOf("Adv Sana"), "newest first");
     assert.doesNotMatch(text, /Adv Omar/, "a live request is not history");
+    await ui.unmount();
+});
+
+/* ── review eligibility follows the lawyer on screen (2026-10-12) ──────────── */
+
+async function openProfileOf(ui, name) {
+    let node = [...ui.container.querySelectorAll("div")]
+        .find(el => el.textContent.trim() === name && el.children.length === 0);
+    assert.ok(node, `no card for ${name}`);
+    for (let i = 0; i < 8 && node; i++) {
+        await act(async () => { node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+        await ui.settle(30);
+        if (/Bar No:/.test(ui.text())) return;
+        node = node.parentElement;
+    }
+    throw new Error(`could not open ${name}`);
+}
+
+test("switching lawyers resets the review state to the new lawyer's answer", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1"), lawyer("L2")] } });
+    api.__respond("getReviewEligibility", (id) => ({ data: id === "L1"
+        ? { can_review: false, already_reviewed: true, reason: "already_reviewed" }
+        : { can_review: false, already_reviewed: false, reason: "no_completed_relationship" }, error: null }));
+    const ui = await mountLawyers();
+    await ui.settle();
+    await openProfileOf(ui, "Adv L1");
+    await ui.settle(40);
+    assert.match(ui.text(), /Review submitted — thank you/);
+    const back = [...ui.container.querySelectorAll("button")].find(b => /Back to Lawyers/.test(b.textContent));
+    await act(async () => { back.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle(40);
+    await openProfileOf(ui, "Adv L2");
+    await ui.settle(40);
+    assert.ok(!/Review submitted/.test(ui.text()), "the first lawyer's answer was shown on the second");
+    assert.match(ui.text(), /You can review Adv after a completed consultation/);
+    await ui.unmount();
+});
+
+/* ── case states behind "Find My Match" (2026-10-16) ─────────────────────────
+ *
+ * The page matches automatically on every visit, against the case the last
+ * intake saved. A draft case was refused with an error toast on every visit,
+ * and a deleted one polled for ~12 s and then said "still processing" -- for a
+ * case that no longer existed, and again on the next visit. Each now has its
+ * own message and next step, and a dead saved id is forgotten. */
+const { readIntakeValue: readSaved, writeIntakeValue: saveIntake } =
+    await import("../src/lib/intakeStorage.js");
+const nav = () => (globalThis.__nav ||= { pushed: [], replaced: [], params: new Map() });
+const buttonByText = (ui, re) =>
+    [...ui.container.querySelectorAll("button")].find(b => re.test(b.textContent.trim()));
+
+function caseStateSetup(caseId = "C-1") {
+    nav().pushed.length = 0; nav().replaced.length = 0; nav().params.clear();
+    saveIntake("aai-case-id", "u1", caseId);
+    api.__respond("searchLawyers", pageOf([lawyer("L1")]));
+}
+
+test("a draft case says to finish the intake, offers it, and keeps the saved id", async () => {
+    caseStateSetup();
+    api.__respond("matchLawyers", { data: null, status: 422, error: {
+        code: "case_draft",
+        message: "This case is still a draft, so it cannot be matched to lawyers yet. Confirm it at the end of the intake first." } });
+    const ui = await mountLawyers();
+    await ui.settle(600);
+    assert.equal(api.__calls("matchLawyers").length, 1, "a draft was polled as if it were processing");
+    assert.match(ui.text(), /Finish your Legal Intake first/);
+    assert.match(ui.text(), /still a draft/);
+    assert.doesNotMatch(ui.text(), /still processing/);
+    const next = buttonByText(ui, /^Finish intake$/);
+    assert.ok(next, "no next step was offered for the draft");
+    await act(async () => { next.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    assert.ok(nav().pushed.includes("/intake"));
+    assert.equal(readSaved("aai-case-id", "u1"), "C-1", "a draft is still the client's case");
+    await ui.unmount();
+});
+
+test("a deleted case is said to be gone, its saved id is cleared, and a refresh does not ask again", async () => {
+    caseStateSetup();
+    api.__respond("matchLawyers", { data: null, status: 404, error: { message: "Case not found" } });
+    const ui = await mountLawyers();
+    await ui.settle(3800);                       // one retry, ~3 s, for a case still being created
+    assert.equal(api.__calls("matchLawyers").length, 2, "expected exactly one retry for a missing case");
+    assert.match(ui.text(), /Your earlier case is no longer available/);
+    assert.match(ui.text(), /could not find your earlier case/);
+    assert.doesNotMatch(ui.text(), /still processing/);
+    assert.equal(readSaved("aai-case-id", "u1"), null, "the dead id was kept");
+    assert.ok(buttonByText(ui, /^Start intake/), "no way forward was offered");
+    await ui.unmount();
+
+    // a refresh: the dead id is not asked for again
+    const again = await mountLawyers();
+    await again.settle(600);
+    assert.equal(api.__calls("matchLawyers").length, 2, "the refresh asked for the deleted case again");
+    assert.match(again.text(), /Fill in your Legal Intake first/);
+    await again.unmount();
+});
+
+test("another account's saved case is not retried, and is forgotten", async () => {
+    caseStateSetup("C-OTHER");
+    api.__respond("matchLawyers", { data: null, status: 403, error: { message: "You can only match lawyers for your own cases" } });
+    const ui = await mountLawyers();
+    await ui.settle(600);
+    assert.equal(api.__calls("matchLawyers").length, 1);
+    assert.match(ui.text(), /Your earlier case is no longer available/);
+    assert.equal(readSaved("aai-case-id", "u1"), null);
+    await ui.unmount();
+});
+
+test("a deleted case named in the address is dropped from the address", async () => {
+    caseStateSetup();
+    saveIntake("aai-case-id", "u1", null);
+    nav().params.set("case_id", "C-URL");
+    api.__respond("matchLawyers", { data: null, status: 404, error: { message: "Case not found" } });
+    const ui = await mountLawyers();
+    await ui.settle(3800);
+    assert.equal(api.__calls("matchLawyers")[0].args[0], "C-URL");
+    assert.ok(nav().replaced.includes("/lawyers"), "the dead case id stayed in the address");
+    assert.match(ui.text(), /Your earlier case is no longer available/);
+    nav().params.clear();
+    await ui.unmount();
+});
+
+test("a real match is still presented as one", async () => {
+    caseStateSetup();
+    api.__respond("matchLawyers", { data: { result_kind: "matched", notice: null,
+        matches: [{ ...lawyer("L1"), match_score: 0.81, match_reason: "specializes in civil" }] } });
+    const ui = await mountLawyers();
+    await ui.settle(600);
+    assert.match(ui.text(), /AI-Recommended Match/);
+    assert.match(ui.text(), /81% match score/);
+    await ui.unmount();
+});
+
+test("View on Map opens the app's map page on this lawyer, not Google Maps", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1", {
+        address: "12 Mall Road, Lahore", lat: 31.5497, lng: 74.3436,
+        location_precision: "exact",
+    })] }, total: 1, pages: 1 });
+    const ui = await mountLawyers();
+    await ui.settle();
+    await openProfile(ui);
+
+    const btn = [...ui.container.querySelectorAll("button")].find(b => /View on Map/.test(b.textContent));
+    await act(async () => {
+        btn.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    assert.ok(ui.container.querySelector("[data-lawyers-map-page]"), "the map page did not open");
+    assert.equal(openedUrls().length, 0, "View on Map left the app");
+    const pop = ui.container.querySelector(".lm-pop");
+    assert.ok(pop, "the lawyer was not selected on the map");
+    assert.match(pop.textContent, /12 Mall Road, Lahore/);
     await ui.unmount();
 });

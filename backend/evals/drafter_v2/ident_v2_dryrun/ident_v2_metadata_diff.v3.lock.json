@@ -1,0 +1,12 @@
+{
+ "file": "ident_v2_metadata_diff.v3.json",
+ "sha256": "eda16e32634a6e5a34cc091de773fa0e80ea809663d98f665f2a43a5fbfb0462",
+ "counts": {
+  "A": 213,
+  "B": 20,
+  "REVIEW": 16,
+  "changes": 233
+ },
+ "frozen": "2026-10-15",
+ "note": "The build applies this diff ONLY if the file's sha256 equals this value. Any edit makes a new version."
+}

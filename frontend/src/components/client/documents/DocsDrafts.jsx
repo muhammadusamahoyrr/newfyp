@@ -17,12 +17,13 @@
  *   Checks            the revision's own particulars and citation results
  *   Ask for changes   AI Assist: a PROPOSAL, applied locally, saved only on save
  *   PDF / Send to     the real download and the accepted-engagement review flow
- *   Versions / Saved  the left column's two tabs: this document's real
- *                     revisions, and the client's saved documents
+ *   Versions / History the left column's two tabs: this document's real
+ *                     revisions, and all of the client's documents
  * Controls with no backend (risk score, Copy, analysis) are not shown. DOCX is
  * shown DISABLED and labelled "Soon" -- never as a working export. */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+// Shows the target client screen at once; the URL follows (see clientNav.js).
+import { useClientRouter as useRouter } from "../clientNav.js";
 import RevisionHistory from "@/components/shared/RevisionHistory.jsx";
 import { useT } from "../theme.js";
 import { useToast } from "@/components/shared/Toast.jsx";
@@ -39,13 +40,13 @@ import {
     answerDraftPlanV2, assistDocumentWorkspaceV2, confirmDraftPlanV2,
     createDraftPlanV2, downloadDocumentFile, generateDraftPlanV2,
     getDocumentV2, getDocumentWorkspaceV2, getDraftPlanV2, idempotencyKey,
-    myDocumentsV2, previewDocumentTextV2, previewRevisionV2, saveDocumentWorkspaceV2,
+    myDocumentsV2, previewDocumentTextV2, previewRevisionV2, restoreRevisionV2, saveDocumentWorkspaceV2,
     listEngagements, submitDocumentV2, withdrawDocumentV2, errorCode, isRetryable,
     listQuickReviewers, requestQuickReview, myQuickReviews, cancelQuickReview,
 } from "@/lib/api.js";
 import { Btn, Icon, Paper, SEVERITY, TOKEN_STYLE, VALUE_STYLE, fieldStyle, onPrimary, splitLayout, SERIF, DOCS_FONT } from "./ui.jsx";
 import { LIcon } from "./icons.jsx";
-import PdfDocumentView from "./PdfDocumentView.jsx";
+import PdfDocumentView, { preloadPdfViewer } from "./PdfDocumentView.jsx";
 
 export function placeholderCounts(values = {}, applied = {}, keys = Object.keys(values)) {
     const filled = keys.filter(k => String(values[k] ?? "").trim()).length;
@@ -70,6 +71,17 @@ const messageOf = (error, fallback) => error?.message || fallback;
  * server's generation lease still frees the plan after a few minutes.) */
 const PLAN_KEY = "attorney.draftPlan.current";
 const GEN_KEY_PREFIX = "attorney.draftPlan.genKey.";
+/* Unsaved edits of one document, per tab (2026-10-19). The app's own
+ * navigation (its sidebar, a notification, the browser's Back) unmounts the
+ * workspace without asking; what was typed is kept here and brought back --
+ * only onto the SAME version it was typed on, and saying so. */
+const UNSAVED_PREFIX = "attorney.unsavedDraft.";
+export const unsavedStore = {
+    read(docId) { try { return JSON.parse(window.sessionStorage.getItem(UNSAVED_PREFIX + docId) || "null"); } catch { return null; } },
+    keep(docId, value) { try { window.sessionStorage.setItem(UNSAVED_PREFIX + docId, JSON.stringify(value)); } catch { /* storage blocked */ } },
+    drop(docId) { try { window.sessionStorage.removeItem(UNSAVED_PREFIX + docId); } catch { /* storage blocked */ } },
+};
+
 export const planStore = {
     get(name) { try { return window.sessionStorage.getItem(name); } catch { return null; } },
     set(name, value) { try { window.sessionStorage.setItem(name, value); } catch { /* storage blocked */ } },
@@ -340,6 +352,16 @@ const SIDE_ROW_CSS = `[data-side-row] [data-row-hint]{display:none}
  * Scoped by [data-document-workspace]. */
 // No fill behind the header or the tool row (2026-10-11): they sit on the page itself, divided by a line.
 const WORKSPACE_CSS = `[data-document-workspace] .qr-list{container-type:inline-size}
+[data-document-workspace] [data-ask-ring]{position:absolute;inset:-1px;border-radius:19px;padding:2.5px;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .3s;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+[data-document-workspace] [data-ask-ring]::before{content:"";position:absolute;left:50%;top:50%;width:max(160%,1400px);aspect-ratio:1;background:conic-gradient(from 0deg,transparent 0 8%,#1fa898 22%,#3fd6c6 32%,#e6fffb 38%,#3fd6c6 44%,transparent 52% 58%,#1fa898 72%,#3fd6c6 82%,#e6fffb 88%,#3fd6c6 94%,transparent 100%);transform:translate(-50%,-50%) rotate(0deg);animation:askRing 2s linear infinite}
+[data-document-workspace] [data-asking] [data-ask-ring]{opacity:1}
+[data-document-workspace] [data-ask-composer][data-asking]{border-color:transparent!important;animation:askGlow 2.4s ease-in-out infinite}
+[data-document-workspace] .ask-spin{display:block;width:18px;height:18px;box-sizing:border-box;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:askSpin .8s linear infinite}
+[data-document-workspace] .ask-dots::after{content:"";display:inline-block;width:1.2em;text-align:left;animation:askDots 1.4s steps(1) infinite}
+@keyframes askRing{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes askGlow{0%,100%{box-shadow:0 18px 48px rgba(0,0,0,.45),0 0 0 0 rgba(63,214,198,0)}50%{box-shadow:0 18px 48px rgba(0,0,0,.45),0 0 28px 3px rgba(63,214,198,.38)}}
+@keyframes askSpin{to{transform:rotate(360deg)}}
+@keyframes askDots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 [data-document-workspace] .rq-veil{position:absolute;inset:0;z-index:6;display:grid;place-items:center;padding:24px;background:rgba(6,12,14,.66);backdrop-filter:blur(3px);animation:rqFade .16s ease}
 [data-document-workspace] .rq-card{width:min(500px,100%);border-radius:20px;background:var(--qs);border:1px solid var(--qb);box-shadow:0 40px 90px -30px rgba(0,0,0,.9);animation:rqRise .2s ease}
 [data-document-workspace] .rq-head{display:flex;gap:12px;align-items:center;padding:16px 18px 14px;border-bottom:1px solid var(--qb)}
@@ -449,7 +471,7 @@ const WORKSPACE_CSS = `[data-document-workspace] .qr-list{container-type:inline-
 @keyframes wsHop{0%,100%{transform:translateY(0)}40%{transform:translateY(-3px)}70%{transform:translateY(1px)}}
 @keyframes wsFly{0%{transform:translate(0,0);opacity:1}45%{transform:translate(9px,-9px);opacity:0}46%{transform:translate(-9px,9px);opacity:0}100%{transform:translate(0,0);opacity:1}}
 @keyframes wsNudge{0%,100%{transform:none}40%{transform:translateY(-2px) rotate(-6deg)}}
-@media (prefers-reduced-motion:reduce){[data-document-workspace] .ws-pill .ic svg,[data-document-workspace] .ws-tools svg,[data-document-workspace] .ws-back svg{animation:none!important;transition:none!important}}`;
+@media (prefers-reduced-motion:reduce){[data-document-workspace] .ws-pill .ic svg,[data-document-workspace] .ws-tools svg,[data-document-workspace] .ws-back svg{animation:none!important;transition:none!important}[data-document-workspace] [data-ask-ring]::before,[data-document-workspace] [data-ask-composer][data-asking],[data-document-workspace] .ask-spin{animation:none!important}}`;
 
 // Styled by SIDE_ROW_CSS ([data-drafts-side]): a soft row, the open one on the well.
 function SideRow({ selected, title, note = null, hint = null, onOpen, disabled = false, menu, dataAttrs = {} }) {
@@ -498,8 +520,9 @@ export function workspaceChecks(revision, { unfilled = 0, structured = false, ed
  * server's skip-missing confirmation -- the blanks are filled later in the
  * document's Fill Placeholders. Before generation there is no PDF, so the
  * middle is an OUTLINE and says so; the document itself comes after Confirm. */
-function DraftPlan({ plan, spec, answers, setAnswers, busy, issue, onAnswer, onConfirm, onGenerate, onBack, typeOptions, onChangeType, L }) {
+function DraftPlan({ plan, spec, answers, setAnswers, busy, issue, onAnswer, onConfirm, onGenerate, onBack, typeOptions, onChangeType, onWriteGeneral, L }) {
     const t = useT();
+    if (plan.template_type === GENERAL_DOC) return <GeneralPlan plan={plan} busy={busy} issue={issue} onBack={onBack} onWrite={onWriteGeneral} onGenerate={onGenerate} L={L} />;
     const [savedAt, setSavedAt] = useState(null);    // a real save in this visit
     const [focus, setFocus] = useState(null);
     const [activePlanField, setActivePlanField] = useState(null);
@@ -646,22 +669,98 @@ function DraftPlan({ plan, spec, answers, setAnswers, busy, issue, onAnswer, onC
     </section>;
 }
 
+/* No named template fits the description (2026-10-19): the AI writes the
+ * whole document from it. Nothing to fill in first -- every fact not given
+ * becomes a [placeholder] in the text -- so the plan is one step: write it. */
+export const GENERAL_DOC = "general_document";
+
+function GeneralPlan({ plan, busy, issue, onBack, onWrite, onGenerate, L }) {
+    const t = useT();
+    const editable = ["needs_details", "ready"].includes(plan.status);
+    const failed = plan.status === "generation_failed" || Boolean(issue);
+    if (!failed) return <section data-draft-plan data-general-writing aria-label="Writing your document" aria-busy="true"
+        style={{ ...L.col("1 1 600px"), display: "flex", alignItems: "center", justifyContent: "center", minHeight: 0, padding: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center", maxWidth: 460 }}>
+            <svg width="34" height="34" viewBox="0 0 50 50" aria-hidden="true" style={{ color: t.primary }}>
+                <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeDasharray="90 40">
+                    <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.9s" repeatCount="indefinite" />
+                </circle>
+            </svg>
+            <div style={{ fontSize: 18, fontWeight: 700, color: t.text }}>Writing your document…</div>
+            <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5 }}>“{plan.prompt}”<br />This can take up to a minute.</div>
+            {/* Back after a reload, with nothing running: carry on from here. */}
+            {!busy && (plan.status === "confirmed" || plan.status === "generating") &&
+                <Btn kind="primary" data-continue-general onClick={() => onGenerate(false)} style={{ minHeight: 40 }}>Continue writing</Btn>}
+        </div>
+    </section>;
+    return <section data-draft-plan data-general-plan aria-label="Draft plan" style={{ ...L.col("1 1 600px"), display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div role="toolbar" aria-label="Plan actions" style={{ minHeight: 64, flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "9px 18px", borderBottom: `1px solid ${t.border}` }}>
+            <button type="button" onClick={onBack} aria-label="Back to drafts" title="Back to drafts"
+                style={{ minHeight: 40, padding: "0 5px", borderRadius: 9, border: "none", background: "transparent", color: t.textMuted, cursor: "pointer" }}>Drafts</button>
+            <span aria-hidden="true" style={{ color: t.textMuted }}>/</span>
+            <span style={{ fontSize: 14.5, fontWeight: 600, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{plan.title || "New document"}</span>
+        </div>
+        <div data-lenis-prevent style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center", padding: "36px 18px" }}>
+            <div style={{ width: "100%", maxWidth: 620, display: "flex", flexDirection: "column", gap: 16 }}>
+                <span style={{ alignSelf: "flex-start", fontSize: 12, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", padding: "4px 10px", borderRadius: 999, background: `${t.primary}1f`, color: t.primary }}>No template needed</span>
+                <h2 style={{ margin: 0, fontSize: 24, color: t.text }}>The AI will write this document for you</h2>
+                <blockquote data-general-prompt style={{ margin: 0, padding: "12px 16px", borderRadius: 12, background: t.inputBg, border: `1px solid ${t.border}`, color: t.text, fontStyle: "italic", fontSize: 15, lineHeight: 1.6 }}>{plan.prompt}</blockquote>
+                <ul style={{ margin: 0, paddingLeft: 20, listStyle: "disc", color: t.textMuted, fontSize: 13.5, lineHeight: 1.7 }}>
+                    <li>It uses only what you wrote. Anything you did not give, like names, dates or amounts, appears as a [placeholder] you can fill in.</li>
+                    <li>Legal references are checked against the law library; any it cannot back up are taken out.</li>
+                    <li>It is an AI draft. Have a lawyer check it before you sign or file it.</li>
+                </ul>
+                {issue && <div role="alert" style={{ color: t.warn, fontSize: 13 }}>{issue}</div>}
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    {editable && <Btn kind="primary" data-write-general disabled={busy} onClick={onWrite} style={{ minHeight: 44, padding: "0 22px" }}>{busy ? "Writing your draft…" : "Write my draft"}</Btn>}
+                    {(plan.status === "confirmed" || plan.status === "generating") && <Btn kind="primary" disabled={busy} onClick={() => onGenerate(false)} style={{ minHeight: 44, padding: "0 22px" }}>{busy ? "Writing your draft…" : "Continue writing"}</Btn>}
+                    {plan.status === "generation_failed" && <Btn kind="primary" disabled={busy} onClick={() => onGenerate(true)} style={{ minHeight: 44, padding: "0 22px" }}>{busy ? "Writing your draft…" : "Try again"}</Btn>}
+                    {busy && <span style={{ fontSize: 12.5, color: t.textMuted }}>This can take up to a minute.</span>}
+                </div>
+            </div>
+        </div>
+    </section>;
+}
+
+/* Unsaved edits on the open version (2026-10-19): the one test the header,
+ * the Save button and the leave guard all use. */
+export function workspaceDirty(workspace, content, textEdit) {
+    if (!workspace) return false;
+    if (textEdit) return (content?.body_html || "") !== (workspace.text_html || "");
+    if (workspace.source === "structured_fields") return JSON.stringify(content?.fields || {}) !== JSON.stringify(workspace.fields || {});
+    return (content?.body_html || "") !== (workspace.body_html || "");
+}
+
+/* What made a version, in words, read from the revision record itself. */
+export function versionLabel(rev) {
+    if (rev?.restored_from?.version) return `Restored from version ${rev.restored_from.version}`;
+    if (rev?.edited_by?.role === "lawyer") return `Lawyer's edits${rev.edited_by.name ? ` (${rev.edited_by.name})` : ""}`;
+    if (rev?.version === 1) return "First version";
+    if (rev?.template_type === "edited_document") return "Your text edits";
+    return "Your changes";
+}
+
 export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView, openDocument = null }) {
     const t = useT();
     const toast = useToast();
     const [plan, setPlan] = useState(null), [answers, setAnswers] = useState({});
     const [workspace, setWorkspace] = useState(null), [detail, setDetail] = useState(null), [content, setContent] = useState(null);
+    // A document whose first version failed to generate: which one, and the
+    // draft plan that can generate it again (audit 2026-10-15, F2).
+    const [ungenerated, setUngenerated] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null), [busy, setBusy] = useState(false), [issue, setIssue] = useState(null);
     const [instruction, setInstruction] = useState(""), [proposal, setProposal] = useState(null), [openingId, setOpeningId] = useState(null);
     const [typeNeeded, setTypeNeeded] = useState(false);   // the type could not be detected
+    // A general document is written straight away (2026-10-19): set while it is
+    // confirmed, so the effect below generates it without another click.
+    const autoGenerate = useRef(false);
     const [editMode, setEditMode] = useState(false);        // free-text editor's formatting bar
     const [activeField, setActiveField] = useState(null);
     const [showAllFields, setShowAllFields] = useState(true);   // the form opens complete
     const [savedAt, setSavedAt] = useState(null);
     // The left column's tab while a document is open: its versions, or the
-    // client's saved documents. Without a document only the list exists.
-    // With a document open, the column's two options: its versions, or the
-    // saved documents. Without one, it is the History list.
+    // History list of all the client's documents (one name for it everywhere,
+    // 2026-10-19). Without a document only History exists.
     const [sideTab, setSideTab] = useState("saved");
     const [historyOpen, setHistoryOpen] = useState(true);    // the History list
     const [closedGroups, setClosedGroups] = useState({});     // day groups folded away
@@ -669,6 +768,10 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
     // An older revision on screen: { revision_id, version, url }. Editing and
     // saving always build on the CURRENT revision; this is for reading only.
     const [viewRev, setViewRev] = useState(null);
+    // PDF.js loads in the background, not when a version is opened.
+    useEffect(() => { preloadPdfViewer(); }, []);
+    // Unsaved edits brought back from an earlier visit (see unsavedStore).
+    const [recovered, setRecovered] = useState(false);
     // A named template's TEXT being edited (Edit on a text-editable template).
     // Saving then stores the text, as an edited document, from that version on.
     const [textEdit, setTextEdit] = useState(false);
@@ -678,6 +781,8 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
     const [tokenDraft, setTokenDraft] = useState({});
     // The floating Ask AI composer over the document.
     const [askOpen, setAskOpen] = useState(false);
+    // Ask AI is preparing a proposal: the composer's edge runs (2026-10-19).
+    const [asking, setAsking] = useState(false);
     // Sending to a lawyer happens here, in the workspace (2026-10-08): the
     // send panel, then the status banner. One screen for one document.
     const [sendForm, setSendForm] = useState({ lawyerId: null, urgency: "normal", note: "", confirmed: false });
@@ -712,6 +817,30 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
     // Text (a free draft, or a template whose text is being edited) or details.
     const isText = workspace?.source === "freeform_html" || textEdit;
     const editingPayload = isText ? { bodyHtml: content?.body_html || "", fields: null } : { bodyHtml: null, fields: content?.fields || {} };
+    const dirtyNow = workspaceDirty(workspace, content, textEdit);
+    // The latest workspace, for actions that run after a save in the guard
+    // below (a closure would hold the version from before that save).
+    const workspaceRef = useRef(null);
+    workspaceRef.current = workspace;
+    /* UNSAVED CHANGES ARE NEVER DROPPED IN SILENCE (2026-10-19). Opening
+     * another document, going back, opening the Vault or restoring a version
+     * first asks: save them as the next version, discard them, or keep
+     * editing. Viewing an older version is not leaving: the edits stay. */
+    const [leaving, setLeaving] = useState(null);   // { run, what }
+    const guarded = (run, what = "leave this document") => { if (dirtyNow && !locked) { setIssue(null); setLeaving({ run, what }); } else run(); };
+    // Every change to unsaved edits is kept for this tab; a clean or frozen
+    // document keeps nothing.
+    useEffect(() => {
+        if (!workspace) return;
+        if (dirtyNow && !locked) unsavedStore.keep(workspace.document_id, { base: workspace.base_revision_id, textEdit, content });
+        else unsavedStore.drop(workspace.document_id);
+    }, [workspace, content, textEdit, dirtyNow, locked]);
+    useEffect(() => {
+        if (!dirtyNow) return undefined;
+        const warn = e => { e.preventDefault(); e.returnValue = ""; };
+        window.addEventListener("beforeunload", warn);
+        return () => window.removeEventListener("beforeunload", warn);
+    }, [dirtyNow]);
     const titleByType = useMemo(() => Object.fromEntries((templates || []).map(x => [x.template_type, x.label])), [templates]);
     // Columns side by side that each scroll on a desktop; one page-scrolling
     // column on a phone. Never a wrapping row: it sizes to its content and
@@ -727,15 +856,37 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
         setBusy(true); setIssue(null); setProposal(null); setPreviewUrl(null); setSavedAt(null); setViewRev(null);
         const [wsRes, docRes] = await Promise.all([getDocumentWorkspaceV2(docId), getDocumentV2(docId)]);
         if (request !== loadToken.current) return null;
+        // An answer with neither data nor error is a failure too, not a
+        // workspace: reading `.source` off it crashed the screen.
+        if (!wsRes.error && !wsRes.data) wsRes.error = { message: "The document workspace did not load." };
+        if (!docRes.error && !docRes.data) docRes.error = { message: "The document did not load." };
         if (wsRes.error || docRes.error) {
             // Not this account's, deleted, or unreachable: the address must not
             // keep asking for it on every refresh.
             unlinkOpenDocument();
-            setBusy(false); setIssue(messageOf(wsRes.error || docRes.error, "Could not open the document workspace.")); return false;
+            // ...and the document that WAS open must not stay on screen under
+            // this one's error (audit 2026-10-15, F3).
+            setWorkspace(null); setDetail(null); setContent(null);
+            const err = wsRes.error || docRes.error;
+            if (err?.code === "no_editable_revision") {
+                const ref = err.detail?.plan_id ? err.detail : (err.error?.plan_id ? err.error : null);
+                setUngenerated({ docId, title: docRes.data?.title || null, planId: ref?.plan_id || null,
+                                 planVersion: ref?.plan_version ?? null });
+                setBusy(false);
+                setIssue(ref?.plan_id ? "The first version of this document could not be generated. Generate it again, or delete it from the Vault."
+                                      : "The first version of this document could not be generated, and its draft plan is no longer available. Delete it from the Vault and start again.");
+                return false;
+            }
+            setUngenerated(null);
+            setBusy(false); setIssue(messageOf(err, "Could not open the document workspace.")); return false;
         }
+        setUngenerated(null);
         const ws = wsRes.data, doc = docRes.data, rev = doc?.current_revision;
         // A refresh reopens THIS document (see lib/documentsNav.js).
         linkOpenDocument(docId);
+        // The ref too, at once: an action queued behind a save (the leave
+        // guard's "Save as version N") must see THIS version, not wait a render.
+        workspaceRef.current = ws;
         setWorkspace(ws); setDetail(doc); setContent(ws.source === "freeform_html" ? { body_html: ws.body_html } : { fields: { ...(ws.fields || {}) } });
         // The side panel opens on request (Placeholders / Checks), so the
         // document gets the full width when it is first opened.
@@ -743,6 +894,13 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
         setActiveField(placeholderFields(ws.fields || {}).find(k => !String(ws.fields?.[k] ?? "").trim())
             || placeholderFields(ws.fields || {})[0] || null);
         setShowAllFields(true); setEditMode(false); setTextEdit(false); setLiveText(null); undoStack.current = { items: [], last: null };
+        setRecovered(false);
+        const kept = unsavedStore.read(docId);
+        if (kept && kept.base === ws.base_revision_id && kept.content && !(doc?.review_status === "submitted")) {
+            setContent(kept.content);
+            if (kept.textEdit) { setTextEdit(true); setEditMode(true); }
+            setRecovered(true);
+        } else if (kept) unsavedStore.drop(docId);   // made on an older version: no longer applies
         // A document read as text needs no PDF to open -- the PDF is for
         // export and review. Only a template without a text view shows it.
         if (rev?.revision_id && ws.source !== "freeform_html" && !ws.text_editable) {
@@ -753,6 +911,21 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
         }
         setBusy(false); return true;
     }, []);
+
+    // Generate the failed document again through its own plan: the plan reuses
+    // the SAME document, so History and the Vault keep one entry.
+    const regenerate = async () => {
+        const target = ungenerated;
+        if (!target?.planId || busy) return;
+        setBusy(true); setIssue(null);
+        const planRes = await getDraftPlanV2(target.planId);
+        const version = planRes.data?.version ?? target.planVersion;
+        const r = await generateDraftPlanV2(target.planId, { expectedVersion: version }, idempotencyKey());
+        setBusy(false);
+        if (r.error) { setIssue(messageOf(r.error, "The document could not be generated. Try again in a moment.")); return; }
+        setUngenerated(null);
+        await loadWorkspace(target.docId);
+    };
 
     const startPlan = useCallback(async input => {
         const payload = { prompt: String(input?.prompt || "").trim(), templateType: input?.templateType || null, caseId: input?.caseId || null };
@@ -772,6 +945,16 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
         }
         setPlan(result.data); setAnswers({});
         planStore.set(PLAN_KEY, result.data.id);
+        // No template fits: the client already said what they want, so there
+        // is nothing to show or ask first -- write it now (2026-10-19).
+        if (result.data.template_type === GENERAL_DOC && result.data.status === "ready") {
+            autoGenerate.current = true;
+            setBusy(true);
+            const c = await confirmDraftPlanV2(result.data.id, { expectedVersion: result.data.version, skipMissing: false });
+            setBusy(false);
+            if (c.error) { autoGenerate.current = false; setIssue(messageOf(c.error, "Could not start the draft.")); return; }
+            setPlan(c.data);
+        }
     }, [busy]);
 
     // After a reload: bring back the plan this tab was working on, and the
@@ -792,13 +975,24 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
     }, [seed]);
     useEffect(() => { if (seed?.prompt && !seeded.current) { seeded.current = true; startPlan(seed); } }, [seed, startPlan]);
     // Back from "Send for lawyer review": the same document, in the workspace.
-    useEffect(() => { if (openDocument?.id) loadWorkspace(openDocument.id); }, [openDocument?.id, openDocument?.at, loadWorkspace]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => { if (openDocument?.id) guarded(() => loadWorkspace(openDocument.id), "open another document"); }, [openDocument?.id, openDocument?.at, loadWorkspace]);
 
     const changeType = async templateType => { setBusy(true); setIssue(null); const r = await answerDraftPlanV2(plan.id, { expectedVersion: plan.version, answers: { template_type: templateType } }); if (r.error) { const latest = await getDraftPlanV2(plan.id); if (latest.data) setPlan(latest.data); setBusy(false); return setIssue(messageOf(r.error, "Could not change the document type.")); } setBusy(false); setPlan(r.data); setAnswers({}); };
     // `given` is one detail ("Save & next") or all typed answers; only what was
     // sent is cleared, so a detail typed elsewhere is not lost.
     const answerPlan = async (given = answers) => { setBusy(true); setIssue(null); const r = await answerDraftPlanV2(plan.id, { expectedVersion: plan.version, answers: given }); if (r.error) { const latest = await getDraftPlanV2(plan.id); if (latest.data) setPlan(latest.data); setBusy(false); setIssue(messageOf(r.error, "Could not save those answers.")); return false; } setBusy(false); setPlan(r.data); setAnswers(a => Object.fromEntries(Object.entries(a).filter(([k]) => !(k in given)))); return true; };
     const confirmPlan = async skipMissing => { setBusy(true); setIssue(null); const r = await confirmDraftPlanV2(plan.id, { expectedVersion: plan.version, skipMissing }); if (r.error) { const latest = await getDraftPlanV2(plan.id); if (latest.data) setPlan(latest.data); setBusy(false); return setIssue(messageOf(r.error, "Could not confirm the plan.")); } setBusy(false); setPlan(r.data); };
+    // "Write my draft": confirm, then generate as soon as the confirmed plan
+    // is in state (generatePlan reads the plan it renders with).
+    const writeGeneral = async () => { autoGenerate.current = true; await confirmPlan(false); };
+    useEffect(() => {
+        if (autoGenerate.current && plan?.template_type === GENERAL_DOC && plan.status === "confirmed" && !busy) {
+            autoGenerate.current = false;
+            generatePlan(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [plan, busy]);
     const generatePlan = async freshKey => {
         if (freshKey || !generationKey.current) generationKey.current = idempotencyKey();
         // Kept before the request: a reload mid-generation resumes this key.
@@ -806,7 +1000,20 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
         setBusy(true); setIssue(null);
         const r = await generateDraftPlanV2(plan.id, { expectedVersion: plan.version }, generationKey.current);
         if (r.error) {
-            const latest = await getDraftPlanV2(plan.id); if (latest.data) setPlan(latest.data);
+            let latest = await getDraftPlanV2(plan.id);
+            // A long AI write can outlast the dev proxy's timeout while the
+            // server finishes it (2026-10-19): wait for the plan, then open it.
+            for (let i = 0; i < 45 && latest.data?.status === "generating"; i++) {
+                await new Promise(res => setTimeout(res, 4000));
+                latest = await getDraftPlanV2(plan.id);
+            }
+            if (latest.data?.status === "generated" && latest.data.generation?.document_id) {
+                planStore.drop(GEN_KEY_PREFIX + plan.id); planStore.drop(PLAN_KEY);
+                generationKey.current = null; setPlan(latest.data); setBusy(false);
+                await loadWorkspace(latest.data.generation.document_id); docs.reload();
+                return;
+            }
+            if (latest.data) setPlan(latest.data);
             setBusy(false);
             setIssue(r.error?.code === "generation_in_progress"
                 ? "This document is still being generated from another attempt. Try again in a few minutes."
@@ -837,9 +1044,9 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
     };
     const askAi = async () => {
         if (!instruction.trim() || !workspace || locked) return;
-        setBusy(true); setIssue(null); setProposal(null);
+        setBusy(true); setAsking(true); setIssue(null); setProposal(null);
         const r = await assistDocumentWorkspaceV2(workspace.document_id, { ...editingPayload, instruction: instruction.trim(), expectedRevisionId: workspace.base_revision_id, expectedVersion: workspace.base_version, expectedContentEpoch: workspace.content_epoch });
-        setBusy(false); if (r.error) { setIssue(messageOf(r.error, "AI Assist could not prepare a proposal.")); return false; }
+        setBusy(false); setAsking(false); if (r.error) { setIssue(messageOf(r.error, "AI Assist could not prepare a proposal.")); return false; }
         setProposal(r.data); return true;
     };
     const applyProposal = () => { if (!proposal) return; setContent(isText ? { body_html: proposal.body_html } : { fields: { ...(proposal.fields || {}) } }); setProposal(null); setInstruction(""); saveIntent.current = null; };
@@ -980,11 +1187,22 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
         toast.show(`Request sent to ${to.name}.`, "success", 3500);
     };
     // Withdraw a waiting request; the list comes back to choose someone else.
+    // Sent once however often it is clicked: a double click sent two cancels,
+    // and the second's "no longer waiting" showed a red error right after the
+    // green "withdrawn" (audit 2026-10-15, F5).
+    const cancelling = useRef(false);
+    const [cancelBusy, setCancelBusy] = useState(false);
     const cancelRequest = async req => {
-        const { error } = await cancelQuickReview(req.id) || {};
-        if (error) toast.show(messageOf(error, "The request could not be withdrawn."), "danger", 4000);
-        else toast.show("Request withdrawn — nothing was shared.", "success", 3000);
-        await loadQuickReqs(workspace.document_id);
+        if (cancelling.current) return;
+        cancelling.current = true; setCancelBusy(true);
+        try {
+            const { error } = await cancelQuickReview(req.id) || {};
+            if (error) toast.show(messageOf(error, "The request could not be withdrawn."), "danger", 4000);
+            else toast.show("Request withdrawn — nothing was shared.", "success", 3000);
+            await loadQuickReqs(workspace.document_id);
+        } finally {
+            cancelling.current = false; setCancelBusy(false);
+        }
     };
     const withdrawFromReview = async () => {
         if (!workspace || detail?.review_status !== "submitted") return;
@@ -1011,7 +1229,9 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
         // Another document was opened meanwhile: this URL is no one's to show.
         if (token !== loadToken.current) { if (shown.data?.url) URL.revokeObjectURL(shown.data.url); return; }
         if (!shown.data) { setIssue(messageOf(shown.error, "That version could not be shown.")); return; }
-        setViewRev({ revision_id: rev.revision_id, version: rev.version, url: shown.data.url });
+        // Editing panels belong to the current version: closed while an older one is read.
+        setPanel(null); setAskOpen(false);
+        setViewRev({ revision_id: rev.revision_id, version: rev.version, pdf_sha256: rev.pdf_sha256, url: shown.data.url, rev });
     };
     // From a row's ⋮ menu: a saved document's current PDF, or one version's.
     const downloadRow = async row => {
@@ -1024,6 +1244,21 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
             { revisionId: rev.revision_id, expectedPdfSha256: rev.pdf_sha256 });
         if (done?.error) toast.show(`Download failed: ${done.error}`, "danger", 4000);
     };
+    /* Restore: the older version comes back as the NEXT version; nothing is
+     * rewritten (backend: POST …/revisions/{id}/restore). Unsaved edits are
+     * saved or discarded first. */
+    const restoreVersion = rev => guarded(async () => {
+        const ws = workspaceRef.current;
+        if (!ws || locked || !rev) return;
+        setBusy(true); setIssue(null);
+        const r = await restoreRevisionV2(ws.document_id, rev.revision_id, {
+            expectedRevisionId: ws.base_revision_id, expectedVersion: ws.base_version,
+            expectedContentEpoch: ws.content_epoch }, idempotencyKey());
+        if (r.error) { setBusy(false); setIssue(messageOf(r.error, "That version could not be restored.")); return; }
+        setViewRev(null);
+        const loaded = await loadWorkspace(ws.document_id);
+        if (loaded) { setSavedAt(Date.now()); docs.reload(); toast.show(`Version ${rev.version} was restored as version ${r.data.version}.`, "success", 3500); }
+    }, "restore an older version");
     const download = async () => { const r = detail?.current_revision; const done = await downloadDocumentFile(workspace.document_id, `${workspace.title || "document"}.pdf`, { revisionId: r?.revision_id, expectedPdfSha256: r?.pdf_sha256 }); if (done?.error) setIssue(done.error); };
     const reset = () => { loadToken.current += 1; unlinkOpenDocument(); if (plan?.id) { planStore.drop(PLAN_KEY); planStore.drop(GEN_KEY_PREFIX + plan.id); } setPlan(null); setWorkspace(null); setDetail(null); setContent(null); setIssue(null); setProposal(null); setPreviewUrl(null); setSavedAt(null); setViewRev(null); setSideTab("saved"); createIntent.current = null; generationKey.current = null; saveIntent.current = null; };
 
@@ -1062,11 +1297,14 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                         dataAttrs={{ "data-version": rev.version }}
                         title={`Version ${rev.version}${latest ? " · Current" : ""}`}
                         note={failed ? verdict : null}
-                        hint={failed ? null : `Saved ${editedLabel(rev.created_at)}`}
+                        hint={failed ? null : `${versionLabel(rev)} · ${editedLabel(rev.created_at)}`}
                         onOpen={() => showVersion(rev)}
                         menu={<RowMenu t={t} label={`More actions for version ${rev.version}`} items={[
                             { label: "View", icon: "eye", onSelect: () => showVersion(rev), disabled: failed },
                             { label: "Download PDF", icon: "download", disabled: failed, onSelect: () => downloadVersion(rev) },
+                            { label: "Restore as new version", icon: "history", disabled: failed || latest || locked,
+                              title: latest ? "This is the current version" : locked ? "Frozen while a lawyer reviews it" : undefined,
+                              onSelect: () => restoreVersion(rev) },
                         ]} />} />;
                 }} />
         </div>
@@ -1094,9 +1332,9 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                     note={openingId === row.id ? "Opening…"
                         : !isDraft ? <span data-doc-status style={{ color: t.mode === "dark" ? tone.fg : t.text, fontWeight: 600 }}>{status.label}</span> : null}
                     hint={`Edited ${editedLabel(row.updated_at || row.created_at)}`}
-                    onOpen={() => openDoc(row)}
+                    onOpen={() => (open ? null : guarded(() => openDoc(row), "open another document"))}
                     menu={<RowMenu t={t} label={`More actions for ${row.title || "document"}`} items={[
-                        { label: "Open", icon: "eye", onSelect: () => openDoc(row) },
+                        { label: "Open", icon: "eye", onSelect: () => (open ? null : guarded(() => openDoc(row), "open another document")) },
                         { label: "Download PDF", icon: "download", disabled: !can.canDownload, title: can.canDownload ? undefined : can.reason,
                           onSelect: () => downloadRow(row) },
                         { label: "Delete", icon: "trash", danger: true, onSelect: () => setDeleting(row) },
@@ -1120,7 +1358,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                 {workspace ? (
                     <div role="tablist" aria-label="Document sidebar" style={{ display: "flex", gap: 6 }}>
                         {sideTabBtn("versions", "history", "Versions")}
-                        {sideTabBtn("saved", "bookmark", "Saved")}
+                        {sideTabBtn("saved", "fileText", "History")}
                     </div>
                 ) : (
                 <button type="button" className="ds-new" data-ai-draft onClick={reset} title="Start a new AI draft">
@@ -1129,7 +1367,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                 )}
             </div>
             <div className="ds-head">
-                <span data-side-heading>{!workspace ? "History" : showVersions ? "Versions" : "Saved"}</span>
+                <span data-side-heading>{showVersions ? "Versions" : "History"}</span>
                 <button type="button" className="ds-icon" onClick={() => setHistoryOpen(o => !o)} aria-expanded={historyOpen} aria-label={historyOpen ? "Collapse list" : "Expand list"}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
                         style={{ transform: historyOpen ? "none" : "rotate(180deg)", transition: "transform .2s" }}><path d="M6 15l6-6 6 6" /></svg>
@@ -1137,7 +1375,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                 {/* The ⋯ menu: the full list lives in the Vault. (Nothing here
                     deletes documents in bulk -- they are records, not a cache.) */}
                 <RowMenu t={t} label="History options" icon="moreHorizontal" trigger="ds-icon" items={[
-                    { label: "Open Vault", icon: "fileText", onSelect: () => onOpenView?.("vault") },
+                    { label: "Open Vault", icon: "fileText", onSelect: () => guarded(() => onOpenView?.("vault"), "open the Vault") },
                     { label: "Refresh", icon: "history", onSelect: () => docs.reload() },
                 ]} />
             </div>
@@ -1169,13 +1407,14 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
             {/* The footer, as the lawyer AI's: who sees these, and how many. */}
             <div className="ds-foot" data-side-foot>
                 <span>Drafts are private to you</span>
-                {docs.loaded && <span>{docs.items.length}{docs.hasMore ? "+" : ""} draft{docs.items.length === 1 && !docs.hasMore ? "" : "s"}</span>}
+                {docs.loaded && <span>{docs.items.length}{docs.hasMore ? "+" : ""} document{docs.items.length === 1 && !docs.hasMore ? "" : "s"}</span>}
             </div>
             <button type="button" className="ds-edge" onClick={() => setSideCollapsed(true)} aria-label="Hide history" title="Hide history"
                 style={{ right: -16 }}>{edgeIcon("M15 6l-6 6 6 6")}</button>
             {deleting && <DeleteDocumentDialog row={deleting} onClose={() => setDeleting(null)}
                 onDeleted={() => {
                     const wasOpen = workspace?.document_id === deleting.id;
+                    unsavedStore.drop(deleting.id);
                     setDeleting(null);
                     if (wasOpen) reset();
                     docs.reload();
@@ -1193,7 +1432,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
             {draftsFont}
             <div style={L.row}>
                 {historyColumn}
-                <DraftPlan plan={plan} spec={(templates || []).find(s => s.template_type === plan.template_type)} L={L}
+                <DraftPlan plan={plan} spec={(templates || []).find(s => s.template_type === plan.template_type)} L={L} onWriteGeneral={writeGeneral}
                     answers={answers} setAnswers={setAnswers} busy={busy} issue={issue} onAnswer={answerPlan}
                     onConfirm={confirmPlan} onGenerate={generatePlan} onBack={reset}
                     typeOptions={promptTemplateOptions(templates)} onChangeType={changeType} />
@@ -1253,11 +1492,32 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
             setSavedAt(null); saveIntent.current = null;
         };
         const currentField = keys.includes(activeField) ? activeField : (keys.find(k => !String(fields[k] ?? "").trim()) || keys[0]);
-        const dirty = textEdit
-            ? (content?.body_html || "") !== (workspace.text_html || "")
-            : structured
-            ? JSON.stringify(fields) !== JSON.stringify(workspace.fields || {})
-            : (content?.body_html || "") !== (workspace.body_html || "");
+        const dirty = dirtyNow;
+        const viewingOld = Boolean(viewRev);
+        const nextVersion = (workspace.base_version || 0) + 1;
+        const oldTitle = "You are reading an older version. Go back to the current one to change or send it.";
+        // The leave guard's question (see `guarded`): save, discard, or stay.
+        const leaveDialog = leaving && (
+            <div data-unsaved-dialog onClick={() => setLeaving(null)}
+                style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                <div role="dialog" aria-modal="true" aria-label="Unsaved changes" onClick={e => e.stopPropagation()}
+                    style={{ width: "min(460px,100%)", boxSizing: "border-box", background: t.surface, color: t.text, border: `1px solid ${t.border}`, borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", gap: 12, boxShadow: "0 24px 60px rgba(0,0,0,.45)" }}>
+                    <strong style={{ fontSize: 16 }}>You have unsaved changes</strong>
+                    <span style={{ fontSize: 13.5, color: t.textMuted, lineHeight: 1.55 }}>
+                        Your changes to version {workspace.base_version} are not saved yet. Save them as version {nextVersion} before you {leaving.what}, or discard them.
+                    </span>
+                    {issue && <span role="alert" style={{ fontSize: 13, color: t.warn }}>{issue}</span>}
+                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                        <Btn onClick={() => setLeaving(null)}>Keep editing</Btn>
+                        <Btn data-discard-changes onClick={() => { const go = leaving.run; unsavedStore.drop(workspace.document_id); setLeaving(null); setRecovered(false); go(); }}>Discard changes</Btn>
+                        <Btn kind="primary" data-save-and-continue disabled={busy}
+                            onClick={async () => { const go = leaving.run; if (await save()) { setLeaving(null); go(); } }}>
+                            {busy ? "Saving…" : `Save as version ${nextVersion}`}
+                        </Btn>
+                    </div>
+                </div>
+            </div>
+        );
         const editField = (name, value) => {
             if (undoStack.current.last !== name) { undoStack.current.items.push(content); undoStack.current.last = name; }
             setContent({ fields: { ...fields, [name]: value } }); setSavedAt(null); saveIntent.current = null;
@@ -1357,7 +1617,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                     })}
                 </div>
                 <div style={footStyle}>
-                    <Btn kind="primary" onClick={() => save()} disabled={locked || busy || !dirty} style={{ width: "100%", minHeight: 36, fontSize: 13, borderRadius: 9 }}><LIcon name="save" size={15} />{busy && dirty ? "Saving…" : "Save all changes"}</Btn>
+                    <Btn kind="primary" onClick={() => save()} disabled={locked || busy || !dirty} style={{ width: "100%", minHeight: 36, fontSize: 13, borderRadius: 9 }}><LIcon name="save" size={15} />{busy && dirty ? "Saving…" : dirty ? `Save as version ${(workspace.base_version || 0) + 1}` : "Save all changes"}</Btn>
                     <div style={{ color: dirty ? t.warn : t.textMuted, fontSize: 11.5, textAlign: "center" }}>{dirty ? "Unsaved changes. Saving makes a new version." : "A placeholder left blank prints as it is shown."}</div>
                 </div>
             </aside>
@@ -1401,7 +1661,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                     })}
                 </div>
                 <div style={footStyle}>
-                    <Btn kind="primary" onClick={() => save()} disabled={locked || busy || !dirty} style={{ width: "100%", minHeight: 36, fontSize: 13, borderRadius: 9 }}><LIcon name="save" size={15} />{busy && dirty ? "Saving…" : "Save all changes"}</Btn>
+                    <Btn kind="primary" onClick={() => save()} disabled={locked || busy || !dirty} style={{ width: "100%", minHeight: 36, fontSize: 13, borderRadius: 9 }}><LIcon name="save" size={15} />{busy && dirty ? "Saving…" : dirty ? `Save as version ${(workspace.base_version || 0) + 1}` : "Save all changes"}</Btn>
                     <div style={{ color: dirty ? t.warn : t.textMuted, fontSize: 11.5, textAlign: "center" }}>{dirty ? (textView ? "Unsaved changes. The text shows them; saving makes a new version." : "Unsaved changes. The PDF updates after you save.") : "Empty details stay blank in the PDF. Saving makes a new version."}</div>
                 </div>
             </aside>
@@ -1560,7 +1820,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                         <Btn onClick={() => setPanel(null)} style={{ minHeight: 44, borderRadius: 999 }}>Back to the document</Btn>
                         <span style={{ flex: 1 }} />
-                        <button type="button" data-request-cancel onClick={() => cancelRequest(openReq)}
+                        <button type="button" data-request-cancel onClick={() => cancelRequest(openReq)} disabled={cancelBusy}
                             style={{ height: 44, padding: "0 14px", border: "none", background: "transparent", color: t.danger, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Cancel request</button>
                     </div>
                 </section>
@@ -1576,7 +1836,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                             <div style={{ padding: "10px 12px", borderRadius: 12, background: t.bg }}><div style={stat}>FEE</div><b>{rupees(openReq.fee_pkr)}</b></div>
                             <div style={{ padding: "10px 12px", borderRadius: 12, background: t.bg }}><div style={stat}>BACK WITHIN</div><b>{openReq.turnaround_hours} hrs</b></div>
                         </div>
-                        <button type="button" onClick={() => cancelRequest(openReq)}
+                        <button type="button" data-request-choose-other onClick={() => cancelRequest(openReq)} disabled={cancelBusy}
                             style={{ ...pill, height: 42, border: `1px solid ${t.primary}`, background: `${t.primary}1a`, color: t.primary, fontWeight: 800 }}>Choose someone else instead</button>
                     </div>
                     <div style={{ flex: 1, borderRadius: 20, border: `1px solid ${t.border}`, background: t.surface, padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1785,11 +2045,17 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                 <LIcon name="sparkles" size={19} />Ask AI
             </button>
         ) : (
-            <div data-ask-composer role="dialog" aria-label="Ask AI"
+            <div data-ask-composer role="dialog" aria-label="Ask AI" aria-busy={asking} data-asking={asking ? "" : undefined}
                 onKeyDown={e => { if (e.key === "Escape") setAskOpen(false); }}
                 style={{ position: "absolute", left: "clamp(12px, 3vw, 28px)", right: "clamp(12px, 3vw, 28px)", bottom: 16, zIndex: 3, maxWidth: 1000, margin: "0 auto", padding: 14, borderRadius: 18, background: t.card, border: `1px solid ${t.primary}40`, boxShadow: "0 18px 48px rgba(0,0,0,.45)", display: "flex", flexDirection: "column", gap: 12 }}>
+                {/* A light running round the edge while the AI works, so it is
+                    plain that an answer is on its way. */}
+                <span data-ask-ring aria-hidden="true" />
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                    {suggestions.map(text => (
+                    {asking && <span data-ask-status role="status" style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 34, color: t.primary, fontSize: 14, fontWeight: 600 }}>
+                        <LIcon name="sparkles" size={16} /><span>AI is preparing your changes<span className="ask-dots" /></span>
+                    </span>}
+                    {!asking && suggestions.map(text => (
                         <button key={text} type="button" data-ask-suggestion onClick={() => setInstruction(text)}
                             style={{ padding: "6px 16px", borderRadius: 999, border: `1px solid ${t.primary}55`, background: "transparent", color: t.primary, fontSize: 13.5, cursor: "pointer" }}>{text}</button>
                     ))}
@@ -1806,7 +2072,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                         style={{ flex: 1, resize: "none", background: "transparent", border: "none", color: t.text, fontSize: 15, lineHeight: 1.5, outline: "none", padding: "8px 0" }} />
                     <button type="button" aria-label="Prepare proposal" onClick={sendAsk} disabled={locked || busy || !instruction.trim()}
                         style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, border: "none", background: instruction.trim() ? t.primary : `${t.primary}33`, color: instruction.trim() ? onPrimary(t) : t.textMuted, cursor: instruction.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {busy ? "…" : <LIcon name="arrowUp" size={18} />}
+                        {asking ? <span className="ask-spin" aria-label="Working" /> : busy ? "…" : <LIcon name="arrowUp" size={18} />}
                     </button>
                 </div>
             </div>
@@ -1823,15 +2089,16 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
             <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", position: "relative" }}>
             {panel === "send" && sendPage}
             {panel === "send" && askDialog}
+            {leaveDialog}
             {panel !== "send" && sentPage}
             {/* The page header: the way back and the document on the left, the
                 two ways onward (find a lawyer, send to yours) on the right. */}
             <header aria-label="Document header" className="ws-header" style={{ minHeight: 61, flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "8px 22px 8px 28px" }}>
-                <button type="button" className="ws-back" onClick={reset} aria-label="Back to drafts" title="Back to drafts"><LIcon name="back" size={19} /></button>
+                <button type="button" className="ws-back" onClick={() => guarded(reset)} aria-label="Back to drafts" title="Back to drafts"><LIcon name="back" size={19} /></button>
                 <div style={{ minWidth: 0, display: "flex", alignItems: "baseline", gap: 12 }}>
                     <h1 data-document-title style={{ margin: 0, fontFamily: SERIF, fontSize: 22, fontWeight: 600, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "min(460px, 34vw)" }}>{workspace.title || "Untitled document"}</h1>
                     <span data-save-state role="status" style={{ color: dirty ? t.warn : t.success, fontSize: 12.5, whiteSpace: "nowrap" }}>
-                        {dirty ? "Unsaved changes" : savedAt ? "✓ Saved just now" : `✓ Version ${workspace.base_version} saved`}
+                        {dirty ? `Unsaved changes · not yet version ${nextVersion}` : savedAt ? `✓ Version ${workspace.base_version} saved just now` : `✓ Version ${workspace.base_version} saved`}
                     </span>
                 </div>
                 <span style={{ flex: 1 }} />
@@ -1839,9 +2106,9 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                 <button type="button" className="ws-pill ws-market" data-visit-marketplace onClick={() => router.push("/lawyers")}>
                     <span className="ic"><LIcon name="store" size={15} /></span>Visit Marketplace
                 </button>
-                <button type="button" className="ws-pill ws-send" onClick={sendForReview} disabled={locked || busy || dirty} title={dirty ? "Save your changes before sending" : locked ? "Already with your lawyer" : undefined}>
+                {!viewingOld && <button type="button" className="ws-pill ws-send" onClick={sendForReview} disabled={locked || busy || dirty} title={viewingOld ? oldTitle : dirty ? "Save your changes before sending" : locked ? "Already with your lawyer" : undefined}>
                     <span className="ic"><LIcon name="send" size={14} /></span>{openReq ? "Review requested" : "Send to lawyer"}
-                </button>
+                </button>}
             </header>
             <div style={L.row}>
                 <section style={{ ...L.col("1 1 420px"), display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -1849,27 +2116,41 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                         {/* Standalone pills spread evenly over a centred line (max 1080px),
                             so the bar stays balanced with the history column open or closed. */}
                         <div className="ws-tools-row">
+                        {viewingOld ? (<>
+                        {/* Reading an older version: only what works on it. The faded,
+                            disabled tools that used to fill the bar read as a blurred page. */}
+                        <span data-old-version-label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: t.text, fontSize: 13.5, fontWeight: 650 }}>
+                            <LIcon name="history" size={16} />Version {viewRev.version} · read only</span>
+                        <span className="ws-divider" aria-hidden="true" />
+                        <button type="button" data-pdf onClick={() => downloadVersion(viewRev)} title={`Download version ${viewRev.version}`} style={tb()}>
+                            <LIcon name="download" size={16} />PDF v{viewRev.version}</button>
+                        </>) : (<>
                         {/* Edit: the document's TEXT where it has one; a template
                             without a text view edits through its details panel. */}
-                        <button type="button" data-edit-toggle aria-pressed={textView ? isText && editMode : panel === "fill"} disabled={locked}
-                            onClick={onEdit}
-                            style={{ ...tb(textView ? isText && editMode : panel === "fill"), opacity: locked ? 0.5 : 1 }}><LIcon name="pencil" size={16} />Edit</button>
-                        {(structured || isText) && <button type="button" data-placeholders-toggle aria-pressed={panel === "fill"} disabled={locked}
-                            onClick={() => togglePanel("fill")} style={{ ...tb(panel === "fill"), opacity: locked ? 0.5 : 1 }}>
+                        <button type="button" data-edit-toggle aria-pressed={textView ? isText && editMode : panel === "fill"} disabled={locked || viewingOld}
+                            onClick={onEdit} title={viewingOld ? oldTitle : undefined}
+                            style={{ ...tb(textView ? isText && editMode : panel === "fill"), opacity: locked || viewingOld ? 0.5 : 1 }}><LIcon name="pencil" size={16} />Edit</button>
+                        {(structured || isText) && <button type="button" data-placeholders-toggle aria-pressed={panel === "fill"} disabled={locked || viewingOld}
+                            onClick={() => togglePanel("fill")} title={viewingOld ? oldTitle : undefined} style={{ ...tb(panel === "fill"), opacity: locked || viewingOld ? 0.5 : 1 }}>
                             <LIcon name="sliders" size={16} />Placeholders <span data-placeholders-badge style={count(blanks ? "warn" : "ok")}>{blanks || "✓"}</span></button>}
-                        <button type="button" data-checks-toggle aria-pressed={panel === "checks"} onClick={() => togglePanel("checks")} style={tb(panel === "checks")}>
+                        <button type="button" data-checks-toggle aria-pressed={panel === "checks"} onClick={() => togglePanel("checks")} disabled={viewingOld}
+                            title={viewingOld ? "Checks are for the current version" : undefined} style={{ ...tb(panel === "checks"), opacity: viewingOld ? 0.5 : 1 }}>
                             <LIcon name="listChecks" size={16} />Checks <span data-checks-badge title={checks.badge.title} style={count(checks.badge.tone === "medium" ? "warn" : checks.badge.tone === "low" ? "ok" : "neutral")}>{checks.badge.text}</span></button>
                         <span className="ws-divider" aria-hidden="true" />
                         {fieldsMode && panel === "fill" && <button type="button" data-undo onClick={undo} disabled={locked || !undoStack.current.items.length} title="Undo the last detail change"
                             style={{ ...tb(), color: undoStack.current.items.length ? t.text : t.textMuted }}><LIcon name="undo" size={16} />Undo</button>}
-                        <button type="button" data-save onClick={() => save()} disabled={locked || busy || !dirty} title="Save your changes as a new version"
-                            style={{ ...tb(), color: dirty ? t.primary : t.textMuted, fontWeight: dirty ? 650 : 500 }}><LIcon name="save" size={16} />{busy && dirty ? "Saving…" : "Save"}</button>
-                        <button type="button" data-pdf onClick={download} title={dirty ? "Downloads the last saved version" : "Download the current version"} style={tb()}><LIcon name="download" size={16} />PDF</button>
+                        <button type="button" data-save onClick={() => save()} disabled={locked || busy || !dirty || viewingOld} title={viewingOld ? oldTitle : dirty ? `Save your changes as version ${nextVersion}` : "Nothing to save"}
+                            style={{ ...tb(), color: dirty && !viewingOld ? t.primary : t.textMuted, fontWeight: dirty ? 650 : 500 }}><LIcon name="save" size={16} />{busy && dirty ? "Saving…" : dirty ? `Save as v${nextVersion}` : "Save"}</button>
+                        {/* The PDF of what is ON SCREEN: an older version while one is being read. */}
+                        <button type="button" data-pdf onClick={viewingOld ? () => downloadVersion(viewRev) : download}
+                            title={viewingOld ? `Download version ${viewRev.version}` : dirty ? `Downloads version ${workspace.base_version}, the last saved one` : "Download the current version"} style={tb()}>
+                            <LIcon name="download" size={16} />{viewingOld ? `PDF v${viewRev.version}` : "PDF"}</button>
                         <button type="button" disabled data-docx-soon title="Word export isn't connected yet — coming soon." style={{ ...tb(), color: t.textMuted, cursor: "not-allowed" }}>
                             <LIcon name="fileText" size={16} />DOCX {soon}</button>
                         {/* No endpoint emails a document yet: shown, labelled, not clickable. */}
                         <button type="button" disabled data-email-soon title="Emailing a document isn't connected yet — coming soon." style={{ ...tb(), color: t.textMuted, cursor: "not-allowed" }}>
                             <LIcon name="mail" size={16} />Email {soon}</button>
+                        </>)}
                         </div>
                     </div>
                     {reviewBanner(detail)}
@@ -1878,10 +2159,18 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                         You are editing the text. From the next save it is kept as edited text: the required-particulars check will not run on it, the citation check still will. Earlier versions stay under Versions.
                     </div>}
                     {viewRev && <div data-viewing-version role="note" style={{ margin: "10px 18px 0", padding: "8px 12px", borderRadius: 10, background: `${t.warn}14`, border: `1px solid ${t.warn}45`, display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
-                        <span style={{ flex: 1 }}>Showing version {viewRev.version}, an older version. Editing and sending use the current one.</span>
+                        <span style={{ flex: 1 }}>You are reading <b>version {viewRev.version}</b> (read only). Edit, Save, Checks, Ask AI and Send work on the current <b>version {workspace.base_version}</b>{dirty ? ", where your unsaved changes are kept" : ""}.</span>
                         <Btn onClick={() => setViewRev(null)} style={{ minHeight: 32 }}>Back to current</Btn>
+                        {!locked && <Btn kind="primary" data-restore-version disabled={busy} onClick={() => restoreVersion(viewRev.rev)} style={{ minHeight: 32 }}>Restore this version</Btn>}
                     </div>}
-                    {proposal && <div data-ai-proposal role="note" style={{ margin: "10px 18px 0", padding: "10px 14px", borderRadius: 12, border: `1px solid ${t.primary}66`, background: t.card, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    {workspace?.template_type === GENERAL_DOC && <div data-ai-draft-note role="note" style={{ margin: "10px 18px 0", padding: "8px 12px", borderRadius: 10, background: `${t.warn}14`, border: `1px solid ${t.warn}45`, fontSize: 13, color: t.text }}>
+                        AI draft written from your description, with no template. Fill in the [placeholders] and have a lawyer check it before you sign or file it.
+                    </div>}
+                    {recovered && dirty && <div data-recovered-note role="note" style={{ margin: "10px 18px 0", padding: "8px 12px", borderRadius: 10, background: `${t.primary}14`, border: `1px solid ${t.primary}45`, display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                        <span style={{ flex: 1 }}>Your unsaved changes from earlier were brought back. Save them as version {nextVersion}, or discard them.</span>
+                        <Btn data-discard-recovered disabled={busy} onClick={() => { unsavedStore.drop(workspace.document_id); setRecovered(false); loadWorkspace(workspace.document_id); }} style={{ minHeight: 32 }}>Discard</Btn>
+                    </div>}
+                    {proposal && !viewRev && <div data-ai-proposal role="note" style={{ margin: "10px 18px 0", padding: "10px 14px", borderRadius: 12, border: `1px solid ${t.primary}66`, background: t.card, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                         <span style={{ flex: 1, minWidth: 200, fontSize: 13.5 }}>{proposal.summary}</span>
                         <Btn onClick={() => setProposal(null)}>Discard</Btn><Btn kind="primary" onClick={applyProposal}>Apply proposal locally</Btn>
                     </div>}
@@ -1935,6 +2224,12 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                 <PromptCard t={t} templates={templates} cases={cases} onPlan={startPlan} workspace onViewTemplates={onBack} typeRequired={typeNeeded} />
                 {busy && <div role="status" style={{ textAlign: "center", color: t.textMuted, marginTop: 14 }}>Creating a reviewable draft plan…</div>}
                 {issue && <div role="alert" style={{ maxWidth: 760, margin: "14px auto", color: t.warn }}>{issue}</div>}
+                {ungenerated?.planId && (
+                    <div data-ungenerated={ungenerated.docId} style={{ maxWidth: 760, margin: "6px auto", display: "flex", gap: 10, alignItems: "center" }}>
+                        {ungenerated.title && <span style={{ color: t.textMuted, fontSize: 13 }}>{ungenerated.title}</span>}
+                        <Btn kind="primary" disabled={busy} onClick={regenerate} style={{ minHeight: 40 }}>{busy ? "Generating…" : "Generate again"}</Btn>
+                    </div>
+                )}
             </main>
         </div>
     </div>;

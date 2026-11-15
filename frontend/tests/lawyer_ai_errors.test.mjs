@@ -89,27 +89,32 @@ for (const [status, serverMsg, expected] of [
 }
 
 async function answerAndRate(rateResult) {
-    serve({ turn: { data: { answer: "An answer.", citations: [] }, error: null, status: 200 } });
+    serve({ turn: { data: { answer: "An answer.", citations: [], request_id: "answer-1" }, error: null, status: 200 } });
     api.__respond("rateAnswer", rateResult);
     const view = await mount();
     await ask(view.container);
-    const up = [...view.container.querySelectorAll("button")].find(b => b.textContent === "👍");
+    // Plain icons since 2026-10-19: found by name, not by an emoji.
+    const up = view.container.querySelector('button[aria-label="Helpful"]');
     assert.ok(up, "no rating button");
     await act(async () => { up.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     await settle();
+    const payload = api.__calls("rateAnswer").at(-1)?.args?.[0];
+    assert.equal(payload?.request_id, "answer-1", "feedback must identify the server answer");
     return view;
 }
 
 test("a rating that fails to save is not shown as recorded", async () => {
     const view = await answerAndRate({ data: null, status: 500, error: { message: "nope" } });
-    assert.doesNotMatch(view.container.textContent, /feedback recorded/);
+    assert.notEqual(view.container.querySelector('button[aria-label="Helpful"]')?.getAttribute("aria-pressed"), "true",
+        "a rating the server refused is shown as given");
     assert.match(view.container.textContent, /feedback not saved/);
     await view.unmount();
 });
 
 test("a rating is shown as recorded once the server has it", async () => {
     const view = await answerAndRate({ data: { success: true }, error: null, status: 200 });
-    assert.match(view.container.textContent, /feedback recorded/);
+    assert.equal(view.container.querySelector('button[aria-label="Helpful"]')?.getAttribute("aria-pressed"), "true");
+    assert.doesNotMatch(view.container.textContent, /feedback not saved/);
     await view.unmount();
 });
 

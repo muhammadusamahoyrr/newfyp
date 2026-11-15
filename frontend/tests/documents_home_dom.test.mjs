@@ -28,6 +28,8 @@ const { createRoot } = await import("react-dom/client");
 const api = await import("./support/api-stub.mjs");
 const { default: DocumentsHome, templateMatches } =
     await import("../src/components/client/DocumentsHome.jsx");
+const { resetTemplateTextCache } =
+    await import("../src/components/client/documents/TemplateEditor.jsx");
 const { default: DocsVault, accessOf, formatWhen } =
     await import("../src/components/client/documents/DocsVault.jsx");
 const { default: DocsDrafts, placeholderCounts } =
@@ -78,7 +80,8 @@ async function mountHome(extra = {}) {
     const p = await mount(DocumentsHome, {
         templates: TEMPLATES, templateIssue: null, cases: [{ _id: "case-1", title: "A matter" }],
         draftingMode, dedicatedToolHref,
-        onUse: (spec, prefill) => calls.use.push({ spec, prefill }),
+        // Create draft awaits { ok } before closing the editor (2026-10-19).
+        onUse: (spec, prefill, edited, caseId) => { calls.use.push({ spec, prefill, edited, caseId }); return { ok: true }; },
         onPlan: seed => calls.plan.push(seed),
         onOpenView: v => calls.view.push(v),
         ...extra,
@@ -110,6 +113,7 @@ async function type(input, value) {
 
 test.beforeEach(() => {
     api.__reset();
+    resetTemplateTextCache();
     toasts.length = 0;
     api.__respond("pleadingRequirements", { data: {
         covered: true, checked: false, items: [
@@ -154,13 +158,40 @@ test("a category chip filters, and says how many it holds", async () => {
     await p.unmount();
 });
 
-test("Use template proceeds in one click with that template", async () => {
+test("Use template opens the template to fill, and Create draft hands on its details", async () => {
+    // No separate guided flow (2026-10-19): the details are filled on the
+    // template's own page, and Create draft hands them to the parent, which
+    // makes the document and opens it in the drafting workspace.
     const p = await mountHome();
     const card = p.container.querySelector('[data-template="affidavit"]');
     await click(buttons(card, "Use template")[0]);
+    assert.equal(p.calls.use.length, 0, "Use template started drafting before any detail");
+    const dialog = document.querySelector('[aria-label="Customize template"]');
+    assert.ok(dialog, "Use template did not open the template");
+    const create = buttons(dialog, "Create draft")[0];
+    // Clickable from the start (2026-10-20); with no detail it says why and
+    // makes nothing — a draft with no detail at all cannot be generated.
+    assert.equal(create.disabled, false, "Create draft is greyed out before any detail");
+    await click(create);
+    assert.equal(p.calls.use.length, 0, "a draft was started with no detail");
+    assert.match(dialog.querySelector('[role="alert"]').textContent, /Fill at least one detail/);
+    await type(dialog.querySelector("#cz_deponent_name"), "Ali Raza");
+    await click(buttons(dialog, "Create draft")[0]);
     assert.equal(p.calls.use.length, 1);
     assert.equal(p.calls.use[0].spec.template_type, "affidavit");
-    assert.equal(p.calls.use[0].prefill, undefined);
+    assert.deepEqual(p.calls.use[0].prefill, { deponent_name: "Ali Raza" });
+    assert.equal(document.querySelector('[aria-label="Customize template"]'), null, "the editor stayed open after the draft was made");
+    await p.unmount();
+});
+
+test("a failed Create draft keeps the editor open and says why", async () => {
+    const p = await mountHome({ onUse: () => ({ ok: false, message: "Drafting from a template needs Documents V2, which is switched off." }) });
+    await click(buttons(p.container.querySelector('[data-template="affidavit"]'), "Use template")[0]);
+    const dialog = document.querySelector('[aria-label="Customize template"]');
+    await type(dialog.querySelector("#cz_deponent_name"), "Ali Raza");
+    await click(buttons(dialog, "Create draft")[0]);
+    assert.ok(document.querySelector('[aria-label="Customize template"]'), "the editor closed on a failure");
+    assert.match(dialog.querySelector('[role="alert"]').textContent, /needs Documents V2/);
     await p.unmount();
 });
 
@@ -176,9 +207,11 @@ test("the preview lists the details and requirements, and starts in one call", a
     assert.match(dialog.textContent, /2 of 3/);
 
     await click(buttons(dialog, "Use this template")[0]);
-    assert.equal(p.calls.use[0].spec.template_type, "affidavit",
-        "onUse must receive the spec — the parent's selection is stale in this click");
-    assert.equal(document.querySelector('[role="dialog"]'), null);
+    assert.equal(document.querySelector('[aria-label="Template preview"]'), null, "the preview stayed open");
+    const editor = document.querySelector('[aria-label="Customize template"]');
+    assert.ok(editor, "Use this template did not open the template to fill");
+    assert.match(editor.textContent, /Affidavit/);
+    assert.equal(p.calls.use.length, 0, "nothing is drafted before a detail is filled");
     await p.unmount();
 });
 
@@ -210,7 +243,7 @@ test("the preview pages through templates and Escape closes it", async () => {
     await p.unmount();
 });
 
-test("the editor opens on an outline, fills details, saves locally and carries them on", async () => {
+test("without the template text the editor opens on an outline, fills details, saves locally and carries them on", async () => {
     dom.window.localStorage.clear();
     const p = await mountHome();
     await click(byLabel(p.container, "Edit Legal Notice"));
@@ -222,11 +255,17 @@ test("the editor opens on an outline, fills details, saves locally and carries t
     assert.ok(dialog.querySelector('[role="toolbar"] [aria-label="Bold"]'), "no formatting toolbar");
     assert.match(dialog.textContent, /characters · \d+ words/);
 
+    // The page fills as the detail is typed (2026-10-19): no separate Apply step.
+    assert.equal(buttons(dialog, "Apply to page").length, 0, "the old Apply button is back");
     await type(dialog.querySelector("#cz_sender_name"), "Ayesha Khan");
     assert.match(dialog.textContent, /1 of 2 filled/);
-    await click(buttons(dialog, "Apply to page")[0]);
     assert.match(page.textContent, /Ayesha Khan/);
     assert.doesNotMatch(page.textContent, /\[SENDER NAME\]/);
+    assert.ok(page.querySelector('[data-field="sender_name"][data-filled]'), "the filled detail is not marked");
+    // Emptying the field puts its placeholder back.
+    await type(dialog.querySelector("#cz_sender_name"), "");
+    assert.match(page.textContent, /\[SENDER NAME\]/);
+    await type(dialog.querySelector("#cz_sender_name"), "Ayesha Khan");
 
     await click(buttons(dialog, "Save changes")[0]);
     const stored = JSON.parse(dom.window.localStorage.getItem("attorney.templateCopy.legal_notice"));
@@ -234,7 +273,7 @@ test("the editor opens on an outline, fills details, saves locally and carries t
     assert.deepEqual(stored.values, { sender_name: "Ayesha Khan" });
     assert.match(dialog.textContent, /Saved on this device/);
 
-    await click(buttons(dialog, "Use template")[0]);
+    await click(buttons(dialog, "Create draft")[0]);
     assert.equal(p.calls.use[0].spec.template_type, "legal_notice");
     assert.deepEqual(p.calls.use[0].prefill, { sender_name: "Ayesha Khan" });
     await p.unmount();
@@ -422,7 +461,7 @@ test("drafts history lists the client's real documents and opens them", async ()
     assert.ok(row, "a real document is missing from History");
     assert.match(row.textContent, /Under Review/);
     // The footer, as the lawyer AI sidebar's (2026-10-10): who sees them, and how many.
-    assert.match(p.container.querySelector("[data-side-foot]").textContent, /Drafts are private to you\s*2 drafts/);
+    assert.match(p.container.querySelector("[data-side-foot]").textContent, /Drafts are private to you\s*2 documents/);
     // The start screen: type, linked case and the prompt, as in the design.
     const caseSelect = p.container.querySelector("#docs-dcase");
     assert.ok([...caseSelect.options].some(o => o.textContent === "Standalone"));
@@ -790,5 +829,75 @@ test("a template card is balanced: name and facts, no description paragraph (202
     assert.doesNotMatch(card.textContent, /A formal demand before suing/, "the description is not repeated on the card");
     assert.equal(card.getAttribute("title"), "A formal demand before suing.", "it is the card's tooltip");
     assert.match(card.textContent, /Civil.*Legal Notice.*2 details to fill.*PDF.*Use template/s);
+    await p.unmount();
+});
+
+/* ── the template's real wording (2026-10-19) ────────────────────────────────
+ * The preview and the editor showed only field names, so every template looked
+ * empty although its builder holds the full text. They now show that text.
+ * The text cache is cleared before every test (beforeEach). */
+
+const NOTICE_TEXT = '<h1 style="text-align:center">LEGAL NOTICE</h1>'
+    + "<p>To [[SENDER_NAME]]: you are called upon to pay within fifteen days of receipt.</p>"
+    + '<p>[[DEMAND]]</p><script>window.__pwned = 1</script><p onclick="x()">Yours faithfully</p>';
+
+test("the preview shows the template's own wording with each detail marked", async () => {
+    api.__respond("templateText", t => (t === "legal_notice"
+        ? { data: { template_type: t, text_html: NOTICE_TEXT } } : undefined));
+    const p = await mountHome();
+    await click(byLabel(p.container, "Preview Legal Notice"));
+    const dialog = document.querySelector('[role="dialog"]');
+    const text = dialog.querySelector("[data-tpl-text]");
+    assert.ok(text, "the real wording is not on the paper");
+    assert.match(text.textContent, /called upon to pay within fifteen days/);
+    const blank = text.querySelector('[data-field="sender_name"]');
+    assert.ok(blank, "a detail is not marked as a blank");
+    assert.equal(blank.textContent, "[SENDER NAME]");
+    assert.equal(text.querySelector("script"), null, "markup from the server was not cleaned");
+    assert.equal(text.querySelector("[onclick]"), null);
+    assert.deepEqual(api.__calls("templateText").map(c => c.args[0]), ["legal_notice"]);
+    await p.unmount();
+});
+
+test("a PDF-only template says so instead of passing an outline off as its text", async () => {
+    api.__respond("templateText", t => ({ data: { template_type: t, text_html: null } }));
+    const p = await mountHome();
+    await click(byLabel(p.container, "Preview Affidavit"));
+    const dialog = document.querySelector('[role="dialog"]');
+    assert.equal(dialog.querySelector("[data-tpl-text]"), null);
+    assert.match(dialog.textContent, /built straight as a PDF/);
+    assert.match(dialog.textContent, /Deponent name/);
+    await p.unmount();
+});
+
+test("the editor opens on the template's wording and fills it live", async () => {
+    dom.window.localStorage.clear();
+    api.__respond("templateText", t => (t === "legal_notice"
+        ? { data: { template_type: t, text_html: NOTICE_TEXT } } : undefined));
+    const p = await mountHome();
+    await click(byLabel(p.container, "Edit Legal Notice"));
+    const dialog = document.querySelector('[aria-label="Customize template"]');
+    const page = dialog.querySelector('[aria-label="Document text"]');
+    assert.match(page.textContent, /called upon to pay within fifteen days/);
+    assert.doesNotMatch(page.textContent, /Write the body of your document here/, "still the outline");
+    assert.equal(page.querySelector("script"), null);
+    await type(dialog.querySelector("#cz_sender_name"), "Ayesha Khan");
+    assert.match(page.textContent, /To Ayesha Khan: you are called upon/);
+    assert.ok(page.querySelector('[data-field="sender_name"][data-filled]'));
+    await p.unmount();
+});
+
+test("a failed request is never shown as a PDF-only template, and can be retried", async () => {
+    // A stale server answered 404 and the preview said "built straight as a
+    // PDF" with the old field list -- the exact look this work removed.
+    api.__respond("templateText", { data: null, error: { message: "Not Found" } });
+    const p = await mountHome();
+    await click(byLabel(p.container, "Preview Affidavit"));
+    const dialog = document.querySelector('[role="dialog"]');
+    assert.ok(dialog.querySelector("[data-tpl-text-failed]"), "no failure notice");
+    assert.doesNotMatch(dialog.textContent, /built straight as a PDF/);
+    api.__respond("templateText", t => ({ data: { template_type: t, text_html: "<p>I, [[DEPONENT_NAME]], solemnly affirm.</p>" } }));
+    await click(buttons(dialog, "Try again")[0]);
+    assert.match(dialog.querySelector("[data-tpl-text]").textContent, /I, \[DEPONENT NAME\], solemnly affirm/);
     await p.unmount();
 });

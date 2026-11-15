@@ -132,8 +132,9 @@ const NAV_SECTIONS = [
             { id: "calculators", label: "Calculators", icon: "calc" },
         ],
     },
-    // THE DOCUMENT MODULE in one group: review, drafting, the Vault, the
-    // analyzer, review requests and agreements.
+    // THE DOCUMENT MODULE in one group: review, drafting, the Vault, review
+    // requests and agreements. The analyzer page remains available by route,
+    // but is hidden from the lawyer dashboard navigation.
     {
         id: "documents-group",
         label: "Documents",
@@ -143,12 +144,11 @@ const NAV_SECTIONS = [
             { id: "doc-automation", label: "Legal Drafting", icon: "edit" },
             // The lawyer's own Document Vault: saved drafts, in folders.
             { id: "vault", label: "Vault", icon: "folder" },
-            // The Document Analyzer: a lawyer's tool only (2026-10-03).
-            { id: "doc-analyzer", label: "Document Analyzer", icon: "search" },
             // Document review requests (Phase 2). Listed only while the server
             // has DOCUMENT_REVIEW_REQUESTS on -- see `reviewQueueOn`.
             { id: "review-queue", label: "Review Queue", icon: "checkSquare", requires: "reviewQueue" },
-            { id: "agreements", label: "Agreements", icon: "fileText" },
+            // HIDDEN 2026-10-19 at the user's request (see HIDDEN_PAGES in App.jsx).
+            // { id: "agreements", label: "Agreements", icon: "fileText" },
         ],
     },
     {
@@ -162,7 +162,9 @@ const NAV_SECTIONS = [
             // OUT OF SCOPE, 2026-09-23: "Overseas Disputes" stays hidden with the
             // client's "Property Dispute" module (see client/Dashboard.jsx).
             { id: "causelist", label: "Cause Lists", icon: "scale" },
-            { id: "payments", label: "Payments", icon: "dollar" },
+            // HIDDEN 2026-10-19 at the user's request: payments are not shown
+            // to lawyers for now. The page is kept; /lawyer/payments redirects.
+            // { id: "payments", label: "Payments", icon: "dollar" },
         ],
     },
 ];

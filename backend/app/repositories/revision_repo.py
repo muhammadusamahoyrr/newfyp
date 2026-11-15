@@ -29,24 +29,40 @@ def lease_deadline(now: datetime | None = None) -> datetime:
     return (now or _now()) + timedelta(seconds=LEASE_TTL_SECONDS)
 
 
-async def reserve_version(document_id: str) -> int:
+# While a document is with its lawyer, the CLIENT may not make a new version: an
+# approval could otherwise land on the reviewed revision while the document's
+# current file is a newer one the lawyer never saw (audit 2026-10-15, B1). In the
+# reservation's own filter, so a submit racing the generate cannot slip between
+# a check and the write. The lawyer's return-with-edits passes False -- it is the
+# one generation that belongs to the review itself.
+_NOT_UNDER_REVIEW = {"review_status": {"$ne": "submitted"}}
+
+
+async def reserve_version(document_id: str, *, refuse_when_submitted: bool = False) -> int | None:
     """Atomic version reservation — the source of version numbers.
 
     A single-document $inc, so two concurrent generations can never compute the
-    same version. Returns the reserved version (1 for a document's first).
+    same version. Returns the reserved version (1 for a document's first), or
+    None when no document matched -- it is under review (refuse_when_submitted)
+    or no longer exists (a delete racing the generate used to raise a TypeError
+    here, a 500).
     """
+    query: dict = {"_id": document_id}
+    if refuse_when_submitted:
+        query.update(_NOT_UNDER_REVIEW)
     doc = await get_documents_col().find_one_and_update(
-        {"_id": document_id},
+        query,
         {"$inc": {"rev_seq": 1, "content_epoch": 1},
          "$set": {"updated_at": _now()}},
         return_document=ReturnDocument.AFTER,
     )
-    return int(doc["rev_seq"])
+    return int(doc["rev_seq"]) if doc else None
 
 
 async def reserve_version_if_current(
     document_id: str, *, expected_revision_id: str,
     expected_version: int, expected_content_epoch: int,
+    refuse_when_submitted: bool = False,
 ) -> int | None:
     """Reserve a version only if an editor still has the current document.
 
@@ -71,6 +87,8 @@ async def reserve_version_if_current(
         ]
     else:
         query["content_epoch"] = expected_content_epoch
+    if refuse_when_submitted:
+        query.update(_NOT_UNDER_REVIEW)
 
     doc = await get_documents_col().find_one_and_update(
         query,

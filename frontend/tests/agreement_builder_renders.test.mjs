@@ -490,7 +490,8 @@ test("the first step will not move on without words", async () => {
     const ui = await mount();
     await ui.openCreate("<p><br></p>");
     await ui.clickText("Next");
-    assert.ok(!ui.text().includes("Search verified lawyers"), "it moved on with an empty agreement");
+    assert.ok(!/Search (verified )?lawyers|Loading (verified )?lawyers/.test(ui.text() + [...document.querySelectorAll("input")].map(i => i.placeholder).join(" ")),
+        "it moved on with an empty agreement");
 });
 
 async function toReview(ui) {

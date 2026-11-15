@@ -118,6 +118,41 @@ async def test_a_provider_failure_still_lets_the_client_through(spy_llms, monkey
 
     assert result["done"] is True
     assert result["question"] is None
+    # ...but says WHY, so the UI does not claim no questions were needed.
+    assert result["ai_unavailable"] is True
+
+
+async def test_an_empty_model_reply_is_not_stored_as_a_question(monkeypatch):
+    """A blank reply used to become {"q": "", "a": None}: a question nobody
+    could see, which the next answer was then bound to."""
+    repo = FakeIntakeRepo(_doc())
+    monkeypatch.setattr(intake_service, "intake_repo", repo)
+    import app.ai.llm as llm_mod
+
+    class Blank:
+        def invoke(self, messages):
+            return type("R", (), {"content": "   "})()
+    monkeypatch.setattr(llm_mod, "get_llm", lambda *a, **k: Blank())
+
+    result = await intake_service.get_clarification(TOKEN, CLIENT, None)
+
+    assert result == {"question": None, "done": True, "round": 0, "ai_unavailable": True}
+    assert not any((qa or {}).get("q") == "" for qa in (repo.saved_qa or []))
+
+
+async def test_a_real_done_is_not_reported_as_unavailable(monkeypatch):
+    repo = FakeIntakeRepo(_doc())
+    monkeypatch.setattr(intake_service, "intake_repo", repo)
+    import app.ai.llm as llm_mod
+
+    class Done:
+        def invoke(self, messages):
+            return type("R", (), {"content": "DONE"})()
+    monkeypatch.setattr(llm_mod, "get_llm", lambda *a, **k: Done())
+
+    result = await intake_service.get_clarification(TOKEN, CLIENT, None)
+
+    assert result["done"] is True and not result.get("ai_unavailable")
 
 
 async def test_a_provider_failure_is_logged_not_swallowed(spy_llms, monkeypatch, caplog):
@@ -345,3 +380,115 @@ async def test_an_answer_to_an_outstanding_question_is_still_saved(spy_llms, mon
     await intake_service.get_clarification(TOKEN, CLIENT, "March 2023")
 
     assert repo.saved_qa[0]["a"] == "March 2023"
+
+
+# ── no repeated questions, no dead-end rounds (2026-10-12) ──────────────────
+
+def _reply(monkeypatch, text, calls):
+    import app.ai.llm as llm_mod
+
+    class Fixed:
+        def invoke(self, messages):
+            calls.append(messages)
+            return type("R", (), {"content": text})()
+    monkeypatch.setattr(llm_mod, "get_llm", lambda *a, **k: Fixed())
+
+
+async def test_a_reworded_repeat_of_an_earlier_question_ends_the_questions(monkeypatch):
+    qa = [{"q": "آپ کے سول کیس کا بنیادی تنازعہ یا قانونی مسئلہ کیا ہے؟", "a": "زمین کا جھگڑا"}]
+    repo = FakeIntakeRepo(_doc(clarification_qa=qa))
+    monkeypatch.setattr(intake_service, "intake_repo", repo)
+    _reply(monkeypatch, "آپ کے کیس میں اصل تنازعہ یا قانونی مسئلہ کیا ہے؟", [])
+
+    result = await intake_service.get_clarification(TOKEN, CLIENT, None)
+
+    assert result["done"] is True and result["question"] is None
+    assert not result.get("ai_unavailable"), "a repeat is not an outage"
+    assert len(repo.saved_qa or qa) == 1, "the repeated question was stored"
+
+
+async def test_a_new_question_is_still_asked(monkeypatch):
+    qa = [{"q": "What is the core dispute in your case?", "a": "My brother took the plot"}]
+    repo = FakeIntakeRepo(_doc(clarification_qa=qa))
+    monkeypatch.setattr(intake_service, "intake_repo", repo)
+    _reply(monkeypatch, "Do you hold the fard or any title document for the plot?", [])
+
+    result = await intake_service.get_clarification(TOKEN, CLIENT, None)
+
+    assert result["done"] is False and "fard" in result["question"]
+
+
+async def test_two_dont_knows_in_a_row_end_the_questions_without_a_model_call(monkeypatch):
+    qa = [{"q": "Is there a written agreement?", "a": "Not sure"},
+          {"q": "What amount is in dispute?", "a": None}]
+    repo = FakeIntakeRepo(_doc(clarification_qa=qa))
+    monkeypatch.setattr(intake_service, "intake_repo", repo)
+    calls = []
+    _reply(monkeypatch, "Another question?", calls)
+
+    result = await intake_service.get_clarification(TOKEN, CLIENT, "I don't know")
+
+    assert result["done"] is True and calls == [], "a model call was spent after two non-answers"
+
+
+def test_real_answers_are_not_mistaken_for_dont_know():
+    for real in ["Yes, both documents are with me.", "My brother has it", "2019", "ہاں، فرد میرے پاس ہے"]:
+        assert not intake_service._is_non_answer(real)
+    for none in ["I don't know", "Not sure", "معلوم نہیں", "no idea.", " "]:
+        assert intake_service._is_non_answer(none)
+
+
+async def test_a_rephrased_repeat_is_caught_by_meaning(monkeypatch):
+    """Word overlap 0.36, same question: "how much money…" / "approximate amount…"."""
+    qa = [{"q": "How much money did your landlord receive from you that has not been returned?", "a": "Not sure"}]
+    repo = FakeIntakeRepo(_doc(clarification_qa=qa))
+    monkeypatch.setattr(intake_service, "intake_repo", repo)
+    _reply(monkeypatch, "What is the approximate amount of money you paid to the landlord that has not been returned?", [])
+    monkeypatch.setattr(intake_service, "_question_vectors", lambda texts: [[1.0, 0.1]] + [[1.0, 0.12]] * (len(texts) - 1))
+
+    result = await intake_service.get_clarification(TOKEN, CLIENT, None)
+
+    assert result["done"] is True and not result.get("ai_unavailable")
+
+
+async def test_a_different_question_passes_the_meaning_check(monkeypatch):
+    qa = [{"q": "How much money is owed?", "a": "Two lakh"}]
+    repo = FakeIntakeRepo(_doc(clarification_qa=qa))
+    monkeypatch.setattr(intake_service, "intake_repo", repo)
+    _reply(monkeypatch, "Do you have a written rent agreement?", [])
+    monkeypatch.setattr(intake_service, "_question_vectors", lambda texts: [[1.0, 0.0]] + [[0.0, 1.0]] * (len(texts) - 1))
+
+    result = await intake_service.get_clarification(TOKEN, CLIENT, None)
+
+    assert result["done"] is False and "agreement" in result["question"]
+
+
+def test_the_meaning_check_never_loads_the_embedder(monkeypatch):
+    from app.ai.pipelines import retriever
+    fn = retriever._embeddings
+    if not hasattr(fn, "cache_info"):
+        return
+    fn.cache_clear()
+    assert intake_service._question_vectors(["a", "b"]) is None
+    assert fn.cache_info().currsize == 0, "a clarification call loaded the embedding model"
+
+
+async def test_a_repeat_asks_again_for_a_different_question_instead_of_ending(monkeypatch):
+    """One question then done: the answer lacked the amount, the model asked
+    for the amount again, and the repeat check ended the questions."""
+    import app.ai.llm as llm_mod
+    qa = [{"q": "How much money is the landlord keeping from you?", "a": "He is not returning my money"}]
+    repo = FakeIntakeRepo(_doc(clarification_qa=qa))
+    monkeypatch.setattr(intake_service, "intake_repo", repo)
+    replies = iter(["How much money is the landlord keeping from you?",
+                    "Do you have a written rent agreement with the landlord?"])
+
+    class TwoReplies:
+        def invoke(self, messages):
+            return type("R", (), {"content": next(replies)})()
+    monkeypatch.setattr(llm_mod, "get_llm", lambda *a, **k: TwoReplies())
+
+    result = await intake_service.get_clarification(TOKEN, CLIENT, None)
+
+    assert result["done"] is False, "a single repeat ended the questions"
+    assert "agreement" in result["question"]

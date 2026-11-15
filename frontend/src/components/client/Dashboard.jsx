@@ -1,28 +1,80 @@
 'use client';
 // Paste your Dashboard.jsx code here
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, startTransition, lazy, Suspense } from "react";
+import { tabForPath, TAB_PATH } from "./clientRoutes.js";
+import { ClientNavCtx, instantTabFor } from "./clientNav.js";
+import { flushSync } from "react-dom";
 import { usePathname, useRouter as useNextRouter } from "next/navigation";
 import { reviewRequestDeepLink } from "@/lib/reviewRequests.js";
 import { listEngagements } from "@/lib/api.js";
 import { isDraftCase } from "@/lib/caseStatus.js";
 import { DARK, LIGHT, ThemeCtx, HeaderActionsCtx } from "./theme.js";
-import { CLIENT_TOKENS_CSS, clientThemeOnTokens, clientMode } from "./clientTheme.js";
+import { CLIENT_TOKENS_CSS, CLIENT_REFINED_CSS, CLIENT_THEME_REFINED, clientThemeOnTokens, clientMode } from "./clientTheme.js";
 import { CaseProvider, useCase } from "./CaseContext.jsx";
 import { LangProvider, useLang, useIsMobile } from "@/lib/i18n.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { requestDocumentsView, requestOpenDocument, DOCUMENTS_SHOWN_EVENT } from "@/lib/documentsNav.js";
 import { requestAgreementsView, AGREEMENTS_SHOWN_EVENT, AGREEMENTS_DIY_ENABLED } from "@/lib/agreementsNav.js";
 import Ic from "./Ic.jsx";
-import ModOverview from "./ModOverview.jsx";
-import ModProfile from "./ModProfile.jsx";
-import ModIntake from "./ModIntake.jsx";
-import ModChatbot from "./ModChatbot.jsx";
-import ModLawyers from "./ModLawyers.jsx";
-import ModAgreements from "./ModAgreements.jsx";
-import ModDocuments from "./ModDocuments.jsx";
-import ModTracking from "./ModTracking.jsx";
-import ModTools from "./ModTools.jsx";
-import ModDisputes from "./ModDisputes.jsx";
+import { clientNotificationTarget } from "@/lib/notificationTarget.js";
+import { requestNewMatter } from "./newMatter.js";
+
+// Each screen is its own chunk, loaded the first time it is opened. They were
+// all imported up front (~1.8 MB of source), so the first visit to ANY client
+// URL downloaded and parsed every screen.
+const ModOverview = lazy(() => import("./ModOverview.jsx"));
+const ModProfile = lazy(() => import("./ModProfile.jsx"));
+const ModIntake = lazy(() => import("./ModIntake.jsx"));
+const ModChatbot = lazy(() => import("./ModChatbot.jsx"));
+const ModLawyers = lazy(() => import("./ModLawyers.jsx"));
+const ModAgreements = lazy(() => import("./ModAgreements.jsx"));
+const ModDocuments = lazy(() => import("./ModDocuments.jsx"));
+const ModTracking = lazy(() => import("./ModTracking.jsx"));
+const ModTools = lazy(() => import("./ModTools.jsx"));
+const ModDisputes = lazy(() => import("./ModDisputes.jsx"));
+
+// Each screen's chunk, by tab. Fetched ahead of the click in two ways:
+//  * hovering or focusing its sidebar item fetches that one screen;
+//  * after the first screen is up, the rest are fetched ONE AT A TIME, each in
+//    its own idle period. Fetching all eight together caused a CPU/network
+//    spike that could itself delay a click on a slower machine.
+const SCREEN_CHUNKS = {
+    overview: () => import("./ModOverview.jsx"), intake: () => import("./ModIntake.jsx"),
+    appointments: () => import("./ModTracking.jsx"), tracking: () => import("./ModTracking.jsx"),
+    chatbot: () => import("./ModChatbot.jsx"), lawyers: () => import("./ModLawyers.jsx"),
+    documents: () => import("./ModDocuments.jsx"), agreements: () => import("./ModAgreements.jsx"),
+    profile: () => import("./ModProfile.jsx"),
+};
+const fetchedChunks = new Set();
+function prefetchScreen(tab) {
+    const load = SCREEN_CHUNKS[tab];
+    if (!load || fetchedChunks.has(load)) return Promise.resolve();
+    fetchedChunks.add(load);
+    return load().catch(() => { fetchedChunks.delete(load); });
+}
+function prefetchScreensSlowly(firstTab) {
+    if (typeof window === "undefined") return () => {};
+    const queue = Object.keys(SCREEN_CHUNKS).filter(t => t !== firstTab);
+    let cancelled = false, handle = null;
+    const idle = (fn) => ("requestIdleCallback" in window
+        ? { id: window.requestIdleCallback(fn, { timeout: 8000 }), idle: true }
+        : { id: setTimeout(fn, 2500), idle: false });
+    const next = () => {
+        if (cancelled || !queue.length) return;
+        handle = idle(() => { prefetchScreen(queue.shift()).then(next); });
+    };
+    next();
+    return () => {
+        cancelled = true;
+        if (handle) (handle.idle ? window.cancelIdleCallback?.(handle.id) : clearTimeout(handle.id));
+    };
+}
+
+const ScreenLoading = () => (
+    <div role="status" aria-live="polite" style={{ flex: 1, display: "grid", placeItems: "center", minHeight: 240, color: "var(--muted, #9FB0B4)", fontSize: 14 }}>
+        Loading…
+    </div>
+);
 
 /* ── paste logo1.jpg in the same folder as Dashboard.jsx ── */
 const logoImg = "data:image/png;base64,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";
@@ -37,6 +89,7 @@ const SIDE_ITEMS = [
     // Profile is not here: it lives in the account menu at the bottom.
     { id: "overview", icon: "home", label: "Overview", ur: "جائزہ", group: "matters" },
     { id: "intake", icon: "brief", label: "Legal Intake", ur: "قانونی درخواست", group: "matters" },
+    { id: "appointments", icon: "cal", label: "Appointments", ur: "ملاقاتیں", group: "matters" },
     { id: "tracking", icon: "clock", label: "Tracking", ur: "کیس ٹریکنگ", group: "matters" },
     { id: "chatbot", icon: "bot", label: "AI Chat", ur: "اے آئی چیٹ", group: "help" },
     // OUT OF SCOPE, 2026-09-23. "Legal Tools" (`tools`) and "Property Dispute"
@@ -84,7 +137,7 @@ const SUB_ITEMS = {
 };
 
 /* ─── Notification Drawer ───────────────────────────────────── */
-const NotifDrawer = ({ open, onClose, onGoTracking, onOpenDocument, onOpenReviewRequest, t }) => {
+const NotifDrawer = ({ open, onClose, onGoTracking, onOpenDocument, onOpenReviewRequest, onNavigate, t }) => {
     const { notifications, markNotificationDone, markAllNotificationsDone, unreadCount } = useCase();
     const drawerRef = useRef(null);
 
@@ -184,6 +237,12 @@ const NotifDrawer = ({ open, onClose, onGoTracking, onOpenDocument, onOpenReview
                                 // A review request (accepted / declined) carries no doc_id: it
                                 // opens the request on Documents. Before, the click went nowhere.
                                 else if (n.payload?.review_request_id && onOpenReviewRequest) { onOpenReviewRequest(n.payload.review_request_id); onClose(); }
+                                // Appointments, meeting proposals and hiring open where they are
+                                // answered (2026-10-12); before, the click only marked them read.
+                                else {
+                                    const to = clientNotificationTarget(n.rawType || n.type, n.payload);
+                                    if (to && onNavigate) { onNavigate(to); onClose(); }
+                                }
                             }}
                             style={{
                                 display: "flex", gap: 12, padding: "13px 20px",
@@ -312,20 +371,62 @@ const CLIENT_SIDE_CSS = `
 [data-client-side] .cs-menu button:hover{background:var(--cs-hover);color:var(--cs-ink)}
 [data-client-side] .cs-menu button.danger{color:var(--cs-danger)}
 [data-client-side] .cs-menu-sep{height:1px;background:var(--cs-line);margin:4px 6px}
+[data-client-side] .cs-theme{display:flex;flex-direction:column;gap:6px;padding:6px 10px 8px;color:var(--cs-dim);font-size:13px;font-weight:550}
+[data-client-side] .cs-theme-seg{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:3px;border-radius:10px;background:var(--cs-hover)}
+[data-client-side] .cs-theme-thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 10px) / 3);border-radius:7px;background:var(--cs-bg);box-shadow:0 1px 4px rgba(0,0,0,.3);transition:transform .32s cubic-bezier(.3,1.25,.5,1)}
+[data-client-side] .cs-theme-seg[data-pos="1"] .cs-theme-thumb{transform:translateX(calc(100% + 2px))}
+[data-client-side] .cs-theme-seg[data-pos="2"] .cs-theme-thumb{transform:translateX(calc(200% + 4px))}
+[data-client-side] .cs-menu .cs-theme-seg button{position:relative;z-index:1;height:32px;padding:0 4px;justify-content:center;gap:4px;font-size:12px;border-radius:7px;color:var(--cs-dim);background:transparent;white-space:nowrap;min-width:0}
+[data-client-side] .cs-menu .cs-theme-seg button:hover{background:transparent;color:var(--cs-ink)}
+[data-client-side] .cs-menu .cs-theme-seg button.on{color:var(--cs-ink)}
+[data-client-side] .cs-menu .cs-theme-seg button svg{flex:none}
+[data-client-side] .cs-menu .cs-theme-seg button.on svg{animation:csIconPop .5s cubic-bezier(.3,1.4,.5,1)}
+@keyframes csIconPop{from{transform:rotate(-120deg) scale(.4);opacity:.3}to{transform:none;opacity:1}}
+[data-client-side] .cs-theme-note{font-size:11.5px;font-weight:500;color:var(--cs-muted);animation:csNote .35s ease-out}
+@keyframes csNote{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){[data-client-side] .cs-theme-thumb{transition:none}[data-client-side] .cs-menu .cs-theme-seg button.on svg,[data-client-side] .cs-theme-note{animation:none}}
 @media (prefers-reduced-motion:reduce){[data-client-side] *{animation:none!important}}
 `;
 
-const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) => {
+const DashboardInner = ({ go, isDark, toggleTheme, themePref, setThemePref, refined = CLIENT_THEME_REFINED, initialTab = "overview" }) => {
     // The lawyer documents' palette, as the client's own copy (clientTheme.js):
     // neutral colours read CSS tokens that <body> carries while this is mounted,
     // so dialogs portalled to <body> are themed too. No layout changes.
-    const t = clientThemeOnTokens(isDark ? DARK : LIGHT);
+    // Memoised: a fresh object on every render made every ThemeCtx consumer (the
+    // whole active screen) re-render when only the drawer or sidebar changed.
+    const t = useMemo(() => clientThemeOnTokens(isDark ? DARK : LIGHT, { refined }), [isDark, refined]);
     useEffect(() => {
         const body = document.body;
         body.setAttribute("data-client-theme", "");
         body.setAttribute("data-mode", clientMode(t));
-        return () => { body.removeAttribute("data-client-theme"); body.removeAttribute("data-mode"); };
-    }, [t.mode]);
+        // The refined theme (clientTheme.js) is scoped by this attribute.
+        if (refined) body.setAttribute("data-refined", "");
+        return () => { body.removeAttribute("data-client-theme"); body.removeAttribute("data-mode"); body.removeAttribute("data-refined"); };
+    }, [t.mode, refined]);
+
+    // Choosing a theme is SEEN: the new theme spreads from the button that was
+    // clicked (View Transitions), or fades where the browser lacks them; none of
+    // it under reduced motion. Every choice changes the look ("System" is the
+    // app's original theme, "Dark" the refined one).
+    const chooseTheme = (v, e) => {
+        if (!setThemePref || v === themePref) return;
+        let reduce = false;
+        try { reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true; } catch {}
+        if (reduce) { setThemePref(v); return; }
+        if (typeof document.startViewTransition === "function" && e?.currentTarget) {
+            const r = e.currentTarget.getBoundingClientRect();
+            const x = r.left + r.width / 2, y = r.top + r.height / 2;
+            const root = document.documentElement.style;
+            root.setProperty("--aai-vt-x", `${x}px`);
+            root.setProperty("--aai-vt-y", `${y}px`);
+            root.setProperty("--aai-vt-r", `${Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))}px`);
+            document.startViewTransition(() => { flushSync(() => setThemePref(v)); });
+            return;
+        }
+        document.body.classList.add("aai-theme-anim");
+        setTimeout(() => document.body.classList.remove("aai-theme-anim"), 650);
+        setThemePref(v);
+    };
     const { unreadCount, cases } = useCase();
     const draftCount = (cases || []).filter(isDraftCase).length;
     const { T, lang, toggleLang } = useLang();
@@ -333,6 +434,7 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
     const isMobile = useIsMobile();
     const [tab, setTab] = useState(initialTab);
     const [headerActions, setHeaderActions] = useState(null);
+    const headerActionsCtx = useMemo(() => ({ setHeaderActions }), []);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -368,6 +470,8 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
         };
     }, []);
     const contentRef = useRef(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => prefetchScreensSlowly(initialTab), []);
 
     const displayName = user?.full_name || "Client";
     const initials = displayName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -376,9 +480,16 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
         if (contentRef.current) contentRef.current.scrollTop = 0;
     }, [tab]);
 
-    // Terms a lawyer proposed, for the Lawyers badge. Re-read on each tab
-    // change, since answering them happens on a tab. A failed read shows none.
+    // Terms a lawyer proposed, for the Lawyers badge. Read once, then again only
+    // on LEAVING a screen where terms are answered (Lawyers, Tracking,
+    // Appointments, Overview). It used to refetch on every single tab change,
+    // duplicating requests those screens make themselves. A failed read shows none.
+    const TERMS_TABS = ["lawyers", "tracking", "appointments", "overview"];
+    const prevTabRef = useRef(null);
     useEffect(() => {
+        const prev = prevTabRef.current;
+        prevTabRef.current = tab;
+        if (prev !== null && !TERMS_TABS.includes(prev)) return undefined;
         let live = true;
         Promise.resolve(listEngagements()).then(res => {
             if (!live) return;
@@ -386,6 +497,7 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
             setTermsCount(Array.isArray(rows) ? rows.filter(e => e.status === "terms_proposed").length : 0);
         }).catch(() => {});
         return () => { live = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tab]);
     useEffect(() => { if (!isCollapsed) setTip(null); }, [isCollapsed]);
 
@@ -396,25 +508,26 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
 
     const navRouter = useNextRouter();
 
-    // Sync tab with URL so router.push('/lawyers') correctly switches the active tab
-    // even when React reuses this component instance across same-layout navigations.
+    // The URL picks the tab. This instance now lives in the (client) layout and
+    // survives navigation, so links, the back button and router.push from inside
+    // a module all arrive here as a pathname change.
     const pathname = usePathname();
     useEffect(() => {
-        const PATH_TAB = {
-            "/dashboard": "overview",
-            "/intake": "intake",
-            "/chat": "chatbot",
-            // "/tools" deliberately absent — see SIDE_ITEMS.
-            "/lawyers": "lawyers",
-            "/documents": "documents",
-            "/agreements": "agreements",
-            "/tracking": "tracking",
-            "/profile": "profile",
-        };
-        const next = PATH_TAB[pathname];
+        const next = tabForPath(pathname);
         if (next && next !== tab) setTab(next);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pathname]);
+
+    // Every in-app move goes through here: the screen changes NOW and the URL
+    // follows, so the address bar, refresh and Back always agree with what is
+    // shown. (The logo and the notification drawer used to change only the
+    // tab, leaving e.g. Tracking on screen under a /lawyers address.)
+    const goTo = (href) => {
+        const instant = instantTabFor(href);
+        if (instant) setTab(instant);
+        if (href !== pathname) startTransition(() => navRouter.push(href));
+    };
+    const clientNav = useMemo(() => ({ show: setTab }), []);
 
     const liveDate = getLiveDate(lang);
 
@@ -427,6 +540,9 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
         agreements: <ModAgreements />,
         documents: <ModDocuments />,
         tracking: <ModTracking isDark={isDark} />,
+        // The appointments list on a page of its own: the same component, so
+        // one list and one set of rules (2026-10-12).
+        appointments: <ModTracking key="appointments" isDark={isDark} standalone="appointments" />,
         tools: <ModTools />,
         disputes: <ModDisputes />,
     };
@@ -434,24 +550,27 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
     // Documents draws its own header and manages its own scrolling: its
     // screens (drafting) are full-height workspaces.
     // Lawyers (2026-10-10) draws its own title, as Documents does.
-    const noTopbar = tab === "agreements" || tab === "chatbot" || tab === "tracking" || tab === "documents" || tab === "lawyers" || tab === "intake" || tab === "overview" || tab === "profile";
+    const noTopbar = tab === "agreements" || tab === "chatbot" || tab === "tracking" || tab === "appointments" || tab === "documents" || tab === "lawyers" || tab === "intake" || tab === "overview" || tab === "profile";
     const noPadding = tab === "agreements" || tab === "chatbot" || tab === "documents";
 
     return (
         <ThemeCtx.Provider value={t}>
-            <HeaderActionsCtx.Provider value={{ setHeaderActions }}>
+          <ClientNavCtx.Provider value={clientNav}>
+            <HeaderActionsCtx.Provider value={headerActionsCtx}>
                 <style>{CLIENT_TOKENS_CSS}</style>
+                {CLIENT_THEME_REFINED && <style>{CLIENT_REFINED_CSS}</style>}
 
                 <NotifDrawer
                     open={drawerOpen}
                     onClose={() => setDrawerOpen(false)}
-                    onGoTracking={() => setTab("tracking")}
-                    onOpenDocument={id => { requestOpenDocument(id); if (tab !== "documents") navRouter.push("/documents"); }}
-                    onOpenReviewRequest={id => navRouter.push(reviewRequestDeepLink(id))}
+                    onGoTracking={() => goTo("/tracking")}
+                    onOpenDocument={id => { requestOpenDocument(id); if (tab !== "documents") goTo("/documents"); }}
+                    onOpenReviewRequest={id => goTo(reviewRequestDeepLink(id))}
+                    onNavigate={to => goTo(to)}
                     t={t}
                 />
 
-                <div data-client-theme="" data-mode={clientMode(t)} style={{
+                <div data-client-theme="" data-mode={clientMode(t)} data-refined={refined ? "" : undefined} style={{
                     display: "flex", height: "100vh", overflow: "hidden",
                     background: t.bg,
                     transition: "background 0.5s cubic-bezier(0.4,0,0.2,1)",
@@ -492,7 +611,7 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
                             justifyContent: isCollapsed ? "center" : "flex-start",
                         }}>
                             <button type="button" className="cs-logo" title={isCollapsed ? T("Expand sidebar", "سائیڈبار کھولیں") : "Attorney.AI"}
-                                onClick={() => (isCollapsed ? setIsCollapsed(false) : setTab("overview"))}>
+                                onClick={() => (isCollapsed ? setIsCollapsed(false) : goTo("/dashboard"))}>
                                 <img src="./logo.png" alt="Attorney.AI" />
                             </button>
                             {!isCollapsed && (<>
@@ -508,7 +627,7 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
                         {/* ══ NEW MATTER: the one primary action ══ */}
                         <button type="button" className="cs-new" aria-label={T("New matter", "نیا معاملہ")}
                             title={isCollapsed ? T("New matter", "نیا معاملہ") : undefined}
-                            onClick={() => { setDocMenuOpen(false); navRouter.push("/intake"); setMobileNavOpen(false); }}>
+                            onClick={() => { setDocMenuOpen(false); requestNewMatter(); goTo("/intake"); setMobileNavOpen(false); }}>
                             <Ic n="plus" s={isCollapsed ? 18 : 16} c="currentColor" />
                             {!isCollapsed && T("New matter", "نیا معاملہ")}
                         </button>
@@ -552,18 +671,14 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
                                         className={`cs-item${active ? " on" : ""}`}
                                         aria-current={active ? "page" : undefined}
                                         aria-label={isCollapsed ? tipText : undefined}
-                                        onMouseEnter={isCollapsed ? (e => { const r = e.currentTarget.getBoundingClientRect(); setTip({ text: tipText, top: r.top + r.height / 2, left: r.right + 10 }); }) : undefined}
+                                        onMouseEnter={e => {
+                                            prefetchScreen(item.id);
+                                            if (isCollapsed) { const r = e.currentTarget.getBoundingClientRect(); setTip({ text: tipText, top: r.top + r.height / 2, left: r.right + 10 }); }
+                                        }}
+                                        onFocus={() => prefetchScreen(item.id)}
                                         onMouseLeave={isCollapsed ? (() => setTip(null)) : undefined}
                                         aria-expanded={hasMenu ? menuOpen : undefined}
                                         onClick={() => {
-                                            const TAB_PATH = {
-                                                overview: "/dashboard", intake: "/intake",
-                                                chatbot: "/chat", lawyers: "/lawyers",
-                                                cases: "/cases", documents: "/documents",
-                                                agreements: "/agreements", tracking: "/tracking",
-                                                profile: "/profile",
-                                                // `tools` deliberately absent — see SIDE_ITEMS.
-                                            };
                                             const path = TAB_PATH[item.id];
                                             if (item.id === "documents") {
                                                 // Already here: the item only opens or closes its menu.
@@ -586,7 +701,10 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
                                                 setDocMenuOpen(false);
                                                 setAgMenuOpen(false);
                                             }
-                                            if (path) navRouter.push(path);
+                                            // Show the screen NOW; the URL follows. Waiting for the
+                                            // route change (and, in dev, its first compile) before
+                                            // anything moved made every click feel slow.
+                                            if (path) goTo(path);
                                             else setTab(item.id);
                                             setMobileNavOpen(false);
                                             setTip(null);
@@ -616,7 +734,7 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
                                                         if (isAg) {
                                                             requestAgreementsView(sub.view);
                                                             setAgSection(sub.view);
-                                                            if (tab !== "agreements") navRouter.push("/agreements");
+                                                            if (tab !== "agreements") goTo("/agreements");
                                                             setMobileNavOpen(false);
                                                             return;
                                                         }
@@ -624,7 +742,7 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
                                                         setDocSection(sub.view);
                                                         // From another tab the request waits until the
                                                         // module mounts (lib/documentsNav.js).
-                                                        if (tab !== "documents") navRouter.push("/documents");
+                                                        if (tab !== "documents") goTo("/documents");
                                                         setMobileNavOpen(false);
                                                     }}
                                                     className="cs-item sub">
@@ -653,15 +771,35 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
                                             {user?.email && <small>{user.email}</small>}
                                         </span>
                                     </div>
-                                    <button type="button" role="menuitem" onClick={() => { setAcctOpen(false); navRouter.push("/profile"); setMobileNavOpen(false); }}>
+                                    <button type="button" role="menuitem" onClick={() => { setAcctOpen(false); goTo("/profile"); setMobileNavOpen(false); }}>
                                         {T("Profile", "پروفائل")} <Ic n="user" s={17} />
                                     </button>
                                     <button type="button" role="menuitem" onClick={() => toggleLang()}>
                                         {T("اردو میں دیکھیں", "Switch to English")} <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h7M8 3v2M5 9c1.5 3 4 5 6 6M11 5c-1 4-3 7-6 9M13 21l4-10 4 10M14.5 17h5" /></svg>
                                     </button>
-                                    <button type="button" role="menuitem" onClick={() => toggleTheme()}>
-                                        {isDark ? T("Light mode", "لائٹ موڈ") : T("Dark mode", "ڈارک موڈ")} <Ic n={isDark ? "sun" : "moon"} s={17} />
-                                    </button>
+                                    {CLIENT_THEME_REFINED && setThemePref ? (
+                                        <div className="cs-theme" role="group" aria-label={T("Theme", "تھیم")}>
+                                            <span>{T("Theme", "تھیم")}</span>
+                                            <div className="cs-theme-seg" data-pos={Math.max(0, ["light", "system", "dark"].indexOf(themePref))}>
+                                                <span className="cs-theme-thumb" aria-hidden="true" />
+                                                {[["light", T("Light", "لائٹ"), "sun"], ["system", T("System", "سسٹم"), "monitor"], ["dark", T("Dark", "ڈارک"), "moon"]].map(([v, label, icon]) => (
+                                                    <button key={v} type="button" role="menuitemradio" aria-checked={themePref === v} data-theme-pref={v}
+                                                        className={themePref === v ? "on" : undefined} onClick={e => chooseTheme(v, e)}>
+                                                        <Ic n={icon} s={14} /> {label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <small className="cs-theme-note" key={themePref} data-theme-note="" role="status">
+                                                {themePref === "system"
+                                                    ? T("The app’s original theme", "ایپ کا اصل تھیم")
+                                                    : themePref === "dark" ? T("New dark theme, easier to read", "نیا ڈارک تھیم، پڑھنے میں آسان") : T("Light theme", "لائٹ تھیم")}
+                                            </small>
+                                        </div>
+                                    ) : (
+                                        <button type="button" role="menuitem" onClick={() => toggleTheme()}>
+                                            {isDark ? T("Light mode", "لائٹ موڈ") : T("Dark mode", "ڈارک موڈ")} <Ic n={isDark ? "sun" : "moon"} s={17} />
+                                        </button>
+                                    )}
                                     <div className="cs-menu-sep" />
                                     <button type="button" role="menuitem" className="danger" onClick={() => { setAcctOpen(false); go("signout"); }}>
                                         {T("Sign Out", "سائن آؤٹ")} <Ic n="logout" s={17} />
@@ -826,21 +964,22 @@ const DashboardInner = ({ go, isDark, toggleTheme, initialTab = "overview" }) =>
                             className="aFadeUp"
                             key={tab}
                         >
-                            {modules[tab]}
+                            <Suspense fallback={<ScreenLoading />}>{modules[tab]}</Suspense>
                         </div>
                     </div>
 
                 </div>
             </HeaderActionsCtx.Provider>
+          </ClientNavCtx.Provider>
         </ThemeCtx.Provider>
     );
 };
 
 /* ─── Public export ─────────────────────────────────────────── */
-const Dashboard = ({ go, isDark, toggleTheme, initialTab = "overview" }) => (
+const Dashboard = ({ go, isDark, toggleTheme, themePref, setThemePref, refined, initialTab = "overview" }) => (
     <LangProvider>
         <CaseProvider>
-            <DashboardInner go={go} isDark={isDark} toggleTheme={toggleTheme} initialTab={initialTab} />
+            <DashboardInner go={go} isDark={isDark} toggleTheme={toggleTheme} themePref={themePref} setThemePref={setThemePref} refined={refined} initialTab={initialTab} />
         </CaseProvider>
     </LangProvider>
 );

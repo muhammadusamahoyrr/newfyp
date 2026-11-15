@@ -1,0 +1,34 @@
+﻿citation_1191                      general         n=1191  Hit@1 0.415->0.680 d=+26.5pt CI[+23.5,+29.6]  b(0->1)=377 c(1->0)=61 p=1.1e-56  MRR 0.516->0.758  nDCG5 0.542->0.781
+citation_1191                      constitutional  n=1191  Hit@1 0.415->0.411 d= -0.3pt CI[-2.9,+2.3]  b(0->1)=121 c(1->0)=125 p=0.85  MRR 0.516->0.516  nDCG5 0.542->0.544
+legaluqa_128                       general         n= 128  Hit@1 0.523->0.547 d= +2.3pt CI[-6.2,+10.9]  b(0->1)=17 c(1->0)=14 p=0.72  MRR 0.605->0.632  nDCG5 0.613->0.641
+legaluqa_128                       constitutional  n= 128  Hit@1 0.523->0.766 d=+24.2pt CI[+15.6,+33.6]  b(0->1)=36 c(1->0)=5 p=7.8e-07  MRR 0.605->0.833  nDCG5 0.613->0.833
+legaluqa_121                       general         n= 121  Hit@1 0.438->0.686 d=+24.8pt CI[+15.7,+33.9]  b(0->1)=35 c(1->0)=5 p=1.4e-06  MRR 0.568->0.755  nDCG5 0.589->0.749
+legaluqa_121                       constitutional  n= 121  Hit@1 0.438->0.595 d=+15.7pt CI[+7.4,+24.0]  b(0->1)=24 c(1->0)=5 p=0.00055  MRR 0.568->0.690  nDCG5 0.589->0.703
+
+citation_1191[civil_procedure]     general         n=  19  Hit@1 0.211->0.158 d= -5.3pt CI[-26.3,+15.8]  b(0->1)=2 c(1->0)=3 p=1  MRR 0.263->0.190  nDCG5 0.277->0.191
+citation_1191[civil_procedure]     constitutional  n=  19  Hit@1 0.211->0.053 d=-15.8pt CI[-31.6,+0.0]  b(0->1)=0 c(1->0)=3 p=0.25  MRR 0.263->0.066  nDCG5 0.277->0.075
+citation_1191[constitutional]      general         n= 337  Hit@1 0.398->0.724 d=+32.6pt CI[+27.3,+38.3]  b(0->1)=117 c(1->0)=7 p=7.5e-27  MRR 0.508->0.785  nDCG5 0.534->0.801
+citation_1191[constitutional]      constitutional  n= 337  Hit@1 0.398->0.451 d= +5.3pt CI[+0.6,+10.1]  b(0->1)=42 c(1->0)=24 p=0.036  MRR 0.508->0.561  nDCG5 0.534->0.588
+citation_1191[criminal]            general         n= 607  Hit@1 0.432->0.712 d=+28.0pt CI[+23.7,+32.5]  b(0->1)=201 c(1->0)=31 p=1.1e-31  MRR 0.523->0.790  nDCG5 0.546->0.813
+citation_1191[criminal]            constitutional  n= 607  Hit@1 0.432->0.427 d= -0.5pt CI[-4.1,+3.1]  b(0->1)=60 c(1->0)=63 p=0.86  MRR 0.523->0.531  nDCG5 0.546->0.558
+citation_1191[evidence]            general         n= 207  Hit@1 0.430->0.614 d=+18.4pt CI[+10.6,+26.1]  b(0->1)=55 c(1->0)=17 p=8.1e-06  MRR 0.540->0.719  nDCG5 0.567->0.747
+citation_1191[evidence]            constitutional  n= 207  Hit@1 0.430->0.338 d= -9.2pt CI[-15.9,-2.9]  b(0->1)=15 c(1->0)=34 p=0.0094  MRR 0.540->0.446  nDCG5 0.567->0.476
+citation_1191[family]              general         n=  21  Hit@1 0.238->0.190 d= -4.8pt CI[-23.8,+14.3]  b(0->1)=2 c(1->0)=3 p=1  MRR 0.442->0.329  nDCG5 0.516->0.379
+citation_1191[family]              constitutional  n=  21  Hit@1 0.238->0.381 d=+14.3pt CI[-4.8,+33.3]  b(0->1)=4 c(1->0)=1 p=0.38  MRR 0.442->0.477  nDCG5 0.516->0.495
+citation_1191[urdu=True]           general         n= 389  Hit@1 0.167->0.640 d=+47.3pt CI[+41.9,+52.4]  b(0->1)=190 c(1->0)=6 p=1.5e-48  MRR 0.255->0.718  nDCG5 0.274->0.738
+citation_1191[urdu=False]          general         n= 802  Hit@1 0.535->0.700 d=+16.5pt CI[+12.8,+20.0]  b(0->1)=187 c(1->0)=55 p=5.2e-18  MRR 0.643->0.778  nDCG5 0.671->0.802
+
+legaluqa_121[leak_general=True]    general         n=  99  Hit@1 0.434->0.717 d=+28.3pt CI[+18.2,+38.4]  b(0->1)=31 c(1->0)=3 p=7.7e-07  MRR 0.573->0.784  nDCG5 0.596->0.772
+legaluqa_121[leak_general=True]    constitutional  n=  99  Hit@1 0.434->0.626 d=+19.2pt CI[+10.1,+28.3]  b(0->1)=22 c(1->0)=3 p=0.00016  MRR 0.573->0.716  nDCG5 0.596->0.721
+legaluqa_121[leak_general=False]   general         n=  22  Hit@1 0.455->0.545 d= +9.1pt CI[-13.6,+31.8]  b(0->1)=4 c(1->0)=2 p=0.69  MRR 0.546->0.624  nDCG5 0.560->0.645
+legaluqa_121[leak_general=False]   constitutional  n=  22  Hit@1 0.455->0.455 d= +0.0pt CI[-18.2,+18.2]  b(0->1)=2 c(1->0)=2 p=1  MRR 0.546->0.573  nDCG5 0.560->0.623
+
+leak counts 121: 99 / 121  128: 0
+rank-change counts general 1191: (531, 123, 537)  general 128: (31, 22, 75)  const 1191: (267, 261, 663)
+nd_citation_test_vs_general_train n 1191 max 0.982 median 0.91  >=.95: 47  >=.97: 7
+nd_121_vs_constitutional_train n 121 max 0.966 median 0.889  >=.95: 2  >=.97: 0
+nd_128_vs_general_train n 128 max 0.948 median 0.872  >=.95: 0  >=.97: 0
+exact dup: 0
+citation_1191[maxcos<0.95]         general         n=1144  Hit@1 0.427->0.686 d=+25.9pt CI[+22.7,+29.0]  b(0->1)=354 c(1->0)=58 p=6.6e-53  MRR 0.528->0.762  nDCG5 0.554->0.785
+citation_1191[maxcos<0.90]         general         n= 427  Hit@1 0.534->0.724 d=+19.0pt CI[+14.3,+23.7]  b(0->1)=100 c(1->0)=19 p=1.8e-14  MRR 0.635->0.785  nDCG5 0.661->0.805
+{'base': 'intfloat/multilingual-e5-base', 'constitutional': 'usama1111/e5-pak-legal-constitutional@6aec3e7a sha256 9761c235d497c6c3 OK', 'general': 'usama1111/e5-pakistani-legal@0efe7b2b sha256 a3e7e4c1b650051b OK'}

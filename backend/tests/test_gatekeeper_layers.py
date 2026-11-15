@@ -14,10 +14,12 @@ of every "ok". It depends on what the shortcut DOES:
                     ask..." — there is nothing to steer and nothing to
                     exfiltrate. Regex screening is sufficient.
 
-    format_brief    feeds the user's message to a model AS AN INSTRUCTION,
-                    together with the previous answer. This is a genuine
-                    injection surface, reachable in under 15 words, and it
-                    needs layer 2.
+    format_brief    USED to feed the user's message to a model as an
+                    instruction outside the graph (`_reformat`), screened by
+                    an extra layer-2 call. Since 2026-10-13 it runs the graph
+                    itself as a follow-up, so it passes gatekeeper_node --
+                    both layers -- like any question, and its answer is judged
+                    and citation-matched. No model sees user text outside it.
 
 These tests pin that distinction so it is a decision on record rather than an
 oversight that happens to be harmless in two of three cases.
@@ -85,23 +87,22 @@ def test_layer_one_still_short_circuits_without_the_llm(monkeypatch):
     assert out["convergence_status"] == "off_topic"
 
 
-# ── the shortcut that runs a model is screened by both ───────────────────────
+# ── no model sees user text outside the graph ────────────────────────────────
 
-def test_the_reformat_shortcut_invokes_the_llm_layer():
-    """format_brief runs _reformat, which puts user text into a model prompt.
-    If this assertion fails, that path is back to regex-only screening."""
-    assert "llm_injection_reason" in SOURCE
+def test_format_brief_no_longer_runs_a_model_outside_the_graph():
+    """The out-of-graph rewrite is gone: "make it short" enters the graph,
+    whose gatekeeper_node runs BOTH layers. If a `_reformat`-style call comes
+    back, it must come back with its own layer-2 screening."""
     tree = ast.parse(SOURCE)
-    calls = [n for n in ast.walk(tree)
-             if isinstance(n, ast.Call) and "llm_injection_reason" in ast.unparse(n)]
-    assert calls, "llm_injection_reason is imported but never called"
+    names = {n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    assert "_reformat" not in names
+    assert "format_brief" not in chat_socket._SHORTCUT_INTENTS
 
 
-def test_the_check_precedes_the_reformat_call():
-    """Screening after the model has already seen the text would be pointless."""
-    check_at = SOURCE.index("llm_injection_reason, query")
-    reformat_at = SOURCE.index("reformatted = await _reformat(")
-    assert check_at < reformat_at
+def test_the_graph_entry_is_the_gatekeeper():
+    """The path format_brief now takes starts at the two-layer gatekeeper."""
+    from app.ai.graph.supervisor import chat_graph
+    assert "gatekeeper_node" in chat_graph.get_graph().nodes
 
 
 def test_the_canned_shortcuts_do_not_pay_for_an_llm_call():

@@ -86,7 +86,7 @@ async function type(el, value) {
     await act(async () => { el.dispatchEvent(new Event("input", { bubbles: true })); });
 }
 const sectionTitles = (root) => [...root.querySelectorAll("span")]
-    .map(s => s.textContent.trim()).filter(t => ["New requests", "No hearing yet", "Active", "History"].includes(t));
+    .map(s => s.textContent.trim()).filter(t => ["New hire requests", "No hearing yet", "Active", "History"].includes(t));
 
 test.beforeEach(() => {
     api.__reset();
@@ -129,14 +129,27 @@ test("Send terms asks for a fee before anything is sent", async () => {
     const view = await mount();
     await click(buttonText(view.container, "Send terms"));
     assert.match(view.container.textContent, /Send your terms/);
-    await click(buttonText(view.container, "Send Terms to Client"));
+    const dlg = view.container.querySelector("[data-terms]");
+    // Who and what it is for (2026-10-20): the client and the case, not a
+    // case title run into the instructions.
+    assert.match(dlg.textContent, /Sara Khan/);
+    assert.match(dlg.textContent, /Inheritance claim/);
+    const send = dlg.querySelector("[data-terms-send]");
+    assert.equal(send.textContent, "Send terms to Sara");
+    await click(send);
     assert.equal(api.__calls("proposeEngagementTerms").length, 0, "terms were sent without a fee");
+    assert.match(dlg.querySelector("[data-terms-error]").textContent, /Enter the fee/, "the missing fee was not said in the dialog");
 
-    await type(view.container.querySelector('input[type="number"]'), "50000");
-    await click(buttonText(view.container, "Send Terms to Client"));
+    await type(dlg.querySelector('input[type="number"]'), "50000");
+    assert.equal(dlg.querySelector("[data-terms-error]"), null, "the error stayed after a fee was typed");
+    assert.match(dlg.querySelector("[data-terms-preview]").textContent, /Sara will see Rs 50,000 · Fixed fee \(whole case\)/);
+    await click(dlg.querySelector('[data-fee-type="per_hearing"]'));
+    assert.match(dlg.querySelector("[data-terms-preview]").textContent, /Per hearing/);
+    await click(send);
     const [id, body] = api.__calls("proposeEngagementTerms")[0].args;
     assert.equal(id, "e1");
     assert.equal(body.fee_amount, 50000);
+    assert.equal(body.fee_type, "per_hearing");
     await view.unmount();
 });
 
@@ -238,7 +251,7 @@ test("the bar: chips, History on the right, then search, Sort and Filter", async
     const chips = [...view.container.querySelectorAll('[role="tablist"][aria-label="Filter cases"] [role="tab"]')]
         .map(b => b.textContent.replace(/\d+$/, "").trim());
     // Closed is one of the views since 2026-10-11, not a separate History box.
-    assert.deepEqual(chips, ["All", "Needs me", "New requests", "Not filed yet", "Active", "Closed"]);
+    assert.deepEqual(chips, ["All", "Needs me", "New hire requests", "Not filed yet", "Active", "Closed"]);
     assert.ok(allButtons(view.container).some(b => /^Closed\s*1$/.test(b.textContent.trim())));
     assert.ok(view.container.querySelector('input[aria-label="Search cases"]'));
     assert.ok(allButtons(view.container).some(b => b.textContent.trim() === "Sort"));
@@ -625,5 +638,229 @@ test("Your files: listed for this case, uploaded through the API, and marked as 
     assert.equal(caseId, SOON._id);
     assert.equal(sent.name, "order.png");
     assert.ok(view.container.querySelector('[data-case-file="f2"]'), "the uploaded file is not listed");
+    await view.unmount();
+});
+
+/* ── propose a meeting to the client (2026-10-12) ─────────────────────────── */
+
+async function pick(el, value) {
+    const proto = el.tagName === "SELECT" ? dom.window.HTMLSelectElement.prototype
+        : el.tagName === "TEXTAREA" ? dom.window.HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, "value").set.call(el, value);
+    await act(async () => { el.dispatchEvent(new Event(el.tagName === "SELECT" ? "change" : "input", { bubbles: true })); });
+}
+
+test("Propose meeting sends the chosen times, then shows the proposal with Withdraw", async () => {
+    const { pktSlotToUtcISO } = await import("../src/lib/bookingTime.js");
+    let sent = false;
+    const day = addDays(3);
+    const open = { id: "P1", status: "open", agenda: "Hearing prep", mode: "video", options: [pktSlotToUtcISO(day, "11:00")] };
+    api.__respond("listMeetingProposals", () => ({ data: sent ? [open] : [], error: null }));
+    api.__respond("proposeMeeting", () => { sent = true; return { data: open, error: null }; });
+    api.__respond("withdrawMeetingProposal", { data: { ...open, status: "withdrawn" }, error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    await click(buttonText(view.container, "Propose meeting"));
+    const form = view.container.querySelector("[data-propose-meeting]");
+    assert.ok(form, "the proposal form did not open");
+
+    await click(buttonText(form, "Send proposal"));
+    assert.equal(api.__calls("proposeMeeting").length, 0, "an empty proposal was sent");
+
+    await pick(form.querySelector('[aria-label="Date 1"]'), day);
+    await pick(form.querySelector('[aria-label="Time 1"]'), "11:00");
+    await pick(form.querySelector("textarea"), "Hearing prep");
+    await click(buttonText(form, "Send proposal"));
+    const [args] = api.__calls("proposeMeeting").map(c => c.args[0]);
+    assert.equal(args.case_id, SOON._id, "the proposal was not bound to the case's database id");
+    // The proposals are read by the database id too, never the case number.
+    const reads = api.__calls("listMeetingProposals").map(c => c.args[0]);
+    assert.ok(reads.length > 0, "the case's proposals were never read");
+    for (const r of reads) assert.equal(r.case_id, SOON._id, "proposals were read by something other than the database id");
+    assert.deepEqual(args.options, [pktSlotToUtcISO(day, "11:00")]);
+    assert.equal(args.mode, "video");
+    assert.equal(args.agenda, "Hearing prep");
+
+    const strip = view.container.querySelector("[data-meeting-proposal]");
+    assert.ok(strip, "the open proposal is not shown");
+    assert.match(strip.textContent, /Meeting proposed — waiting for/);
+    assert.equal(buttonText(view.container, "Propose meeting"), undefined, "a second proposal was offered while one waits");
+    await click(buttonText(strip, "Withdraw"));
+    assert.equal(api.__calls("withdrawMeetingProposal")[0].args[0], "P1");
+    await view.unmount();
+});
+
+test("a walk-in case cannot propose a meeting: the client has no account", async () => {
+    const WALK = { ...kase(7, "in_progress"), walk_in: true, client_id: null };
+    api.__respond("listCases", { data: { items: [WALK] }, error: null });
+    const view = await mount({ openAt: WALK.case_number });
+    assert.equal(buttonText(view.container, "Propose meeting"), undefined);
+    await view.unmount();
+});
+
+/* ── what happened to the last proposal (2026-10-12) ──────────────────────── */
+
+const prop = (over) => ({ id: "P0", status: "declined", agenda: "Hearing prep", mode: "video",
+    options: ["2026-11-02T06:00:00Z"], decline_reason: null, ...over });
+
+test("a declined proposal shows its times, the client's reason, and Propose new times", async () => {
+    api.__respond("listMeetingProposals", { data: [prop({ decline_reason: "Travelling that week" })], error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    const rec = view.container.querySelector('[data-proposal-history="declined"]');
+    assert.ok(rec, "no record of the declined proposal");
+    assert.match(rec.textContent, /could not make the proposed times.*Hearing prep.*PKT.*“Travelling that week”/s);
+    assert.ok(rec.querySelector("[data-propose-again]"), "no way to propose again");
+    await view.unmount();
+});
+
+test("an expired proposal is shown as lapsed", async () => {
+    api.__respond("listMeetingProposals", { data: [prop({ status: "expired" })], error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    const rec = view.container.querySelector('[data-proposal-history="expired"]');
+    assert.match(rec.textContent, /proposed times passed/);
+    await view.unmount();
+});
+
+test("an open proposal stays the primary banner; the old record is shown after it without a button", async () => {
+    api.__respond("listMeetingProposals", { data: [
+        prop({ id: "P2", status: "open", agenda: "New try" }),
+        prop({ id: "P1", status: "declined", decline_reason: "Busy" }),
+    ], error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    const open = view.container.querySelector("[data-meeting-proposal]");
+    const rec = view.container.querySelector('[data-proposal-history="declined"]');
+    assert.ok(open && rec);
+    assert.ok(open.compareDocumentPosition(rec) & 4, "the old record came before the open proposal");
+    assert.equal(rec.querySelector("[data-propose-again]"), null, "a second proposal was offered while one waits");
+    assert.equal(buttonText(view.container, "Propose meeting"), undefined);
+    await view.unmount();
+});
+
+test("an accepted proposal after a declined one leaves nothing to follow up", async () => {
+    api.__respond("listMeetingProposals", { data: [prop({ id: "P2", status: "accepted" }), prop({ id: "P1" })], error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    assert.equal(view.container.querySelector("[data-proposal-history]"), null);
+    await view.unmount();
+});
+
+test("a closed case shows the record but offers no proposal", async () => {
+    const CLOSED_CASE = { ...kase(8, "closed") };
+    api.__respond("listCases", { data: { items: [CLOSED_CASE] }, error: null });
+    api.__respond("listMeetingProposals", { data: [prop({})], error: null });
+    const view = await mount({ openAt: CLOSED_CASE.case_number });
+    assert.equal(buttonText(view.container, "Propose meeting"), undefined);
+    assert.equal(view.container.querySelector("[data-propose-again]"), null);
+    await view.unmount();
+});
+/* ── opening on a hire request (2026-10-12) ───────────────────────────────── */
+
+test("a stored request opens New requests on that request (also after a reload)", async () => {
+    window.sessionStorage.setItem("attorney:lawyer-open-request", REQUEST.id);
+    const view = await mount();
+    const row = view.container.querySelector(`[data-request-id="${REQUEST.id}"]`);
+    assert.ok(row, "the request is not listed");
+    assert.ok(row.hasAttribute("data-focused"), "the request was not focused");
+    assert.equal(window.sessionStorage.getItem("attorney:lawyer-open-request"), null, "the request stayed pending after it was applied");
+    await view.unmount();
+});
+
+test("an unknown request id falls back to New requests with nothing focused", async () => {
+    window.sessionStorage.setItem("attorney:lawyer-open-request", "nope");
+    const view = await mount();
+    assert.ok(view.container.querySelector(`[data-request-id="${REQUEST.id}"]`), "New requests did not open");
+    assert.equal(view.container.querySelector("[data-focused]"), null);
+    await view.unmount();
+});
+
+test("a request asked for while the page is open is focused too", async () => {
+    const view = await mount();
+    await act(async () => { window.dispatchEvent(new window.CustomEvent("attorney:open-request", { detail: REQUEST.id })); });
+    await settle();
+    assert.ok(view.container.querySelector(`[data-request-id="${REQUEST.id}"]`).hasAttribute("data-focused"));
+    await view.unmount();
+});
+
+/* ── Batch D (2026-10-20): the consultation behind a hire and a case ────── */
+
+const CONSULT = { id: "ap-1", scheduled_at: "2026-10-18T04:00:00+00:00", end_at: "2026-10-18T04:30:00+00:00",
+                  duration_minutes: 30, mode: "video", status: "completed", note: "Uncle sold the land" };
+
+test("a hire request says which consultation it followed, in PKT, and opens it", async () => {
+    api.__respond("listEngagements", { data: [{ ...REQUEST, consultation: CONSULT, consultation_unavailable: false }], error: null });
+    const pages = [];
+    const view = await mount({ pages });
+    const line = view.container.querySelector(`[data-request-id="${REQUEST.id}"] [data-request-consultation]`);
+    assert.ok(line, "the request row does not name its consultation");
+    assert.match(line.textContent, /After consultation on Sun, 18 Oct · 09:00 PKT · Video call/, "not the stored meeting, or not in PKT");
+    assert.match(line.textContent, /Uncle sold the land/);
+    await click(buttonText(line, "View consultation"));
+    assert.equal(window.sessionStorage.getItem("attorney:lawyer-open-appointment"), "ap-1");
+    assert.deepEqual(pages, ["appointments"]);
+    window.sessionStorage.clear();
+    await view.unmount();
+});
+
+test("a legacy hire request with no stored consultation says so, and guesses nothing", async () => {
+    api.__respond("listEngagements", { data: [{ ...REQUEST, consultation: null, consultation_unavailable: true }], error: null });
+    const view = await mount();
+    const line = view.container.querySelector(`[data-request-id="${REQUEST.id}"] [data-request-consultation]`);
+    assert.equal(line.getAttribute("data-request-consultation"), "unavailable");
+    assert.match(line.textContent, /Consultation record unavailable/);
+    assert.equal(buttonText(line, "View consultation"), undefined);
+    await view.unmount();
+});
+
+test("the case shows the consultation it came from and only its own meetings", async () => {
+    api.__respond("getCaseConsultations", { data: { originating: CONSULT, originating_unavailable: false, has_hire: true,
+        linked: [{ ...CONSULT, id: "ap-2", scheduled_at: "2026-10-25T06:00:00+00:00", status: "confirmed", note: "" }] }, error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    assert.equal(api.__calls("getCaseConsultations")[0].args[0], SOON._id, "read by something other than the database id");
+    const card = view.container.querySelector("[data-case-consultations]");
+    assert.ok(card, "no Consultations card");
+    assert.deepEqual([...card.querySelectorAll("[data-case-consultation]")].map(e => e.getAttribute("data-case-consultation")), ["ap-1", "ap-2"]);
+    assert.match(card.textContent, /The consultation that led to this case/);
+    assert.match(card.textContent, /Meeting on this case/);
+    await view.unmount();
+});
+
+test("a case whose hire has no stored consultation says 'record unavailable'", async () => {
+    api.__respond("getCaseConsultations", { data: { originating: null, originating_unavailable: true, has_hire: true, linked: [] }, error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    assert.ok(view.container.querySelector("[data-consultation-unavailable]"));
+    await view.unmount();
+});
+
+test("a failed consultations read is not shown as none", async () => {
+    api.__respond("getCaseConsultations", { data: null, error: { message: "down" }, status: 0 });
+    const view = await mount({ openAt: SOON.case_number });
+    const card = view.container.querySelector("[data-case-consultations]");
+    assert.ok(card, "a failed read hid the card like an empty one");
+    assert.match(card.textContent, /Could not load this case's consultations/);
+    await view.unmount();
+});
+
+/* ── meetings with the client, joined from the case (2026-10-20) ──────────── */
+
+test("the Schedule tab lists the case's meetings with the client, with their Join", async () => {
+    const soon = new Date(Date.now() + 2 * 864e5).toISOString();
+    const soonEnd = new Date(Date.now() + 2 * 864e5 + 36e5).toISOString();
+    api.__respond("getCaseConsultations", { data: { originating: CONSULT, originating_unavailable: false, has_hire: true, linked: [
+        { id: "ap-m", scheduled_at: soon, end_at: soonEnd, mode: "video", status: "confirmed", note: "Documents for the suit" },
+        { id: "ap-old", scheduled_at: "2026-10-01T05:00:00+00:00", end_at: "2026-10-01T06:00:00+00:00", mode: "video", status: "completed", note: "" },
+    ] }, error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    await click(tab(view.container, "Schedule"));
+    const card = view.container.querySelector("[data-case-meetings]");
+    assert.ok(card, "no Meetings with client on the Schedule tab");
+    assert.deepEqual([...card.querySelectorAll("[data-case-meeting]")].map(e => e.getAttribute("data-case-meeting")), ["ap-m"], "a past meeting was listed as ahead");
+    assert.ok(card.querySelector('[data-case-meeting-join="ap-m"]'), "the meeting has no Join");
+    assert.match(card.textContent, /Documents for the suit/);
+    await view.unmount();
+});
+
+test("with no meeting booked, the Schedule tab says how to book one", async () => {
+    api.__respond("getCaseConsultations", { data: { originating: null, originating_unavailable: false, has_hire: true, linked: [] }, error: null });
+    const view = await mount({ openAt: SOON.case_number });
+    await click(tab(view.container, "Schedule"));
+    assert.match(view.container.querySelector("[data-case-meetings-empty]").textContent, /Propose meeting/);
     await view.unmount();
 });

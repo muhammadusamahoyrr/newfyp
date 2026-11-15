@@ -67,6 +67,20 @@ def _public_case(case: dict | None) -> dict | None:
     case.pop("case_embedding", None)
     case.pop("intake_conversion_owner", None)
     case.pop("intake_conversion_epoch", None)
+    # The lawyer-facing AI summary, as it may be shown (batch 7): a summary
+    # written before the CPC jurisdiction check, in a non-Punjab case, carries
+    # an explicit warning. A display step on this copy -- never written back,
+    # and never allowed to break reading a case.
+    #
+    # FAIL-CLOSED (batch 8): if that check cannot run, the case is still served,
+    # but WITHOUT any AI summary text (English, Urdu, Urdu actions) and with
+    # status "review_unavailable" -- never the raw summary as if it were checked.
+    from app.ai import source_currency
+    try:
+        case = source_currency.case_cpc_view(case)
+    except Exception:  # noqa: BLE001
+        logger.exception("case: jurisdiction view failed -- AI summary withheld")
+        case = source_currency.case_summary_unavailable(case)
     return case
 
 
@@ -735,6 +749,76 @@ async def reschedule_hearing(
     except Exception:
         # Must not undo the move, but the client was not told: log it.
         logger.exception("hearing-rescheduled notification failed for case %s", case_id)
+
+    return _public_case(await case_repo.find_by_id(case_id))
+
+
+async def cancel_hearing(
+    case_id: str, hearing_id: str, data: dict, lawyer_id: str
+) -> dict:
+    """Take an upcoming hearing off the schedule; the client is told.
+
+    Only a hearing with no outcome can go: once an outcome is recorded it is
+    part of what happened in the case. The hearing is kept on the case under
+    `cancelled_hearings` (with when and why), so a mistaken cancel can be
+    traced. Cancelling one that is already gone returns the case unchanged,
+    so a retry after a lost reply is not an error."""
+    case = await case_repo.find_by_id(case_id)
+    if not case:
+        raise NotFoundError("Case")
+    if case.get("lawyer_id") != lawyer_id:
+        raise ForbiddenError("Only the assigned lawyer can cancel hearings")
+    _assert_open(case)
+
+    hearing = next((h for h in case.get("hearing_dates", []) if h.get("_id") == hearing_id), None)
+    if hearing is None:
+        if any(h.get("_id") == hearing_id for h in case.get("cancelled_hearings") or []):
+            return _public_case(case)
+        raise NotFoundError("Hearing")
+    if hearing.get("outcome"):
+        raise ConflictError("This hearing already has an outcome, so it can no longer be cancelled.")
+
+    reason = (data.get("reason") or "").strip() or None
+    record = {**hearing, "cancelled_at": datetime.now(timezone.utc),
+              "cancelled_by": lawyer_id, "cancel_reason": reason}
+    removed = await case_repo.cancel_hearing(
+        case_id, hearing_id, expect_date=hearing.get("date"), expect_time=hearing.get("time"),
+        record=record)
+    if not removed:
+        current = await case_repo.find_by_id(case_id)
+        if current:
+            _assert_open(current)             # closed since it was read
+        h = next((x for x in (current or {}).get("hearing_dates") or [] if x.get("_id") == hearing_id), None)
+        if h is None:
+            return _public_case(current) if current else _public_case(case)
+        if h.get("outcome"):
+            raise ConflictError("An outcome was recorded for this hearing meanwhile, so it can no longer be cancelled.")
+        raise ConflictError("This hearing was changed meanwhile. Reload the case and try again.")
+
+    # Tell the client: they may be planning to attend. None on a walk-in case.
+    try:
+        if not case.get("client_id"):
+            raise _NoClient()
+        from app.core.constants import NotificationType
+        from app.services import notification_service
+        d = hearing.get("date")
+        date_str = d.strftime("%d %b %Y") if hasattr(d, "strftime") else str(d or "")[:10]
+        body = f"{case.get('title', 'Your case')}: the hearing on {date_str} is cancelled."
+        if reason:
+            body += f" Reason: {reason}"
+        await notification_service.create_notification(
+            case["client_id"],
+            NotificationType.CASE_UPDATE,
+            "Hearing cancelled",
+            body,
+            payload={"case_id": case_id, "hearing_id": hearing_id},
+            logical_event_id=f"hearing-cancelled:{case_id}:{hearing_id}",
+        )
+    except _NoClient:
+        pass
+    except Exception:
+        # Must not undo the cancel, but the client was not told: log it.
+        logger.exception("hearing-cancelled notification failed for case %s", case_id)
 
     return _public_case(await case_repo.find_by_id(case_id))
 

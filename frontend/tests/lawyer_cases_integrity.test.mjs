@@ -87,7 +87,7 @@ async function type(el, value) {
     await act(async () => { el.dispatchEvent(new Event("input", { bubbles: true })); });
 }
 const sectionTitles = (root) => [...root.querySelectorAll("span")]
-    .map(s => s.textContent.trim()).filter(t => ["New requests", "No hearing yet", "Active", "History"].includes(t));
+    .map(s => s.textContent.trim()).filter(t => ["New hire requests", "No hearing yet", "Active", "History"].includes(t));
 
 
 test.beforeEach(() => {
@@ -279,7 +279,7 @@ const chipN = (view, name) => Number((tab(view.container, name)?.textContent.mat
 test("New requests and Needs me do not count requests waiting on the client; All does not count closed cases", async () => {
     api.__respond("listEngagements", { data: [ASKED, TERMS], error: null });
     const view = await mount();
-    assert.equal(chipN(view, "New requests"), 1, "terms already sent were counted as a new request");
+    assert.equal(chipN(view, "New hire requests"), 1, "terms already sent were counted as a new request");
     // Needs me: 1 request to answer + 1 case with no date (NONE).
     assert.equal(chipN(view, "Needs me"), 2, "Needs me counted a request waiting on the client");
     // All: 2 requests (one to answer, one awaiting the client) + 3 live cases; the closed one is History.
@@ -292,7 +292,7 @@ test("every chip's count equals the rows its view renders", async () => {
     api.__respond("listCases", { data: { items: [LATER, SOON, NONE, SHUT, OVERDUE] }, error: null });
     api.__respond("listEngagements", { data: [ASKED, TERMS], error: null });
     const view = await mount();
-    for (const name of ["All", "Needs me", "New requests", "Not filed yet", "Active"]) {
+    for (const name of ["All", "Needs me", "New hire requests", "Not filed yet", "Active"]) {
         await click(tab(view.container, name));
         const rows = view.container.querySelectorAll("[data-row]").length;
         assert.equal(chipN(view, name), rows, `${name}: chip says ${chipN(view, name)}, ${rows} rows shown`);
@@ -721,5 +721,46 @@ test("dialogs render at the top of the document, outside the page's stacking con
     assert.equal(d.parentElement.parentElement, document.body, "the backdrop is not a direct child of <body>");
     await click(bodyButton("Cancel"));
     assert.equal(dialog(), null);
+    await view.unmount();
+});
+
+/* ── Cancel a hearing (2026-10-19) ─────────────────────────────────────── */
+
+test("a scheduled hearing can be cancelled: confirm, reason sent, the server's copy shown", async () => {
+    const after = { ...SOON, hearing_dates: [] };
+    api.__respond("cancelHearing", { data: after, error: null, status: 200 });
+    const view = await mount({ openAt: SOON.case_number });
+    await click(tab(view.container, "Schedule"));
+    const cancelBtn = allButtons(view.container).find(b => /^Cancel the hearing on/.test(b.getAttribute("aria-label") || ""));
+    await click(cancelBtn);
+    assert.ok(bodyButton("Keep hearing"), "no confirmation before cancelling");
+    assert.equal(api.__calls("cancelHearing").length, 0, "cancelled before the lawyer confirmed");
+    await type(document.body.querySelector('[role="dialog"] textarea'), "Entered by mistake");
+    await click(bodyButton("Cancel hearing"));
+    await settle(40);
+    const call = api.__calls("cancelHearing").at(-1);
+    assert.equal(call?.args?.[0], SOON._id);
+    assert.equal(call?.args?.[1], "h1");
+    assert.equal(call?.args?.[2]?.reason, "Entered by mistake");
+    assert.equal(bodyButton("Keep hearing"), undefined, "the dialog stayed open");
+    assert.match(text(view), /Hearing cancelled/);
+    assert.doesNotMatch(text(view), /Framing of issues/, "the cancelled hearing is still listed");
+    await view.unmount();
+});
+
+test("a 409 cancel closes the dialog, says why, re-reads the case, and claims no cancel", async () => {
+    let reads = 0;
+    api.__respond("listCases", () => { reads += 1; return { data: { items: [LATER, SOON, NONE, SHUT] }, error: null }; });
+    api.__respond("cancelHearing", { data: null, error: { message: "An outcome was recorded for this hearing meanwhile, so it can no longer be cancelled." }, status: 409 });
+    const view = await mount({ openAt: SOON.case_number });
+    await click(tab(view.container, "Schedule"));
+    await click(allButtons(view.container).find(b => /^Cancel the hearing on/.test(b.getAttribute("aria-label") || "")));
+    const before = reads;
+    await click(bodyButton("Cancel hearing"));
+    await settle(40);
+    assert.equal(bodyButton("Keep hearing"), undefined, "the dialog stayed open after the conflict");
+    assert.match(text(view), /no longer be cancelled/);
+    assert.ok(reads > before, "the case was not re-read after the conflict");
+    assert.doesNotMatch(text(view), /Hearing cancelled —/);
     await view.unmount();
 });

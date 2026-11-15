@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Send for lawyer review</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#0f2228;font-family:Inter,system-ui,sans-serif;color:#e6f1f2}
+a{color:#3fd6c6}a:hover{color:#8ff0e5}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:11px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;box-sizing:border-box;font-family:inherit}
+.btn-primary{background:#3fd6c6;color:#0b2a2d;border:none}
+.btn-primary:hover{background:#6fe3d6;color:#0b2a2d}
+.btn-ghost{background:transparent;color:#d3e6e8;border:1px solid #3a5e68}
+.btn-ghost:hover{background:#21414a;color:#fff}
+.step{font-size:12px;font-weight:700;letter-spacing:.08em;color:#6fcfc3}
+.law{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px 16px;border-radius:14px;background:#132a31;border:1px solid #2f5059;color:#e6f1f2;font:inherit;cursor:pointer}
+.law:hover{border-color:#3fd6c6}
+.seg{flex:1 1 0;display:flex;flex-direction:column;gap:2px;align-items:flex-start;padding:11px 14px;border-radius:12px;background:#132a31;border:1px solid #2f5059;color:#e6f1f2;font:inherit;text-align:left;cursor:pointer}
+.seg:hover{border-color:#3fd6c6}
+.qchip{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid #3a5e68;background:#132a31;color:#cfe3e6;font:inherit;font-size:12.5px;cursor:pointer}
+.qchip:hover{border-color:#3fd6c6}
+.field{width:100%;background:#0f2429;border:1px solid #33555e;border-radius:10px;color:#e6f1f2;font:inherit;font-size:14px;padding:10px 12px;box-sizing:border-box}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; overflow: hidden; background: #0f2228">
+<header style="height: 60px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 28px; border-bottom: 1px solid #22404a; background: #132a31">
+<a href="Workspace.dc.html" style="font-size: 14px; text-decoration: none">← Back to draft</a>
+<div style="font-family: Fraunces, Georgia, serif; font-size: 20px; font-weight: 600; color: #f2f8f8; margin-left: 8px">Send for lawyer review</div>
+<div style="flex-grow: 1"></div>
+<button class="btn btn-ghost" type="button" onClick="{{toggleReady}}" style="min-height: 32px; font-size: 12px">{{previewLabel}}</button>
+</header>
+
+<div style="flex-grow: 1; display: flex; gap: 28px; padding: 26px 40px; box-sizing: border-box; overflow: hidden">
+
+<aside style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+<div style="padding: 18px; border-radius: 16px; background: #172f36; border: 1px solid #28464f; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 12px; align-items: center">
+<span style="width: 44px; height: 52px; border-radius: 8px; background: #e3eefc; color: #1d4f91; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center">NDA</span>
+<div><div style="font-size: 15.5px; font-weight: 700">6-Month Non-Disclosure Agreement</div><div style="font-size: 12.5px; color: #93aeb4; margin-top: 3px">Version 3 · 3 pages · Medium risk</div></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div><div style="font-size: 12px; color: #93aeb4">Parties</div><div style="font-size: 13.5px; font-weight: 600; margin-top: 2px">ABC Pvt Ltd · designer</div></div>
+<div><div style="font-size: 12px; color: #93aeb4">Term</div><div style="font-size: 13.5px; font-weight: 600; margin-top: 2px">6 months</div></div>
+</div>
+</div>
+
+<div style="padding: 16px 18px; border-radius: 16px; background: #172f36; border: 1px solid {{readyBorder}}; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px"><span style="font-size: 14px; font-weight: 700; flex-grow: 1">Ready to send?</span><span style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: {{badgeBg}}; color: {{badgeFg}}">{{badge}}</span></div>
+<sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13.5px">
+<span style="width: 20px; height: 20px; border-radius: 50%; background: {{c.bg}}; color: {{c.fg}}; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0">{{c.mark}}</span>
+<span style="flex-grow: 1; color: {{c.color}}">{{c.text}}</span>
+<sc-if value="{{c.fixable}}" hint-placeholder-val="{{false}}"><a href="Workspace.dc.html" style="font-size: 12.5px; font-weight: 600">Fix</a></sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="padding: 14px 16px; border-radius: 14px; background: #132a31; border: 1px dashed #3a5e68; font-size: 12.5px; color: #a9c3c8; line-height: 1.55">
+<b style="color: #e6f1f2">Don't need a lawyer?</b> Medium-risk documents can be downloaded as a draft. <a href="#" style="font-weight: 600">Download draft</a>
+</div>
+</aside>
+
+<section style="flex-grow: 1; display: flex; flex-direction: column; gap: 22px; min-width: 0; opacity: {{formOpacity}}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="step">1 · CHOOSE A LAWYER</div>
+<sc-for list="{{lawyers}}" as="l" hint-placeholder-count="3">
+<button class="law" type="button" onClick="{{l.pick}}" style="border-color: {{l.border}}; background: {{l.bg}}">
+<span style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid {{l.border}}; box-sizing: border-box; flex-shrink: 0; display: flex; align-items: center; justify-content: center"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{l.dot}}"></span></span>
+<span style="width: 44px; height: 44px; border-radius: 50%; background: #1f4a4f; color: #bff3ec; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0">{{l.initials}}</span>
+<span style="flex-grow: 1; min-width: 0">
+<span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 15px; font-weight: 600">{{l.name}}</span><sc-if value="{{l.rec}}" hint-placeholder-val="{{false}}"><span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #1d4a36; color: #8ff0b5">Recommended for NDAs</span></sc-if></span>
+<span style="display: block; font-size: 12.5px; color: #93aeb4; margin-top: 3px">{{l.meta}}</span>
+</span>
+<span style="text-align: right; flex-shrink: 0"><span style="display: block; font-size: 14px; font-weight: 600">{{l.reply}}</span><span style="display: block; font-size: 12px; color: #93aeb4; margin-top: 2px">Review fee [fee]</span></span>
+</button>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="step">2 · HOW SOON?</div>
+<div style="display: flex; gap: 10px">
+<sc-for list="{{urgencies}}" as="u" hint-placeholder-count="3">
+<button class="seg" type="button" onClick="{{u.pick}}" style="border-color: {{u.border}}; background: {{u.bg}}"><span style="font-size: 14px; font-weight: 600">{{u.name}}</span><span style="font-size: 12.5px; color: #93aeb4">{{u.meta}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<label for="note" class="step">3 · ANYTHING THEY SHOULD LOOK AT? <span style="font-weight: 500; letter-spacing: 0; color: #93aeb4">— optional</span></label>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<sc-for list="{{quick}}" as="q" hint-placeholder-count="3"><button class="qchip" type="button" onClick="{{q.pick}}">+ {{q.text}}</button></sc-for>
+</div>
+<textarea id="note" class="field" rows="2" style="resize: none" placeholder="Write a short note for the lawyer" value="{{note}}" onChange="{{setNote}}"></textarea>
+</div>
+</section>
+</div>
+
+<footer style="flex-shrink: 0; display: flex; align-items: center; gap: 16px; padding: 14px 40px; border-top: 1px solid #22404a; background: #132a31">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3fd6c6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+<div style="flex-grow: 1">
+<div style="font-size: 14px; font-weight: 600">{{summary}}</div>
+<div style="font-size: 12.5px; color: #93aeb4; margin-top: 2px">Version 3 is frozen when you send it. You can withdraw it until the lawyer decides.</div>
+</div>
+<a class="btn btn-ghost" href="Workspace.dc.html">Keep editing</a>
+<sc-if value="{{ready}}" hint-placeholder-val="{{true}}"><a class="btn btn-primary" href="Main.dc.html" style="padding: 0 28px">Send for review</a></sc-if>
+<sc-if value="{{notReady}}" hint-placeholder-val="{{false}}"><span class="btn" aria-disabled="true" style="background: #26434b; color: #7c979d; cursor: not-allowed; padding: 0 28px">Fix 1 item to send</span></sc-if>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { ready: true, lawyer: 0, urgency: 0, note: '' }; }
+  renderVals() {
+    var s = this.state, on = '#3fd6c6', off = '#2f5059', onBg = '#173a3f', offBg = '#132a31';
+    var ls = [
+      { initials: 'LA', name: '[Lawyer A]', meta: 'Corporate & contracts · 4.8 · Karachi', reply: '~1 day', rec: true },
+      { initials: 'LB', name: '[Lawyer B]', meta: 'IP & technology · 4.7 · Lahore', reply: '~2 days', rec: false },
+      { initials: 'LC', name: '[Lawyer C]', meta: 'Civil & commercial · 4.6 · Karachi', reply: '~3 days', rec: false }
+    ];
+    var us = [['Normal', 'Reply in 1–3 days'], ['Priority', 'Reply within 24 hours'], ['Urgent', 'Same day, if available']];
+    var quick = ['Check the IP clause', 'Is 6 months enough?', 'Is it enforceable in Sindh?'];
+    var ok = (t) => ({ mark: '✓', bg: '#1d4a36', fg: '#8ff0b5', color: '#e6f1f2', text: t, fixable: false });
+    var bad = (t) => ({ mark: '!', bg: '#4a3a1c', fg: '#f7cf7d', color: '#f7cf7d', text: t, fixable: true });
+    return {
+      ready: s.ready, notReady: !s.ready,
+      toggleReady: () => this.setState({ ready: !s.ready }),
+      previewLabel: s.ready ? 'Preview: not ready' : 'Preview: ready',
+      badge: s.ready ? 'Ready' : '1 to fix', badgeBg: s.ready ? '#1d4a36' : '#4a3a1c', badgeFg: s.ready ? '#8ff0b5' : '#f7cf7d',
+      readyBorder: s.ready ? '#2f6b55' : '#5a4a26',
+      formOpacity: 1,
+      checks: [
+        s.ready ? ok('All details filled') : bad('4 details still blank'),
+        ok('Required clauses present'),
+        ok('Citations verified'),
+        ok('AI suggestions decided')
+      ],
+      lawyers: ls.map((l, i) => ({ ...l, border: s.lawyer === i ? on : off, bg: s.lawyer === i ? onBg : offBg, dot: s.lawyer === i ? on : 'transparent', pick: () => this.setState({ lawyer: i }) })),
+      urgencies: us.map((u, i) => ({ name: u[0], meta: u[1], border: s.urgency === i ? on : off, bg: s.urgency === i ? onBg : offBg, pick: () => this.setState({ urgency: i }) })),
+      quick: quick.map(q => ({ text: q, pick: () => this.setState({ note: (s.note ? s.note + ' ' : '') + q + '.' }) })),
+      note: s.note, setNote: (e) => this.setState({ note: e.target.value }),
+      summary: 'Sending version 3 to ' + ls[s.lawyer].name + ' · ' + us[s.urgency][0] + ' · reply ' + (s.urgency === 0 ? ls[s.lawyer].reply : s.urgency === 1 ? 'within 24 hours' : 'today if available')
+    };
+  }
+}
+</script>
+</body>
+</html>

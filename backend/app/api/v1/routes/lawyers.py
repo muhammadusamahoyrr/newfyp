@@ -1,6 +1,7 @@
+import re
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.constants import SPECIALIZATION_PATTERN, CaseType, Province
 from app.dependencies import (
@@ -9,7 +10,7 @@ from app.dependencies import (
     require_client,
     require_lawyer,
 )
-from app.schemas.lawyer import LawyerMatchResponse, LawyerReview, LawyerReviewPage
+from app.schemas.lawyer import LawyerMatchResponse, LawyerReview, LawyerReviewPage, ReviewEligibility
 from app.schemas.lawyer_availability import (
     BookableSlotsResponse,
     OwnAvailabilityResponse,
@@ -147,6 +148,28 @@ async def search_lawyers(
     )
 
 
+@router.get("/counts")
+async def lawyer_directory_counts(
+    province: Province | None = Query(None),
+    min_rating: float = Query(0.0, ge=0.0, le=5.0),
+    availability: bool | None = Query(None),
+    # The area chips to count. A closed set, each value checked like
+    # `specialization` on the search above; capped so it stays one cheap read.
+    specialization: list[str] = Query(default_factory=list, max_length=20),
+    current_user: dict = Depends(get_current_user),
+):
+    """Every directory count the Lawyers page shows, in one request."""
+    bad = [s for s in specialization if not re.fullmatch(SPECIALIZATION_PATTERN, s)]
+    if bad:
+        raise HTTPException(status_code=422, detail=f"Unknown practice area: {bad[0][:40]}")
+    return await lawyer_service.directory_counts(
+        province=province.value if province else None,
+        min_rating=min_rating,
+        availability=availability,
+        specializations=specialization,
+    )
+
+
 @router.get("/match/{case_id}", response_model=LawyerMatchResponse)
 async def match_lawyers(
     case_id: str,
@@ -166,6 +189,17 @@ async def match_lawyers(
         raise NotFoundError("Case")
     if case.get("client_id") != str(current_user["_id"]):
         raise ForbiddenError("You can only match lawyers for your own cases")
+    # A draft is refused here with a CODE, not only a sentence: the Lawyers page
+    # matches automatically on every visit, and has to tell "finish your
+    # intake" apart from "still processing" without parsing English.
+    from fastapi import HTTPException
+    from app.services.case_service import is_draft
+    if is_draft(case):
+        raise HTTPException(status_code=422, detail={
+            "code": "case_draft",
+            "message": ("This case is still a draft, so it cannot be matched to "
+                        "lawyers yet. Confirm it at the end of the intake first."),
+        })
     return await lawyer_service.match_lawyers_for_case(case_id, top_n=top_n)
 
 
@@ -184,6 +218,16 @@ async def list_lawyer_reviews(
     weighs before hiring — but the payload carries no reviewer id or email.
     """
     return await lawyer_service.list_reviews(lawyer_id, page=page, page_size=page_size)
+
+
+@router.get("/{lawyer_id}/review-eligibility", response_model=ReviewEligibility)
+async def review_eligibility(
+    lawyer_id: str,
+    current_user: dict = Depends(require_client),
+):
+    """Whether the signed-in CLIENT may review this lawyer now. Per-client, so
+    a separate authenticated read rather than a field on the public profile."""
+    return await lawyer_service.review_eligibility(lawyer_id, current_user["_id"])
 
 
 @router.post("/{lawyer_id}/review", response_model=StatusResponse, status_code=status.HTTP_201_CREATED)

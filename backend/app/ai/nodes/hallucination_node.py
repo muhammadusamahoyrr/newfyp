@@ -10,6 +10,7 @@ from app.ai.answer_citations import (
     parse_claim_support,
     split_claims,
 )
+from app.ai import answer_safeguards, exact_provision, period_support, tool_contract
 from app.ai.graph.state import AgentState
 from app.ai.llm import get_structured_llm
 from app.ai.provider_health import PURPOSE_GROUNDING_JUDGE
@@ -43,6 +44,17 @@ Return JSON with:
 - reason: one-sentence explanation in English
 - claim_support: one entry per claim, comma-separated, as "<claim number>:<verdict>",
   e.g. "1:supported,2:partial,3:unsupported". Empty string if there are no claims."""
+
+# Guarded turns (client chat; research with safeguards on). "Engine output is
+# computed ground truth" let a lookup's "No offence matched 'Section 420 PPC'"
+# support "no offence matches Section 420" -- against PPC 420's own text
+# (ai/tool_contract.py). Only a successful engine result is ground truth.
+_SYSTEM_GUARDED_ADDENDUM = """
+
+Engine output that reports an error, `not_in_table`, or `found: false` is a gap in a small lookup
+table, not a legal fact. It never supports a claim that a provision does not exist or was not found.
+A claim that a provision does not exist / was not found is UNSUPPORTED when a cited source contains
+that provision's own text."""
 
 _CAUTION = (
     "\n\n> **Caution:** Some claims in this response may not be fully supported by the retrieved "
@@ -84,19 +96,31 @@ async def hallucination_node(state: AgentState) -> dict:
     # checkpoint, a cached path); it reproduces the old evidence set rather than
     # failing the turn, and case law and engine output ride along as before.
     evidence = state.get("generation_evidence") or build_generation_evidence(
-        state.get("reranked_chunks", []), case_law, tool_results, statute_limit=5)
+        state.get("reranked_chunks", []), case_law, tool_results, statute_limit=5, distinct_first=True)
     context = format_evidence_for_prompt(evidence)
 
     # Sentences of the answer that actually cite something, tied to those ids.
     # Deterministic — no model decides what a claim is, or which source it cites.
-    claims = split_claims(state["answer"], evidence)
+    #
+    # Client chat also folds marker-only fragments ("...payment. [4][1]") into
+    # the sentence they belong to; otherwise that sentence cites nothing and is
+    # never checked (ai/answer_citations.attach_trailing_markers).
+    # Client chat, and lawyer research with its safeguards on
+    # (ai/answer_safeguards.py), read citations on normalised text ("489‑F"
+    # with a non-breaking hyphen parsed as section 489; research also reads
+    # Urdu forms such as "پی پی سی دفعہ 302").
+    guarded = answer_safeguards.on(state)
+    matched_on = answer_safeguards.citation_text(state["answer"], state)
+    claims = split_claims(matched_on if guarded else state["answer"], evidence, attach_markers=guarded)
+    if answer_safeguards.research_on(state):
+        claims = answer_safeguards.restore_claim_texts(claims, state["answer"], matched_on)
     claims_block = "\n".join(
         f"{c['index']}. (cites {', '.join(c['source_ids']) or 'nothing resolvable'}) {c['text']}"
         for c in claims if c["citation_status"] == "matched"
     )
 
     result: GroundingOutput = await asyncio.to_thread(llm.invoke, [
-        {"role": "system", "content": _SYSTEM},
+        {"role": "system", "content": _SYSTEM + (_SYSTEM_GUARDED_ADDENDUM if guarded else "")},
         {"role": "user", "content": (
             f"Answer:\n{state['answer']}\n\n"
             f"Law sections used:\n{context}\n\n"
@@ -107,6 +131,31 @@ async def hallucination_node(state: AgentState) -> dict:
     # Never raises: an unparseable verdict leaves every claim `unassessed`, which
     # is the honest report. A missing verdict is not evidence of support.
     assessed = parse_claim_support(result.claim_support, claims)
+
+    # A stated period (days / months / years) is support-checked
+    # deterministically for client answers: the judge marked "three years ...
+    # under Section 6 of the Limitation Act" supported for a cheque, when the
+    # cited text gives three years only for contract suits. Downgrade-only.
+    if guarded:
+        assessed = period_support.withdraw_claims(assessed, evidence)
+        # A claim naming a provision absent from the evidence while citing a
+        # different Act's text ("489-F PPC defines the payee [6]", [6] = a CrPC
+        # schedule row) is not supported by what it cites.
+        assessed = exact_provision.misattributed(assessed, evidence)
+        # "Section X was not found / does not exist" can never be supported
+        # while Section X's own text is in the evidence (ai/tool_contract.py).
+        assessed = tool_contract.false_denial_claims(assessed, evidence)
+    # Research: a source that does not concern the lawyer's question at all
+    # cannot make a claim "supported" (ai/issue_relevance.py). Downgrade-only.
+    if answer_safeguards.research_on(state):
+        from app.ai import issue_relevance
+        from app.ai.response_policy import presentation_base_query
+        assessed = issue_relevance.downgrade(
+            assessed, evidence, presentation_base_query(state) or state.get("query", ""),
+            state.get("case_context"))
+    # The CPC jurisdiction downgrade (Punjab-only CPC text) is applied in
+    # finalizer_node, on fresh AND cached answers, AFTER this grounding verdict:
+    # jurisdiction doubt is not a grounding failure (batch 5).
 
     # The judge's own claim assessment gets a vote on the judge's verdict.
     #

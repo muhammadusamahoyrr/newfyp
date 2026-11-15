@@ -8,6 +8,7 @@ from app.ai.provider_health import PURPOSE_FACT_GAP
 from app.ai.nodes._history import format_history
 from app.ai.nodes._resume import merge_user_reply
 from app.ai.nodes._language import question_language_instruction
+from app.ai.response_policy import presentation_base_query
 
 _MAX_CLARIFICATION_ATTEMPTS = 2
 _MIN_FACTS_FOR_SIMPLE_PATH  = 1
@@ -73,6 +74,28 @@ async def fact_gap_node(state: AgentState) -> dict:
     attempts    = state.get("clarification_attempts", 0)
     known_facts = state.get("known_facts", [])
     complexity  = state.get("complexity", "simple")
+
+    # ── Client "make it short" / "explain in detail" (2026-10-13) ────────────
+    # A presentation follow-up re-answers the previous question; it carries no
+    # new matter, so asking a fresh fact question here would answer "make it
+    # short" with an interrogation. Set only by the client chat route
+    # (chat_socket.client_turn_overrides), so lawyer research is untouched.
+    if presentation_base_query(state):
+        return {
+            "fact_delta":          len(known_facts),
+            "needs_clarification": False,
+        }
+
+    # ── General question ("what is khula?", "chori ki saza kya hai?") ────────
+    # It asks what the law is, not about the asker's matter: answered, not
+    # questioned. When the exact answer turns on a fact, the answer itself ends
+    # with one question for it (ai/response_policy.py) (2026-10-21).
+    from app.ai.graph.edges import is_general_question
+    if state.get("surface") in ("research", "client") and is_general_question(state.get("query")):
+        return {
+            "fact_delta":          len(known_facts),
+            "needs_clarification": False,
+        }
 
     # ── Simple-path bypass: fast-track if we have a fact OR already asked once ──
     if complexity == "simple" and (len(known_facts) >= _MIN_FACTS_FOR_SIMPLE_PATH or attempts >= 1):

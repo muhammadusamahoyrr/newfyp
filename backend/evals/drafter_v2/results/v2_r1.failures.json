@@ -1,0 +1,1465 @@
+{
+ "scorer": "v1",
+ "legal_correctness_definitive_only": {
+  "definitive_rows": 14,
+  "definitive_rows_with_legal_error": 4
+ },
+ "definitive": [
+  {
+   "id": "V09",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "GROUNDS\n\nThat the criminal proceedings instituted against the Applicant constitute an abuse of the process of law and, in the interest of justice, the High Court should exercise its inherent power under Section 561‑A of the Code of Criminal Procedure, 1898, to prevent such abuse.\n\nThat the continuation of these proceedings would cause undue hardship and oppression to the Applicant, contrary to the purpose of Section 561‑A which empowers the Court to make orders necessary to secure the ends of justice.\n\nThat the Applicant has made a bona‑fide application for quashment, and, in exercise of its inherent jurisdiction, the High Court may quash the proceedings to prevent a miscarriage of justice, as recognized in [placeholder] case law.\n\nThat the allegations against the Applicant are baseless and the evidence, if any, is insufficient to sustain the charge, rendering the proceedings frivolous a",
+   "cited_authorities": [
+    "s.561-A CrPC 1898"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 561-A CrPC 1898"
+    ],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 5.33,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.561-A CrPC 1898"
+    ]
+   }
+  },
+  {
+   "id": "V10",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "holdout",
+   "categories": [
+    "missing_required"
+   ],
+   "final_visible_proposal": "That, pursuant to Section 497(2) of the Code of Criminal Procedure, 1898, there are no reasonable grounds at this stage of investigation or inquiry to believe that the accused has committed the alleged non‑bailable offence, and consequently the accused is entitled to be released on bail.",
+   "cited_authorities": [
+    "s.497 CrPC"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 497 CrPC 1898"
+    ],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CrPC 1898 s.497",
+     "status": "VERIFIED"
+    }
+   ],
+   "latency_s": 1.75,
+   "error": null,
+   "detail": {
+    "missing_required": [
+     "further inquiry"
+    ]
+   }
+  },
+  {
+   "id": "V13",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_citation"
+   ],
+   "final_visible_proposal": "2. That ملزم کے خلاف مزید انکوائری درکار ہے، اس لیے ضمانت کی درخواست سیکشن 354، CrPC 1898 کے تحت کی جاتی ہے۔",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.5,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "V09",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the criminal proceedings instituted against the petitioner are manifestly an abuse of process, being frivolous, vexatious and intended to harass the petitioner, and therefore fall within the ambit of Section 561‑A of the Code of Criminal Procedure, 1898, which empowers this Hon’ble Court to prevent abuse of the process of any Court and to secure the ends of justice.\n\nThat the petitioner has been denied a fair opportunity to defend himself, as the allegations are baseless and unsupported by any material evidence, rendering the continuation of the proceedings contrary to the principles enshrined in Section 561‑A of the Code of Criminal Procedure, 1898.\n\nThat the continuation of the present proceedings would result in a miscarriage of justice and would contravene the inherent jurisdiction of this Hon’ble Court under Section 561‑A of the Code of Criminal Procedure, 1898 to quash proceed",
+   "cited_authorities": [
+    "s.561-A CrPC 1898"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 561-A CrPC 1898"
+    ],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.77,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.561-A CrPC 1898"
+    ]
+   }
+  },
+  {
+   "id": "V12",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "wrongly_withheld"
+   ],
+   "final_visible_proposal": "APPLICATION FOR DISCHARGE OF SURETY\n\nThat the applicant, [Name of Surety], is a surety for the attendance and appearance of the accused, [Name of Accused], who was released on bail by this Court on [date] under a bond executed on [date] in the sum of Rs. ________.\n\nThat the applicant seeks to be discharged from the said bond, either wholly or insofar as it relates to the applicant, pursuant to Section 502 of the Code of Criminal Procedure, 1898.\n\nThat the applicant has complied with all conditions imposed upon the bond and there is no pending breach of any condition that would justify the forfeiture of the bond.\n\nThat the applicant requests that the Court issue a warrant of arrest directing the accused to appear before the Court as required under sub‑section (2) of Section 502, and thereafter order the discharge of the applicant from any further liability under the bond.\n\nPRAYER\n\nThe app",
+   "cited_authorities": [
+    "s.502 CrPC"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 502 CrPC 1898"
+    ],
+    "not_checked": [],
+    "withheld": [
+     {
+      "text": "1. Issue a warrant of arrest directing the accused to appear before this Court in accordance with Section 502(2) of the Code of Criminal Procedure, 1898; and",
+      "reasons": [
+       "Section 502 CrPC is \"Discharge of sureties\", which does not support what this sentence relies on it for (the sentence relies on it for appear, before; see s.466 \"Procedure on accused appearing before Magistrate or Court\"; s.60 \"Person arrested to be taken before Magistrate or officer incharge of police-\")"
+      ]
+     }
+    ],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CrPC 1898 s.502",
+     "status": "VERIFIED"
+    }
+   ],
+   "latency_s": 2.1,
+   "error": null,
+   "detail": {
+    "wrongly_withheld": [
+     "1. Issue a warrant of arrest directing the accused to appear before this Court in accordance with Section 502(2) of the "
+    ]
+   }
+  },
+  {
+   "id": "V13",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That مزید انکوائری کی ضرورت ہے اور اس لئے ملزم کے خلاف گرفتاری کے بعد ضمانت کی درخواست کی جاتی ہے؛ اس کی بنیاد سیکشن 354، CrPC 1898 ہے۔",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.21,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "T03",
+   "rep": 2,
+   "track": "template_fill",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities"
+   ],
+   "final_visible_proposal": "RENT AGREEMENT\n\nThis Rent Agreement is made on this ___ day of __________ 20__, between:\n\n**Landlord:** Bilal Hussain, residing at ______________________\n\n**Tenant:** Farah Naz, residing at ______________________\n\n**Premises:** A flat in Johar Town, Lahore, Punjab.\n\n**Term:** 11 months, commencing on ___ (date) and ending on ___ (date).\n\n**Monthly Rent:** Rs. 45,000 (Forty‑Five Thousand Rupees) payable in advance on or before the ___ day of each month.\n\n**Mode of Payment:** ______________________ (if not specified, payment shall be by money order as per Punjab Rented Premises Act 2009, Sec. 7(3)).\n\n**Bank Account Details of Landlord (if rent to be paid by bank):** ______________________\n\n**Security Deposit:** Rs. __________ (amount)\n\n**Purpose of Letting:** ______________________\n\n---\n\n1. **Payment of Rent** – The Tenant shall pay or tender the rent to the Landlord in the mode and by the",
+   "cited_authorities": [
+    "s.10 Punjab Rented Premises Act 2009",
+    "s.12 Punjab Rented Premises Act 2009",
+    "s.3 CPC 1908",
+    "s.7 Punjab Rented Premises Act 2009"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 7 Punjab Rented Premises Act 2009",
+     "Section 10 Punjab Rented Premises Act 2009"
+    ],
+    "not_checked": [
+     "Section 3 CPC 1908 (several provisions share this number)",
+     "Section 12 Punjab Rented Premises Act 2009"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.3",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 2.86,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.7 Punjab Rented Premises Act 2009",
+     "s.12 Punjab Rented Premises Act 2009",
+     "s.3 CPC 1908",
+     "s.10 Punjab Rented Premises Act 2009"
+    ]
+   }
+  }
+ ],
+ "provisional_observations": [
+  {
+   "id": "V01",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "THAT the plaint fails to disclose any cause of action, contrary to the requirement of CPC 1908 Section 4.\n\nTHAT in view thereof the plaint ought to be rejected pursuant to CPC 1908 Section 13, and the order of rejection shall not be appealable under CPC 1908 Section 7.",
+   "cited_authorities": [
+    "s.13 CPC 1908",
+    "s.4 CPC 1908",
+    "s.7 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 4 CPC 1908 (several provisions share this number)",
+     "Section 13 CPC 1908 (several provisions share this number)",
+     "Section 7 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.13",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.7",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 32.87,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.4 CPC 1908",
+     "s.13 CPC 1908",
+     "s.7 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V02",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "1. That the plaint has been filed in this Court which does not possess territorial jurisdiction over the cause of action, contrary to the requirement of Section 4 CPC 1908.\n\n2. That, in accordance with Section 10 CPC 1908, the plaint must be returned to the plaintiff for presentation before the Court having the proper territorial jurisdiction.",
+   "cited_authorities": [
+    "s.10 CPC 1908",
+    "s.4 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 4 CPC 1908 (several provisions share this number)",
+     "Section 10 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.10",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 2.4,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.4 CPC 1908",
+     "s.10 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V03",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "holdout",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the Defendant respectfully seeks leave of this Hon’ble Court, pursuant to Section 3 of the Code of Civil Procedure, 1908, to amend the written statement filed on [date] so as to correspond with the plaint, and further that such amendment be permitted in accordance with Section 9 of the Code of Civil Procedure, 1908.",
+   "cited_authorities": [
+    "s.3 CPC 1908",
+    "s.9 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 3 CPC 1908 (several provisions share this number)",
+     "Section 9 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.3",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.9",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 2.09,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.3 CPC 1908",
+     "s.9 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V04",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the applicant is a person who has a direct and pecuniary interest in the subject‑matter of the suit and any decree passed therein will affect his rights.\n\nThat the applicant is a necessary party within the meaning of the Code of Civil Procedure, 1908, Section ___ [placeholder]; his presence is indispensable for a complete adjudication of the dispute.\n\nThat the applicant has not been served with the pleadings and therefore seeks to be impleaded as an intervener to protect his interests.\n\nThat the addition of the applicant as a necessary party will not cause any delay or prejudice to the existing parties and is necessary to avoid multiplicity of proceedings.\n\nThat the Court may, under CPC 1908, Section 94, make such interlocutory order as it deems just and convenient to add the applicant as a necessary party.",
+   "cited_authorities": [
+    "s.94 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 94 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.94",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 2.3,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.94 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V05",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the decree was passed ex parte, depriving the plaintiff of an opportunity to be heard.\n\nThat the decree was obtained by fraud and misrepresentation on the part of the defendant, constituting a material irregularity.\n\nThat, pursuant to Section 4 of the Code of Civil Procedure, 1908, the Court may, in special circumstances, set aside a decree and, if necessary, stay or set aside its execution.",
+   "cited_authorities": [
+    "s.4 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 4 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [
+     {
+      "text": "That, in accordance with Section 6 of the Limitation Act, 1908, an application to set aside a decree on the ground of fraud may be filed within three years from the date the fraud became known to the ",
+      "reasons": [
+       "Section 6 Limitation is \"Legal disabili ty\", which does not support what this sentence relies on it for (the sentence relies on it for aside, period, set; see s.16 \"Exclusion of time during which proceedings to set aside execution-sale\"; s.4 \"Where Court is closed  when period expires\")"
+      ]
+     }
+    ],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 2.37,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.4 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V06",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "holdout",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "APPLICATION TO WITHDRAW SUIT AND SEEK PERMISSION TO FILE FRESH SUIT\n\nThat the Plaintiff, being the rightful party to the present suit, hereby seeks to withdraw the suit in accordance with Section 1 of the Code of Civil Procedure, 1908, which permits a plaintiff, at any time after the institution of a suit, to withdraw his suit or abandon part of his claim.\n\nThat the Plaintiff further seeks an order permitting the institution of a fresh suit on the same cause of action, pursuant to Section 4 of the Code of Civil Procedure, 1908, which authorises a plaintiff, where a suit is dismissed, to either bring a fresh suit or apply for an order to set the dismissal aside, provided sufficient cause is shown.\n\nThat the Plaintiff submits that there exists sufficient cause for the withdrawal and for the filing of a fresh suit, and that no prejudice will be caused to the Defendant by the granting of the",
+   "cited_authorities": [
+    "s.1 CPC 1908",
+    "s.4 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 1 CPC 1908 (several provisions share this number)",
+     "Section 4 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.1",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 2.15,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.1 CPC 1908",
+     "s.4 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V08",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the prescribed period for filing an appeal under the Code of Civil Procedure, 1908 is thirty (30) days, and the appellant filed the appeal on [date of filing], which is twelve (12) days beyond the prescribed period.\n\nThat the delay was caused by [brief description of reasonable cause], and the appellant exercised due diligence in filing the appeal as soon as the cause of delay was discovered.\n\nThat, in accordance with Section 12 of the Limitation Act 1908 and the provisions governing condonation of delay under [applicable Sindh law -- verify], the appellant is entitled to condonation of the twelve‑day delay.\n\nPRAYER\n\nThe appellant prays that this Hon’ble Court condone the twelve‑day delay in filing the appeal and allow the appeal to be heard on its merits.",
+   "cited_authorities": [
+    "s.12 Limitation Act 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 12 Limitation Act 1908"
+    ],
+    "not_checked": [],
+    "withheld": [
+     {
+      "text": "That the appellant was served with the judgment on [date of judgment] and, pursuant to Section 12 of the Limitation Act 1908, the day of judgment is excluded in computing the period of limitation for ",
+      "reasons": [
+       "Section 12 Limitation is \"Exclusion of time in legal proceedings\", which does not support what this sentence relies on it for (the sentence relies on it for period; see s.4 \"Where Court is closed  when period expires\"; s.5 \"Extension of period in certain cases\")"
+      ]
+     }
+    ],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "Limitation Act 1908 s.12",
+     "status": "VERIFIED"
+    }
+   ],
+   "latency_s": 2.34,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.12 Limitation Act 1908"
+    ]
+   }
+  },
+  {
+   "id": "V11",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the complaint filed by the complainant is mala fide and, having no sufficient ground for proceeding, the Court may, under Section 203 of the Criminal Procedure Code, 1898, dismiss the complaint and grant protective bail to the applicant pending investigation.",
+   "cited_authorities": [
+    "s.203 CrPC 1898"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 203 CrPC 1898"
+    ],
+    "not_checked": [
+     "Section 203 Criminal Procedure Code 1898"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "Criminal Procedure Code 1898 s.203",
+     "status": "UNVERIFIABLE"
+    }
+   ],
+   "latency_s": 1.63,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.203 CrPC 1898"
+    ]
+   }
+  },
+  {
+   "id": "V15",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the welfare of the minor child requires that custody be placed with the mother, as the guardian of the person is charged under Section 24 of the Guardians and Wards Act 1890 to look to the child’s support, health and education, and the Court is empowered by Section 41 of the Divorce Act 1869 to make such custody orders in the best interests of the child.",
+   "cited_authorities": [
+    "s.24 Guardians and Wards Act 1890",
+    "s.41 Divorce Act 1869"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 24 Guardians and Wards Act 1890",
+     "Section 41 Divorce Act 1869"
+    ],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "Guardians and Wards Act 1890 s.24",
+     "status": "VERIFIED"
+    },
+    {
+     "canonical": "Divorce Act 1869 s.41",
+     "status": "VERIFIED"
+    }
+   ],
+   "latency_s": 1.34,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.24 Guardians and Wards Act 1890",
+     "s.41 Divorce Act 1869"
+    ]
+   }
+  },
+  {
+   "id": "V16",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_required",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the suit falls within the territorial jurisdiction of the Family Court of Sindh as per [applicable Sindh law -- verify].",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [
+     {
+      "text": "That the Honourable Family Court at [PLACE] is vested with jurisdiction to entertain the present suit for maintenance of the petitioner‑wife and her minor children, being a suit instituted under Secti",
+      "reasons": [
+       "Section 7 Family is \"Institution of suits\", not what the statement describes (it matches Guardians and Wards Act 1890 s.7: \"Power of the Court to make order as to guardianship\")"
+      ]
+     }
+    ],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.76,
+   "error": null,
+   "detail": {
+    "missing_required": [
+     "maintenance"
+    ]
+   }
+  },
+  {
+   "id": "V23",
+   "rep": 1,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That this notice is the statutory notice required before instituting any suit against the Federal Government, as mandated by Section 1956 of the Code of Civil Procedure, 1908.",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 1956 CPC 1908"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.1956",
+     "status": "NOT_IN_CORPUS"
+    }
+   ],
+   "latency_s": 1.52,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "V01",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the plaint fails to disclose any cause of action against the Defendant, contrary to the requirement of CPC 1908 Section 4 which mandates that the plaint set out the facts showing when the cause of action arose and that the Court has jurisdiction.\n\nThat, in the absence of a cause of action, the plaint is liable to be rejected under CPC 1908 Section 13, which provides that a plaint may be rejected on the grounds enumerated therein.\n\nThat any order of rejection made pursuant to this application shall not be appealable under CPC 1908 Section 7(1).",
+   "cited_authorities": [
+    "s.13 CPC 1908",
+    "s.4 CPC 1908",
+    "s.7 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 4 CPC 1908 (several provisions share this number)",
+     "Section 13 CPC 1908 (several provisions share this number)",
+     "Section 7 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.13",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.7",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 2.18,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.4 CPC 1908",
+     "s.13 CPC 1908",
+     "s.7 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V02",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "1. That the plaint is filed in this Court which does not possess territorial jurisdiction over the cause of action, contrary to the requirement of CPC 1908, Section 4.\n\n2. That, in accordance with CPC 1908, Section 10, the plaint must be returned to the plaintiff for presentation before the Court having the proper jurisdiction.",
+   "cited_authorities": [
+    "s.10 CPC 1908",
+    "s.4 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 4 CPC 1908 (several provisions share this number)",
+     "Section 10 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.10",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 1.39,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.4 CPC 1908",
+     "s.10 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V03",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "holdout",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the Defendant seeks leave of this Hon’ble Court to amend his written statement, pursuant to Section 9 of the Code of Civil Procedure, 1908.",
+   "cited_authorities": [
+    "s.9 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 9 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.9",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 1.38,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.9 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V04",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the applicant is a person having a direct and substantial interest in the subject‑matter of the pending suit and will be directly affected by any decree passed therein.\n\nThat the relief sought by the plaintiff, if granted, will either impair or prejudice the legal rights and liabilities of the applicant, thereby necessitating his joinder as a necessary party.\n\nThat, pursuant to the provisions of the Code of Civil Procedure, 1908, a person whose interest is directly affected may be impleaded as a necessary party (see CPC 1908 — Section [placeholder]).\n\nThat the courts have consistently held that a necessary party must be joined to avoid multiplicity of proceedings and to ensure that the decree is binding on all interested parties (see [placeholder] case law).",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.72,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "V05",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the decree dated __________ was passed ex parte without the plaintiff being served, contrary to the procedural requirements of the Code of Civil Procedure, 1908.\n\nThat the decree was obtained by fraud and misrepresentation, the defendant having concealed material facts and presented false documents to induce the Court to pass the decree.\n\nThat, pursuant to Section 4 of the Code of Civil Procedure, 1908, the Court has the power to set aside the decree and, if necessary, stay or set aside any execution thereon.\n\nThat the plaintiff is entitled to an order setting aside the ex parte decree and granting such further relief as the Court deems just.",
+   "cited_authorities": [
+    "s.4 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 4 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [
+     {
+      "text": "That the fraud only came to the knowledge of the plaintiff on __________, which is within the period of three years prescribed by the Limitation Act, 1908, Section 6, for relief on the ground of fraud",
+      "reasons": [
+       "Section 6 Limitation is \"Legal disabili ty\", which does not support what this sentence relies on it for (the sentence relies on it for period; see s.4 \"Where Court is closed  when period expires\"; s.5 \"Extension of period in certain cases\")"
+      ]
+     }
+    ],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 2.09,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.4 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V06",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "holdout",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "APPLICATION TO WITHDRAW SUIT AND PERMIT FRESH SUIT\n\nThat the Plaintiff, [PLAINTIFF], seeks to withdraw the present suit against the Defendant(s) in accordance with Section 1 of the Code of Civil Procedure, 1908, which permits a plaintiff, at any time after the institution of a suit, to withdraw his suit or abandon part of his claim.\n\nThat the Plaintiff further requests that the Court, pursuant to Section 4 of the Code of Civil Procedure, 1908, allow him to institute a fresh suit on the same cause of action, subject to the law of limitation.\n\nThat the Plaintiff has satisfied the Court that there is sufficient cause for the withdrawal and for filing a fresh suit, and undertakes to comply with any costs or terms the Court may impose.",
+   "cited_authorities": [
+    "s.1 CPC 1908",
+    "s.4 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 1 CPC 1908 (several provisions share this number)",
+     "Section 4 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.1",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 1.83,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.1 CPC 1908",
+     "s.4 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V07",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities"
+   ],
+   "final_visible_proposal": "2. That the Applicant respectfully requests that this Honorable Court, exercising its inherent powers under Section 151 of the Code of Civil Procedure, 1908, fix an early date for the hearing of this application.\n\n3. That the Court be directed to cause notice of the application and the fixed hearing date to be served upon the opposite party in accordance with Section 373 of the Succession Act, 1925.",
+   "cited_authorities": [
+    "s.151 CPC",
+    "s.373 Succession Act, 1925"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 151 CPC 1908",
+     "Section 373 Succession Act, 1925"
+    ],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.151",
+     "status": "VERIFIED"
+    },
+    {
+     "canonical": "Succession Act 1925 s.373",
+     "status": "VERIFIED"
+    }
+   ],
+   "latency_s": 1.6,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.373 Succession Act, 1925"
+    ]
+   }
+  },
+  {
+   "id": "V08",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That due to [placeholder for cause of delay], the appellant could not file the appeal within the prescribed period and the filing was delayed by twelve (12) days.\n\nPRAYER\n\nThe appellant prays that this Hon’ble Court condone the twelve‑day delay in filing the appeal and allow the appeal to be heard on its merits.",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [
+     {
+      "text": "That the appellant was required to file the appeal within the period prescribed by Section 12 of the Limitation Act 1908, i.e., within thirty (30) days from the date the judgment was pronounced, the d",
+      "reasons": [
+       "Section 12 Limitation is \"Exclusion of time in legal proceedings\", which does not support what this sentence relies on it for (the sentence relies on it for period; see s.4 \"Where Court is closed  when period expires\"; s.5 \"Extension of period in certain cases\")"
+      ]
+     },
+     {
+      "text": "That, in accordance with Section 12(1) of the Limitation Act 1908, the Court may, in the interest of justice, condone such delay.  ",
+      "reasons": [
+       "Section 12 Limitation is \"Exclusion of time in legal proceedings\", which does not support what this sentence relies on it for (the sentence relies on it for interest; see s.20 \"Effect of payment on account of debt or of interest on legacy\")"
+      ]
+     }
+    ],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 2.5,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "V11",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the complaint lodged by the complainant is mala fide and, having no sufficient ground for proceeding, the applicant is entitled to pre‑arrest protective bail pursuant to Section 203 of the Code of Criminal Procedure, 1898.",
+   "cited_authorities": [
+    "s.203 CrPC 1898"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 203 CrPC 1898"
+    ],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CrPC 1898 s.203",
+     "status": "VERIFIED"
+    }
+   ],
+   "latency_s": 1.28,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.203 CrPC 1898"
+    ]
+   }
+  },
+  {
+   "id": "V15",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities",
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That the welfare of the minor child requires that she be placed in the custody of her mother, as the mother is the natural guardian and, pursuant to Guardians and Wards Act 1890, s.24, a guardian of the person is charged with the custody, support, health and education of the ward, and, in accordance with Divorce Act 1869, s.41, this Court may make such custody orders as it deems proper for the minor’s best interests.",
+   "cited_authorities": [
+    "s.24 Guardians and Wards Act 1890",
+    "s.41 Divorce Act 1869"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 24 Guardians and Wards Act 1890",
+     "Section 41 Divorce Act 1869"
+    ],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.33,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.24 Guardians and Wards Act 1890",
+     "s.41 Divorce Act 1869"
+    ]
+   }
+  },
+  {
+   "id": "V16",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_required",
+    "empty"
+   ],
+   "final_visible_proposal": "",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [
+     {
+      "text": "That this Honourable Family Court has jurisdiction to entertain the present suit for maintenance of the petitioner wife and her minor children, being a suit instituted under the provisions of Section ",
+      "reasons": [
+       "Section 7 Family is \"Institution of suits\", not what the statement describes (it matches Punjab Protection and Restoration of Tenancy Rights Act 1950 s.7: \"Bar of Courts Jurisdiction\")",
+       "Section 17 West is \"Provisions of Evidence Act and Code of Civil Procedure not to apply\", which does not support what this sentence relies on it for (the sentence relies on it for instituted, maintenance, suit; see s.7 \"Institution of suits\"; s.3 \"Maintenance\")"
+      ]
+     }
+    ],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.59,
+   "error": null,
+   "detail": {
+    "missing_required": [
+     "jurisdiction",
+     "maintenance"
+    ]
+   }
+  },
+  {
+   "id": "V17",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "unsupported_authorities"
+   ],
+   "final_visible_proposal": "That the Tenant is hereby required to vacate the premises within thirty (30) days from the date of this notice due to non‑payment of rent, pursuant to the notice given under Section 4 of the Code of Civil Procedure 1908 and in accordance with [applicable provincial rent law -- choose jurisdiction].",
+   "cited_authorities": [
+    "s.4 CPC 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 4 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": {
+     "topic": "tenancy",
+     "message": "Tenancy and eviction depends on the province's rent law. Choose a jurisdiction to cite it; until then this draft should name no statute for it.",
+     "placeholder": true
+    }
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.4",
+     "status": "SECTION_NOT_CHECKABLE"
+    }
+   ],
+   "latency_s": 1.4,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.4 CPC 1908"
+    ]
+   }
+  },
+  {
+   "id": "V23",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_citation"
+   ],
+   "final_visible_proposal": "That this notice is given as the statutory notice required under Section 1956 of the Code of Civil Procedure, 1908, before instituting any suit against the Federal Government.",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [
+     "Section 1956 CPC 1908"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.1956",
+     "status": "NOT_IN_CORPUS"
+    }
+   ],
+   "latency_s": 1.27,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "V24",
+   "rep": 2,
+   "track": "free_drafting",
+   "split": "dev",
+   "categories": [
+    "missing_required",
+    "empty"
+   ],
+   "final_visible_proposal": "",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [
+     {
+      "text": "That the drawer shall within fifteen (15) days from receipt of this notice pay the amount due on the dishonoured cheque, failing which the payee will institute criminal proceedings against the drawer ",
+      "reasons": [
+       "Section 489 PPC is \"Tampering with property mark with intent to cause injury\", which does not support what this sentence relies on it for (the sentence relies on it for amount, proceedings; see s.63 \"Amount of fine\"; s.172 \"Absconding to avoid service of summons or other proceeding\")"
+      ]
+     }
+    ],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.52,
+   "error": null,
+   "detail": {
+    "missing_required": [
+     "dishonoured cheque"
+    ]
+   }
+  }
+ ],
+ "other": [
+  {
+   "id": "T01",
+   "rep": 1,
+   "track": "template_fill",
+   "split": "dev",
+   "categories": [
+    "blanks_filled_in"
+   ],
+   "final_visible_proposal": "SWORN STATEMENT -- MISSING IDENTITY CARD\nDeponent: Sana Ahmed\nParent: Tariq Ahmed\nLives at: Lahore\nIdentity card:\n\nThe deponent solemnly affirms:\n(a) the identity card went missing on 2 October 2026, near Liberty Market;\n(b) a report has been lodged with .\n\nSigned: deponent\nAffirmed at , .",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.51,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "T02",
+   "rep": 1,
+   "track": "template_fill",
+   "split": "dev",
+   "categories": [
+    "blanks_filled_in"
+   ],
+   "final_visible_proposal": "حلف نامہ\nمن کہ عمران علی، ولد اکرم علی، ساکن راولپنڈی، حلفاً بیان کرتا ہوں:\n1۔ یہ کہ\nتصدیق: آج مورخہ  کو  پر تصدیق کی گئی۔",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.14,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "T05",
+   "rep": 1,
+   "track": "template_fill",
+   "split": "holdout",
+   "categories": [
+    "unsupported_authorities"
+   ],
+   "final_visible_proposal": "LEGAL NOTICE FOR RECOVERY\n\nTo: Usman Raza\n\nAmount due: Rs. 250,000\n\nDue since:\n\nYou are called upon to pay the aforesaid amount within 15 days from the receipt of this notice.\n\n[ADVOCATE]\n\n---\n\nThis notice is issued pursuant to Section 6 of the Limitation Act, 1908 and Section 17 of the Code of Civil Procedure, 1908.",
+   "cited_authorities": [
+    "s.17 CPC 1908",
+    "s.6 Limitation Act, 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 6 Limitation Act, 1908"
+    ],
+    "not_checked": [
+     "Section 17 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.17",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "Limitation Act 1908 s.6",
+     "status": "VERIFIED"
+    }
+   ],
+   "latency_s": 1.9,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.17 CPC 1908",
+     "s.6 Limitation Act, 1908"
+    ]
+   }
+  },
+  {
+   "id": "T06",
+   "rep": 1,
+   "track": "template_fill",
+   "split": "holdout",
+   "categories": [
+    "blanks_filled_in"
+   ],
+   "final_visible_proposal": "PARTNERSHIP DEED\nPartners: Hina Malik and Saad Iqbal\nBusiness: Iqbal Traders\nCapital: Rs. 1,000,000\nProfit sharing:\nDate:",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.18,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "T01",
+   "rep": 2,
+   "track": "template_fill",
+   "split": "dev",
+   "categories": [
+    "blanks_filled_in"
+   ],
+   "final_visible_proposal": "SWORN STATEMENT -- MISSING IDENTITY CARD\nDeponent: Sana Ahmed\nParent: Tariq Ahmed\nLives at: Lahore\nIdentity card:\n\nThe deponent solemnly affirms:\n(a) the identity card went missing on 2 October 2026, near Liberty Market;\n(b) a report has been lodged with .\n\nSigned: deponent\nAffirmed at , .",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 1.11,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "T02",
+   "rep": 2,
+   "track": "template_fill",
+   "split": "dev",
+   "categories": [
+    "blanks_filled_in"
+   ],
+   "final_visible_proposal": "حلف نامہ\nمن کہ عمران علی، ولد اکرم علی، ساکن راولپنڈی، حلفاً بیان کرتا ہوں:\n1۔ یہ کہ\nتصدیق: آج مورخہ  کو  پر تصدیق کی گئی۔",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 0.91,
+   "error": null,
+   "detail": {}
+  },
+  {
+   "id": "T05",
+   "rep": 2,
+   "track": "template_fill",
+   "split": "holdout",
+   "categories": [
+    "unsupported_authorities"
+   ],
+   "final_visible_proposal": "LEGAL NOTICE FOR RECOVERY\nTo: Usman Raza\nAmount due: Rs. 250,000\nDue since:\nYou are called upon to pay within 15 days.\n\n[ADVOCATE]\n\nPursuant to Section 6 of the Limitation Act, 1908 and Section 17 of the CPC, 1908.",
+   "cited_authorities": [
+    "s.17 CPC 1908",
+    "s.6 Limitation Act, 1908"
+   ],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [
+     "Section 6 Limitation Act, 1908"
+    ],
+    "not_checked": [
+     "Section 17 CPC 1908 (several provisions share this number)"
+    ],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [
+    {
+     "canonical": "CPC 1908 s.17",
+     "status": "SECTION_NOT_CHECKABLE"
+    },
+    {
+     "canonical": "Limitation Act 1908 s.6",
+     "status": "VERIFIED"
+    }
+   ],
+   "latency_s": 1.6,
+   "error": null,
+   "detail": {
+    "unsupported_authorities": [
+     "s.17 CPC 1908",
+     "s.6 Limitation Act, 1908"
+    ]
+   }
+  },
+  {
+   "id": "T06",
+   "rep": 2,
+   "track": "template_fill",
+   "split": "holdout",
+   "categories": [
+    "blanks_filled_in"
+   ],
+   "final_visible_proposal": "PARTNERSHIP DEED\nPartners: Hina Malik and Saad Iqbal\nBusiness: Iqbal Traders\nCapital: Rs. 1,000,000\nProfit sharing:\nDate:",
+   "cited_authorities": [],
+   "guard_decision": {
+    "ran": true,
+    "reason": null,
+    "supported": [],
+    "not_checked": [],
+    "withheld": [],
+    "clarify": null
+   },
+   "citation_checker": [],
+   "latency_s": 0.88,
+   "error": null,
+   "detail": {}
+  }
+ ]
+}

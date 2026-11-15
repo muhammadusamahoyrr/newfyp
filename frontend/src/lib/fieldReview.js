@@ -25,9 +25,13 @@
  *
  * `no` is deliberately absent. It is short for "number" in `fir_no` and
  * `case_no`, and upper-casing it gives "FIR NO", which reads as the word "no"
- * shouted — the opposite of what the field means. */
+ * shouted — the opposite of what the field means.
+ *
+ * 2026-10-19: `fia`, `dob` and `sp` ("Fia office city", "Minor dob"), and
+ * the single letters of `party_a` / `party_b` ("Party a" -> "Party A"). */
 const ACRONYMS = new Set([
     "fir", "cnic", "ntn", "cpc", "ppc", "poa", "nic", "id", "url",
+    "fia", "dob", "sp", "a", "b",
 ]);
 
 /** `recipient_address` -> "Recipient address"; `fir_no` -> "FIR no". */

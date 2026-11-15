@@ -175,8 +175,8 @@ test("a generated plan clears what was kept for recovery", async () => {
     api.__respond("saveDocumentWorkspaceV2", { data: null, status: 503, error: { code: "generation_failed", message: "failed" } });
     await click(p.container.querySelector("[data-placeholders-toggle]"));
     await type(p.container.querySelector("#ph_sender_name"), "Ayesha Khan");
-    await click(buttons(p.container, "Save all changes")[0]);
-    await click(buttons(p.container, "Save all changes")[0]);
+    await click(buttons(p.container, "Save as version")[0]);
+    await click(buttons(p.container, "Save as version")[0]);
     const saves = api.__calls("saveDocumentWorkspaceV2");
     assert.equal(saves.length, 2);
     assert.notEqual(saves[0].args[2], saves[1].args[2], "a finished failure was replayed under the same key");

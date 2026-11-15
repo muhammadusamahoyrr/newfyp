@@ -17,6 +17,7 @@ import {
     KIND_BROWSING,
     KIND_MATCHED,
     KIND_NONE,
+    KIND_PROVISIONAL,
     KIND_UNAVAILABLE,
     lawyerSubtitle,
     matchFallbackNotice,
@@ -106,12 +107,12 @@ test("unavailable never claims there are no lawyers", () => {
     const notice = matchFallbackNotice(KIND_UNAVAILABLE, "");
 
     assert.match(notice, /unavailable/i);
-    assert.doesNotMatch(notice, /no verified lawyers/i,
+    assert.doesNotMatch(notice, /no (verified|registered) lawyers/i,
         "a failed lookup was reported as an absence of lawyers");
 });
 
 test("no candidates says so plainly", () => {
-    assert.match(matchFallbackNotice(KIND_NONE, ""), /No verified lawyers/i);
+    assert.match(matchFallbackNotice(KIND_NONE, ""), /No registered lawyers/i);
 });
 
 test("the service's own notice wins when it sends one", () => {
@@ -145,14 +146,26 @@ test("the 0%-match render exists in neither component", () => {
         "the panel does not use the shared subtitle contract");
 });
 
-test("both the final-answer and clarification paths carry the verdict", () => {
-    // A correct lib that no message path populates discloses nothing. Two
-    // occurrences: one per path.
+test("the final answer carries the verdict; a clarifying question carries none", () => {
+    // 2026-10-16: a clarifying question shows no matching status -- the old
+    // "matching unavailable" line sat under every question. Only the final
+    // answer path reads the server's verdict.
     const kinds = CHATBOT.match(/matchResultKind: msg\.match_result_kind/g) || [];
     const notices = CHATBOT.match(/matchNotice: msg\.match_notice/g) || [];
+    assert.equal(kinds.length, 1, `expected only the final answer to carry match_result_kind, found ${kinds.length}`);
+    assert.equal(notices.length, 1, `expected only the final answer to carry match_notice, found ${notices.length}`);
+    const clar = CHATBOT.slice(CHATBOT.indexOf('msg.type === "clarification"'));
+    const block = clar.slice(0, clar.indexOf("}]);"));
+    assert.match(block, /matchedLawyers: \[\]/);
+    assert.match(block, /matchResultKind: ""/);
+    assert.match(block, /matchNotice: ""/);
+});
 
-    assert.equal(kinds.length, 2,
-        `expected both message paths to carry match_result_kind, found ${kinds.length}`);
-    assert.equal(notices.length, 2,
-        `expected both message paths to carry match_notice, found ${notices.length}`);
+test("provisional suggestions are listed, never headed as a match, never ranked", () => {
+    const head = matchHeading(KIND_PROVISIONAL, { count: 2, suggestLawyer: true });
+    assert.equal(head.show, true);
+    assert.equal(head.ranked, false);
+    assert.doesNotMatch(head.title, /match|personalized/i);
+    assert.equal(matchHeading(KIND_PROVISIONAL, { count: 0 }).show, false);
+    assert.equal(lawyerSubtitle({ province: "punjab", match_score: null }), "punjab");
 });

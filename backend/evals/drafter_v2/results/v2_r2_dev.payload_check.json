@@ -1,0 +1,623 @@
+{
+ "payloads": 44,
+ "source_8word_runs_total": 6,
+ "pii_matches_total": 0,
+ "per_payload": [
+  {
+   "0:system": {
+    "chars": 4060,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 362,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 3921,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 342,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4812,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 350,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4551,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 339,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4709,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 346,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4845,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 328,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4361,
+    "source_8word_runs": 1,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 353,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4605,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 343,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4521,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 323,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4373,
+    "source_8word_runs": 1,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 348,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4235,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 288,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4843,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 292,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4936,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 225,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4718,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 296,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4632,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 315,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4839,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 258,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4654,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 249,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4783,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 243,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4248,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 556,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 2896,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 309,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4000,
+    "source_8word_runs": 1,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 412,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 3744,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 357,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4060,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 362,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 3921,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 342,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4812,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 350,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4551,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 339,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4709,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 346,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4845,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 328,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4361,
+    "source_8word_runs": 1,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 353,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4605,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 343,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4521,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 323,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4373,
+    "source_8word_runs": 1,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 348,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4235,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 288,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4843,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 292,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4936,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 225,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4718,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 296,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4632,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 315,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4839,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 258,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4654,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 249,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4783,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 243,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4248,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 556,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 2896,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 309,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 4000,
+    "source_8word_runs": 1,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 412,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  },
+  {
+   "0:system": {
+    "chars": 3744,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 6
+   },
+   "1:user": {
+    "chars": 357,
+    "source_8word_runs": 0,
+    "pii": {},
+    "statute_blocks": 0
+   }
+  }
+ ]
+}

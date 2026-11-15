@@ -1,8 +1,10 @@
 'use client';
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { onPrimaryInk } from "./clientTheme.js";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
-import { useSearchParams, useRouter as useNextRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useClientRouter as useNextRouter } from "./clientNav.js";
 import { useT } from "./theme.js";
 import { useCase } from "./CaseContext.jsx";
 import { useToast } from "@/components/shared/Toast.jsx";
@@ -10,12 +12,12 @@ import Ic from "./Ic.jsx";
 import { readProblem, PROBLEM_MAX_LENGTH } from "@/lib/problemFilters";
 import { DOCS_FONT } from "./documents/ui.jsx";
 import { Card, BtnPrimary, BtnOutline, ThemedInput, Badge } from "@/components/shared/shared.jsx";
-import { searchLawyers, matchLawyers, submitReview, getLawyerReviews, bookAppointment, getBookableSlots, listCases, listHireConsultations, listEngagements, requestEngagement, cancelEngagement, acceptEngagementTerms, declineEngagementTerms, completeEngagement, terminateEngagement } from "@/lib/api.js";
+import { searchLawyers, lawyerDirectoryCounts, matchLawyers, submitReview, getLawyerReviews, getReviewEligibility, bookAppointment, getBookableSlots, listCases, listHireConsultations, listEngagements, requestEngagement, createCase, confirmCase, cancelEngagement, acceptEngagementTerms, declineEngagementTerms, completeEngagement, terminateEngagement } from "@/lib/api.js";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { hireableCases as hireable, isDraftCase } from "@/lib/caseStatus.js";
 import { onNotification } from "@/lib/notificationTarget.js";
 import { listAllCases } from "@/lib/allCases.js";
-import { readIntakeValue } from "@/lib/intakeStorage.js";
+import { readIntakeValue, clearIntakeValue } from "@/lib/intakeStorage.js";
 import { pktToday, pktSlotToUtcISO, isPktSlotPast } from "@/lib/bookingTime.js";
 import { createBookingKeyHolder } from "@/lib/bookingIdempotency.js";
 
@@ -112,6 +114,18 @@ const AREA_CHIPS = [
     ["Constitutional", "constitutional", "#6ADDEB"],
     // Banking, tax and cyber stay filterable on the server; not offered here (2026-10-10).
 ];
+
+// Directory answers already seen this session, by request. The screen remounts
+// on every visit, so these let a revisit show the last answer immediately while
+// it is refreshed (stale-while-revalidate). Public directory data only; small.
+const DIRECTORY_CACHE = new Map();
+const COUNTS_CACHE = new Map();
+// Within this window a revisit uses the cached answer WITHOUT asking again; after
+// it, the cached answer is shown and refreshed. The directory is public listing
+// data that changes rarely, so a minute old is fine; anything personal (cases,
+// engagements) is not cached here and is always re-read.
+const DIRECTORY_FRESH_MS = 60_000;
+const isFresh = (entry) => entry && Date.now() - entry.at < DIRECTORY_FRESH_MS;
 
 // What each server sort is called in the menu.
 const SORT_LABEL = {
@@ -426,6 +440,32 @@ const MAP_OPEN_CSS = `[data-map-open]{position:relative;display:inline-flex;alig
 @keyframes moSpin{0%{transform:none}50%{transform:scale(.8) rotate(-12deg)}100%{transform:scale(1.1)}}
 @media (prefers-reduced-motion:reduce){[data-map-open] *{animation:none!important;transition:none!important}}`;
 
+/* Times a client may REQUEST from a lawyer with no published hours, while the
+ * server does not enforce hours (it then accepts any 30-minute-aligned future
+ * time and the lawyer confirms or declines). 09:00-20:30 PKT. */
+// The hire form's new-matter fields, matching the server's enums.
+const NEW_MATTER = "__new__";
+const MATTER_TYPES = [["civil", "Civil"], ["family", "Family"], ["criminal", "Criminal"], ["constitutional", "Constitutional"]];
+const MATTER_PROVINCES = [["punjab", "Punjab"], ["sindh", "Sindh"], ["kpk", "KPK"], ["balochistan", "Balochistan"], ["federal", "Islamabad (Federal)"]];
+
+const REQUEST_TIMES = Array.from({ length: 24 }, (_, i) => {
+    const m = 9 * 60 + i * 30;
+    return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+});
+
+/* Profile and dialog buttons (2026-10-12): one size, one look. Colours come
+ * from the theme through --mlp-* set on each button (see mlpVars). */
+const MLP_CSS = `.mlp-btn{height:42px;padding:0 18px;border-radius:12px;font:inherit;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;white-space:nowrap;box-sizing:border-box;transition:background .15s,border-color .15s,color .15s,filter .15s,transform .12s}
+.mlp-btn:active:not(:disabled){transform:scale(.97)}
+.mlp-btn:disabled{opacity:.55;cursor:not-allowed}
+.mlp-primary{border:0;color:#fff;background:linear-gradient(135deg,#12897f,#1c9c66);box-shadow:0 10px 22px -14px rgba(28,156,102,.9)}
+.mlp-primary:hover:not(:disabled){filter:brightness(1.1)}
+.mlp-outline{border:1px solid var(--mlp-line);background:transparent;color:var(--mlp-ink)}
+.mlp-outline:hover:not(:disabled){border-color:var(--mlp-accent);color:var(--mlp-accent);background:color-mix(in srgb,var(--mlp-accent) 8%,transparent)}
+.mlp-cancel{border:1px solid var(--mlp-line);background:transparent;color:var(--mlp-ink)}
+.mlp-cancel:hover:not(:disabled){border-color:rgba(255,138,128,.55);color:#FF8A80;background:rgba(255,138,128,.08)}
+.mlp-full{width:100%}`;
+
 const ModLawyers = () => {
     const t = useT();
     const searchParams = useSearchParams();
@@ -447,7 +487,24 @@ const ModLawyers = () => {
     const [apptTime, setApptTime] = useState("");
     const [apptDetails, setApptDetails] = useState("");
     const [apptMode, setApptMode] = useState("video");
+    // Which case the consultation is about: "" is a general consultation.
+    // Chosen in the dialog, never silently taken from the URL or an old intake.
+    const [apptCaseId, setApptCaseId] = useState("");
+    // Bumped on every open, so the times are fetched again even when the
+    // lawyer and the date are the same as last time.
+    const [apptOpenSeq, setApptOpenSeq] = useState(0);
+    // The earliest bookable time in the next weeks: { date, time } | null.
+    const [apptEarliest, setApptEarliest] = useState(null);
+    // A time to select once its day's slots have loaded (from "Use it").
+    const apptWantTime = useRef(null);
+    // After a successful request: what was sent, shown in the dialog in place
+    // of the form (2026-10-12). Replaces a toast and an automatic redirect.
+    const [apptSent, setApptSent] = useState(null);
     const [apptSubmitting, setApptSubmitting] = useState(false);
+    // A refusal shown INSIDE the dialog (it was a 4-second toast behind it),
+    // and the times the server refused as clashing, so they cannot be re-sent.
+    const [apptError, setApptError] = useState(null);
+    const [apptTaken, setApptTaken] = useState(() => new Set());
     // THE SERVER DECIDES WHICH TIMES EXIST. This used to be a list of
     // *booked* slots subtracted from six hardcoded times — 09:00, 10:00,
     // 11:00, 14:00, 15:00, 16:00 — that were identical for every lawyer and
@@ -489,8 +546,16 @@ const ModLawyers = () => {
     // A general listing is NOT a match. The API says which it returned via
     // result_kind; these two carry that answer so the banner can render a
     // browse list differently instead of dressing it up as a recommendation.
+    // Besides the service's result_kind, two states of the CASE (2026-10-16):
+    //   "case_draft"   -- the intake is not confirmed yet: finish it;
+    //   "case_missing" -- the saved case is gone (deleted, or another
+    //                     account's): the saved id is cleared, start again.
+    // Neither is "still processing", which is what both used to say.
     const [matchKind, setMatchKind] = useState(null);
     const [matchNotice, setMatchNotice] = useState(null);
+    // A case id found to be gone this visit. Ignored from then on, so the
+    // automatic match on page load does not keep asking for it.
+    const [dismissedCaseId, setDismissedCaseId] = useState(null);
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [reviewStars, setReviewStars] = useState(5);
     const [reviewComment, setReviewComment] = useState("");
@@ -511,6 +576,9 @@ const ModLawyers = () => {
     const [hireConsults, setHireConsults] = useState([]);
     const [hireAppointmentId, setHireAppointmentId] = useState("");
     const [hireOpening, setHireOpening] = useState(false);
+    // A matter described IN the hire form (2026-10-12): hiring needs a case to
+    // hold the scope, fee, documents and hearings, but not the full intake.
+    const [newMatter, setNewMatter] = useState({ title: "", case_type: "", province: "", description: "" });
 
     // Cases AND engagements, read together. Both decide which cases can be
     // sent to a lawyer, and the cases were read once per visit: after terms
@@ -548,6 +616,9 @@ const ModLawyers = () => {
     // only possible outcome is an error the client cannot act on from this
     // screen; the action they actually need is on the intake page.
     const pendingByCase = useMemo(() => openByCase(myEngagements), [myEngagements]);
+    const bookableCases = useMemo(
+        () => (myCases || []).filter(c => c?._id && !["draft", "closed", "dismissed"].includes(c.status)),
+        [myCases]);
     const hireableCases = useMemo(
         () => hireable(myCases, pendingByCase),
         [myCases, pendingByCase]);
@@ -630,6 +701,7 @@ const ModLawyers = () => {
     };
 
     const fmtFee = (fee) => fee ? `₨${fee.toLocaleString()}` : "Consult";
+    const mlpVars = { "--mlp-line": t.border, "--mlp-ink": t.text, "--mlp-accent": t.primary };
     const fmtFeeK = (fee) => fee ? `₨${(fee / 1000).toFixed(1)}k` : "—";
 
     const [backendUp, setBackendUp] = useState(false);
@@ -672,41 +744,67 @@ const ModLawyers = () => {
 
     useEffect(() => {
         let cancelled = false;
-        setLoadingLawyers(true);
         const delay = hasLoadedOnce.current ? 300 : 0;
+        const params = { page, page_size: PAGE_SIZE, sort: SORT_KEYS[sortBy] };
+
+        if (filters.city !== "All") {
+            const prov = CITY_TO_PROVINCE[filters.city.toLowerCase()];
+            if (prov) params.province = prov;
+        }
+        // An area chip or Filters → Specialization: the area the lawyer lists.
+        if (filters.specialization !== "All") params.specialization = filters.specialization;
+        if (filters.rating > 0) params.min_rating = filters.rating;
+        if (filters.availability === "Available") params.availability = true;
+        else if (filters.availability === "Busy") params.availability = false;
+
+        // "Top Rated" is a rating floor, so it is a server filter too —
+        // client-side it only ever promoted the best of the loaded page.
+        if (filter === "Available") params.availability = true;
+        else if (filter === "Top Rated") params.min_rating = Math.max(params.min_rating ?? 0, 4.8);
+
+        if (query.trim()) {
+            if (searchMode === "bar") params.bar_number = query.trim();
+            else params.q = query.trim();
+        }
+
+        // Coming back to a directory view already seen this session shows that
+        // answer AT ONCE and refreshes it quietly, instead of an empty list and a
+        // spinner while the same request runs again (the screen remounts on
+        // every visit). A failed refresh keeps what is shown.
+        const key = JSON.stringify(params);
+        const seen = DIRECTORY_CACHE.get(key);
+        if (seen) {
+            // Only the LIST comes from the cache. `backendUp` still waits for the
+            // server's real answer: the AI-match effect keys off it, and flipping
+            // it early ran that effect before the signed-in user (whose saved
+            // case id it reads) had loaded, so the match never started.
+            setApiLawyers(seen.lawyers);
+            setPageInfo(seen.pageInfo);
+            setLoadingLawyers(false);
+            // Fresh enough AND the signed-in user is known: no request at all.
+            // backendUp is set because a real answer arrived within the window;
+            // it is held back until the user is known because the AI-match
+            // effect reads that user's saved case id the moment backendUp flips.
+            // Without a user yet, fall through to the normal request.
+            if (isFresh(seen) && lawyerUserId) {
+                hasLoadedOnce.current = true;
+                setBackendUp(true);
+                return () => { cancelled = true; };
+            }
+        } else {
+            setLoadingLawyers(true);
+        }
         const timer = setTimeout(async () => {
             hasLoadedOnce.current = true;
-            const params = { page, page_size: PAGE_SIZE, sort: SORT_KEYS[sortBy] };
-
-            if (filters.city !== "All") {
-                const prov = CITY_TO_PROVINCE[filters.city.toLowerCase()];
-                if (prov) params.province = prov;
-            }
-            // An area chip or Filters → Specialization: the area the lawyer lists.
-            if (filters.specialization !== "All") params.specialization = filters.specialization;
-            if (filters.rating > 0) params.min_rating = filters.rating;
-            if (filters.availability === "Available") params.availability = true;
-            else if (filters.availability === "Busy") params.availability = false;
-
-            // "Top Rated" is a rating floor, so it is a server filter too —
-            // client-side it only ever promoted the best of the loaded page.
-            if (filter === "Available") params.availability = true;
-            else if (filter === "Top Rated") params.min_rating = Math.max(params.min_rating ?? 0, 4.8);
-
-            if (query.trim()) {
-                if (searchMode === "bar") params.bar_number = query.trim();
-                else params.q = query.trim();
-            }
-
             const { data, error } = await searchLawyers(params);
             if (cancelled) return;
             if (!error && data) {
                 const items = Array.isArray(data) ? data : (data.items || []);
-                setApiLawyers(items.map((l, i) => mapApiLawyer(l, i)));
-                setPageInfo({
-                    total: data.total ?? items.length,
-                    pages: data.pages ?? 1,
-                });
+                const lawyers = items.map((l, i) => mapApiLawyer(l, i));
+                const info = { total: data.total ?? items.length, pages: data.pages ?? 1 };
+                DIRECTORY_CACHE.set(key, { lawyers, pageInfo: info, at: Date.now() });
+                setApiLawyers(lawyers);
+                setPageInfo(info);
                 setBackendUp(true);
             }
             setLoadingLawyers(false);
@@ -725,12 +823,38 @@ const ModLawyers = () => {
     }, [sortBy, query, searchMode, filter,
         filters.city, filters.specialization, filters.rating, filters.availability]);
 
-    // Reset review form whenever the selected lawyer changes
+    // Reset review form whenever the selected lawyer changes -- open, not
+    // closed, when a "review" link chose this lawyer.
+    const reviewOpenFor = useRef(null);
+    // MAY THIS CLIENT REVIEW THIS LAWYER (2026-10-12), asked of the server
+    // before the form is offered: the form used to open for everyone and the
+    // server refused on submit. Fails CLOSED: while unknown or unreadable, no
+    // form. Reset on every lawyer, so one profile's answer never shows on
+    // another's.
+    const [reviewElig, setReviewElig] = useState({ state: "idle", data: null });
+    const [reviewEligSeq, setReviewEligSeq] = useState(0);
     useEffect(() => {
-        setShowReviewForm(false);
+        const asked = Boolean(selectedLawyer && reviewOpenFor.current === selectedLawyer._id);
+        reviewOpenFor.current = null;
+        setShowReviewForm(asked);
         setReviewComment("");
         setReviewStars(5);
     }, [selectedLawyer]);
+    useEffect(() => {
+        const id = selectedLawyer?._id;
+        if (!id || String(id).startsWith("api-")) { setReviewElig({ state: "idle", data: null }); return undefined; }
+        let off = false;
+        setReviewElig({ state: "loading", data: null });
+        Promise.resolve().then(() => getReviewEligibility(id)).then(res => {
+            if (off) return;
+            if (!res || res.error || !res.data || typeof res.data.can_review !== "boolean") {
+                setReviewElig({ state: "error", data: null });
+                return;
+            }
+            setReviewElig({ state: "ready", data: res.data });
+        }).catch(() => { if (!off) setReviewElig({ state: "error", data: null }); });
+        return () => { off = true; };
+    }, [selectedLawyer?._id, reviewEligSeq]);
 
     // Load the reviews behind the rating.
     //
@@ -792,10 +916,35 @@ const ModLawyers = () => {
                 const day = (data.days || [])[0] || { slots: [] };
                 setSlots(day.slots || []);
                 setSlotState("ready");
+                const want = apptWantTime.current;
+                apptWantTime.current = null;
+                if (want && (day.slots || []).some(sl => sl.local_time === want)) setApptTime(want);
             });
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [apptDate, apptLawyer?._id]);
+    }, [apptDate, apptLawyer?._id, apptOpenSeq]);
+
+    // The earliest open time over the next two weeks, so a client is not left
+    // clicking through empty days. Only for a lawyer with published hours.
+    useEffect(() => {
+        let cancelled = false;
+        setApptEarliest(null);
+        if (!apptLawyer?._id || apptLawyer._id.startsWith("api-")) return () => { cancelled = true; };
+        const from = pktToday();
+        const end = new Date(`${from}T12:00:00+05:00`);
+        end.setUTCDate(end.getUTCDate() + 13);
+        const to = end.toISOString().slice(0, 10);
+        Promise.resolve(getBookableSlots(apptLawyer._id, { from, to, duration_minutes: 60 }))
+            .then(({ data } = {}) => {
+                if (cancelled || !data?.configured) return;
+                for (const d of data.days || []) {
+                    const first = (d.slots || [])[0];
+                    if (first) { setApptEarliest({ date: d.date, time: first.local_time }); return; }
+                }
+            }).catch(() => {});
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [apptLawyer?._id, apptOpenSeq]);
 
     // `isSlotBooked` and its hour-long overlap arithmetic are gone. It assumed
     // every appointment lasted exactly 60 minutes regardless of what was
@@ -811,8 +960,26 @@ const ModLawyers = () => {
     // Reads the same user-scoped key ModIntake writes. It used to read a
     // shared `aai-case-id`, which on a browser that had signed in as someone
     // else meant matching lawyers against a case this account cannot open.
-    const getCaseId = () =>
-        searchParams?.get("case_id") || readIntakeValue("aai-case-id", lawyerUserId) || null;
+    const getCaseId = () => {
+        const id = searchParams?.get("case_id") || readIntakeValue("aai-case-id", lawyerUserId) || null;
+        return id && id === dismissedCaseId ? null : id;
+    };
+
+    // The saved case no longer exists for this account: forget it everywhere
+    // it is remembered -- the intake's saved id and the address -- so a refresh
+    // does not bring the same dead id back.
+    const forgetCase = (caseId) => {
+        try {
+            if (readIntakeValue("aai-case-id", lawyerUserId) === caseId) clearIntakeValue("aai-case-id", lawyerUserId);
+        } catch { /* storage unavailable: the dismissal below still holds */ }
+        if (searchParams?.get("case_id") === caseId) {
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete("case_id");
+            const qs = next.toString();
+            router.replace(`/lawyers${qs ? `?${qs}` : ""}`);
+        }
+        setDismissedCaseId(caseId);
+    };
 
     const MAX_POLL_ATTEMPTS = 5;
     const POLL_INTERVAL_MS = 3000;
@@ -830,6 +997,7 @@ const ModLawyers = () => {
         let lastError = null;
         let kind = null;
         let notice = null;
+        let caseState = null;   // "case_draft" | "case_missing"
 
         for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
             // Wait 3 s before every retry (not before the first try)
@@ -845,19 +1013,32 @@ const ModLawyers = () => {
                     lastError = "Cannot reach the server. Please make sure the backend is running.";
                     break;
                 }
-                if (status === 401 || status === 403) {
-                    // Auth failure — no point retrying
-                    lastError = status === 401
-                        ? "Session expired. Please sign in again."
-                        : "Access denied. This case does not belong to your account.";
+                if (status === 401) {
+                    lastError = "Session expired. Please sign in again.";
+                    break;
+                }
+                if (status === 403) {
+                    // A saved id from another account on this browser: not
+                    // this account's case, and asking again will not change it.
+                    caseState = "case_missing";
+                    break;
+                }
+                if (status === 422 && error?.code === "case_draft") {
+                    caseState = "case_draft";
+                    notice = error.message;
                     break;
                 }
                 if (status === 404) {
-                    // Case not created yet (race condition) — treat as empty and keep polling
+                    // Possibly a case the intake is still creating: one retry
+                    // (~3 s). Still missing after that, it is gone -- not slow.
+                    caseState = "case_missing";
+                    if (attempt >= 1) break;
                 } else {
-                    lastError = error?.error || error?.detail || JSON.stringify(error);
+                    lastError = error?.message || "Lawyer matching failed. Please try again.";
                     break;
                 }
+            } else {
+                caseState = null;
             }
 
             items = Array.isArray(data) ? data : (data?.matches || data?.items || []);
@@ -867,6 +1048,23 @@ const ModLawyers = () => {
             // verified lawyers to find, so polling again cannot change it.
             if (items.length > 0 || kind === "none") break;
             // else: background task still running, poll again
+        }
+
+        if (caseState === "case_missing") {
+            forgetCase(caseId);
+            setAiMatch(null);
+            setMatchKind("case_missing");
+            setMatchNotice("We could not find your earlier case — it may have been deleted. Start a new Legal Intake to be matched with a lawyer.");
+            setLoadingMatch(false);
+            return;
+        }
+        if (caseState === "case_draft") {
+            // Shown on the card, not as a toast: this runs on every visit.
+            setAiMatch(null);
+            setMatchKind("case_draft");
+            setMatchNotice(notice || "Your case is still a draft. Finish your Legal Intake to be matched with a lawyer.");
+            setLoadingMatch(false);
+            return;
         }
 
         setMatchKind(kind);
@@ -918,6 +1116,48 @@ const ModLawyers = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hireLawyerId, hireApptId, casesLoaded]);
 
+    /* A link to ONE lawyer (2026-10-12): from an appointment, "Book a
+     * follow-up" and "Book a new time" open that lawyer's booking, and "Rate
+     * this consultation" their review form -- not the whole directory. There is
+     * no single-lawyer read, so the lawyer is found through the search by name
+     * and matched by id. Not listed any more: said so, and the directory stays.
+     * Marked handled only once it has run, so a cancelled first run (React's
+     * development double-mount) does not swallow the link. */
+    const linkLawyerId = searchParams?.get("lawyer");
+    const linkLawyerName = searchParams?.get("lawyer_name");
+    const linkAction = searchParams?.get("action");
+    const lawyerLinkHandled = useRef(null);
+    useEffect(() => {
+        if (!linkLawyerId || lawyerLinkHandled.current === linkLawyerId) return undefined;
+        let off = false;
+        (async () => {
+            let found = apiLawyers.find(l => l._id === linkLawyerId) || null;
+            if (!found && linkLawyerName) {
+                const { data } = await searchLawyers({ q: linkLawyerName, page: 1, page_size: 20 });
+                const items = Array.isArray(data) ? data : (data?.items || []);
+                const raw = items.find(x => x?._id === linkLawyerId);
+                if (raw) found = mapApiLawyer(raw, 0);
+            }
+            if (off) return;
+            lawyerLinkHandled.current = linkLawyerId;
+            if (!found) {
+                toast.show(`${linkLawyerName || "This lawyer"} is not listed right now.`, "info", 4500);
+                return;
+            }
+            if (linkAction === "review") reviewOpenFor.current = found._id;
+            setSelectedLawyer(found);
+            setActiveView("profile");
+            if (linkAction === "book" && found.avail) openBooking(found);
+            if (linkAction === "review") {
+                setTimeout(() => {
+                    try { document.querySelector("[data-review-form]")?.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* not in a browser */ }
+                }, 400);
+            }
+        })();
+        return () => { off = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [linkLawyerId]);
+
     // Auto-trigger match when arriving from intake, but only once backend is confirmed reachable.
     useEffect(() => {
         if (!backendUp) return;
@@ -956,6 +1196,11 @@ const ModLawyers = () => {
     // The map view (2026-10-10): the lawyer chosen on the list or the map, and
     // the list row under the pointer (its pin lights up).
     const [mapPick, setMapPick] = useState(null);
+    // From a profile: the map page, centred on this lawyer.
+    const openOnMap = (l) => {
+        setMapPick(String(l._id || l.bar || l.name));
+        setActiveView("map");
+    };
     const [mapHover, setMapHover] = useState(null);
     const [mapPanelOpen, setMapPanelOpen] = useState(true);    // the floating list over the map
     const [mapLayout, setMapLayout] = useState("list");        // its rows, or a 2-column grid
@@ -977,15 +1222,17 @@ const ModLawyers = () => {
         return () => window.removeEventListener("keydown", onKey);
     }, []);
     // Each area chip's count is the server's total for that area under the
-    // other filters (one 1-row read each): the page holds only 20 rows, so
-    // counting the rows on screen would be wrong.
+    // other filters, and the directory totals sit beside them: the page holds
+    // only 20 rows, so counting the rows on screen would be wrong. ONE request
+    // (GET /lawyers/counts); this used to be nine separate searches per open.
     const [areaCounts, setAreaCounts] = useState({});
+    const [dirTotals, setDirTotals] = useState({ all: null, accepting: null });
     useEffect(() => {
         // After the list itself has loaded once: it is the first read, and a
         // server that is down gets no further calls.
         if (!backendUp) return undefined;
         let live = true;
-        const base = { page: 1, page_size: 1 };
+        const base = { specializations: AREA_CHIPS.map(([, area]) => area) };
         if (filters.city !== "All") {
             const prov = CITY_TO_PROVINCE[filters.city.toLowerCase()];
             if (prov) base.province = prov;
@@ -993,27 +1240,23 @@ const ModLawyers = () => {
         if (filters.rating > 0) base.min_rating = filters.rating;
         if (filters.availability === "Available") base.availability = true;
         else if (filters.availability === "Busy") base.availability = false;
-        const ask = extra => Promise.resolve(searchLawyers({ ...base, ...extra }))
-            .then(res => (res && !res.error ? (res.data?.total ?? null) : null)).catch(() => null);
-        Promise.all(AREA_CHIPS.map(([, area]) => ask({ specialization: area }))).then(each => {
+        const countsKey = JSON.stringify(base);
+        const seenCounts = COUNTS_CACHE.get(countsKey);
+        if (seenCounts) { setAreaCounts(seenCounts.areaCounts); setDirTotals(seenCounts.dirTotals); }
+        if (isFresh(seenCounts)) return () => { live = false; };
+        Promise.resolve(lawyerDirectoryCounts(base)).then(res => {
             if (!live) return;
+            const d = res && !res.error ? res.data : null;
+            if (!d) return;                      // a failed refresh keeps what is shown
             const next = {};
-            AREA_CHIPS.forEach(([, value], i) => { next[value] = each[i]; });
+            AREA_CHIPS.forEach(([, value]) => { next[value] = d.by_specialization?.[value] ?? null; });
+            const totals = { all: d.total ?? null, accepting: d.accepting ?? null };
+            COUNTS_CACHE.set(countsKey, { areaCounts: next, dirTotals: totals, at: Date.now() });
             setAreaCounts(next);
-        });
+            setDirTotals(totals);
+        }).catch(() => {});
         return () => { live = false; };
     }, [backendUp, filters.city, filters.rating, filters.availability]);
-    const [dirTotals, setDirTotals] = useState({ all: null, accepting: null });
-    useEffect(() => {
-        if (!backendUp) return undefined;
-        let live = true;
-        const total = extra => Promise.resolve(searchLawyers({ page: 1, page_size: 1, ...extra }))
-            .then(res => (res && !res.error ? (res.data?.total ?? null) : null)).catch(() => null);
-        Promise.all([total({}), total({ availability: true })]).then(([all, accepting]) => {
-            if (live) setDirTotals({ all, accepting });
-        });
-        return () => { live = false; };
-    }, [backendUp]);
     const activeFilterCount = (filters.specialization !== "All" ? 1 : 0) + (filters.city !== "All" ? 1 : 0) + (filters.rating > 0 ? 1 : 0);
 
     // Shown wherever the backend genuinely has no value for a field. Saying so
@@ -1061,6 +1304,7 @@ const ModLawyers = () => {
             toast.show(error.message || "Failed to submit review. Please try again.", "error", 3000);
         } else {
             toast.show("⭐ Review submitted — thank you!", "success", 3000);
+            setReviewElig({ state: "ready", data: { can_review: false, already_reviewed: true, reason: "already_reviewed" } });
             setShowReviewForm(false);
             setReviewComment("");
             setReviewStars(5);
@@ -1093,6 +1337,13 @@ const ModLawyers = () => {
         setApptDetails("");
         setApptMode("video");
         setSlotState("idle"); setSlots([]); setSlotNotice("");
+        const linked = getCaseId();
+        setApptCaseId(bookableCases.some(c => c._id === linked) ? linked : "");
+        apptWantTime.current = null;
+        setApptSent(null);
+        setApptError(null);
+        setApptTaken(new Set());
+        setApptOpenSeq(n => n + 1);
         setShowApptModal(true);
     };
 
@@ -1108,14 +1359,17 @@ const ModLawyers = () => {
                 return;
             }
 
-            if (slotState === "unconfigured") {
+            // No published hours: a request is possible only while the server
+            // does not enforce hours, and only for a time the client picked.
+            const requestable = slotState === "unconfigured" && !slotsEnforced;
+            if (slotState === "unconfigured" && !requestable) {
                 toast.show("This lawyer has not published working hours yet, so no time can be booked.", "warn", 4000);
                 return;
             }
-            // Only a time the server offered for this day. A default or a
-            // stale pick would book a time the client never chose, possibly
-            // outside the lawyer's hours.
-            if (!apptTime || slotState !== "ready" || !slots.some(s => s.local_time === apptTime)) {
+            // Only a time offered for this day. A default or a stale pick
+            // would book a time the client never chose.
+            const offered = requestable ? REQUEST_TIMES : slots.map(s => s.local_time);
+            if (!apptTime || !(slotState === "ready" || requestable) || !offered.includes(apptTime)) {
                 toast.show("Please choose one of the available times.", "warn", 3500);
                 return;
             }
@@ -1142,13 +1396,14 @@ const ModLawyers = () => {
                 // what idempotency is here to stop.
                 const intent = {
                     lawyer_id: apptLawyer._id,
-                    case_id: getCaseId(),
+                    case_id: apptCaseId || null,
                     scheduled_at,
                     duration_minutes: 60,
                     mode: apptMode,
                     notes: apptDetails || null,
                 };
-                const { error, data } = await bookAppointment({
+                setApptError(null);
+                const { error, data, status } = await bookAppointment({
                     ...intent,
                     idempotency_key: bookingKey.current.keyFor(intent),
                 });
@@ -1160,8 +1415,15 @@ const ModLawyers = () => {
                     const raw = error.detail;
                     const errMsg = Array.isArray(raw)
                         ? raw.map(e => e.msg?.replace(/^Value error,\s*/i, "")).join("; ")
-                        : (raw || error.error || "Booking failed. Please try again.");
-                    toast.show(errMsg, "error", 4000);
+                        : (raw || error.error || error.message || "Booking failed. Please try again.");
+                    setApptError(errMsg);
+                    // 409: that time is taken (by the client's own appointment or
+                    // the lawyer's). It is marked, and the pick is cleared.
+                    if (status === 409) {
+                        const key = `${apptDate} ${apptTime}`;
+                        setApptTaken(prev => new Set(prev).add(key));
+                        setApptTime("");
+                    }
                     return;
                 }
                 bookingData = data;
@@ -1179,16 +1441,29 @@ const ModLawyers = () => {
             // replay this appointment instead of creating that one.
             bookingKey.current.complete();
 
-            // A request, not a booking: the lawyer still has to accept it.
-            toast.show("Request sent. The lawyer will confirm or decline it. Redirecting…", "success", 2500);
-            setShowApptModal(false);
-            setTimeout(() => router.push("/tracking"), 600);
+            // A request, not a booking: the lawyer still has to accept it. The
+            // dialog says so and offers the way on, instead of a toast and an
+            // automatic jump to a page that did not open on the appointment.
+            setApptSent({
+                id: bookingData?.id || null,
+                day: new Date(`${apptDate}T12:00:00+05:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Karachi" }),
+                time: apptTime,
+                mode: { video: "Video call", in_person: "In person", phone: "Phone call" }[apptMode] || apptMode,
+                about: (bookableCases.find(c => c._id === apptCaseId) || {}).title || "General consultation",
+            });
 
         } catch {
             toast.show("An unexpected error occurred. Please try again.", "error", 4000);
             setApptSubmitting(false);
         }
     };
+
+    useEffect(() => {
+        if (!showApptModal) return undefined;
+        const onKey = e => { if (e.key === "Escape" && !apptSubmitting) setShowApptModal(false); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [showApptModal, apptSubmitting]);
 
     // ── HIRE (ENGAGEMENT) HELPERS ─────────────────────────────────
     const openHire = async (lawyer, preferredAppointmentId = null) => {
@@ -1201,19 +1476,12 @@ const ModLawyers = () => {
         setHireOpening(true);
         const fresh = await refreshHiring();
         setHireOpening(false);
+        // No case that can be sent is NOT a refusal any more: the form lets the
+        // client confirm a draft or describe a new matter in a few fields,
+        // instead of sending them back through the intake. The lists are the
+        // ones just read, not this render's state, which is a read behind.
         const casesNow = fresh.cases || myCases;
-        const canHire = hireable(casesNow, openByCase(fresh.engs || myEngagements));
-        if (!canHire.length) {
-            toast.show(
-                casesNow.some(isDraftCase)
-                    ? "Finish confirming your case at the end of the intake — a draft cannot be sent to a lawyer yet."
-                    : casesNow.length
-                        ? "All your cases already have a lawyer or a pending request."
-                        : "Create a case first (via Intake) — then you can request a lawyer for it.",
-                "info", 4500
-            );
-            return;
-        }
+        const freshHireable = hireable(casesNow, openByCase(fresh.engs || myEngagements));
         // The consultations this hire may follow, asked of the server for THIS
         // lawyer — not read off a page of the diary, where an eligible one
         // could sit just past the end. Only the lawyer can mark one completed.
@@ -1245,25 +1513,38 @@ const ModLawyers = () => {
         const arrivedFrom = preferredAppointmentId
             ? consults.find(a => a.id === preferredAppointmentId)
             : null;
-        chooseConsult(arrivedFrom || (consults.length === 1 ? consults[0] : null));
+        chooseConsult(arrivedFrom || (consults.length === 1 ? consults[0] : null),
+                      { hireable: freshHireable, cases: casesNow });
         setShowHireModal(true);
     };
 
     // The cases a consultation permits: just its own when it was booked for
     // one, otherwise any case that can still be sent to a lawyer.
-    const casesForConsult = (consult) => {
+    const casesForConsult = (consult, list = hireableCases) => {
         if (!consult) return [];
         return consult.case_id
-            ? hireableCases.filter(c => c._id === consult.case_id)
-            : hireableCases;
+            ? list.filter(c => c._id === consult.case_id)
+            : list;
+    };
+    // Unconfirmed intake drafts: offered (confirmed on send) only when the
+    // consultation was not booked for a particular case.
+    const draftsForConsult = (consult, cases = myCases) => (consult && !consult.case_id)
+        ? (cases || []).filter(c => c?._id && isDraftCase(c) && !c.lawyer_id)
+        : [];
+    // The lawyer's province as the matter's default; the client can change it.
+    const defaultProvince = () => {
+        const p = String(hireLawyer?.city || "").toLowerCase();
+        return MATTER_PROVINCES.some(([v]) => v === p) ? p : "";
     };
 
-    const chooseConsult = (consult) => {
+    const chooseConsult = (consult, fresh = null) => {
         setHireAppointmentId(consult?.id || "");
-        const options = casesForConsult(consult);
+        const options = casesForConsult(consult, fresh?.hireable || hireableCases);
         const urlCase = getCaseId();
         const preselect = options.find(c => c._id === urlCase) || options[0];
-        setHireCaseId(preselect?._id || "");
+        const drafts = draftsForConsult(consult, fresh?.cases || myCases);
+        // Nothing to choose from: the new-matter fields open straight away.
+        setHireCaseId(preselect?._id || (drafts[0] ? `draft:${drafts[0]._id}` : (consult && !consult.case_id ? NEW_MATTER : "")));
     };
 
     const consultLabel = (a) => {
@@ -1274,6 +1555,7 @@ const ModLawyers = () => {
     };
 
     const submitHire = async () => {
+        if (hireSubmitting) return;
         if (!hireAppointmentId) {
             toast.show("Select the consultation this request follows.", "warn", 3500);
             return;
@@ -1282,9 +1564,44 @@ const ModLawyers = () => {
             toast.show("Select the case you want this lawyer to handle.", "warn", 3500);
             return;
         }
+        let caseId = hireCaseId;
+        if (caseId === NEW_MATTER) {
+            const m = {
+                title: newMatter.title.trim(), description: newMatter.description.trim(),
+                case_type: newMatter.case_type, province: newMatter.province || defaultProvince(),
+            };
+            if (m.title.length < 3) { toast.show("Give the matter a short title.", "warn", 3500); return; }
+            if (!m.case_type) { toast.show("Choose the area of law.", "warn", 3500); return; }
+            if (!m.province) { toast.show("Choose the province.", "warn", 3500); return; }
+            if (m.description.length < 10) { toast.show("Describe the matter in a sentence or two.", "warn", 3500); return; }
+            setHireSubmitting(true);
+            const { data, error } = await createCase(m);
+            if (error || !data?._id) {
+                setHireSubmitting(false);
+                toast.show(error?.message || "Could not create the matter. Please try again.", "error", 4000);
+                return;
+            }
+            // Kept as the selection, so a retry after a refused request reuses
+            // this matter instead of creating a second one.
+            caseId = data._id;
+            setHireCaseId(caseId);
+            setNewMatter({ title: "", case_type: "", province: "", description: "" });
+            refreshHiring();
+        } else if (caseId.startsWith("draft:")) {
+            caseId = caseId.slice("draft:".length);
+            setHireSubmitting(true);
+            const { error } = await confirmCase(caseId);
+            if (error) {
+                setHireSubmitting(false);
+                toast.show(error.message || "Could not confirm the case. Please try again.", "error", 4000);
+                return;
+            }
+            setHireCaseId(caseId);
+            refreshHiring();
+        }
         setHireSubmitting(true);
         const { error } = await requestEngagement({
-            case_id: hireCaseId,
+            case_id: caseId,
             lawyer_id: hireLawyer._id,
             appointment_id: hireAppointmentId,
             message: hireMessage.trim() || null,
@@ -1390,6 +1707,11 @@ const ModLawyers = () => {
         if (!hireLawyer || typeof document === "undefined") return null;
         const hireConsult = hireConsults.find(a => a.id === hireAppointmentId) || null;
         const hireCaseOptions = casesForConsult(hireConsult);
+        const hireDrafts = draftsForConsult(hireConsult);
+        const canDescribe = Boolean(hireConsult && !hireConsult.case_id);
+        const describing = hireCaseId === NEW_MATTER && canDescribe;
+        const fieldStyle = { width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
+        const linkBtn = { border: "none", background: "transparent", padding: 0, marginTop: 8, color: t.primary, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
         return createPortal(
             <div style={{
                 position: "fixed", inset: 0, zIndex: 9999,
@@ -1398,7 +1720,7 @@ const ModLawyers = () => {
             }}>
                 <div style={{
                     background: t.card, borderRadius: 20, border: `1.5px solid ${t.border}`,
-                    padding: 28, width: "100%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto",
+                    padding: 28, width: "100%", maxWidth: 680, maxHeight: "92vh", overflowY: "auto",
                     boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
                 }}>
                     {/* Header */}
@@ -1418,6 +1740,10 @@ const ModLawyers = () => {
                         Nothing is assigned until they accept — you'll get a notification either way.
                     </div>
 
+                    {/* Consultation and case side by side (2026-10-19): the narrow
+                        dialog scrolled on a laptop screen. A new-matter form needs
+                        the full width, so the row becomes one column for it. */}
+                    <div data-hire-row style={{ display: "grid", gridTemplateColumns: describing ? "minmax(0,1fr)" : "minmax(0,1fr) minmax(0,1fr)", columnGap: 14, alignItems: "start" }}>
                     {/* Consultation picker. A choice only when there is one to
                         make; a single consultation is simply stated. */}
                     <div style={{ marginBottom: 14 }}>
@@ -1441,14 +1767,52 @@ const ModLawyers = () => {
                     {/* Case picker */}
                     <div style={{ marginBottom: 14 }}>
                         <label style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 6 }}>Case *</label>
-                        <select value={hireCaseId} onChange={e => setHireCaseId(e.target.value)}
-                            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${hireCaseId ? t.primary : t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}>
-                            {hireCaseOptions.map(c => (
-                                <option key={c._id} value={c._id}>
-                                    {c.title} ({c.case_number})
-                                </option>
-                            ))}
-                        </select>
+                        {!describing && (hireCaseOptions.length > 0 || hireDrafts.length > 0) && (
+                            <select value={hireCaseId} onChange={e => setHireCaseId(e.target.value)}
+                                style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${hireCaseId ? t.primary : t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }}>
+                                {hireCaseOptions.map(c => (
+                                    <option key={c._id} value={c._id}>
+                                        {c.title} ({c.case_number})
+                                    </option>
+                                ))}
+                                {hireDrafts.map(c => (
+                                    <option key={c._id} value={`draft:${c._id}`}>
+                                        {c.title || "Untitled"} — from your intake (confirmed when you send)
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                        {describing && (
+                            <div data-new-matter style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                <input aria-label="Matter title" value={newMatter.title} maxLength={120}
+                                    onChange={e => setNewMatter(m => ({ ...m, title: e.target.value }))}
+                                    placeholder="Short title, e.g. Security deposit not returned" style={fieldStyle} />
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                    <select aria-label="Area of law" value={newMatter.case_type}
+                                        onChange={e => setNewMatter(m => ({ ...m, case_type: e.target.value }))} style={fieldStyle}>
+                                        <option value="">Area of law…</option>
+                                        {MATTER_TYPES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                                    </select>
+                                    <select aria-label="Province" value={newMatter.province || defaultProvince()}
+                                        onChange={e => setNewMatter(m => ({ ...m, province: e.target.value }))} style={fieldStyle}>
+                                        <option value="">Province…</option>
+                                        {MATTER_PROVINCES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                                    </select>
+                                </div>
+                                <textarea aria-label="What the lawyer should handle" value={newMatter.description} maxLength={2000} rows={3}
+                                    onChange={e => setNewMatter(m => ({ ...m, description: e.target.value }))}
+                                    placeholder="In a sentence or two: what happened and what you need the lawyer to do."
+                                    style={{ ...fieldStyle, resize: "vertical" }} />
+                                <div style={{ fontSize: 11.5, color: t.textMuted }}>Saved as a new case in your account; no intake needed.</div>
+                            </div>
+                        )}
+                        {canDescribe && !describing && (
+                            <button type="button" style={linkBtn} onClick={() => setHireCaseId(NEW_MATTER)}>＋ Describe a new matter instead</button>
+                        )}
+                        {describing && (hireCaseOptions.length > 0 || hireDrafts.length > 0) && (
+                            <button type="button" style={linkBtn}
+                                onClick={() => setHireCaseId(hireCaseOptions[0]?._id || `draft:${hireDrafts[0]._id}`)}>← Choose one of my cases</button>
+                        )}
                         {!hireConsult && hireConsults.length > 1 && (
                             <div style={{ fontSize: 12, color: t.textMuted, marginTop: 6 }}>Choose a consultation first.</div>
                         )}
@@ -1456,21 +1820,23 @@ const ModLawyers = () => {
                             <div style={{ fontSize: 12, color: t.textMuted, marginTop: 6 }}>The case this consultation was booked for can no longer be sent to a lawyer.</div>
                         )}
                     </div>
+                    </div>
 
                     {/* Message */}
                     <div style={{ marginBottom: 22 }}>
                         <label style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 6 }}>Message to the Lawyer (optional)</label>
                         <textarea value={hireMessage} onChange={e => setHireMessage(e.target.value)}
                             placeholder="Briefly describe what you need help with, your urgency, and anything the lawyer should know…"
-                            style={{ width: "100%", minHeight: 88, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+                            style={{ width: "100%", minHeight: 72, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
                     </div>
 
                     {/* Actions */}
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <BtnOutline onClick={() => setShowHireModal(false)} style={{ flex: 1, fontSize: 13 }}>Cancel</BtnOutline>
-                        <BtnPrimary disabled={hireSubmitting} onClick={submitHire} style={{ flex: 2, fontSize: 13, padding: "12px", opacity: hireSubmitting ? 0.7 : 1 }}>
-                            {hireSubmitting ? "Sending…" : "Send Hire Request →"}
-                        </BtnPrimary>
+                    <style>{MLP_CSS}</style>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <button type="button" className="mlp-btn mlp-cancel" style={mlpVars} onClick={() => setShowHireModal(false)}>Cancel</button>
+                        <button type="button" className="mlp-btn mlp-primary" disabled={hireSubmitting} onClick={submitHire}>
+                            {hireSubmitting ? "Sending…" : "Send Hire Request"}
+                        </button>
                     </div>
                 </div>
             </div>,
@@ -1481,140 +1847,209 @@ const ModLawyers = () => {
     // ── APPOINTMENT MODAL ─────────────────────────────────────────
     const renderAppointmentModal = () => {
         if (!apptLawyer || typeof document === "undefined") return null;
+        const requestable = slotState === "unconfigured" && !slotsEnforced;
+        const times = requestable
+            ? REQUEST_TIMES.filter(tm => !isPktSlotPast(apptDate, tm))
+            : slots.map(sl => sl.local_time);
+        const showTimes = (slotState === "ready" && slots.length > 0) || (requestable && times.length > 0);
+        const initials = apptLawyer.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+        const dayLabel = apptDate
+            ? new Date(`${apptDate}T12:00:00+05:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Karachi" })
+            : null;
+        const modeLabel = { video: "Video call", in_person: "In person", phone: "Phone call" }[apptMode];
+        const ready = Boolean(apptDate && apptTime && times.includes(apptTime));
+        const lbl = { fontSize: 11, fontWeight: 800, color: t.textMuted, textTransform: "uppercase", letterSpacing: ".08em", display: "flex", alignItems: "center", gap: 8, marginBottom: 8 };
+        const step = n => <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 10.5, fontWeight: 800, background: t.primaryGlow, color: t.primary }}>{n}</span>;
+        const seg = on => ({ flex: 1, height: 38, borderRadius: 10, border: `1.5px solid ${on ? t.primary : t.border}`, background: on ? t.primaryGlow : "transparent", color: on ? t.primary : t.textMuted, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" });
         return createPortal(
-            <div style={{
-                position: "fixed", inset: 0, zIndex: 9999,
-                background: "rgba(0,0,0,0.65)",
-                backdropFilter: "blur(4px)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                borderRadius: 0,
-            }}>
-                <div style={{
-                    background: t.card, borderRadius: 20, border: `1.5px solid ${t.border}`,
-                    padding: 28, width: "100%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto",
-                    boxShadow: "0 24px 64px rgba(0,0,0,0.4)", position: "relative",
-                }}>
+            <div onClick={e => { if (e.target === e.currentTarget && !apptSubmitting) setShowApptModal(false); }}
+                style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(6,12,14,0.66)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                {apptSent ? (
+                <div role="dialog" aria-modal="true" aria-label="Request sent" data-booking-dialog data-booking-sent
+                    style={{ background: t.card, borderRadius: 20, border: `1px solid ${t.border}`, width: "min(560px, 100%)", boxShadow: "0 40px 90px -30px rgba(0,0,0,.85)", padding: "28px 30px", display: "flex", flexDirection: "column", gap: 20 }}>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                        <span aria-hidden="true" style={{ width: 54, height: 54, flexShrink: 0, borderRadius: "50%", background: "linear-gradient(135deg,#12897f,#1c9c66)", display: "grid", placeItems: "center" }}>
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 22, fontWeight: 800, color: t.text }}>Request sent to {apptLawyer.name.split(" ")[0]}</div>
+                            <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 2 }}>{apptSent.day} · {apptSent.time} PKT · {apptSent.mode} · {apptSent.about}</div>
+                        </div>
+                    </div>
+                    <ol aria-label="What happens next" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                        {[["✓", "Sent", "Your request and note are with the lawyer.", "done"],
+                          ["2", `${apptLawyer.name.split(" ")[0]} confirms or declines`, "You will be notified when they answer.", "now"],
+                          ["3", "Meet", "The joining details appear on your appointment.", "later"],
+                          ["4", "Next step", "Hire them, book a follow-up, or get a document reviewed.", "later"]].map(([mark, title, sub, state]) => (
+                            <li key={title} style={{ display: "flex", gap: 12 }}>
+                                <span aria-hidden="true" style={{ width: 26, height: 26, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 900,
+                                    background: state === "done" ? t.primary : "transparent", color: state === "done" ? "#06211a" : state === "now" ? t.warn : t.textMuted,
+                                    border: state === "done" ? "none" : `${state === "now" ? 2 : 1.5}px solid ${state === "now" ? t.warn : t.border}` }}>{mark}</span>
+                                <div><b style={{ fontSize: 14, color: t.text }}>{title}</b><div style={{ fontSize: 12.5, color: t.textMuted }}>{sub}</div></div>
+                            </li>
+                        ))}
+                    </ol>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <button type="button" className="bk-cancel" onClick={() => setShowApptModal(false)}
+                            style={{ height: 42, borderRadius: 12, border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Back to lawyers</button>
+                        <button type="button" className="bk-send" data-view-appointment
+                            onClick={() => { setShowApptModal(false); router.push(`/appointments${apptSent.id ? `?appointment=${encodeURIComponent(apptSent.id)}` : ""}`); }}
+                            style={{ height: 42, borderRadius: 12, border: "none", background: "linear-gradient(135deg,#12897f,#1c9c66)", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>View my appointment</button>
+                    </div>
+                    <style>{`[data-booking-dialog] .bk-cancel:hover{background:rgba(255,255,255,.06)}[data-booking-dialog] .bk-send:hover{filter:brightness(1.1)}`}</style>
+                </div>
+                ) : (
+                <div role="dialog" aria-modal="true" aria-label={`Request a consultation with ${apptLawyer.name}`} data-booking-dialog
+                    style={{ background: t.card, borderRadius: 20, border: `1px solid ${t.border}`, width: "min(820px, 100%)", boxShadow: "0 40px 90px -30px rgba(0,0,0,.85)", overflow: "hidden" }}>
+                    <style>{`[data-booking-dialog] .bk-cancel{transition:background .15s,border-color .15s,color .15s}
+[data-booking-dialog] .bk-cancel:hover{background:rgba(255,138,128,.08);border-color:rgba(255,138,128,.55)!important;color:#FF8A80!important}
+[data-booking-dialog] .bk-cancel:active{transform:scale(.97)}
+[data-booking-dialog] .bk-send{transition:filter .15s,transform .12s}
+[data-booking-dialog] .bk-send:hover:not(:disabled){filter:brightness(1.1)}
+[data-booking-dialog] .bk-send:active:not(:disabled){transform:scale(.97)}
+[data-booking-dialog] .bk-x:hover{background:rgba(255,255,255,.08)!important;color:#fff!important}
+[data-booking-dialog] .bk-date::-webkit-calendar-picker-indicator{cursor:pointer;padding:4px;border-radius:6px;opacity:1;filter:invert(1) sepia(1) saturate(4) hue-rotate(95deg) brightness(1.05)}
+[data-booking-dialog] .bk-date::-webkit-calendar-picker-indicator:hover{background-color:rgba(255,255,255,.12)}`}</style>
                     {/* Header */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
-                        <div style={{ width: 46, height: 46, borderRadius: 14, background: t.primaryGlow, border: `1.5px solid ${t.primary}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: t.primary, flexShrink: 0 }}>
-                            {apptLawyer.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", borderBottom: `1px solid ${t.border}` }}>
+                        <div aria-hidden="true" style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#12897f,#1c9c66)", display: "grid", placeItems: "center", fontSize: 15, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{initials}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted }}>Request a consultation</div>
+                            <div style={{ fontWeight: 800, color: t.text, fontSize: 17, lineHeight: 1.3 }}>{apptLawyer.name}</div>
+                            <div style={{ fontSize: 12.5, color: t.textMuted }}>{[apptLawyer.spec, apptLawyer.fee ? `${fmtFee(apptLawyer.fee)}/hr` : "Fee on request", "60 min"].filter(Boolean).join(" · ")}</div>
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 800, color: t.text, fontSize: 15 }}>{apptLawyer.name}</div>
-                            <div style={{ fontSize: 12, color: t.textMuted }}>{apptLawyer.spec} · {fmtFee(apptLawyer.fee)}/hr</div>
+                        <button type="button" aria-label="Close" className="bk-x" onClick={() => setShowApptModal(false)}
+                            style={{ background: "transparent", border: "none", borderRadius: 10, width: 34, height: 34, cursor: "pointer", color: t.textMuted, fontSize: 16, display: "grid", placeItems: "center", alignSelf: "flex-start" }}>✕</button>
+                    </div>
+
+                    {/* Body: when on the left, how and what on the right */}
+                    <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", gap: 0 }}>
+                        <div style={{ padding: "18px 22px", borderRight: `1px solid ${t.border}` }}>
+                            <label htmlFor="appt-date" style={lbl}>{step(1)}Date</label>
+                            <input id="appt-date" className="bk-date" type="date" value={apptDate} min={pktToday()} onChange={e => setApptDate(e.target.value)}
+                                style={{ width: "100%", height: 42, padding: "0 12px", borderRadius: 10, border: `1.5px solid ${apptDate ? t.primary : t.border}`, background: t.inputBg, color: t.text, fontSize: 13.5, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+
+                            {/* Time — whatever the SERVER says is bookable, never a
+                                hardcoded list, except the request grid for a lawyer
+                                with no published hours while hours are not enforced.
+                                The heading says "requested" while enforcement is off. */}
+                            {apptEarliest && !(apptEarliest.date === apptDate && apptEarliest.time === apptTime) && (
+                                <div data-earliest style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, padding: "8px 10px 8px 12px", borderRadius: 10, background: t.inputBg, fontSize: 12.5, color: t.textMuted }}>
+                                    <span style={{ flex: 1 }}>Earliest open: <b style={{ color: t.text }}>{new Date(`${apptEarliest.date}T12:00:00+05:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Karachi" })} · {apptEarliest.time}</b></span>
+                                    <button type="button" className="bk-cancel" onClick={() => {
+                                        if (apptEarliest.date === apptDate) { setApptTime(apptEarliest.time); return; }
+                                        apptWantTime.current = apptEarliest.time; setApptDate(apptEarliest.date);
+                                    }} style={{ height: 30, padding: "0 12px", borderRadius: 8, border: `1px solid ${t.border}`, background: "transparent", color: t.primary, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Use it</button>
+                                </div>
+                            )}
+
+                            <div id="appt-time-label" style={{ ...lbl, marginTop: 16 }}>{step(2)}{slotsEnforced ? "Available Times (PKT)" : "Requested Time (PKT)"}</div>
+
+                            {slotState === "idle" && (
+                                <div style={{ fontSize: 12.5, color: t.textMuted }}>Choose a date to see times.</div>
+                            )}
+                            {slotState === "loading" && (
+                                <div role="status" style={{ fontSize: 12.5, color: t.textMuted }}>Checking this lawyer&apos;s availability…</div>
+                            )}
+                            {slotState === "error" && (
+                                <div role="alert" style={{ fontSize: 12.5, color: t.danger }}>
+                                    We could not load this lawyer&apos;s availability. That is
+                                    not the same as having none — please try another date or
+                                    try again shortly.
+                                </div>
+                            )}
+                            {slotState === "unconfigured" && (
+                                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: requestable ? 10 : 0, lineHeight: 1.5 }}>
+                                    {requestable
+                                        ? "This lawyer has not set their working hours yet — pick a time that suits you and they will confirm or decline."
+                                        : (slotNotice || "This lawyer has not set their working hours yet.")}
+                                </div>
+                            )}
+                            {slotState === "ready" && slots.length === 0 && (
+                                <div style={{ fontSize: 12.5, color: t.textMuted }}>No times are available on this date. Try another day.</div>
+                            )}
+                            {requestable && times.length === 0 && (
+                                <div style={{ fontSize: 12.5, color: t.textMuted }}>No times are left today. Try another day.</div>
+                            )}
+                            {showTimes && (
+                                <div role="group" aria-labelledby="appt-time-label"
+                                    style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0,1fr))", gap: 6 }}>
+                                    {times.map(label => {
+                                        const chosen = apptTime === label;
+                                        const taken = apptTaken.has(`${apptDate} ${label}`);
+                                        return (
+                                            <button key={label} type="button" aria-pressed={chosen} disabled={taken}
+                                                title={taken ? "Not available — choose another time" : undefined}
+                                                onClick={() => { setApptTime(label); setApptError(null); }}
+                                                style={{ height: 34, borderRadius: 8, border: `1.5px solid ${chosen ? t.primary : t.border}`, background: chosen ? t.primary : "transparent", color: chosen ? "#06211a" : taken ? t.textFaint : t.text, fontSize: 12.5, fontWeight: 700, cursor: taken ? "not-allowed" : "pointer", transition: "all .15s", fontFamily: "inherit", textDecoration: taken ? "line-through" : "none", opacity: taken ? 0.55 : 1 }}>
+                                                {label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            {slotState === "ready" && !slotsEnforced && slotNotice && (
+                                <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 8, lineHeight: 1.45 }}>{slotNotice}</div>
+                            )}
                         </div>
-                        <button onClick={() => setShowApptModal(false)} style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 8, width: 30, height: 30, cursor: "pointer", color: t.textMuted, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
-                    </div>
 
-                    {/* Date */}
-                    <div style={{ marginBottom: 14 }}>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 6 }}>Date *</label>
-                        <input type="date" value={apptDate} min={pktToday()} onChange={e => setApptDate(e.target.value)}
-                            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${apptDate ? t.primary : t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
-                    </div>
-
-                    {/* Time — whatever the SERVER says is bookable, never a
-                        hardcoded list. The heading says "requested" while
-                        enforcement is off, because a time the booking path will
-                        accept without checking the lawyer's hours is a request,
-                        not an availability guarantee. */}
-                    <div style={{ marginBottom: 14 }}>
-                        <label id="appt-time-label" style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 6 }}>
-                            {slotsEnforced ? "Available Times (PKT)" : "Requested Time (PKT)"}
-                        </label>
-
-                        {slotState === "idle" && (
-                            <div style={{ fontSize: 12, color: t.textMuted }}>
-                                Choose a date to see times.
+                        <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column" }}>
+                            <div style={lbl}>{step(3)}Consultation mode</div>
+                            <div role="group" aria-label="Consultation mode" style={{ display: "flex", gap: 6 }}>
+                                {[["video", "Video call"], ["in_person", "In person"]].map(([val, label]) => (
+                                    <button key={val} type="button" aria-pressed={apptMode === val} onClick={() => setApptMode(val)} style={seg(apptMode === val)}>{label}</button>
+                                ))}
                             </div>
-                        )}
 
-                        {slotState === "loading" && (
-                            <div role="status" style={{ fontSize: 12, color: t.textMuted }}>
-                                Checking this lawyer&apos;s availability…
+                            <label htmlFor="appt-case" style={{ ...lbl, marginTop: 16 }}>{step(4)}About</label>
+                            <select id="appt-case" data-appt-case value={apptCaseId} onChange={e => setApptCaseId(e.target.value)}
+                                style={{ width: "100%", height: 42, padding: "0 12px", borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13.5, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
+                                <option value="">General consultation — not about one of my cases</option>
+                                {bookableCases.map(c => (
+                                    <option key={c._id} value={c._id}>{c.title || "Untitled case"}{c.case_number ? ` (${c.case_number})` : ""}</option>
+                                ))}
+                            </select>
+
+                            <label htmlFor="appt-notes" style={{ ...lbl, marginTop: 16 }}>{step(5)}Notes <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>(optional)</span></label>
+                            <textarea id="appt-notes" rows={2} value={apptDetails} onChange={e => setApptDetails(e.target.value)}
+                                placeholder={`What should ${apptLawyer.name.split(" ")[0]} know before the call?`}
+                                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.5 }} />
+
+                            {/* What is about to be sent */}
+                            <div data-booking-summary style={{ marginTop: 16, padding: "12px 14px", borderRadius: 12, border: `1px solid ${ready ? t.primary + "66" : t.border}`, background: ready ? t.primaryGlow : "transparent" }}>
+                                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted }}>Your request</div>
+                                <div style={{ marginTop: 4, fontSize: 14, fontWeight: 800, color: ready ? t.text : t.textMuted }}>
+                                    {ready ? `${dayLabel} · ${apptTime} PKT` : "Pick a date and a time"}
+                                </div>
+                                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>{modeLabel} · 60 minutes · {(bookableCases.find(c => c._id === apptCaseId) || {}).title || "General consultation"}</div>
+                                <div style={{ fontSize: 12, color: t.textMuted }}>The lawyer confirms or declines.</div>
+                                {apptLawyer.hours && (
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 12, color: t.textMuted }}>
+                                        <Ic n="clock" s={12} c={t.textMuted} />Office hours: {apptLawyer.hours}
+                                    </div>
+                                )}
                             </div>
-                        )}
-
-                        {slotState === "error" && (
-                            <div role="alert" style={{ fontSize: 12, color: t.danger }}>
-                                We could not load this lawyer&apos;s availability. That is
-                                not the same as having none — please try another date or
-                                try again shortly.
-                            </div>
-                        )}
-
-                        {slotState === "unconfigured" && (
-                            <div style={{ fontSize: 12, color: t.textMuted }}>
-                                {slotNotice || "This lawyer has not set their working hours yet."}
-                            </div>
-                        )}
-
-                        {slotState === "ready" && slots.length === 0 && (
-                            <div style={{ fontSize: 12, color: t.textMuted }}>
-                                No times are available on this date. Try another day.
-                            </div>
-                        )}
-
-                        {slotState === "ready" && slots.length > 0 && (
-                            <div role="group" aria-labelledby="appt-time-label"
-                                style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                {slots.map(slot => {
-                                    const label = slot.local_time;
-                                    const chosen = apptTime === label;
-                                    return (
-                                        <button key={slot.start} type="button"
-                                            aria-pressed={chosen}
-                                            onClick={() => setApptTime(label)}
-                                            style={{ minHeight: 40, padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${chosen ? t.primary : t.border}`, background: chosen ? t.primaryGlow : "transparent", color: chosen ? t.primary : t.textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s", fontFamily: "inherit" }}>
-                                            {label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {slotState === "ready" && !slotsEnforced && slotNotice && (
-                            <div style={{ fontSize: 11, color: t.textFaint, marginTop: 6 }}>
-                                {slotNotice}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Notes */}
-                    <div style={{ marginBottom: 22 }}>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 6 }}>Consultation Notes (optional)</label>
-                        <textarea value={apptDetails} onChange={e => setApptDetails(e.target.value)}
-                            placeholder={`Brief description of your case for ${apptLawyer.name}…`}
-                            style={{ width: "100%", minHeight: 72, padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
-                    </div>
-
-                    {/* Consultation mode */}
-                    <div style={{ marginBottom: 14 }}>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 6 }}>Consultation Mode</label>
-                        <div style={{ display: "flex", gap: 8 }}>
-                            {[["video", "Video Call"], ["in_person", "In-Person"], ["phone", "Phone"]].map(([val, label]) => (
-                                <button key={val} onClick={() => setApptMode(val)}
-                                    style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1.5px solid ${apptMode === val ? t.primary : t.border}`, background: apptMode === val ? t.primaryGlow : "transparent", color: apptMode === val ? t.primary : t.textMuted, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s" }}>
-                                    {label}
-                                </button>
-                            ))}
                         </div>
                     </div>
 
-                    {/* Working hours info */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 10, background: t.inputBg, border: `1px solid ${t.border}`, marginBottom: 18 }}>
-                        <Ic n="clock" s={13} c={t.textMuted} />
-                        <span style={{ fontSize: 12, color: t.textMuted }}>{apptLawyer.hours || "Office hours not provided"}</span>
-                    </div>
+                    {apptError && (
+                        <div role="alert" data-booking-error style={{ margin: "0 22px", padding: "10px 14px", borderRadius: 10, background: `${t.danger}14`, border: `1px solid ${t.danger}55`, color: t.danger, fontSize: 13, fontWeight: 600 }}>
+                            {apptError}
+                        </div>
+                    )}
 
                     {/* Actions */}
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <BtnOutline onClick={() => setShowApptModal(false)} style={{ flex: 1, fontSize: 13 }}>Cancel</BtnOutline>
-                        <BtnPrimary disabled={apptSubmitting} onClick={submitBooking} style={{ flex: 2, fontSize: 13, padding: "12px", opacity: apptSubmitting ? 0.7 : 1 }}>
-                            {apptSubmitting ? "Booking…" : "Confirm Appointment →"}
-                        </BtnPrimary>
+                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, padding: "14px 22px 18px", borderTop: `1px solid ${t.border}`, marginTop: apptError ? 12 : 0 }}>
+                        {!ready && !apptSubmitting && <span style={{ marginRight: "auto", fontSize: 12.5, color: t.textMuted }}>Choose a time to send the request.</span>}
+                        <button type="button" className="bk-cancel" onClick={() => setShowApptModal(false)}
+                            style={{ minWidth: 140, height: 42, borderRadius: 12, border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+                        <button type="button" className="bk-send" data-booking-submit disabled={apptSubmitting || !ready} onClick={submitBooking}
+                            style={{ minWidth: 140, height: 42, padding: "0 20px", borderRadius: 12, border: "none", background: ready ? "linear-gradient(135deg,#12897f,#1c9c66)" : t.inputBg, color: ready ? "#fff" : t.textMuted, fontSize: 14, fontWeight: 800, cursor: apptSubmitting ? "wait" : ready ? "pointer" : "not-allowed", fontFamily: "inherit", boxShadow: ready ? "0 10px 22px -12px rgba(28,156,102,.9)" : "none", opacity: apptSubmitting ? 0.7 : 1 }}>
+                            {apptSubmitting ? "Sending…" : "Send request"}
+                        </button>
                     </div>
                 </div>
+                )}
             </div>,
             document.body
         );
@@ -1667,26 +2102,27 @@ const ModLawyers = () => {
                                     </div>
                                 ))}
                             </div>
-                            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                                <BtnOutline
-                                    onClick={() => l.avail && !l._id?.startsWith("api-") && openBooking(l)}
-                                    style={{ flex: 1, fontSize: 13, opacity: (!l.avail || l._id?.startsWith("api-")) ? 0.5 : 1, cursor: (!l.avail || l._id?.startsWith("api-")) ? "not-allowed" : "pointer" }}
-                                >Book Appointment</BtnOutline>
+                            <style>{MLP_CSS}</style>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+                                <button type="button" className="mlp-btn mlp-outline" style={mlpVars}
+                                    disabled={!l.avail || l._id?.startsWith("api-")}
+                                    onClick={() => openBooking(l)}>
+                                    <Ic n="clock" s={15} c="currentColor" />Book Appointment
+                                </button>
                                 {(() => {
                                     const engState = engagementWith(l._id);
                                     if (engState === "accepted") return (
-                                        <BtnPrimary disabled style={{ flex: 1, fontSize: 13, opacity: 0.75 }}>✓ Engaged on Your Case</BtnPrimary>
+                                        <button type="button" className="mlp-btn mlp-primary" disabled>✓ Engaged on Your Case</button>
                                     );
                                     if (engState === "requested") return (
-                                        <BtnPrimary disabled style={{ flex: 1, fontSize: 13, opacity: 0.75 }}>Request Pending…</BtnPrimary>
+                                        <button type="button" className="mlp-btn mlp-primary" disabled>Request Pending…</button>
                                     );
                                     return (
-                                        <BtnPrimary
+                                        <button type="button" className="mlp-btn mlp-primary"
                                             disabled={l._id?.startsWith("api-")}
                                             onClick={() => openHire(l)}
-                                            style={{ flex: 1, fontSize: 13 }}
                                             title={l._id?.startsWith("api-") ? "Sample profile — cannot be hired" : "Ask this lawyer to take your case"}
-                                        >Request to Hire</BtnPrimary>
+                                        >Request to Hire</button>
                                     );
                                 })()}
                             </div>
@@ -1700,7 +2136,7 @@ const ModLawyers = () => {
                                 exists in the system. Saying so here is the difference
                                 between a listing and a guarantee. */}
                             <div style={{ fontSize: 11.5, color: t.textMuted, lineHeight: 1.5, marginBottom: 12, padding: "8px 10px", borderRadius: 8, background: `color-mix(in srgb, ${t.border} 25%, transparent)` }}>
-                                Credentials below are provided by the lawyer and reviewed by our team.
+                                Credentials below are provided by the lawyer. Attorney.AI does not check them.
                                 We do not independently confirm Bar Council enrolment — please verify
                                 directly before engaging.
                             </div>
@@ -1748,26 +2184,20 @@ const ModLawyers = () => {
                                     such a lawyer, and `encodeURIComponent(null)` is the string
                                     "null", which was being sent to Google Maps as a search term. */}
                                 {l.precision === "exact" ? (
-                                    <div style={{ display: "flex", gap: 10 }}>
-                                        <BtnOutline style={{ flex: 1, fontSize: 12, padding: "9px" }}
-                                            onClick={() => {
-                                                const q = `${l.lat},${l.lng}`;
-                                                window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
-                                            }}>
-                                            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                                                <Ic n="map" s={13} c={t.primary} /> View on Map
-                                            </span>
-                                        </BtnOutline>
-                                        <BtnPrimary style={{ flex: 1, fontSize: 12, padding: "9px" }}
-                                            onClick={() => {
-                                                const dest = `${l.lat},${l.lng}`;
-                                                window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, "_blank");
-                                            }}>
-                                            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                                                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" /></svg>
-                                                Get Directions
-                                            </span>
-                                        </BtnPrimary>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                                        {/* View on Map: the app's own map page on this lawyer.
+                                            Get Directions: Google Maps, which routes from the
+                                            client's current location -- the app cannot draw a
+                                            turn-by-turn route itself (2026-10-19). */}
+                                        <button type="button" className="mlp-btn mlp-outline" style={mlpVars}
+                                            onClick={() => openOnMap(l)}>
+                                            <Ic n="map" s={14} c="currentColor" /> View on Map
+                                        </button>
+                                        <button type="button" className="mlp-btn mlp-primary"
+                                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}`, "_blank", "noopener")}>
+                                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" /></svg>
+                                            Get Directions
+                                        </button>
                                     </div>
                                 ) : (
                                     <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.6 }}>
@@ -1827,11 +2257,24 @@ const ModLawyers = () => {
                             ))}
 
                             {/* Write a Review */}
-                            <div style={{ marginTop: 12, borderTop: `1px solid ${t.border}`, paddingTop: 12 }}>
-                                {!showReviewForm ? (
-                                    <button onClick={() => setShowReviewForm(true)}
-                                        style={{ width: "100%", padding: "9px", borderRadius: 10, border: `1.5px solid ${t.primary}`, background: "transparent", color: t.primary, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                                        Write a Review
+                            <div data-review-form data-review-state={reviewElig.state === "ready" ? (reviewElig.data.can_review ? "can" : reviewElig.data.already_reviewed ? "done" : "not-eligible") : reviewElig.state}
+                                style={{ marginTop: 12, borderTop: `1px solid ${t.border}`, paddingTop: 12 }}>
+                                {reviewElig.state === "loading" || reviewElig.state === "idle" ? (
+                                    <div style={{ fontSize: 12.5, color: t.textMuted }}>Checking whether you can review…</div>
+                                ) : reviewElig.state === "error" ? (
+                                    <div role="alert" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: t.textMuted }}>
+                                        <span style={{ flex: 1 }}>Could not check whether you can review this lawyer.</span>
+                                        <button type="button" className="mlp-btn mlp-outline" style={{ ...mlpVars, height: 34 }} onClick={() => setReviewEligSeq(n => n + 1)}>Retry</button>
+                                    </div>
+                                ) : reviewElig.data.already_reviewed ? (
+                                    <div style={{ fontSize: 13, color: t.text, fontWeight: 700 }}>✓ Review submitted — thank you.</div>
+                                ) : !reviewElig.data.can_review ? (
+                                    <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.5 }}>
+                                        You can review {String(l.name || "this lawyer").split(" ")[0]} after a completed consultation with them, or once they have taken your case.
+                                    </div>
+                                ) : !showReviewForm ? (
+                                    <button type="button" className="mlp-btn mlp-outline mlp-full" style={mlpVars} onClick={() => setShowReviewForm(true)}>
+                                        <Ic n="star" s={14} c="currentColor" />Write a Review
                                     </button>
                                 ) : (
                                     <div>
@@ -1852,13 +2295,11 @@ const ModLawyers = () => {
                                         <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)}
                                             placeholder="Share your experience with this lawyer…"
                                             style={{ width: "100%", minHeight: 72, padding: "8px 12px", borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 12, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
-                                        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                                            <button onClick={() => setShowReviewForm(false)}
-                                                style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${t.border}`, background: "transparent", color: t.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                                            <button type="button" className="mlp-btn mlp-cancel" style={mlpVars} onClick={() => setShowReviewForm(false)}>
                                                 Cancel
                                             </button>
-                                            <button onClick={() => submitUserReview(l._id)} disabled={reviewSubmitting}
-                                                style={{ flex: 2, padding: "8px", borderRadius: 8, border: "none", background: t.primary, color: t.mode === "dark" ? "#1A2E35" : "#fff", fontSize: 12, fontWeight: 700, cursor: reviewSubmitting ? "not-allowed" : "pointer", opacity: reviewSubmitting ? 0.7 : 1, fontFamily: "inherit" }}>
+                                            <button type="button" className="mlp-btn mlp-primary" onClick={() => submitUserReview(l._id)} disabled={reviewSubmitting}>
                                                 {reviewSubmitting ? "Submitting…" : "Submit Review"}
                                             </button>
                                         </div>
@@ -1879,7 +2320,12 @@ const ModLawyers = () => {
     // says so, and those pins are dashed.
     if (activeView === "map") {
         const idOf = l => String(l._id || l.bar || l.name);
-        const picked = filtered.find(l => idOf(l) === mapPick) || null;
+        // A lawyer opened from their profile is on the map even when the
+        // directory's current filters would hide them.
+        const opened = selectedLawyer && idOf(selectedLawyer) === mapPick
+            && !filtered.some(l => idOf(l) === mapPick) ? selectedLawyer : null;
+        const mapLawyers = opened ? [opened, ...filtered] : filtered;
+        const picked = mapLawyers.find(l => idOf(l) === mapPick) || null;
         const initials = l => l.name.split(" ").map(w => w[0]).join("").slice(0, 2);
         const feeText = l => (l.fee ? `Rs ${l.fee.toLocaleString()}` : "Fee on request");
         const ratingText = l => (l.reviews > 0 ? `★ ${Number(l.rating).toFixed(1)} (${l.reviews})` : "No reviews yet");
@@ -1929,12 +2375,12 @@ const ModLawyers = () => {
                     {!mapPanelOpen && <span className="n">{filtered.length}</span>}
                 </button>
             </header>
-            <div data-lawyers-map style={{ position: "relative", height: "calc(100vh - 140px)", minHeight: 520, borderRadius: 20, overflow: "hidden", border: "1px solid var(--line)", boxShadow: "var(--shadow)" }}>
+            <div data-lawyers-map style={{ position: "relative", height: "calc(100vh - 96px)", minHeight: 600, borderRadius: 20, overflow: "hidden", border: "1px solid var(--line)", boxShadow: "var(--shadow)" }}>
                 {/* Book from the map: the same dialogs as the list (portals). */}
                 {showApptModal && renderAppointmentModal()}
                 {showHireModal && renderHireModal()}
 
-                <LeafletMap lawyers={filtered} height="100%" dark={t.mode === "dark"} controls
+                <LeafletMap lawyers={mapLawyers} height="100%" dark={t.mode === "dark"} controls
                     selectedId={mapPick} hoveredId={mapHover} leftInset={mapPanelOpen ? 340 : 0}
                     onSelect={l => setMapPick(idOf(l))}
                     onLocate={(pos, problem) => {
@@ -2092,7 +2538,7 @@ const ModLawyers = () => {
             <div style={{ margin: "4px 0 24px", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <h1 style={{ margin: 0, fontFamily: DOCS_FONT, fontSize: 34, fontWeight: 600, color: t.text, letterSpacing: "-0.2px", lineHeight: 1.15 }}>Lawyers</h1>
-                    <div style={{ marginTop: 6, fontFamily: DOCS_FONT, fontSize: 14, color: t.textMuted }}>Find a verified lawyer, compare fees and request a consultation.</div>
+                    <div style={{ marginTop: 6, fontFamily: DOCS_FONT, fontSize: 14, color: t.textMuted }}>Find a lawyer, compare fees and request a consultation.</div>
                 </div>
                 {/* This page is the list; the map is its own view (2026-10-10). */}
                 <style>{MAP_OPEN_CSS}</style>
@@ -2166,6 +2612,8 @@ const ModLawyers = () => {
                             recommendation heading. */}
                         <h3 className="lh-ai-title">
                             {aiMatch ? "AI-Recommended Match"
+                                : matchKind === "case_draft" ? "Finish your Legal Intake first"
+                                : matchKind === "case_missing" ? "Your earlier case is no longer available"
                                 : (matchKind === "general_listing" || matchKind === "none") ? "No strong match yet"
                                     : "Not sure who to choose?"}
                         </h3>
@@ -2184,9 +2632,10 @@ const ModLawyers = () => {
                                         : "Fill in your Legal Intake first — it takes about 2 minutes — and we will suggest a lawyer for your case."}
                         </p>
                         <div className="lh-ai-row">
-                            {!aiMatch && !getCaseId() ? (
-                                <button type="button" className="lh-ai-btn" onClick={() => router.push("/intake")}>
-                                    Start intake (2 min)
+                            {!aiMatch && (!getCaseId() || matchKind === "case_draft") ? (
+                                <button type="button" className="lh-ai-btn" data-match-next={matchKind === "case_draft" ? "finish-intake" : "start-intake"}
+                                    onClick={() => router.push("/intake")}>
+                                    {matchKind === "case_draft" ? "Finish intake" : "Start intake (2 min)"}
                                     <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                                 </button>
                             ) : (
@@ -2222,7 +2671,7 @@ const ModLawyers = () => {
                 })()}
 
                 <div className="lh-trust">
-                    <span><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>Every listed lawyer is KYC-verified</span>
+                    <span><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>Bar number on every profile</span>
                     <span><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>Fees shown before you book</span>
                     <span><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>Hire only after a consultation</span>
                 </div>
@@ -2421,7 +2870,7 @@ const ModLawyers = () => {
                                             Decline
                                         </button>
                                         <button onClick={() => acceptTerms(e)} disabled={engBusy === e.id}
-                                            style={{ ...engBtn(t), color: "#fff", background: t.primary, border: `1px solid ${t.primary}` }}>
+                                            style={{ ...engBtn(t), color: onPrimaryInk(t), background: t.primary, border: `1px solid ${t.primary}` }}>
                                             {engBusy === e.id ? "Accepting…" : "Accept terms"}
                                         </button>
                                     </>
@@ -2479,7 +2928,9 @@ const ModLawyers = () => {
                         {/* A listing is not a recommendation, so it does not get the
                             recommendation heading. */}
                         <div style={{ fontWeight: 700, color: t.text, fontSize: 13 }}>
-                            {!aiMatch && (matchKind === "general_listing" || matchKind === "none")
+                            {!aiMatch && matchKind === "case_draft" ? "Finish your Legal Intake first"
+                                : !aiMatch && matchKind === "case_missing" ? "Your earlier case is no longer available"
+                                : !aiMatch && (matchKind === "general_listing" || matchKind === "none")
                                 ? "No strong match yet"
                                 : "AI-Recommended Match"}
                         </div>
@@ -2516,11 +2967,15 @@ const ModLawyers = () => {
                         disabled={loadingMatch}
                         onClick={aiMatch
                             ? () => { setSelectedLawyer(aiMatch); setActiveView("profile"); }
-                            : () => { setAskOpen(true); setTimeout(() => askRef.current?.focus(), 0); }
+                            : (matchKind === "case_draft" || matchKind === "case_missing")
+                                ? () => router.push("/intake")
+                                : () => { setAskOpen(true); setTimeout(() => askRef.current?.focus(), 0); }
                         }
                         style={{ fontSize: 12, padding: "10px 18px", flexShrink: 0, opacity: loadingMatch ? 0.7 : 1 }}
                     >
-                        {loadingMatch ? "Matching…" : aiMatch ? "View Match" : "Find My Match"}
+                        {loadingMatch ? "Matching…" : aiMatch ? "View Match"
+                            : matchKind === "case_draft" ? "Finish intake"
+                            : matchKind === "case_missing" ? "Start intake" : "Find My Match"}
                     </BtnPrimary>
                 </div>
                 ) : (
@@ -2591,10 +3046,14 @@ const ModLawyers = () => {
             </div>
 
             {/* ── LAWYER CARDS (2026-10-10, the approved mockup) ──────────
-                Every lawyer listed here is KYC-verified (the directory query
-                requires it). Empty fields say so in words, never "0yr" or "—". */}
+                Every lawyer listed here is a registered account with a bar number
+                and a practice area (the directory query requires both). Nobody
+                checks the Bar license, so the badge says "Registered", never
+                "Verified" (LAWYER_AUTO_APPROVE, 2026-10-18). Empty fields say so in words, never "0yr" or "—". */}
             <style>{LAWYERS_CARD_CSS}</style>
-            <div data-lawyers-grid style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,320px))", gap: 16 }}>
+            {/* Cards share the row (2026-10-19): a 320px cap left an empty
+                column of space on the right of wide screens. */}
+            <div data-lawyers-grid style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
                 {filtered.map((l) => {
                     const specs = String(l.spec || "").split(",").map(s => s.trim()).filter(Boolean);
                     const shownSpecs = specs.slice(0, 2);
@@ -2607,7 +3066,7 @@ const ModLawyers = () => {
                                         <div className="lc-name">{l.name}</div>
                                         <span className="lc-verified">
                                             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
-                                            Verified
+                                            Registered
                                         </span>
                                     </div>
                                     <div className="lc-bar">{l.bar ? `Bar: ${l.bar}` : "Bar number not provided"}</div>

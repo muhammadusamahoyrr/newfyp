@@ -1,0 +1,42 @@
+// Fix 1 adversarial set (2026-10-14): a REAL section of the RIGHT Act, cited correctly (keep) or for a subject
+// it does not deal with (withhold). Run against the real corpus index with no model:
+//   python scripts/eval_drafter.py subject
+// expect: keep | withhold | review (lawyer judgment; excluded from the score). SILVER: developer-labelled from
+// the official CrPC/PPC headings (pakistancode.gov.pk) and the corpus headings for the other Acts.
+{"id":"V01","expect":"keep","text":"That the Applicant is entitled to bail under Section 497 CrPC as the offence is non-bailable."}
+{"id":"V02","expect":"keep","text":"That the offence is bailable and the Applicant is entitled to bail under Section 496 CrPC."}
+{"id":"V03","expect":"keep","text":"That the Applicant seeks pre-arrest bail under Section 498 CrPC."}
+{"id":"V04","expect":"keep","text":"That the Applicant is ready to execute a bond with two sureties under Section 499 CrPC."}
+{"id":"V05","expect":"keep","text":"That the Applicant be released on bail upon executing a bond under Section 499 CrPC."}
+{"id":"V06","expect":"keep","text":"That upon execution of the bond the Applicant shall be discharged from custody under Section 500 CrPC."}
+{"id":"V07","expect":"keep","text":"That FIR No. 12/2026 was registered under Section 154 CrPC."}
+{"id":"V08","expect":"keep","text":"That the sentence be suspended and the appellant released on bail pending appeal under Section 426 CrPC."}
+{"id":"V09","expect":"keep","text":"That the High Court may issue directions in the nature of habeas corpus under Section 491 CrPC."}
+{"id":"V10","expect":"keep","text":"That the Respondent committed cheating punishable under Section 420 PPC."}
+{"id":"V11","expect":"keep","text":"That the accused committed criminal breach of trust punishable under Section 406 PPC."}
+{"id":"V12","expect":"keep","text":"That the accused threatened the complainant, an offence of criminal intimidation punishable under Section 506 PPC."}
+{"id":"V13","expect":"keep","text":"That the accused is charged with qatl-i-amd punishable under Section 302 PPC."}
+{"id":"V14","expect":"keep","text":"That in appointing a guardian the Court must consider the welfare of the minor under Section 17 of the Guardians and Wards Act, 1890."}
+{"id":"V15","expect":"keep","text":"That the guardian is entitled to the custody of the ward under Section 25 of the Guardians and Wards Act, 1890."}
+{"id":"V16","expect":"keep","text":"That the Court may make an order as to guardianship under Section 7 of the Guardians and Wards Act, 1890."}
+{"id":"V17","expect":"keep","text":"That the tenant has defaulted in rent, a ground for eviction under Section 15 of the Punjab Rented Premises Act, 2009."}
+{"id":"V18","expect":"keep","text":"That the landlord shall submit the tenancy agreement to the Rent Registrar under Section 5 of the Punjab Rented Premises Act, 2009."}
+{"id":"V19","expect":"keep","text":"That the husband failed to maintain the wife for two years, a ground for dissolution of marriage under Section 2 of the Dissolution of Muslim Marriages Act, 1939."}
+{"id":"V20","expect":"keep","text":"That the plaintiff made the demand of pre-emption (talb-e-muwathibat) under Section 13 of the Punjab Pre-emption Act, 1991."}
+{"id":"V21","expect":"keep","text":"That the suit for pre-emption is within the limitation of four months under Section 30 of the Punjab Pre-emption Act, 1991."}
+{"id":"V22","expect":"keep","text":"That this petition invokes the jurisdiction of the High Court under Article 199 of the Constitution of Pakistan."}
+{"id":"V23","expect":"keep","text":"That the husband pronounced talaq and gave notice to the Chairman under Section 7 of the Muslim Family Laws Ordinance, 1961."}
+{"id":"V24","expect":"keep","text":"That the wife's maintenance is claimed under Section 9 of the Muslim Family Laws Ordinance, 1961."}
+{"id":"I01","expect":"withhold","text":"That the Applicant is entitled to post-arrest bail under Section 499 CrPC.","note":"observed live; s.499 = bond"}
+{"id":"I02","expect":"withhold","text":"That the Applicant is entitled to the grant of bail under Section 500 CrPC.","note":"s.500 = discharge from custody"}
+{"id":"I03","expect":"withhold","text":"That the Applicant will furnish a surety bond for bail under Section 57 CrPC.","note":"observed in eval; s.57 = refusal to give name"}
+{"id":"I04","expect":"withhold","text":"That the talb-e-muwathibat was made as required by Section 30 of the Punjab Pre-emption Act, 1991.","note":"s.30 = limitation"}
+{"id":"I05","expect":"withhold","text":"That the tenant defaulted in rent, a ground for eviction under Section 5 of the Punjab Rented Premises Act, 2009.","note":"s.5 = tenancy agreement"}
+{"id":"I06","expect":"withhold","text":"That the Respondent committed cheating and dishonestly induced delivery of property under Section 406 PPC.","note":"s.406 = criminal breach of trust"}
+{"id":"I07","expect":"withhold","text":"That the accused committed criminal intimidation punishable under Section 420 PPC.","note":"s.420 = cheating"}
+{"id":"I08","expect":"withhold","text":"That the wife seeks dissolution of marriage on the ground of failure to maintain under Section 7 of the Muslim Family Laws Ordinance, 1961.","note":"s.7 = talaq by husband"}
+{"id":"I09","expect":"withhold","text":"That the welfare of the minor is paramount under Section 15 of the Guardians and Wards Act, 1890.","note":"s.15 = several guardians; expected miss (no heading names welfare)"}
+{"id":"I10","expect":"withhold","text":"That the sentence be suspended pending the appeal under Section 497 CrPC.","note":"s.497 = pre-trial bail; s.426 = suspension"}
+{"id":"I11","expect":"withhold","text":"That the High Court may direct production of the detenu under Article 10 of the Constitution of Pakistan.","note":"observed in eval; Art.10 = safeguards on arrest; expected miss"}
+{"id":"R01","expect":"review","text":"That the Applicant shall furnish bail bonds with sureties as directed under Section 76 CrPC.","note":"s.76: Court issuing warrant may direct security to be taken (bail endorsement) -- arguable"}
+{"id":"R02","expect":"review","text":"That custody of the minor be handed to the petitioner under Section 7 of the Guardians and Wards Act, 1890.","note":"custody petitions are often filed under s.7 in practice"}

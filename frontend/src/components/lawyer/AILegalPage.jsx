@@ -1,6 +1,8 @@
 'use client';
 // Lawyer AI Legal Page — paste your code here
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import VoiceButton, { SendArrow } from "@/components/shared/VoiceButton.jsx";
+import { useToast as useLawyerToast } from "@/components/lawyer/Toast.jsx";
 import { useTheme, ThemeCtx } from "./theme.js";
 import { DRAFTING_TOKENS_CSS, draftingMode, themeOnTokens } from "./draftingTheme.js";
 import { useCase } from "./theme.js";
@@ -20,13 +22,16 @@ import {
     createGeneration, newAttempt, retryAttempt, isAmbiguousFailure,
 } from "@/lib/attempt.js";
 import { useAuth } from "@/context/AuthContext.jsx";
+/* The answer actions, bubbles and avatar, as on the client chat (2026-10-19). */
+import { MessageActions, BUBBLE_CSS } from "@/components/shared/ChatPieces.jsx";
+import RichText from "@/components/shared/RichText.jsx";
 /* Shared with the client chatbot and the case-workspace AI tab. Each of the
    three used to map `citations` itself and they had already drifted — the
    workspace tab dropped `url` and `source`, so a judgment that linked to a
    court PDF here was an unclickable label there. */
 import {
     CITATION_GROUPS, REPEALED, normaliseCitations, citationsInGroup,
-    repealNote, shortRequestId, copyText, auditNotice,
+    repealNote, auditNotice,
 } from "@/lib/trust.js";
 
 /* Calibrated-confidence bands from the server (ai/answer_confidence.py).
@@ -40,11 +45,20 @@ const CONF_COLOR = { high: "#22c55e", moderate: "#f59e0b", low: "#ef4444" };
    cited section establishes the proposition, nothing more. It does NOT speak to
    whether the section is still in force — that is citation_verification's
    OMITTED verdict, which runs on the drafting path, not here. */
+/* 2026-10-14: these are AUTOMATED checks (a model judge plus deterministic
+   rules), and the old wording -- "Supported ✓ — cited source establishes this"
+   -- read as a verified legal conclusion. A live probe showed it on a wrong
+   limitation period and on an irrelevant statute. The labels now say what
+   produced them; `short` is the compact form used in the counts line. */
 const CLAIM_UI = {
-    supported:   { icon: "✓", color: "#22c55e", label: "Supported",   note: "cited source establishes this" },
-    partial:     { icon: "◐", color: "#f59e0b", label: "Partial",     note: "claim goes beyond what the source states" },
-    unsupported: { icon: "✕", color: "#ef4444", label: "Unsupported", note: "cited source does not establish this" },
-    unassessed:  { icon: "–", color: "#94a3b8", label: "Unassessed",  note: "not checked — no resolvable source" },
+    supported:   { icon: "✓", color: "#22c55e", label: "Automated check: supported", short: "supported",
+                   note: "the automated check found this in the cited source — not a guarantee of legal correctness" },
+    partial:     { icon: "◐", color: "#f59e0b", label: "Automated check: partial", short: "partial",
+                   note: "the claim goes beyond what the cited source states" },
+    unsupported: { icon: "✕", color: "#ef4444", label: "Automated check: not supported", short: "not supported",
+                   note: "the cited source does not establish this" },
+    unassessed:  { icon: "–", color: "#94a3b8", label: "Not verified", short: "not verified",
+                   note: "not checked — no resolvable source" },
 };
 const CLAIM_ORDER = ["unsupported", "partial", "unassessed", "supported"];
 
@@ -230,39 +244,17 @@ function SourceChip({ citation, text, style, title }) {
     );
 }
 
-/* The id that names one answer. Copyable because the two things a lawyer does
-   with it — quote it in a report, and open its audit trail — both need the
-   whole string, and the display form is truncated. */
-function RequestIdChip({ requestId, open, onToggle, t }) {
-    const [copied, setCopied] = useState(false);
+/* Opens one answer's audit trail. An icon in the action row, as Copy and the
+   ratings are (2026-10-19); the trail itself shows the full request id, which
+   is what a lawyer quotes in a report. */
+function AuditButton({ open, onToggle }) {
     return (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <button
-                onClick={async () => {
-                    const ok = await copyText(requestId);
-                    setCopied(ok);
-                    setTimeout(() => setCopied(false), 1600);
-                }}
-                title={`Copy request id ${requestId}`}
-                className="mono"
-                style={{
-                    border: `1px solid ${t.border}`, background: "transparent",
-                    color: t.textFaint, borderRadius: 5, cursor: "pointer",
-                    fontSize: 10, padding: "1px 6px", fontFamily: "inherit",
-                }}>
-                {copied ? "copied ✓" : `id ${shortRequestId(requestId)}`}
-            </button>
-            <button
-                onClick={onToggle}
-                title="Show how this answer was produced"
-                style={{
-                    border: `1px solid ${t.border}`, background: open ? t.primaryGlow : "transparent",
-                    color: open ? t.primary : t.textFaint, borderRadius: 5,
-                    cursor: "pointer", fontSize: 10, padding: "1px 6px",
-                }}>
-                audit {open ? "▴" : "▾"}
-            </button>
-        </span>
+        <button type="button" onClick={onToggle} aria-pressed={open}
+            aria-label="Audit trail" title="Show how this answer was produced">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" />
+            </svg>
+        </button>
     );
 }
 
@@ -332,7 +324,9 @@ export const AI_THEME_CSS = `[data-ai-ws]{height:100%;min-height:0;display:flex;
 [data-ai-ws] .cv-empty .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--well);border:1px solid var(--teal-line);color:var(--mint)}
 [data-ai-ws] .cv-empty b{font-size:14px;color:var(--ink)}
 [data-ai-ws] .cv-empty p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.55}
-[data-ai-ws] .cv-foot{padding:10px 12px 10px;font-size:11.5px!important;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;min-width:200px;white-space:nowrap}
+[data-ai-ws] .cv-foot{padding:10px 12px 10px;font-size:11.5px!important;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;gap:10px;min-width:200px;white-space:nowrap}
+[data-ai-ws] .cv-foot>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+[data-ai-ws] .cv-foot>span:last-child{flex-shrink:0;padding-right:18px}
 [data-ai-ws] .ai-edge{position:absolute;bottom:14px;z-index:20;width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:50%;background:var(--grad);color:var(--on-grad);cursor:pointer;box-shadow:0 0 0 3px var(--bg),0 8px 18px -10px rgba(46,196,214,.6);transition:left .3s cubic-bezier(.4,0,.2,1),filter .15s}
 [data-ai-ws] .ai-edge:hover{filter:brightness(1.1)}
 [data-ai-ws] .ch-head{display:flex;align-items:center;gap:12px;padding:4px 10px 10px;flex-wrap:wrap;flex-shrink:0}
@@ -355,8 +349,13 @@ export const AI_THEME_CSS = `[data-ai-ws]{height:100%;min-height:0;display:flex;
 [data-ai-ws] .lang{display:flex;padding:3px;border-radius:9px;background:var(--well);border:1px solid var(--teal-line)}
 [data-ai-ws] .lang button{height:26px;padding:0 9px;border:0;border-radius:6px;background:none;font-size:12px;font-weight:700;color:var(--faint);cursor:pointer}
 [data-ai-ws] .lang button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
-[data-ai-ws] .ai-send{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--teal-line);background:var(--well);color:var(--faint);cursor:default;transition:background .15s,color .15s}
-[data-ai-ws] .ai-send.on{border-color:transparent;background:var(--grad);color:var(--on-grad);cursor:pointer;box-shadow:0 8px 18px -10px rgba(46,196,214,.6)}
+[data-ai-ws]{--chat-mark:var(--grad);--chat-accent:var(--mint)}
+[data-ai-ws] .ai-send{width:34px;height:34px;display:grid;place-items:center;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:none;color:var(--faint);cursor:default;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
+[data-ai-ws] .ai-send:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+[data-ai-ws] .ai-send.on{cursor:pointer;border-color:transparent;background:var(--grad);color:#04212A;box-shadow:0 6px 16px -8px rgba(46,196,214,.7)}
+[data-ai-ws] .ai-send.on:hover{transform:translateY(-1px)}
+[data-ai-ws] .stop-gen{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;vertical-align:middle;transition:border-color .15s,color .15s}
+[data-ai-ws] .stop-gen:hover{border-color:var(--mint);color:var(--mint)}
 [data-ai-ws] .disc{max-width:1000px;margin:8px auto 0;font-size:11.5px;color:var(--faint);text-align:center}
 [data-ai-ws] .ai-start{width:100%;max-width:1000px;margin:auto 0;display:grid;gap:26px;padding:12px 0}
 [data-ai-ws] .ai-below{width:100%;display:grid;gap:12px}
@@ -382,7 +381,7 @@ export const AI_THEME_CSS = `[data-ai-ws]{height:100%;min-height:0;display:flex;
 [data-ai-ws] .src-acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:2px}
 [data-ai-ws] .src-acts a,[data-ai-ws] .src-acts button{background:none;border:0;padding:0;font-size:12px;font-weight:600;color:var(--mint);text-decoration:none;cursor:pointer;font-family:inherit}
 [data-ai-ws] .src-acts a:hover,[data-ai-ws] .src-acts button:hover{text-decoration:underline}
-[data-ai-ws] .ai-mic{width:34px;height:34px;display:grid;place-items:center;border:1px solid transparent;border-radius:50%;background:none;color:var(--faint);cursor:pointer;transition:color .15s,background .15s}
+[data-ai-ws] .ai-mic{width:42px;height:42px;display:grid;place-items:center;border:1px solid transparent;border-radius:50%;background:none;color:var(--faint);cursor:pointer;transition:color .15s,background .15s}
 [data-ai-ws] .ai-mic:hover{border-color:var(--line-strong);color:var(--hover-ink)}
 [data-ai-ws] .ai-mic.on{color:#F28B80;background:rgba(242,139,128,.14);border-color:rgba(242,139,128,.45);animation:aiMic 1.2s ease-in-out infinite}
 @keyframes aiMic{0%,100%{box-shadow:0 0 0 0 rgba(242,139,128,.35)}50%{box-shadow:0 0 0 6px rgba(242,139,128,0)}}
@@ -407,43 +406,11 @@ export const AI_THEME_CSS = `[data-ai-ws]{height:100%;min-height:0;display:flex;
 [data-ai-ws] .pop button:hover{border-color:rgba(62,224,161,.55);color:var(--hover-ink)}
 `;
 
-/* Dictation into the question box, using the browser's speech recognition
-   (Chrome / Edge). Where the browser has none the button is not shown — a mic
-   that does nothing would be worse than no mic. */
-function VoiceButton({ onText }) {
-    // Looked up after mount, so the server render and the first client render agree.
-    const [Rec, setRec] = useState(null);
-    useEffect(() => { setRec(() => window.SpeechRecognition || window.webkitSpeechRecognition || null); }, []);
-    const recRef = useRef(null);
-    const [on, setOn] = useState(false);
-    const [err, setErr] = useState("");
-    useEffect(() => () => { try { recRef.current?.abort(); } catch { /* already stopped */ } }, []);
-    if (!Rec) return null;
-    const toggle = () => {
-        if (on) { recRef.current?.stop(); return; }
-        setErr("");
-        const rec = new Rec();
-        rec.lang = "en-PK";
-        rec.interimResults = true;
-        rec.continuous = false;
-        rec.onresult = (e) => {
-            const text = Array.from(e.results).map(r => r[0].transcript).join(" ").trim();
-            if (text) onText(text);
-        };
-        rec.onerror = (e) => {
-            setErr(e.error === "not-allowed" ? "Microphone permission was refused" : "Could not hear that — try again");
-        };
-        rec.onend = () => setOn(false);
-        recRef.current = rec;
-        try { rec.start(); setOn(true); } catch { setOn(false); }
-    };
-    return (
-        <button type="button" className={`ai-mic${on ? " on" : ""}`} onClick={toggle}
-            aria-pressed={on} aria-label={on ? "Stop dictation" : "Dictate your question"}
-            title={err || (on ? "Listening… click to stop" : "Speak your question")}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
-        </button>
-    );
+/* The shared dictation, saying its problems and its switch to recording in a toast. */
+function LawyerVoice({ value, onText }) {
+    const toast = useLawyerToast();
+    return <VoiceButton value={value} onText={onText} className="ai-mic"
+        onError={msg => toast.show(msg, "warn", 4000)} onNotice={msg => toast.show(msg, "info", 6000)} />;
 }
 
 function PromptRail({ prompts, onPick }) {
@@ -589,6 +556,8 @@ function AILegalScreen() {
     // created. A browser-minted id meant a refresh silently started a new
     // conversation and orphaned the previous one.
     const sessionIdRef = useRef(null);
+    // True while send() is creating the conversation its question will go to.
+    const startingRef = useRef(false);
     // The case the open conversation is BOUND to (its _id, or null for general
     // research); undefined while none is open. The server refuses (409) a turn
     // whose case_id differs from the binding, so every send checks it.
@@ -651,7 +620,10 @@ function AILegalScreen() {
     useEffect(() => {
         if (boundCaseRef.current === undefined) return;   // the mount bootstrap decides
         if (boundCaseRef.current === wantedCaseId) return;
-        setQuery("");
+        // The draft is NOT cleared here (2026-10-14). Clearing it was for the
+        // old pre-filled case facts, which no longer exist; it now only threw
+        // away what the lawyer had typed -- and the "Key arguments" button,
+        // which sets the case and the question together, lost its question.
         startConversation(wantedCaseId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [wantedCaseId]);
@@ -993,19 +965,27 @@ function AILegalScreen() {
         setStage(null);
     }, []);
 
-    const send = async () => {
-        if (!query.trim() || loading) return;
-        const q = query.trim();
-        setQuery("");
+    // `override`: the text to send instead of the box's (Regenerate). A click
+    // hands an event, which is not text, so the box is used then.
+    const send = async (override) => {
+        const fromBox = typeof override !== "string";
+        const q = (fromBox ? query : override).trim();
+        if (!q || loading || startingRef.current) return;
         // The conversation is the unit of storage AND the LangGraph thread key,
         // so a turn cannot run before one exists.
         let sid = sessionIdRef.current;
         // A thread bound to a different case (a remembered one, or one opened
         // from search) would be refused with a 409: start one for this case.
         if (!sid || boundCaseRef.current !== wantedCaseId) {
-            sid = await startConversation(wantedCaseId);
-            if (!sid) { setMsgs(p => [...p, { role: "assistant", content: "Could not start a conversation. Please try again." }]); return; }
+            // The box is cleared only once there is somewhere to send to: a
+            // failed create used to discard the lawyer's question. The ref
+            // stands in for the empty box as the double-send guard meanwhile.
+            startingRef.current = true;
+            try { sid = await startConversation(wantedCaseId); }
+            finally { startingRef.current = false; }
+            if (!sid) { setMsgs(p => [...p, { role: "assistant", content: "Could not start a conversation. Your question is still in the box — please try again." }]); return; }
         }
+        if (fromBox) setQuery("");
         const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         setMsgs(p => [...p, { role: "user", content: q, time: now }]);
         // The list comes from the server — the first question becomes the
@@ -1443,7 +1423,7 @@ function AILegalScreen() {
                         </div>
                     );
                 })()}
-                <div className="cv-foot"><span>Chats are private to you</span><span>{rows.length}{listMore ? "+" : ""} chat{rows.length === 1 ? "" : "s"}</span></div>
+                <div className="cv-foot"><span>Private to you</span><span>{rows.length}{listMore ? "+" : ""} chat{rows.length === 1 ? "" : "s"}</span></div>
             </section>
             {/* Fold or open the sidebar: one round button on its edge. */}
             <button type="button" className="ai-edge" onClick={() => setSideOpen(v => !v)}
@@ -1493,7 +1473,7 @@ function AILegalScreen() {
 
                     {conversationError && (
                         <div role="alert" style={{
-                            width: "100%", maxWidth: 800, marginBottom: 12,
+                            width: "100%", maxWidth: 1000, marginBottom: 12,
                             padding: "10px 13px", borderRadius: 10,
                             color: "#e8526a", background: "rgba(232,82,106,0.10)",
                             border: "1px solid rgba(232,82,106,0.35)", fontSize: 12,
@@ -1503,7 +1483,7 @@ function AILegalScreen() {
                     )}
                     {caseNotice && (
                         <div role="status" style={{
-                            width: "100%", maxWidth: 800, marginBottom: 12,
+                            width: "100%", maxWidth: 1000, marginBottom: 12,
                             padding: "10px 13px", borderRadius: 10,
                             color: t.warn, background: `${t.warn}14`,
                             border: `1px solid ${t.warn}55`, fontSize: 12,
@@ -1557,7 +1537,7 @@ function AILegalScreen() {
                         </div>
                     ) : (
                         /* Message thread */
-                        <div style={{ width: "100%", maxWidth: 800, display: "flex", flexDirection: "column", gap: 18 }}>
+                        <div style={{ width: "100%", maxWidth: 1000, display: "flex", flexDirection: "column", gap: 18 }}>
                             {/* Older messages, on demand.
                                 A conversation opens at its END, so this is the
                                 only way back — and it is at the TOP of the
@@ -1579,22 +1559,23 @@ function AILegalScreen() {
                                     </button>
                                 </div>
                             )}
+                            <style>{BUBBLE_CSS}</style>
                             {msgs.map((m, i) => (
-                                <div key={i} style={{ display: "flex", flexDirection: m.role === "user" ? "row-reverse" : "row", gap: 10, alignItems: "flex-start" }} className="fade-in">
+                                <div key={i} data-msg-role={m.role} style={{ display: "flex", flexDirection: m.role === "user" ? "row-reverse" : "row", gap: 10, alignItems: "flex-start" }} className="fade-in">
                                     {m.role === "assistant" && (
-                                        <div style={{ width: 34, height: 34, borderRadius: 10, background: t.primaryGlow, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                            <Icon d={I.ai} size={16} style={{ color: t.primary }} />
+                                        <div style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                            <span data-ai-avatar role="img" aria-label="Attorney.AI"><span /></span>
                                         </div>
                                     )}
-                                    <div style={{ maxWidth: "75%" }}>
-                                        <div style={{
-                                            background: m.role === "user" ? t.grad1 : t.surface,
+                                    <div style={{ maxWidth: m.role === "user" ? "75%" : "calc(100% - 44px)", minWidth: 0 }}>
+                                        <div data-bubble={m.role === "user" ? "user" : "ai"} style={{
+                                            // Round, with a tail, as on the client chat (2026-10-19).
+                                            "--bub": m.role === "user" ? (t.mode === "light" ? "#0B7A8C" : "#2EC4D6") : t.surface,
                                             // A clarification is a QUESTION to the lawyer, not advice.
                                             // Rendered identically to an answer it reads as one, which is
-                                            // the worst possible confusion on a legal surface.
-                                            border: m.role === "assistant" ? `1px solid ${m.clarification ? t.primary : t.border}` : "none",
-                                            borderRadius: m.role === "user" ? "18px 18px 6px 18px" : "18px 18px 18px 6px",
-                                            padding: "12px 16px", fontSize: 13.5, lineHeight: 1.8,
+                                            // the worst possible confusion on a legal surface: the
+                                            // "Clarification needed" label inside says so.
+                                            padding: m.role === "user" ? "8px 16px" : "12px 20px", fontSize: 15, lineHeight: 1.7,
                                             color: m.role === "user" ? (t.mode === "dark" ? "#111B1F" : "#fff") : t.text,
                                             whiteSpace: "pre-wrap", minHeight: m.streaming && !m.content ? 20 : undefined,
                                         }}>
@@ -1603,8 +1584,16 @@ function AILegalScreen() {
                                                     Clarification needed
                                                 </div>
                                             )}
-                                            {m.content || (m.streaming ? "" : "No response received.")}
-                                            {m.streaming && <span style={{ display: "inline-block", width: 2, height: "1em", background: t.primary, marginLeft: 2, verticalAlign: "text-bottom", animation: "aiBlink 1s step-end infinite" }} />}
+                                            {/* Labelled: not from the verified library (ai/general_guidance.py). */}
+                                            {m.role === "assistant" && m.convergenceStatus === "general_guidance" && !m.streaming && (
+                                                <div data-general-guidance style={{ fontSize: 11, color: "#e8b84b", fontWeight: 800, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                                    General guidance · not from the library · verify before relying
+                                                </div>
+                                            )}
+                                            {m.role === "assistant" && !m.streaming && m.content
+                                                ? <RichText text={m.convergenceStatus === "general_guidance" ? m.content.replace(/^General guidance — [^\n]*\n+/, "") : m.content} />
+                                                : (m.content || (m.streaming ? "" : "No response received."))}
+                                            {m.streaming && m.content && <span style={{ display: "inline-block", width: 2, height: "1em", background: t.primary, marginLeft: 2, verticalAlign: "text-bottom", animation: "aiBlink 1s step-end infinite" }} />}
                                             {/* A way out of a long wait. Stops
                                                 the waiting AND discards the
                                                 answer server-side, so it does
@@ -1625,28 +1614,35 @@ function AILegalScreen() {
                                                 </span>
                                             )}
                                             {m.streaming && (
-                                                <button onClick={stop}
-                                                        title="Stop generating"
-                                                        style={{
-                                                            marginLeft: 10, background: "none",
-                                                            border: `1px solid ${t.border}`,
-                                                            borderRadius: 8, padding: "2px 9px",
-                                                            fontSize: 11, cursor: "pointer",
-                                                            color: t.textMuted,
-                                                        }}>
+                                                <>
+                                                {/* Nothing written yet: the dots, as on the client chat. */}
+                                                {!m.content && (
+                                                    <span style={{ display: "inline-flex", gap: 5, alignItems: "center", verticalAlign: "middle", marginRight: 4 }}>
+                                                        {[0, 1, 2].map(d => <span key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--mint)", animation: `pulse 1.2s ease ${d * .2}s infinite` }} />)}
+                                                    </span>
+                                                )}
+                                                <button onClick={stop} title="Stop generating" className="stop-gen" style={{ marginLeft: 10 }}>
+                                                    <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: "currentColor" }} />
                                                     Stop
                                                 </button>
+                                                </>
                                             )}
                                             {/* Claim-level support. Above the citation chips on
                                                 purpose: which proposition rests on which section,
                                                 and whether that section carries it, is the research
                                                 question — the chip list only says what was cited. */}
                                             {m.role === "assistant" && !m.streaming && m.claims?.length > 0 && (() => {
-                                                const counts = m.claims.reduce((acc, c) => {
+                                                // A claim the server withdrew (its sentence was removed from the
+                                                // answer by a guard) is kept in the record for audit, but it is
+                                                // not a statement this answer makes -- listing it read as if the
+                                                // answer still said it. Counted, not listed.
+                                                const shown = m.claims.filter(c => !c.removed_from_answer);
+                                                const withdrawn = m.claims.length - shown.length;
+                                                const counts = shown.reduce((acc, c) => {
                                                     acc[c.support] = (acc[c.support] || 0) + 1; return acc;
                                                 }, {});
-                                                const repealed = m.claims.filter(c => c.currency === REPEALED);
-                                                const sorted = [...m.claims].sort(
+                                                const repealed = shown.filter(c => c.currency === REPEALED);
+                                                const sorted = [...shown].sort(
                                                     (a, b) => CLAIM_ORDER.indexOf(a.support) - CLAIM_ORDER.indexOf(b.support));
                                                 return (
                                                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${t.border}` }}>
@@ -1669,13 +1665,20 @@ function AILegalScreen() {
                                                             textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700,
                                                             display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center",
                                                         }}>
-                                                            <span>Claim support ({m.claims.length})</span>
+                                                            <span>Automated evidence check ({shown.length} claim{shown.length === 1 ? "" : "s"})</span>
                                                             {CLAIM_ORDER.filter(k => counts[k]).map(k => (
                                                                 <span key={k} style={{ color: CLAIM_UI[k].color, fontWeight: 700 }}>
-                                                                    {counts[k]} {CLAIM_UI[k].label.toLowerCase()}
+                                                                    {counts[k]} {CLAIM_UI[k].short}
                                                                 </span>
                                                             ))}
                                                         </div>
+                                                        {withdrawn > 0 && (
+                                                            <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 6 }}>
+                                                                {withdrawn} statement{withdrawn === 1 ? "" : "s"} from the draft
+                                                                {withdrawn === 1 ? " was" : " were"} withdrawn by the automated checks
+                                                                and {withdrawn === 1 ? "is" : "are"} not part of this answer.
+                                                            </div>
+                                                        )}
                                                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                                                             {sorted.map((c, ci) => {
                                                                 const dead = c.currency === REPEALED;
@@ -1695,7 +1698,9 @@ function AILegalScreen() {
                                                                             <span style={{ color: ui.color, fontWeight: 700 }}>
                                                                                 {ui.icon} {ui.label}
                                                                             </span>
-                                                                            <span style={{ color: t.textFaint }}>— {ui.note}</span>
+                                                                            {/* A guard's own reason, when it downgraded the
+                                                                                verdict (e.g. "issue relevance not established"). */}
+                                                                            <span style={{ color: t.textFaint }}>— {c.support_reason && !dead ? c.support_reason : ui.note}</span>
                                                                             {dead && notes.length > 0 && (
                                                                                 <span style={{ color: "#ef4444" }}>{notes.join("; ")}</span>
                                                                             )}
@@ -1715,10 +1720,12 @@ function AILegalScreen() {
                                                             })}
                                                         </div>
                                                         <div style={{ fontSize: 10, color: t.textFaint, marginTop: 7 }}>
-                                                            Support is judged against the retrieved sources only. Where a
-                                                            section is not marked repealed its current status is NOT verified —
-                                                            repeal data covers 4 of 43 statutes and is a lower bound, and
-                                                            amendment is not checked at all.
+                                                            These are automated checks (a language-model judge plus fixed
+                                                            rules) against the retrieved sources only. They are not a
+                                                            guarantee of legal correctness — verify every authority before
+                                                            relying on it. Where a section is not marked repealed its current
+                                                            status is NOT verified — repeal data covers 4 of 43 statutes and is
+                                                            a lower bound, and amendment is not checked at all.
                                                         </div>
                                                     </div>
                                                 );
@@ -1779,45 +1786,51 @@ function AILegalScreen() {
                                                 </div>
                                             )}
                                         </div>
+                                        {/* Under an answer: Copy, Helpful, Not helpful,
+                                            Regenerate and the audit trail, as plain icons
+                                            (2026-10-19). A rating shows as given only once
+                                            the server has it: apiFetch resolves with
+                                            {error} rather than rejecting. */}
+                                        {m.role === "assistant" && !m.streaming && m.content && (() => {
+                                            const canRate = !m.clarification && !m.notice && m.requestId
+                                                && m.auditSaved !== false && !m.auditPending;
+                                            const lastAi = msgs.map(x => x.role).lastIndexOf("assistant");
+                                            const question = i === lastAi && !loading
+                                                ? msgs.slice(0, i).reverse().find(x => x.role === "user")?.content
+                                                : null;
+                                            return (
+                                                <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                                                    <MessageActions t={t} text={m.content} canRate={Boolean(canRate)} rated={m.rated}
+                                                        onRate={r => rateAnswer({
+                                                            request_id: m.requestId,
+                                                            session_id: sessionIdRef.current,
+                                                            rating: r,
+                                                            source: "research",
+                                                        }).then(({ error }) => setMsgs(prev => prev.map((x, xi) => xi === i
+                                                            ? (error ? { ...x, rateError: true } : { ...x, rated: r, rateError: false })
+                                                            : x)))}
+                                                        onRegenerate={question ? () => send(question) : null} />
+                                                    {m.requestId && (
+                                                        <span data-msg-actions style={{ "--ma-ink": t.textMuted, "--ma-strong": t.text, "--ma-hover": t.border }}>
+                                                            <AuditButton open={!!m.auditOpen}
+                                                                onToggle={() => setMsgs(prev => prev.map(
+                                                                    (x, xi) => xi === i ? { ...x, auditOpen: !x.auditOpen } : x))} />
+                                                        </span>
+                                                    )}
+                                                    {m.rateError && <span style={{ fontSize: 11, color: t.danger, marginTop: 6, marginLeft: 6 }}>feedback not saved</span>}
+                                                </div>
+                                            );
+                                        })()}
                                         {m.time && (
                                             <div style={{ fontSize: 10, color: t.textFaint, marginTop: 4, textAlign: m.role === "user" ? "right" : "left", display: "flex", alignItems: "center", gap: 8, justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                                                 {m.time}
-                                                {m.role === "assistant" && !m.streaming && !m.clarification && !m.notice && m.content && (
-                                                    m.confidenceBand ? (
-                                                        <span style={{ color: CONF_COLOR[m.confidenceBand] || t.textFaint }}
-                                                              title={m.modelConfidence != null ? `model self-report: ${Math.round(m.modelConfidence * 100)}% (diagnostic, not calibrated)` : undefined}>
-                                                            ⬤ {CONF_LABEL[m.confidenceBand]} confidence · {Math.round(m.confidence * 100)}%
-                                                            {m.arbitrationSource ? ` (evidence: ${m.arbitrationSource})` : ""}
-                                                        </span>
-                                                    ) : (
-                                                        <span style={{ color: t.textFaint }}>Confidence not calibrated</span>
-                                                    )
-                                                )}
-                                                {m.role === "assistant" && !m.streaming && !m.clarification && !m.notice && m.content && (
-                                                    m.rated ? <span>feedback recorded ✓</span> : (
-                                                        <span style={{ display: "inline-flex", gap: 3, alignItems: "center" }}>
-                                                            {m.rateError && <span style={{ color: t.danger }}>feedback not saved</span>}
-                                                            {["up", "down"].map(r => (
-                                                                <button key={r}
-                                                                    onClick={() => {
-                                                                        // "Recorded" only once the server has it.
-                                                                        // apiFetch resolves with {error} rather than
-                                                                        // rejecting, so a .catch never saw a failure.
-                                                                        rateAnswer({
-                                                                            session_id: sessionIdRef.current,
-                                                                            rating: r,
-                                                                            answer_preview: (m.content || "").slice(0, 300),
-                                                                            question_preview: (msgs[i - 1]?.content || "").slice(0, 300),
-                                                                            source: "research",
-                                                                        }).then(({ error }) => setMsgs(prev => prev.map((x, xi) => xi === i
-                                                                            ? (error ? { ...x, rateError: true } : { ...x, rated: r, rateError: false })
-                                                                            : x)));
-                                                                    }}
-                                                                    style={{ border: `1px solid ${t.border}`, background: "transparent", borderRadius: 6, cursor: "pointer", fontSize: 10, padding: "1px 6px" }}
-                                                                >{r === "up" ? "👍" : "👎"}</button>
-                                                            ))}
-                                                        </span>
-                                                    )
+                                                {/* A band only when there is one (2026-10-19). */}
+                                                {m.role === "assistant" && !m.streaming && !m.clarification && !m.notice && m.content && m.confidenceBand && (
+                                                    <span style={{ color: CONF_COLOR[m.confidenceBand] || t.textFaint }}
+                                                          title={m.modelConfidence != null ? `model self-report: ${Math.round(m.modelConfidence * 100)}% (diagnostic, not calibrated)` : undefined}>
+                                                        ⬤ {CONF_LABEL[m.confidenceBand]} confidence · {Math.round(m.confidence * 100)}%
+                                                        {m.arbitrationSource ? ` (evidence: ${m.arbitrationSource})` : ""}
+                                                    </span>
                                                 )}
                                                 {/* Names this turn's audit record. Shown on
                                                     clarifications too — a clarifying question is
@@ -1853,15 +1866,6 @@ function AILegalScreen() {
                                                 </div>
                                             );
                                         })()}
-                                                {m.role === "assistant" && !m.streaming && m.requestId && (
-                                                    <RequestIdChip
-                                                        requestId={m.requestId}
-                                                        open={!!m.auditOpen}
-                                                        onToggle={() => setMsgs(prev => prev.map(
-                                                            (x, xi) => xi === i ? { ...x, auditOpen: !x.auditOpen } : x))}
-                                                        t={t}
-                                                    />
-                                                )}
                                             </div>
                                         )}
                                         {/* Produced but not filed. A lawyer
@@ -1909,12 +1913,12 @@ function AILegalScreen() {
                                 </div>
                             )}
                             {loading && !msgs.some(m => m.streaming) && (
-                                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                                    <div style={{ width: 34, height: 34, borderRadius: 10, background: t.primaryGlow, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                        <Icon d={I.ai} size={16} style={{ color: t.primary }} />
+                                <div data-typing style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                                    <div style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                        <span data-ai-avatar role="img" aria-label="Attorney.AI"><span /></span>
                                     </div>
-                                    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: "18px 18px 18px 6px", padding: "14px 18px", display: "flex", gap: 5, alignItems: "center" }}>
-                                        {[0, 1, 2].map(d => <div key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: t.primary, animation: `pulse 1.2s ease ${d * .2}s infinite` }} />)}
+                                    <div data-bubble="ai" style={{ "--bub": t.surface, padding: "13px 18px", display: "flex", gap: 5, alignItems: "center" }}>
+                                        {[0, 1, 2].map(d => <div key={d} style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--mint)", animation: `pulse 1.2s ease ${d * .2}s infinite` }} />)}
                                     </div>
                                 </div>
                             )}
@@ -1977,12 +1981,14 @@ function AILegalScreen() {
                             {/* Right controls */}
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 {/* Voice: dictates into the box; the lawyer still reads and sends. */}
-                                <VoiceButton onText={setQuery} />
+                                {/* The shared dictation (2026-10-20): keeps what was typed. */}
+                                <LawyerVoice value={query} onText={setQuery} />
 
 
                                 {/* Send button */}
                                 <button onClick={send} aria-label="Send" className={`ai-send${query.trim() ? " on" : ""}`}>
-                                    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                                    {/* An upward arrow (2026-10-20), as on the client chat. */}
+                                    <SendArrow />
                                 </button>
                             </div>
                         </div>

@@ -61,7 +61,14 @@ CHUNK_OVER = 100
 # carry their own province or the filter stays a no-op.
 DEFAULT_PROVINCE = "federal"
 VALID_PROVINCES = {"federal", "punjab", "sindh", "kpk", "balochistan"}
-SECTION_RE = re.compile(r"^\s*(\d+[A-Z]?)\s*[.\-]\s+(?=\S)", re.M)
+# Section headings are split by ONE shared parser (app/ai/section_repair.py,
+# section-split-v2), the same rules the versioned sec_v2 index was built with.
+# The old pattern, (\d+[A-Z]?)\s*[.\-]\s+, read "489-\nF." as section 489
+# (PPC 489-A..489-F all stored as "489"), missed "22-A." on one line entirely,
+# took footnote quotes of omitted provisions (PPC 216-B, omitted 1942) as live
+# sections, and turned CrPC Schedule II rows ("294-\nA ...") into sections.
+from app.ai.section_repair import SECTION_HEADING as SECTION_RE  # noqa: E402,F401
+from app.ai.section_repair import SPLIT_VERSION, SPLIT_VERSIONS, split_provisions  # noqa: E402
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
 CRIMINAL = "criminal_collection"
@@ -205,14 +212,8 @@ def _slug(name: str) -> str:
 
 
 def _split_sections(text: str) -> list[tuple[str | None, str]]:
-    splits, last_end, last_sec = [], 0, None
-    for m in SECTION_RE.finditer(text):
-        if m.start() > last_end:
-            splits.append((last_sec, text[last_end:m.start()].strip()))
-        last_sec = m.group(1)
-        last_end = m.start()
-    splits.append((last_sec, text[last_end:].strip()))
-    return [(s, t) for s, t in splits if t]
+    """(section, text) pairs -- see split_provisions for the full record."""
+    return [(b["section"], b["text"]) for b in split_provisions(text)]
 
 
 def _slide(text: str) -> list[str]:
@@ -296,8 +297,13 @@ def extract_text(path: Path) -> str:
 
 
 def make_chunks(text: str, statute: str, law_type: str, source_file: str,
-                province: str = DEFAULT_PROVINCE) -> list[dict]:
+                province: str = DEFAULT_PROVINCE,
+                split_version: str = SPLIT_VERSION) -> list[dict]:
     """Deterministic ids: statutes_{slug}_{index:04d}.
+
+    `split_version` defaults to section-split-v2, the parser every indexed
+    chunk was built with. section-split-v3 is opt-in (--split-version); its
+    "contents" region (a contents page left in the text) is not chunked.
 
     The `statutes_` prefix keeps these distinct from ids written by other ingest
     scripts, so the two can coexist without silent collisions.
@@ -306,7 +312,10 @@ def make_chunks(text: str, statute: str, law_type: str, source_file: str,
         raise ValueError(f"unknown province {province!r}; valid: {sorted(VALID_PROVINCES)}")
     slug = _slug(statute)
     chunks, i = [], 0
-    for sec, block in _split_sections(text):
+    for prov in split_provisions(text, split_version):
+        if prov["region"] == "contents":
+            continue
+        sec, block = prov["section"], prov["text"]
         for part in ([block] if len(block) <= CHUNK_SIZE else _slide(block)):
             part = part.strip()
             if not part:
@@ -323,6 +332,14 @@ def make_chunks(text: str, statute: str, law_type: str, source_file: str,
                     "chunk_id": f"statutes_{slug}_{i:04d}",
                     # Lets a later run tell whether the source file changed.
                     "content_sha": hashlib.sha256(part.encode()).hexdigest()[:12],
+                    # Where the text sits in the source, and what the source
+                    # itself says about it (never inferred).
+                    "split_version": split_version,
+                    "source_region": prov["region"],
+                    "heading_rule": prov["heading_rule"] or "",
+                    "provision_status": prov["provision_status"],
+                    "omitted_by": prov["omitted_by"] or "",
+                    "schedule": prov["schedule"] or "",
                 },
             })
             i += 1
@@ -485,7 +502,7 @@ def main(args) -> None:
                   f"({len(text)} chars) — likely a scan. SKIPPED.")
             continue
 
-        chunks = make_chunks(text, statute, law_type, pdf.name, province)
+        chunks = make_chunks(text, statute, law_type, pdf.name, province, args.split_version)
         print(f"\n  {statute} [{province}]: {len(text):,} chars -> {len(chunks)} chunks")
 
         vectors = embedder.embed_documents([c["content"] for c in chunks])
@@ -521,6 +538,8 @@ if __name__ == "__main__":
     p.add_argument("--province", default="", choices=sorted(VALID_PROVINCES) + [""],
                    help="override the province for this batch, e.g. --province punjab "
                         "when ingesting a provincial code")
+    p.add_argument("--split-version", default=SPLIT_VERSION, choices=SPLIT_VERSIONS,
+                   help="statute splitter version (default: the one the live index was built with)")
     p.add_argument("--list-registry", action="store_true",
                    help="print the statute registry and exit")
     main(p.parse_args())

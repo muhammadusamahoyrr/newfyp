@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import logging
 import secrets
 
@@ -8,7 +9,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.exceptions import ForbiddenError, ServiceUnavailableError
 from app.dependencies import get_current_user, require_lawyer
@@ -17,7 +18,10 @@ from app.ai.provider_health import (
     PURPOSE_DIRECT_CHAT, PURPOSE_DRAFT_STREAM, PURPOSE_MODEL_COMPARE,
     PURPOSE_PLEADING_URDU,
 )
+from app.ai import answer_safeguards, research_followup
 from app.ai import case_context as case_context_mod
+from app.core.config import settings
+from app.ai import jurisdiction as jurisdiction_mod
 from app.ai import source_links
 from app.services import conversation_limits as conversation_limits
 from app.services import conversation_service as conversations
@@ -195,12 +199,13 @@ async def _authorised_case_context(
 
 
 class RateRequest(BaseModel):
-    session_id: str
-    rating: str  # "up" | "down"
-    answer_preview: str = ""   # first chars of the rated answer, for review context
-    question_preview: str = ""
-    comment: str | None = None
-    source: str = "chat"       # chat | research
+    # The server-issued id of the exact answer being rated. Browser-provided
+    # previews are not proof that an answer exists and are not trusted.
+    request_id: str = Field(min_length=1, max_length=200)
+    session_id: str = Field(min_length=1, max_length=200)
+    rating: Literal["up", "down"]
+    comment: str | None = Field(default=None, max_length=500)
+    source: Literal["chat", "research"] = "chat"
 
 
 class AiQueryResult(BaseModel):
@@ -293,20 +298,40 @@ async def rate_answer(
 
     from app.db.collections import get_response_ratings_col
 
-    if body.rating not in ("up", "down"):
-        return {"success": False, "message": "rating must be 'up' or 'down'"}
+    # Bind the feedback to both an owned conversation and an immutable answer
+    # audit record. The previews come from that record, never from browser text.
+    surface = (conversations.SURFACE_CLIENT if body.source == "chat"
+               else conversations.SURFACE_RESEARCH)
+    await conversations.get_raw(
+        surface, body.session_id, str(current_user["_id"]))
+    record = await provenance_service.get_by_request(
+        body.request_id, str(current_user["_id"]))
+    if not record or str(record.get("session_id")) != body.session_id:
+        raise ForbiddenError("Answer not available")
 
-    await get_response_ratings_col().insert_one({
-        "_id":              secrets.token_urlsafe(16),
-        "user_id":          current_user["_id"],
-        "session_id":       body.session_id,
-        "rating":           body.rating,
-        "answer_preview":   body.answer_preview[:300],
-        "question_preview": body.question_preview[:300],
-        "comment":          (body.comment or "")[:500],
-        "source":           body.source,
-        "created_at":       datetime.now(timezone.utc),
-    })
+    # One mutable judgement per person and answer. A second click changes the
+    # rating instead of creating duplicate training rows.
+    await get_response_ratings_col().update_one(
+        {"user_id": current_user["_id"], "request_id": body.request_id},
+        {
+            "$set": {
+                "session_id": body.session_id,
+                "request_id": body.request_id,
+                "rating": body.rating,
+                "answer_preview": str(record.get("answer_preview") or "")[:300],
+                "question_preview": str(record.get("query") or "")[:300],
+                "comment": body.comment or "",
+                "source": body.source,
+                "updated_at": datetime.now(timezone.utc),
+            },
+            "$setOnInsert": {
+                "_id": secrets.token_urlsafe(16),
+                "user_id": current_user["_id"],
+                "created_at": datetime.now(timezone.utc),
+            },
+        },
+        upsert=True,
+    )
     return {"success": True, "message": "Thanks for the feedback"}
 
 
@@ -430,7 +455,7 @@ async def _record_research_message(
 @router.post("/research", response_model=AiResearchResult)
 async def ai_research(
     body: ResearchRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_lawyer),
 ):
     """RAG-grounded legal research over the LangGraph pipeline.
 
@@ -515,10 +540,13 @@ async def ai_research(
     # and in a different language is answered differently — replaying the first
     # answer for either would be a correct-looking reply to a question nobody
     # asked. The stored case binding is used, not the requested one.
+    # For a case-bound turn, jurisdiction is a server fact from the case
+    # record. A stale or modified browser must not redirect legal retrieval.
+    effective_province = (case_province if bound_case_id else body.province) or ""
     fingerprint = turns.request_fingerprint(
         message=body.message,
         language=body.language,
-        province=body.province or case_province or "",
+        province=effective_province,
         case_id=bound_case_id,
         extra={"surface": conversations.SURFACE_RESEARCH},
     )
@@ -573,7 +601,9 @@ async def ai_research(
     # lawyer restating it every turn.
     data = {
         "language": body.language,
-        "province": body.province or case_province or None,
+        "province": effective_province or None,
+        "province_basis": (
+            jurisdiction_mod.BASIS_CASE if bound_case_id else None),
         "case_id": body.case_id,
         "case_context": case_context or None,
         # Which VERSION of the case record this answer was built from. Without
@@ -731,13 +761,16 @@ async def _run_research_turn(
                 # per turn on purpose: the previous design put it in the first
                 # prompt and let it fall out of the last-four history window,
                 # so the case silently stopped applying mid-conversation.
+                # The surface is (re)asserted by THIS route: a checkpoint
+                # written before it existed would otherwise carry none.
+                resume_update = {"surface": answer_safeguards.SURFACE_RESEARCH}
                 if case_context:
-                    await chat_graph.aupdate_state(
-                        config,
+                    resume_update.update(
                         {"case_id": body.case_id,
                          "case_context": case_context,
                          "case_record_version":
                              case_context_mod.record_version(case_record)})
+                await chat_graph.aupdate_state(config, resume_update)
                 await chat_graph.ainvoke(Command(resume=body.message), config=config)
             else:
                 state = _build_state(
@@ -745,6 +778,16 @@ async def _run_research_turn(
                     user_id=current_user["_id"],
                     user_role=current_user.get("role", "client"),
                 )
+                # Set by THIS authenticated route, never by the browser
+                # (ai/answer_safeguards.py). Identity only: what it changes is
+                # decided by the research flag, and with the flag off nothing
+                # downstream behaves differently.
+                state["surface"] = answer_safeguards.SURFACE_RESEARCH
+                # Which version of the case record informed THIS answer. It
+                # reached the state only on a clarification resume before, so
+                # an ordinary turn's provenance named the case but not the
+                # version of it the answer was built from.
+                state["case_record_version"] = data.get("case_record_version")
                 # Case-aware RETRIEVAL, without touching the user's question.
                 # "What should I prepare?" retrieves nothing on its own; the
                 # case supplies bounded search terms. `query` stays exactly as
@@ -753,6 +796,18 @@ async def _run_research_turn(
                 augmented = case_context_mod.augment_query(body.message, case_context)
                 if augmented != body.message:
                     state["retrieval_query_supplement"] = augmented
+                if settings.research_answer_safeguards:
+                    # The versioned identity indexes (Order/Rule, Schedule/
+                    # Article, lettered sections) for this turn's retrieval.
+                    state["retrieval_policy"] = {
+                        **(state.get("retrieval_policy") or {}),
+                        "index_variant": answer_safeguards.RESEARCH_INDEX_VARIANT}
+                    # "make it short" / "explain in detail" re-answer the
+                    # previous lawyer question through the checked pipeline,
+                    # with its case binding (ai/research_followup.py).
+                    state.update(research_followup.overrides(
+                        body.message, history, getattr(pre_snap, "values", None),
+                        state.get("case_type"), case_context))
                 await chat_graph.ainvoke(state, config=config)
 
             logger.info("ai.research trace %s", tracer.summary())
@@ -778,6 +833,14 @@ async def _run_research_turn(
             # FALSE: the stored response is what a duplicate replays, so it must
             # be a payload we stand behind before either write is known to have
             # succeeded. Both are upgraded together below.
+            # A clarifying question is emitted text too, and never passes the
+            # finalizer: the foreign-law guard is applied here (live probe
+            # R3.2 asked about "Section 138 of the Negotiable Instruments Act",
+            # the INDIAN cheque offence).
+            if settings.research_answer_safeguards:
+                from app.ai import jurisdiction_guard
+                question, _ = jurisdiction_guard.strip_foreign(
+                    question, body.message, urdu=body.language == "ur")
             response_draft = {"type": "clarification", "question": question,
                               "request_id": tracer.request_id,
                               "history_saved": False,
@@ -808,11 +871,13 @@ async def _run_research_turn(
             # the message is built from an already-corrected payload — the same
             # ordering the WebSocket path uses, and for the same reason.
             audit_fields = provenance_outbox.describe_outcome(audit_outcome)
-            saved = await _record_research_message(
-                ref=ref, turn_id=turn_record["_id"],
-                content=question, request_id=tracer.request_id,
-                payload={"type": "clarification", **audit_fields},
-                pending=question)
+            saved = False
+            if history_saved:
+                saved = await _record_research_message(
+                    ref=ref, turn_id=turn_record["_id"],
+                    content=question, request_id=tracer.request_id,
+                    payload={"type": "clarification", **audit_fields},
+                    pending=question)
             # The audit id for THIS turn, on the clarification path too. A
             # clarifying question is an emitted output with its own provenance
             # record, and a lawyer who wants to report one needs its id as much
@@ -902,10 +967,12 @@ async def _run_research_turn(
         # Built from an already-corrected payload, so the stored message
         # reports the same audit status the lawyer was shown.
         audit_fields = provenance_outbox.describe_outcome(audit_outcome)
-        saved = await _record_research_message(
-            ref=ref, turn_id=turn_record["_id"],
-            content=response["answer"], request_id=tracer.request_id,
-            payload={**response, **audit_fields}, pending=None)
+        saved = False
+        if history_saved:
+            saved = await _record_research_message(
+                ref=ref, turn_id=turn_record["_id"],
+                content=response["answer"], request_id=tracer.request_id,
+                payload={**response, **audit_fields}, pending=None)
 
         # Correct BOTH copies, or neither. A replay promises the EXACT response
         # the first caller received, so the returned value is upgraded only
@@ -965,8 +1032,42 @@ class DraftRequest(BaseModel):
     # validated (unknown → UNSPECIFIED, never silently 'federal').
     case_id: str | None = None
     case_type: str = "civil"        # civil | criminal | family | constitutional
-    province: str = "federal"
+    # The lawyer's chosen jurisdiction for a caseless draft: a VALID_PROVINCES
+    # value, or empty / "unknown" for a JURISDICTION-NEUTRAL draft (federal law
+    # only, placeholders where provincial law governs -- ai/draft_jurisdiction.py).
+    # Any other value is refused. It defaulted to "federal", which narrowed every
+    # caseless draft to federal law without saying so (2026-10-14).
+    province: str = ""
     history: list[dict] = []
+    # What the Draft Assistant should return (2026-10-14). The editor no longer
+    # overwrites the lawyer's formatted document with whatever comes back: the
+    # answer is a PROPOSAL the lawyer inserts. "full" (the default, unchanged
+    # behaviour) = the complete document; "clause" = only the new clause(s) to
+    # insert; "rewrite" = only the rewritten `selection`; "answer" = a reply,
+    # not document text.
+    mode: Literal["full", "clause", "rewrite", "answer"] = "full"
+    # The passage the lawyer selected, for mode="rewrite".
+    selection: str = Field(default="", max_length=6000)
+
+
+# Per-mode instruction appended to _DRAFT_SYSTEM. "full" adds nothing, so the
+# default request reads exactly as it always did.
+_DRAFT_MODE_RIDER = {
+    "full": "",
+    "clause": (
+        "\n\nRETURN FORMAT: reply with ONLY the new clause(s) or paragraph(s) to insert into the current "
+        "document -- never the whole document, no preamble, no explanation. Match the document's style: a "
+        "pleading uses numbered \"That ...\" paragraphs; an agreement uses a numbered clause with a short "
+        "heading. Put each paragraph on its own line, separated by a blank line; a heading goes on its own "
+        "line in CAPITALS."),
+    "rewrite": (
+        "\n\nRETURN FORMAT: the lawyer selected one passage of the document (given below as SELECTED PASSAGE). "
+        "Reply with ONLY that passage rewritten as instructed -- never the rest of the document, no preamble, "
+        "no explanation. Keep its facts, names and numbering unless the instruction says otherwise."),
+    "answer": (
+        "\n\nRETURN FORMAT: answer the lawyer's question about the document concisely (short points). Do not "
+        "return document text."),
+}
 
 
 _DRAFT_SYSTEM = """\
@@ -975,6 +1076,10 @@ You are an expert Pakistani legal drafting assistant. Document type: {template}.
 Ground the document ONLY in the Pakistani statute sections and case law provided below.
 - Cite ONLY section numbers and case citations that appear in this context — NEVER invent a citation, section number, or reporter reference.
 - If the context does not cover a needed point, use a clearly-marked [placeholder] instead of a fabricated citation.
+- Cite each provision EXACTLY as the context labels it. A Code of Civil Procedure Order and Rule is cited as "Order VII Rule 11 CPC" -- never as a "Section"; cite "Section N CPC" only when the context shows Section N of the CPC.
+- Never cite text whose label says "provision not identified", "rule not shown", "order not determined" or "Appendix".
+- Never state a fact the lawyer has not given -- an event, a date, a party's condition, conduct or state of mind. Where the draft needs one, write a [placeholder] for it.
+- Cite only the authorities the requested text actually needs; do not add others. When filling in a template or a form, add NO legal citations unless the lawyer asks for one.
 - When asked to draft, modify, or redraft, reply with the COMPLETE updated document text only — no explanation, no markdown fences. If asked a question, answer concisely.
 
 --- PAKISTANI LAW CONTEXT (retrieved) ---
@@ -982,7 +1087,90 @@ Ground the document ONLY in the Pakistani statute sections and case law provided
 --- END CONTEXT ---"""
 
 
-def _retrieve_law_context(query: str, case_type: str, province: str) -> str:
+#: Every identity index the drafter reads (retrieval, exact text, legal check).
+DRAFTER_IDENTITY_INDEXES = ("criminal_collection__sec_v2", "civil_collection__ident_v2")
+
+
+def _exact_provisions_for(text: str) -> list[dict]:
+    """Exact text of the provisions the lawyer NAMED, at most three, one chunk
+    each: Act + section, and CPC Order + Rule (by its real identity in the
+    civil identity index -- cpc_provisions). Best-effort: [] when none is named
+    or the corpus is unavailable -- the draft is then grounded as before."""
+    out: list[dict] = []
+    try:
+        from app.ai import exact_provision, tool_contract
+        refs = tool_contract.provision_refs(text)[:3]
+        if refs:
+            fetched = exact_provision.fetch(refs, True)
+            out += [c for r in refs for c in (fetched.get(exact_provision.label(r)) or [])[:1]]
+    except Exception:
+        logger.exception("draft: exact provision lookup failed")
+    try:
+        from app.ai import cpc_provisions
+        for order, rule, _a, _b in cpc_provisions.parse_refs(text)[:3]:
+            prov = cpc_provisions.lookup(order, rule)
+            if prov is not None and len(out) < 3:
+                out.append({"exact_provision": f"{prov.label} CPC", "statute": cpc_provisions.STATUTE,
+                            "content": prov.content, "provision_kind": "order_rule"})
+    except Exception:
+        logger.exception("draft: CPC order/rule lookup failed")
+    return out[:3]
+
+
+# The identity a law-context chunk is shown under (2026-10-15). The base civil
+# index files CPC Order RULES under section numbers, and one chunk carries the
+# year "1956" as its section: the drafter showed "CPC 1908 -- Section 1:
+# Withdrawal of suit" (Order XXIII Rule 1) and "Section 1956", and the model
+# cited both (eval drafter_v2, v2_r1). Retrieval now reads the identity indexes,
+# and a chunk is labelled by what it IS -- or said to be unidentified.
+_NOT_A_SECTION_MIN = 1000      # corpus_index._ARTIFACT_MIN: numbers this high are years / page artefacts
+
+
+# Drafting-instruction words carry no law and drown the words that do:
+# "Draft the grounds for an application seeking rejection of the plaint ...
+# Cite the provision" did not retrieve Order VII Rule 11 at all; "rejection of
+# the plaint ... no cause of action" ranks it in the top six (eval v2_r2,
+# measured 2026-10-15). Only these words are dropped -- nothing is added.
+_DRAFTING_WORDS = re.compile(
+    r"(?i)\b(?:draft|drafting|add|write|prepare|insert|ground|grounds|paragraph|para|clause|application|applications|"
+    r"seeking|seek|cite|citing|cited|provision|provisions|law|laws|governing|relevant|applicable|the|a|an|for|to|of|"
+    r"that|this|with|and|it|its|please|court|petition|because)\b")
+
+
+# Practice vocabulary -> the words the statute itself uses (2026-10-15).
+# Lawyers ask for "condonation of delay"; the Limitation Act says "extension of
+# period ... sufficient cause" and never "condonation", so s.5 was not
+# retrieved at all -- while the Act's own wording ranks it first (eval v2 dev
+# V08, measured). Likewise "intervener"/"impleadment" vs the Code's "strike out
+# or add parties" (V04). The statutory WORDS are APPENDED -- the lawyer's words
+# stay, nothing is removed, and no provision number is ever added: retrieval
+# still has to find the provision, and the guard still checks it.
+_PRACTICE_TERMS = (
+    (re.compile(r"(?i)\bcondon\w*"), "extension of period sufficient cause"),
+    (re.compile(r"(?i)\b(?:implead\w*|interven[eo]r\w*|necessary\s+party)\b"), "strike out or add parties"),
+)
+
+
+def _retrieval_query(template: str, instruction: str, selection: str) -> str:
+    raw = f"{template} {instruction} {selection[:400]}".strip()
+    cleaned = " ".join(_DRAFTING_WORDS.sub(" ", raw).split())
+    query = cleaned if len(cleaned.split()) >= 2 else raw
+    extra = [words for pat, words in _PRACTICE_TERMS if pat.search(f"{instruction} {selection[:400]}")]
+    return " ".join([query, *extra])
+
+
+def _law_label(c: dict) -> str:
+    label = (c.get("provision_label") or "").strip()
+    if label:
+        return label
+    sec = str(c.get("section_number") or "").strip()
+    m = re.match(r"(\d+)", sec)
+    if sec and m and int(m.group(1)) < _NOT_A_SECTION_MIN:
+        return f"Section {sec}"
+    return "provision not identified"
+
+
+def _retrieve_law_context(query: str, case_type: str, province: str, also_query: str = "") -> str:
     """Pull relevant statute sections + case law from the corpus to ground drafting.
     Best-effort: returns '' if retrieval/embeddings are unavailable."""
     parts: list[str] = []
@@ -1006,20 +1194,62 @@ def _retrieve_law_context(query: str, case_type: str, province: str) -> str:
     try:
         from app.ai.nodes.retrieval_node import _docs_to_chunks
         from app.ai.pipelines.retriever import build_retriever
-        retriever = build_retriever(case_type, province)
-        chunks = _docs_to_chunks(retriever.invoke(query), province)[:6]
+        # The identity indexes (civil: CPC Order/Rule and Limitation
+        # Schedule/Article; criminal: lettered sections) -- the ones lawyer
+        # research reads. NEVER the base index instead: a missing identity
+        # index raises (index_health) and the stream refuses before this runs.
+        retriever = build_retriever(case_type, province, "research_ident")
+        # CPC APPENDIX chunks are court FORMS, not law: they matched the
+        # drafting words ("application for ...") and pushed real provisions
+        # out of the six (Order VII Rule 11, eval v2_r2).
+        def _hits(q):
+            return [c for c in _docs_to_chunks(retriever.invoke(q), province) if c.get("provision_kind") != "appendix"]
+        chunks = _with_raw_hits(_hits(query), _hits(also_query) if also_query and also_query != query else [])
         if chunks:
             lines = []
             for c in chunks:
                 statute = (c.get("statute") or c.get("source_file") or "Pakistani law").strip()
-                section = str(c.get("section_number") or "").strip()
-                head = f"{statute}" + (f" — Section {section}" if section else "")
-                lines.append(f"[STATUTE] {head}\n{(c.get('content') or '')[:450]}")
+                for label, text in _law_pieces(c):
+                    lines.append(f"[STATUTE] {statute} — {label}\n{text[:450]}")
             parts.append("\n\n".join(lines))
     except Exception:
         logger.exception("draft: statute retrieval failed")
 
     return "\n\n".join(parts) if parts else "(No specific sections were retrieved — draft carefully and mark any citation you are unsure of as a [placeholder].)"
+
+
+# The cleaned query AND the lawyer's own words (eval v2_r3 dev, 2026-10-15).
+# Dropping the drafting words found Order VII Rule 11 for V01 -- and lost
+# CrPC s.502 for V12 ("an application by a surety ... discharged from the bail
+# bond" no longer ranked it in the top six). Both queries are searched and
+# the cleaned query keeps ALL its six places (taking turns cost V01, V04 and
+# V08 their provision, which ranks about fourth -- measured offline), and the
+# raw query's best two hits are ADDED when not already there.
+_LAW_CHUNKS, _RAW_EXTRA = 6, 2
+
+
+def _with_raw_hits(cleaned: list[dict], raw: list[dict]) -> list[dict]:
+    def key(c):
+        return (c.get("statute"), (c.get("content") or "")[:160])
+    out = cleaned[:_LAW_CHUNKS]
+    seen = {key(c) for c in out}
+    extra = [c for c in raw if key(c) not in seen][:_RAW_EXTRA]
+    return out + extra
+
+
+def _law_pieces(c: dict) -> list[tuple[str, str]]:
+    """(label, text) for a law-context chunk -- a CPC chunk holding two rules is
+    shown as two, each under its own rule (cpc_provisions.split_rules): Rule 13
+    text never appears under Rule 12's label."""
+    label, text = _law_label(c), c.get("content") or ""
+    if c.get("provision_kind") == "order_rule" and label.startswith("Order ") and " Rule " in label:
+        try:
+            from app.ai import cpc_provisions
+            return [(lab, t) for lab, t in cpc_provisions.split_rules(text, label, str(c.get("rule_spans") or ""))
+                    if t.strip()]
+        except Exception:
+            logger.exception("draft: rule split failed")
+    return [(label, text)]
 
 
 async def _retrieve_case_law_context(query: str) -> str:
@@ -1064,17 +1294,67 @@ async def ai_draft_stream(
         eff_province = ctx["province"]
         case_ctx_block = context_block(ctx)
     else:
-        # GENERAL: validate both axes. Unknown province → UNSPECIFIED, not federal.
+        # GENERAL: validate both axes. The drafter refuses a province it does not
+        # know rather than reading it as "neutral" -- the lawyer chose something.
+        from app.ai import draft_jurisdiction as _dj
+        if not _dj.is_valid_choice(body.province):
+            from app.core.exceptions import AppValidationError
+            raise AppValidationError(
+                "Choose a jurisdiction: punjab, sindh, kpk, balochistan, federal -- or leave it unspecified.")
         eff_case_type, eff_province = resolve_general(body.case_type, body.province)
+    from app.ai import draft_jurisdiction
+    eff_province, juris_basis = draft_jurisdiction.resolve(bool(body.case_id), eff_province)
 
-    query = f"{body.template} {body.instruction}".strip()
+    selection = body.selection.strip() if body.mode == "rewrite" else ""
+    # An issue whose governing law is provincial (tenancy, employment terms,
+    # pre-emption): a neutral draft must leave a placeholder for it.
+    juris_topic = draft_jurisdiction.topic_for(f"{body.template} {body.instruction} {selection}")
+    if body.mode == "rewrite" and not selection:
+        from app.core.exceptions import AppValidationError
+        raise AppValidationError("Select the passage to rewrite first.")
+
+    # The drafter reads ONLY the verified identity indexes (2026-10-16). If one
+    # is missing, unreadable or not the verified build, nothing is retrieved
+    # and no model is called: the panel gets the same fail-closed `guard`
+    # event as a check that could not run (reason "corpus_unavailable", which
+    # it already explains), plus which index and why. The base index is never
+    # substituted -- its CPC labels are the ones the identity build repairs.
+    from app.ai import index_health
+    try:
+        await asyncio.to_thread(index_health.require_all, DRAFTER_IDENTITY_INDEXES)
+    except index_health.IdentityIndexUnavailable as exc:
+        unavailable = {"ran": False, "reason": "corpus_unavailable", "index": exc.as_dict(), "text": "",
+                       "withheld": [], "jurisdiction": {"province": eff_province, "basis": juris_basis}}
+
+        async def unavailable_stream():
+            yield f"data: {json.dumps({'guard': unavailable})}\n\n"
+            yield "data: [DONE]\n\n"
+        return StreamingResponse(unavailable_stream(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    # Retrieval also reads the selected passage: "make this stronger" names no law
+    # on its own; the passage does.
+    query = _retrieval_query(body.template, body.instruction, selection)
     statute_law = await asyncio.to_thread(
-        _retrieve_law_context, query, eff_case_type, eff_province
+        _retrieve_law_context, query, eff_case_type, draft_jurisdiction.retrieval_province(eff_province),
+        f"{body.template} {body.instruction} {selection[:400]}".strip(),
     )
     case_law = await _retrieve_case_law_context(query)
-    law = statute_law + (("\n\n" + case_law) if case_law else "")
+    # A provision the lawyer NAMES ("a ground under Section 497 CrPC", or in the
+    # selected passage) is fetched by identity and put first, as in research --
+    # similarity alone often missed it or returned a schedule row that merely
+    # mentions it (ai/exact_provision.py).
+    exact_chunks = await asyncio.to_thread(_exact_provisions_for, f"{body.instruction} {selection}")
+    exact_block = "\n\n".join(
+        f"[EXACT TEXT] {c['exact_provision']} ({c.get('statute', '')})\n{(c.get('content') or '')[:1200]}"
+        for c in exact_chunks)
+    law = ((exact_block + "\n\n") if exact_block else "") + statute_law + (("\n\n" + case_law) if case_law else "")
 
-    system = _DRAFT_SYSTEM.format(template=body.template or "legal document", law=law)
+    from app.ai import source_currency
+    system = (_DRAFT_SYSTEM.format(template=body.template or "legal document", law=law)
+              + source_currency.drafting_rider(law, f"{body.instruction} {selection}", eff_province)
+              + _DRAFT_MODE_RIDER[body.mode]
+              + draft_jurisdiction.rider(eff_province, juris_basis)
+              + draft_jurisdiction.topic_rider(eff_province, juris_topic))
     messages = [{"role": "system", "content": system}]
     for m in body.history[-6:]:
         if m.get("role") in ("user", "assistant") and m.get("content"):
@@ -1082,6 +1362,8 @@ async def ai_draft_stream(
     _user = f"Current document:\n\n{body.document[:8000]}\n\n"
     if case_ctx_block:
         _user += case_ctx_block + "\n\n"
+    if selection:
+        _user += f"SELECTED PASSAGE (rewrite only this):\n<<<\n{selection}\n>>>\n\n"
     _user += f"---\nInstruction: {body.instruction}"
     messages.append({"role": "user", "content": _user})
 
@@ -1105,6 +1387,45 @@ async def ai_draft_stream(
             yield _stream_error("ai.stream")
 
         drafted = "".join(buf)
+
+        # The legal-authority check on the FINISHED draft (ai/visible_authority.py,
+        # the research guard): a unit relying on an omitted section (438 CrPC),
+        # a section a complete statute does not have, an offence pinned on a
+        # procedural code, an unverifiable authority stated as advice, or a
+        # statute of a province this draft is not under is removed from the
+        # PROPOSAL before the lawyer can insert it. No note is written into the
+        # text (it would land in a filing); the reasons travel in the `guard`
+        # event for the panel to show.
+        #
+        # FAIL-CLOSED: if the check cannot run (an error, or the statute corpus
+        # cannot be read), the event says so and carries NO text, and nothing
+        # below runs on the unchecked draft -- no citation check and no answer
+        # in the audit store. The panel offers Retry, not Insert.
+        juris = {"province": eff_province, "basis": juris_basis}
+        if drafted and not failed:
+            try:
+                from app.ai import draft_guard
+                guard = draft_guard.check(
+                    drafted, f"{body.instruction} {selection}", [{**c, "kind": "statute"} for c in exact_chunks],
+                    eff_province, juris_topic,
+                    context=f"{body.template} {body.document[:3000]} {case_ctx_block}",
+                    # The lawyer's OWN text: a sentence copied from it is never
+                    # rewritten by the CPC jurisdiction policy (batch 5).
+                    own_text=f"{body.document} {selection}")
+                guard["jurisdiction"] = juris
+            except Exception as exc:
+                from app.ai.exact_provision import CorpusUnavailable
+                reason = "corpus_unavailable" if isinstance(exc, CorpusUnavailable) else "check_failed"
+                # Where it failed, never what it was checking: the exception's
+                # message and locals can carry the lawyer's document text.
+                import traceback
+                logger.error("draft stream: authority check did not run (%s, %s) at %s", reason,
+                             type(exc).__name__, " <- ".join(
+                                 f"{f.filename.rsplit(chr(92), 1)[-1].rsplit('/', 1)[-1]}:{f.lineno}"
+                                 for f in reversed(traceback.extract_tb(exc.__traceback__))))
+                guard = {"ran": False, "reason": reason, "text": "", "withheld": [], "jurisdiction": juris}
+            yield f"data: {json.dumps({'guard': guard})}\n\n"
+            drafted = guard["text"] if guard["ran"] else ""
 
         # Verification runs AFTER the last token, never before one: a citation
         # check must not delay the first word the lawyer sees. It reuses the

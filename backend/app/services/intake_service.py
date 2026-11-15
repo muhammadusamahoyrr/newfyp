@@ -22,6 +22,12 @@ from app.schemas.intake import (
     IntakeStep4,
     IntakeStep5,
 )
+from app.ai.intake_understanding import (
+    analysis_context as _understanding_context,  # noqa: F401 -- re-exported for callers
+    build_understanding,
+    ledger_sections,
+    retrieval_text as _understanding_retrieval_text,
+)
 from app.services.evidence_coverage import (
     STORAGE_ONLY_MIMES,
     derive_analysis_support,
@@ -63,36 +69,51 @@ STEP_SCHEMAS = {
 }
 
 # Domain-specific missing-fact templates (mirrors fact_gap_node.py)
+# Facts a CLIENT can answer from their own life. Never a legal conclusion:
+# which right, article, law, court or authority applies is the lawyer's call,
+# and the constitutional list used to ask the client exactly that ("Which
+# fundamental right ... is violated?"), which a client cannot answer.
 _CLARIFY_TEMPLATES = {
     "criminal": (
         "Criminal case key facts:\n"
-        "1. Has an FIR been filed? At which police station?\n"
-        "2. What is the nature and severity of harm or injury?\n"
-        "3. Are there witnesses?\n"
-        "4. What is the exact date and location of the incident?"
+        "1. Has an FIR been registered? At which police station?\n"
+        "2. Was anyone hurt, and was a medical examination done?\n"
+        "3. Did anyone see it happen?\n"
+        "4. On what date and where did it happen?"
     ),
     "family": (
         "Family law key facts:\n"
-        "1. Is the marriage registered under Muslim Family Laws Ordinance 1961?\n"
-        "2. Are children involved? Ages?\n"
-        "3. What is the agreed Mehr (dower) amount?\n"
-        "4. Is the dispute about divorce, custody, inheritance, or maintenance?"
+        "1. Was the nikah registered, and do they have the nikahnama?\n"
+        "2. Are there children? How old are they and who do they live with?\n"
+        "3. What Mehr was written in the nikahnama, and has it been paid?\n"
+        "4. What do they want now (divorce, custody, maintenance, a share of inheritance)?"
     ),
     "civil": (
         "Civil case key facts:\n"
-        "1. Is there a written contract or registered agreement?\n"
-        "2. What proof of ownership or entitlement exists?\n"
-        "3. What is the disputed amount or property value?\n"
-        "4. Has a formal legal notice been sent to the other party?"
+        "1. On what dates did the key events happen (agreement, sale, payment, notice)?\n"
+        "2. Which papers do they hold (agreement, sale deed, fard, mutation/intiqal, receipts)?\n"
+        "3. What amount or property value is involved, and who is in possession now?\n"
+        "4. What have they already done (spoken to the other side, sent a notice, gone to an office or court), and what was the reply?"
     ),
     "constitutional": (
-        "Constitutional matter key facts:\n"
-        "1. Which fundamental right under the Constitution of Pakistan 1973 is violated?\n"
-        "2. Which government authority is responsible?\n"
-        "3. Has a writ petition or complaint been filed previously?\n"
-        "4. Is this an individual matter or public interest?"
+        "Matter against a government office - key facts:\n"
+        "1. Which government office or official is involved, and what did they do or refuse to do?\n"
+        "2. When did this happen, and how does it affect them?\n"
+        "3. Have they already applied or complained to that office, and what reply did they get?\n"
+        "4. Which orders, letters or documents do they hold?"
     ),
 }
+
+# A "constitutional" case type with no government office in the story is a
+# misclassification (2026-10-19: "my right of pre-emption" in a land sale was
+# typed constitutional by the browser's keyword guess because of "right"), and
+# its list asks about government offices. The general civil list is used then.
+_STATE_ACTOR = re.compile(
+    r"\b(government|govt|authority|department|ministry|official|officer|police|"
+    r"municipal|corporation|board|nadra|fbr|wapda|lda|cda|court|writ|fundamental|"
+    r"article\s*\d+|constitution|sarkar|sarkari|mehkma)\b"
+    r"|حکومت|سرکار|محکمہ|ادارہ|پولیس|عدالت|آئین",
+    re.IGNORECASE)
 
 _CLARIFY_SYSTEM = """\
 You are a Pakistani legal intake specialist. The user has described their legal issue.
@@ -101,12 +122,20 @@ INSTRUCTIONS:
 1. Review what the user has ALREADY provided in their description and prior answers below.
 2. Identify the ONE most critical fact still missing that would significantly improve legal analysis for THIS specific situation.
 3. If all key facts for this situation are present, respond with exactly: DONE
+4. NEVER ask again about something already asked below — not even in different words.
+5. If the user answered "I don't know" / "Not sure" (or similar) to a question, do not ask about that topic again; move to a different missing fact, or respond DONE.
+6. If the description does not describe any actual event or problem (a single word, a greeting, or only a request for help), ignore the domain key facts: your ONE question must ask the user to describe what happened — who did what, when and where.
+7. Ask only about FACTS this person knows from their own life: what happened, when, where, who was involved, what was said, signed or paid, which papers they hold, and what they have already done. NEVER ask them to name or decide a law, section, article, fundamental right, legal doctrine, court, forum or authority, or whether something is legally valid. Working that out is the lawyer's job, not the client's.
+8. Do not build a legal assumption into the question (for example, asking whether a document "grants" them a right the law may give anyway). Ask what happened or whether they have the document.
+9. Use plain words a person with no legal training understands.
 
 Your question MUST be specific to what THIS user described — reference details from their description.
 {language_rule} No explanations — just the question.
+After the question, on a NEW line, write FACT_KEY: followed by a short snake_case name for the one fact the question asks about (for example FACT_KEY: written_agreement_exists). Write FACT_KEY in English even when the question is in Urdu.
 
 GOOD example: "You mentioned your landlord beat you — did you sustain injuries that required medical attention?"
-BAD example: "What is the nature and severity of harm?" (too generic, ignores what user said)"""
+BAD example: "What is the nature and severity of harm?" (too generic, ignores what user said)
+BAD example: "Which fundamental right do you allege is being violated?" (asks the client for a legal conclusion)"""
 
 # WHICH LANGUAGE THE QUESTIONS ARE IN IS DECIDED HERE, NOT BY THE MODEL.
 #
@@ -116,9 +145,163 @@ BAD example: "What is the nature and severity of harm?" (too generic, ignores wh
 # like "222222" that carry no language — so one intake got its first question
 # in English and its second in Urdu, and another got all four in Urdu for an
 # English description.
+# NO REPEATS, NO DEAD ENDS (2026-10-12). Measured: one intake asked
+# "what is the core dispute?" as Q1 and again, reworded, as Q4, after four
+# "I don't know" answers. The prompt now forbids both, and these two checks
+# make it hold whatever the model does.
+_NON_ANSWERS = {
+    "i dont know", "dont know", "not sure", "no idea", "idk", "unknown", "na", "n/a",
+    "pata nahi", "nahi pata", "maloom nahi", "malum nahi", "معلوم نہیں", "یقین نہیں",
+    "پتا نہیں", "پتہ نہیں", "نہیں معلوم",
+}
+_REPEAT_OVERLAP = 0.6
+_REPEAT_CONTAINED = 0.8
+_REPEAT_AFTER_NON_ANSWER = 0.6
+_STOP_WORDS = {
+    "a", "an", "the", "is", "are", "was", "were", "be", "been", "do", "does", "did", "you", "your",
+    "he", "she", "it", "they", "them", "his", "her", "their", "of", "to", "in", "on", "at", "for",
+    "by", "with", "or", "and", "any", "that", "this", "what", "which", "who", "when", "where", "how",
+    "e", "i", "ie", "mr", "mrs", "ms", "has", "have", "had", "from", "as", "there", "if", "not",
+}
+
+
+def _norm_words(text: str) -> set[str]:
+    cleaned = re.sub(r"[^\w\s]", " ", (text or "").lower().replace("'", ""))
+    return {w for w in cleaned.split() if w}
+
+
+def _is_non_answer(answer: str | None) -> bool:
+    text = " ".join(sorted(_norm_words(answer or "")))
+    plain = re.sub(r"[^\w\s]", "", (answer or "").lower().replace("'", "")).strip()
+    return not plain or plain in _NON_ANSWERS or text in {" ".join(sorted(_norm_words(n))) for n in _NON_ANSWERS}
+
+
+# A question that asks the CLIENT for a legal conclusion (2026-10-19, measured:
+# "Which fundamental right ... do you allege is being violated?", "Which
+# government authority would you approach to enforce your claimed right?",
+# "Is there a clause ... that expressly grants you a right of pre-emption?").
+# The prompt forbids these; this check makes it hold whatever the model does.
+_LEGAL_CONCLUSION = re.compile(
+    r"fundamental\s+right"
+    r"|\bwhich\s+(?:specific\s+)?(?:law|laws|section|sections|article|act|ordinance|provision|statute|legal)\b"
+    # A court or office is a fact when it already happened ("which court did
+    # they file in?") and a legal conclusion when the client must choose one.
+    r"|\bwhich\s+(?:\w+\s+){0,2}(?:court|forum|tribunal|authority|office)\b[^?]*\b(?:should|would|could|can)\s+you\b"
+    r"|\bunder\s+which\b"
+    # "... classified as agricultural land under the Punjab Land Revenue Act?"
+    r"|\bunder\s+(?:the\s+)?(?:[\w-]+\s+){0,6}(?:act|ordinance|code|constitution|rules)\b"
+    r"|\bwhat\s+(?:legal|statutory)\s+(?:basis|ground|grounds|remedy|provision|right)\b"
+    r"|\bwould\s+you\s+approach\b"
+    r"|\b(?:allege|contend)\b"
+    r"|\bcause\s+of\s+action\b"
+    r"|\blegally\s+(?:valid|entitled|binding)\b"
+    r"|\b(?:grants?|granted|gives?|gave|given|confers?|conferred)\s+you\s+(?:a|an|the|any)?\s*(?:legal\s+)?right\b"
+    r"|\bjurisdiction\b"
+    # "... a document confirming your right of pre-emption?" -- whether a right
+    # exists is the legal question; a document does not create a statutory one.
+    r"|\b(?:confirm\w*|prov(?:e|es|ing)|show\w*|establish\w*|grant\w*|gave|giv\w+|confer\w*)\b[^?]{0,25}?\b(?:your|you\s+(?:have|hold)\s+(?:a|an|the|any))\s+(?:legal\s+)?right\b"
+    r"|\b(?:document|paper|papers|agreement|letter|evidence|proof|record|deed)\b[^?]{0,60}?\b(?:your|you\s+(?:have|hold)\s+(?:a|an|the|any))\s+(?:legal\s+)?right\b"
+    # "... evidence that confirms you have a right of pre-emption ...?"
+    r"|\b(?:confirms?|proves?|shows?|establish(?:es)?)\s+(?:that\s+)?you\s+(?:have|hold|are\s+entitled\s+to)\s+(?:a|an|the|any)?\s*(?:legal\s+)?right\b"
+    r"|بنیادی\s*حق|کون\s*سی\s*دفعہ|کس\s*قانون|کس\s*عدالت|کون\s*سا\s*آرٹیکل",
+    re.IGNORECASE)
+
+
+def _asks_for_legal_conclusion(question: str) -> bool:
+    return bool(_LEGAL_CONCLUSION.search(question or ""))
+
+
+def _repeats_a_question(question: str, qa_list: list) -> bool:
+    """True when `question` mostly re-asks one already asked (word overlap)."""
+    new = _norm_words(question)
+    if not new:
+        return False
+    new_content = new - _STOP_WORDS
+    for qa in qa_list:
+        old = _norm_words(qa.get("q") or "")
+        if old and len(new & old) / len(new | old) >= _REPEAT_OVERLAP:
+            return True
+        # A shorter restatement (2026-10-19, measured: "Is Mr. Tariq Javed a
+        # farmer/agriculturist?" right after a longer question asking exactly
+        # that scored 0.52 above): nearly all of its content words are in the
+        # earlier question.
+        old_content = old - _STOP_WORDS
+        small, big = sorted((new_content, old_content), key=len)
+        # Only a clearly SHORTER restatement: two questions about the same long
+        # object ("the sale deed Rashid signed ...") differ by one word -- copy
+        # vs date -- and are different questions.
+        if (len(small) >= 5 and len(small) <= 0.75 * len(big)
+                and len(new_content & old_content) / len(small) >= _REPEAT_CONTAINED):
+            return True
+        # The client already said they do not know (prompt rule 5): the same
+        # topic in other words is a repeat at a lower bar (2026-10-19, measured:
+        # "a copy of the sale deed ..." asked again right after "I don't know").
+        if (_is_non_answer(qa.get("a")) and qa.get("a") is not None and len(small) >= 5
+                and len(new_content & old_content) / len(small) >= _REPEAT_AFTER_NON_ANSWER):
+            return True
+    return False
+
+
+# SAME QUESTION, DIFFERENT WORDS. Word overlap misses a rephrasing ("How much
+# money did your landlord receive…" / "What is the approximate amount you
+# paid…": overlap 0.36). The retrieval embedder does not: measured, re-asks
+# scored 0.96-0.98 and genuinely different questions at most 0.92 (EN + UR).
+_SAME_QUESTION = 0.95
+
+
+def _question_vectors(texts: list[str]):
+    """Embeddings for `texts`, or None when the embedder is not loaded yet.
+
+    Never loads it: that is ~1 GB and tens of seconds, and it must not happen
+    inside a clarification call. Startup warmup loads it (main.py).
+    """
+    from app.ai.pipelines.retriever import _embeddings
+    info = getattr(_embeddings, "cache_info", None)
+    if info is None or info().currsize == 0:
+        return None
+    model = _embeddings()
+    return [model.embed_query(t) for t in texts]
+
+
+async def _means_the_same(question: str, qa_list: list) -> bool:
+    """True when `question` re-asks an earlier one in other words. Fails open."""
+    previous = [qa.get("q") for qa in qa_list if qa.get("q")]
+    if not previous:
+        return False
+    try:
+        vectors = await asyncio.to_thread(_question_vectors, [question, *previous])
+    except Exception:  # noqa: BLE001 -- a check that cannot run must not block the client
+        logger.warning("intake clarification: similarity check unavailable", exc_info=True)
+        return False
+    if not vectors:
+        return False
+
+    def unit(v):
+        norm = sum(x * x for x in v) ** 0.5 or 1.0
+        return [x / norm for x in v]
+    new = unit(vectors[0])
+    return any(sum(a * b for a, b in zip(new, unit(v))) >= _SAME_QUESTION for v in vectors[1:])
+
+
+_FACT_KEY_LINE = re.compile(r"^\s*FACT[_ ]KEY\s*:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
+
+
+def _split_fact_key(text: str) -> "tuple[str, str | None]":
+    """(question, validated fact key or None). The key line is model output:
+    trusted only if it is a plain snake_case identifier."""
+    from app.ai.intake_understanding import valid_fact_key
+    m = _FACT_KEY_LINE.search(text or "")
+    if not m:
+        return (text or "").strip(), None
+    question = _FACT_KEY_LINE.sub("", text).strip()
+    return question, valid_fact_key(m.group(1))
+
+
 _LANGUAGE_RULES = {
     "en": "Write the question in English only.",
-    "ur": "Write the question in Urdu only, in Urdu script (not Roman Urdu).",
+    "ur": ("Write the question in Urdu only, in Urdu script (not Roman Urdu). Use plain, "
+           "standard Urdu words; do not copy the user's misspellings or garbled "
+           "transcription (e.g. write مالک مکان for a landlord)."),
 }
 _URDU_SCRIPT = re.compile(r"[؀-ۿ]")
 _LATIN = re.compile(r"[A-Za-z]")
@@ -247,6 +430,8 @@ async def get_clarification(
         case_type = best_type.value if best_score >= 0.20 else step2.get("case_type", "civil")
     else:
         case_type = step2.get("case_type", "civil")
+    if case_type == "constitutional" and not _STATE_ACTOR.search(desc or ""):
+        case_type = "civil"
 
     # AN ANSWER WITH NO QUESTION TO ANSWER IS A RE-SEND, NOT A NEW ROUND.
     #
@@ -288,6 +473,12 @@ async def get_clarification(
         await _save_clarification_or_conflict(token, qa_list)
         return {"question": None, "done": True, "round": answered_rounds}
 
+    # Two "I don't know"s in a row: more questions will not help this client.
+    answers = [qa.get("a") for qa in qa_list if qa.get("a")]
+    if len(answers) >= 2 and all(_is_non_answer(a) for a in answers[-2:]):
+        await _save_clarification_or_conflict(token, qa_list)
+        return {"question": None, "done": True, "round": answered_rounds}
+
     # Build context for LLM
     prev_qa_text = "\n".join(
         f"Q{i+1}: {qa['q']}\nA{i+1}: {qa.get('a') or '(no answer)'}"
@@ -295,7 +486,14 @@ async def get_clarification(
     )
     template = _CLARIFY_TEMPLATES.get(case_type, "")
 
+    # Who is answering (2026-10-19, measured: a plaintiff in a pre-emption claim
+    # was asked "Did you register the sale deed?" -- the BUYER registered it).
+    party_role = (intake.get("step1") or {}).get("party_role")
+    who = (f"The person answering is the {party_role}. Ask about what THEY did, saw or hold; "
+           "never ask them about something another person in the story did as if they did it.\n"
+           if party_role else "")
     user_msg = (
+        f"{who}"
         f"Case type: {case_type}\n"
         f"Province: {province}\n"
         f"Description: {desc}\n"
@@ -311,7 +509,7 @@ async def get_clarification(
         messages = [{"role": "system", "content": system},
                     {"role": "user",   "content": user_msg}]
         response = await asyncio.to_thread(llm.invoke, messages)
-        text = response.content.strip()
+        text, fact_key = _split_fact_key(response.content.strip())
         # The rule is an instruction, and a model can still drift. One retry
         # with the rule restated; after that the question is used as it is,
         # because no question at all costs the client more than a mixed one.
@@ -335,15 +533,74 @@ async def get_clarification(
         # through is still right; doing it without a trace is not.
         logger.exception("Intake clarification failed — proceeding without a question")
         await _save_clarification_or_conflict(token, qa_list)
-        return {"question": None, "done": True, "round": answered_rounds}
+        return {"question": None, "done": True, "round": answered_rounds, "ai_unavailable": True}
+
+    if not text:
+        # An empty reply is not a question; stored, it became a blank Q the
+        # next answer was bound to. Same outcome as a provider failure.
+        logger.warning("Intake clarification returned an empty reply — proceeding without a question")
+        await _save_clarification_or_conflict(token, qa_list)
+        return {"question": None, "done": True, "round": answered_rounds, "ai_unavailable": True}
 
     if text.upper().startswith("DONE"):
         await _save_clarification_or_conflict(token, qa_list)
         return {"question": None, "done": True, "round": answered_rounds}
 
-    # New question
+    async def _repeated(q: str) -> bool:
+        return _repeats_a_question(q, qa_list) or await _means_the_same(q, qa_list)
+
+    # Every candidate -- the first reply AND every rewrite -- passes both checks.
+    # A question that asks the client for a legal conclusion gets up to two
+    # rewrites (measured 2026-10-19: the model kept coming back to "a document
+    # confirming your right of pre-emption"); a re-asked question gets one
+    # (2026-10-12: stopping at the first repeat ended an intake after ONE
+    # question). Neither kind is ever shown: no question beats an unanswerable
+    # or repeated one, and the client goes on to the analysis.
+    legal_left, repeat_left = 2, 1
+    accepted = False
+    while True:
+        if not text or text.upper().startswith("DONE"):
+            await _save_clarification_or_conflict(token, qa_list)
+            return {"question": None, "done": True, "round": answered_rounds}
+        if _asks_for_legal_conclusion(text):
+            if not legal_left:
+                break
+            legal_left -= 1
+            logger.info("intake clarification asked for a legal conclusion - asking for a fact instead")
+            ask = ("That asks the person to name, prove or decide a law, right, court or authority, "
+                   "which is the lawyer's job. Ask ONE plain question about a FACT they know from "
+                   "their own life (what happened, when, who, what they paid, signed, sent or hold), "
+                   "or reply exactly DONE. ")
+        elif await _repeated(text):
+            if not repeat_left:
+                break
+            repeat_left -= 1
+            logger.info("intake clarification repeated an earlier question - asking for a different one")
+            ask = ("That question was already asked, or means the same as one already asked. "
+                   "Ask ONE question about a DIFFERENT missing fact, or reply exactly DONE. ")
+        else:
+            accepted = True
+            break
+        try:
+            retry = await asyncio.to_thread(llm.invoke, messages + [
+                {"role": "assistant", "content": text},
+                {"role": "user", "content": ask + _LANGUAGE_RULES[lang]},
+            ])
+            text, retry_key = _split_fact_key((retry.content or "").strip())
+            fact_key = retry_key or fact_key
+        except Exception:  # noqa: BLE001 -- no new question: the client goes on
+            logger.warning("intake clarification rewrite failed - finishing", exc_info=True)
+            text = "DONE"
+    if not accepted:
+        await _save_clarification_or_conflict(token, qa_list)
+        return {"question": None, "done": True, "round": answered_rounds}
+
+    # New question, with a stable id and (when the model gave a valid one) the
+    # fact it asks about -- so the answer can become a structured fact.
+    text, retry_key = _split_fact_key(text)
     next_round = answered_rounds + 1
-    qa_list.append({"q": text, "a": None})
+    qa_list.append({"q": text, "a": None, "question_id": f"q{len(qa_list) + 1}",
+                    "fact_key": fact_key or retry_key})
     await _save_clarification_or_conflict(token, qa_list)
     return {"question": text, "done": False, "round": next_round}
 
@@ -522,6 +779,9 @@ async def _convert_claimed_intake(
     """The conversion itself. Only ever runs under a held claim."""
     step1 = intake.get("step1") or {}
     step2 = intake.get("step2") or {}
+    # The language pinned at step 2 is authoritative; the request's is the
+    # fallback for intakes saved before it existed.
+    language = step2.get("output_language") or language
     step3 = intake.get("step3") or {}
     step4 = intake.get("step4") or {}
     step5 = intake.get("step5") or {}
@@ -576,13 +836,22 @@ async def _convert_claimed_intake(
     user_case_type   = step2.get("case_type", "civil")
     ai_case_type, type_corrected = await _ai_classify_case_type(base_description, user_case_type)
 
-    # Enrich description with clarification Q&A for AI analysis (after classification)
-    qa_list  = intake.get("clarification_qa") or []
-    answered = [qa for qa in qa_list if qa.get("a")]
-    sections = [base_description]
-    if answered:
-        qa_text = "\n".join(f"Q: {qa['q']}\nA: {qa['a']}" for qa in answered)
-        sections.append(f"Additional context from intake:\n{qa_text}")
+    # STRUCTURED, NOT "Q: … / A: …" (Batch 2, 2026-10-12). The answers become
+    # a fact ledger: confirmed, NEGATED and unknown kept apart, each tied to
+    # its question. Raw Q/A text let "Q: Is there a written contract? A: No"
+    # put contract vocabulary into retrieval and let the model read a question
+    # as a fact; "I don't know" seeded an analysis about a contract the client
+    # never mentioned.
+    understanding = build_understanding(
+        story=base_description,
+        clarification_qa=intake.get("clarification_qa") or [],
+        jurisdiction=step1.get("province") or "",
+        desired_outcome=step5.get("desired_outcome") or "",
+        party_role=step1.get("party_role") or "",
+        language=language or "",
+        evidence_files=intake.get("evidence_files") or [],
+    )
+    sections = [base_description, *ledger_sections(understanding)]
 
     # Steps 4 and 5 were collected, stored, and then read by nothing: the
     # analysis ran on step 3 alone. What the client wants out of the matter,
@@ -719,11 +988,26 @@ async def _convert_claimed_intake(
         client_id=client_id,
         evidence_text=evidence_text,
         evidence_status=evidence_status,
+        # Retrieval reads the client's own words; statute affinity reads the
+        # story only (never AI-authored question text).
+        retrieval_query=_understanding_retrieval_text(understanding),
+        user_text=base_description,
     )
+    if isinstance(ai_data, dict):
+        ai_data["intake_understanding"] = understanding
+        # Before saving: a check computed after the write is never stored.
+        if ai_data.get("grounding_status") not in _RETRYABLE:
+            ai_data["input_fact_fidelity"] = _fact_fidelity(ai_data, understanding, evidence_text)
     if not await intake_repo.save_ai_structured_case(
         token, ai_data, conversion_owner
     ):
         raise ConflictError("Intake conversion ownership was lost")
+
+    # A FAILED analysis is a status, not a summary (2026-10-12). Its placeholder
+    # sentence used to land in `ai_summary`, where the lawyer's case context
+    # read it as the AI's account of the matter. Now the case says
+    # `analysis_status: failed`, keeps no summary, and the client can retry.
+    analysis_failed = (ai_data or {}).get("grounding_status") in _RETRYABLE
 
     # Sync AI summary + verified type to case document so lawyer matching can use it
     if ai_data and ai_data.get("summary"):
@@ -734,7 +1018,13 @@ async def _convert_claimed_intake(
             {"_id": case_id, "intake_conversion_owner": conversion_owner,
              "intake_conversion_epoch": conversion_epoch},
             {"$set": {
-                "ai_summary": ai_data.get("summary"),
+                "ai_summary": None if analysis_failed else _case_summary(ai_data),
+                # Batch 7: this summary went through the CPC jurisdiction step,
+                # so a later read does not treat it as a legacy summary.
+                "ai_summary_cpc_checked": _cpc_version(),
+                "analysis_status": ("retrieval_failed" if (ai_data or {}).get("grounding_status") == "retrieval_error"
+                                    else "failed" if analysis_failed else "done"),
+                **({} if analysis_failed else _localized_case_fields(ai_data)),
                 "case_type":  ai_case_type,
                 # Written in the SAME guarded update as the summary it qualifies.
                 # A separate write could land without it — and a summary that
@@ -792,6 +1082,235 @@ async def _convert_claimed_intake(
     }
 
 
+# How long one analysis retry holds its claim; same sizing as a conversion.
+_ANALYSIS_RETRY_TTL = timedelta(minutes=10)
+
+
+async def retry_analysis(token: str, client_id: str, language: str = "en") -> dict:
+    """Run the AI analysis again for a converted intake whose analysis FAILED.
+
+    Only the failed case of the client's own intake, and only while that case
+    is still a draft (once confirmed it is in a lawyer's hands). One retry at a
+    time: an atomic claim on the intake, released however the retry ends. A
+    retry that fails again changes nothing and says so; one that succeeds
+    replaces the placeholder on the intake and gives the case its summary.
+    """
+    intake = await intake_repo.find_by_token(token)
+    if not intake or intake.get("client_id") != client_id:
+        raise NotFoundError("Intake session")
+    case_id = intake.get("case_id")
+    if not intake.get("completed") or not case_id:
+        raise ConflictError("This intake has not produced a case yet.")
+    if (intake.get("ai_structured_case") or {}).get("grounding_status") not in _RETRYABLE:
+        # Already analysed (a retry whose response was lost): nothing to redo.
+        return {"analysis_status": "done"}
+    case = await case_repo.find_by_id(case_id)
+    if not case or case.get("client_id") != client_id:
+        raise NotFoundError("Case")
+    if case.get("status") != CaseStatus.DRAFT.value:
+        raise ConflictError("This case is already open, so its analysis can no longer be re-run here.")
+
+    # The language chosen at conversion wins over this request's, so a retry
+    # (or a refresh in another app language) cannot switch it.
+    language = (intake.get("ai_structured_case") or {}).get("output_language") or _output_language(language)
+
+    owner = secrets.token_urlsafe(16)
+    if not await intake_repo.claim_analysis_retry(token, owner, _ANALYSIS_RETRY_TTL):
+        raise ConflictError("The analysis is already being retried — please wait.")
+    try:
+        evidence_text, evidence_status = await _extract_intake_evidence(
+            intake.get("evidence_files") or [],
+            owner_id=client_id,
+            session_id=token,
+            resume_ocr_state=list(intake.get("evidence_review_state") or []),
+        )
+        story = ((intake.get("step3") or {}).get("incident_description") or "").strip()
+        understanding = build_understanding(
+            story=story or (case.get("description") or ""),
+            clarification_qa=intake.get("clarification_qa") or [],
+            jurisdiction=(intake.get("step1") or {}).get("province") or case.get("province") or "",
+            desired_outcome=(intake.get("step5") or {}).get("desired_outcome") or "",
+            party_role=(intake.get("step1") or {}).get("party_role") or "",
+            language=language or "",
+            evidence_files=intake.get("evidence_files") or [],
+        )
+        ai_data = await _run_intake_ai(
+            query=case.get("description") or "",
+            case_type=case.get("case_type") or "civil",
+            province=case.get("province") or "federal",
+            session_id=token,
+            case_id=case_id,
+            language=language,
+            urgency=case.get("urgency") or "medium",
+            client_id=client_id,
+            evidence_text=evidence_text,
+            evidence_status=evidence_status,
+            retrieval_query=_understanding_retrieval_text(understanding),
+            user_text=story or None,
+        )
+        if isinstance(ai_data, dict):
+            ai_data["intake_understanding"] = understanding
+        if ai_data.get("grounding_status") in _RETRYABLE:
+            return {"analysis_status": "failed"}
+        ai_data["input_fact_fidelity"] = _fact_fidelity(ai_data, understanding, evidence_text)
+        if not await intake_repo.finish_analysis_retry(token, owner, ai_data):
+            raise ConflictError("The analysis retry lost its claim — reload and try again.")
+        await case_repo.update_one(
+            {"_id": case_id, "status": CaseStatus.DRAFT.value},
+            {"$set": {
+                "ai_summary": _case_summary(ai_data),
+                # Batch 7: this summary went through the CPC jurisdiction step,
+                # so a later read does not treat it as a legacy summary.
+                "ai_summary_cpc_checked": _cpc_version(),
+                "analysis_status": "done",
+                **_localized_case_fields(ai_data),
+                "ai_evidence_coverage": snapshot_from_statuses(
+                    evidence_status,
+                    uploaded_count=len(intake.get("evidence_files") or []),
+                ),
+            }},
+        )
+        return {"analysis_status": "done"}
+    finally:
+        await intake_repo.release_analysis_retry(token, owner)
+
+
+_GROUNDED_GATE = ("supported", "partially_supported")
+# Statuses after which "Retry analysis" may run: the analysis did not happen
+# (pipeline failure) or the law library could not be searched.
+_RETRYABLE = ("pipeline_failed", "retrieval_error")
+
+
+def _output_language(language: str | None) -> str:
+    return language if language in ("en", "ur") else "en"
+
+
+async def _with_localization(analysis: dict, language: str | None) -> dict:
+    """Attach the client-facing rendering of a FINISHED analysis.
+
+    The analysis itself stays canonical English: it was judged against English
+    law sections and it is what the audit record and the lawyer's AI context
+    read. For an Urdu client a controlled Urdu rendering is added beside it
+    (see ai/intake_localization.py); a failed rendering is recorded as such and
+    the client is shown the English original.
+    """
+    lang = _output_language(language)
+    analysis["output_language"] = lang
+    if lang != "en":
+        analysis["localized"] = {lang: await _render(analysis, lang)}
+    analysis["localization_state"] = localization_state(analysis)
+    return analysis
+
+
+# A rendering that has not finished in this time is a failure (the English
+# analysis is complete and safe; the client is not kept waiting on a
+# translation). The worker thread is abandoned, its result discarded.
+_LOCALIZATION_TIMEOUT_S = 60.0
+# Shown to an Urdu client when the Urdu rendering could not be verified. Fixed
+# text, never model output.
+URDU_FALLBACK_NOTICE = ("ترجمے کی تصدیق نہیں ہو سکی، اس لیے یہ تجزیہ فی الحال انگریزی میں دکھایا جا رہا ہے۔ "
+                        "قانونی مواد میں کوئی تبدیلی نہیں کی گئی۔")
+
+
+async def _render(analysis: dict, lang: str) -> dict:
+    from app.ai.intake_localization import FAIL_TIMEOUT, localize
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(localize, analysis, lang), _LOCALIZATION_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        logger.warning("intake localization to %s timed out", lang)
+        return {"language": lang, "status": "failed", "reason": FAIL_TIMEOUT,
+                "detail": f"no rendering within {_LOCALIZATION_TIMEOUT_S:.0f}s"}
+
+
+def localization_state(analysis: dict) -> dict:
+    """Machine-readable: what was requested, what the client is shown, why.
+
+    A failed Urdu rendering is never presented as Urdu: the client sees the
+    guarded English analysis in full (no half-translated mix) with a fixed
+    Urdu notice, and the requested language stays recorded for a retry.
+    """
+    requested = analysis.get("output_language") or "en"
+    if requested == "en":
+        return {"requested": "en", "rendered": "en", "status": "not_needed"}
+    loc = (analysis.get("localized") or {}).get(requested) or {}
+    if loc.get("status") == "ok":
+        return {"requested": requested, "rendered": requested, "status": "rendered"}
+    return {"requested": requested, "rendered": "en", "status": "fallback_english",
+            "reason": loc.get("reason") or "unknown", "notice": URDU_FALLBACK_NOTICE,
+            "retry": "localization_only"}
+
+
+async def retry_localization(analysis: dict) -> dict:
+    """Re-render a finished analysis in its requested language ONLY -- no
+    retrieval, no analysis, no citation change. For a fallback_english state."""
+    requested = analysis.get("output_language") or "en"
+    if requested == "en" or (analysis.get("localization_state") or {}).get("status") == "rendered":
+        return analysis
+    analysis.setdefault("localized", {})[requested] = await _render(analysis, requested)
+    analysis["localization_state"] = localization_state(analysis)
+    return analysis
+
+
+def _cpc_version() -> str:
+    from app.ai.source_currency import INTAKE_CPC_VERSION
+    return INTAKE_CPC_VERSION
+
+
+def _case_summary(ai_data: dict) -> str | None:
+    """The lawyer-facing `ai_summary`: the summary with its CPC jurisdiction
+    notice, so the caveat travels into the case and the drafter's context."""
+    from app.ai.source_currency import case_summary_with_notice
+    return case_summary_with_notice(ai_data)
+
+
+def _jurisdiction_view(analysis: dict | None, province: str | None) -> dict | None:
+    """A stored analysis as it may be SHOWN: the CPC jurisdiction step applied
+    to a COPY (analyses saved before batch 6 are corrected on screen; the
+    stored record is never rewritten)."""
+    if not isinstance(analysis, dict) or not analysis:
+        return analysis
+    import copy
+    from app.ai.source_currency import apply_intake_cpc
+    try:
+        return apply_intake_cpc(copy.deepcopy(analysis), province, basis="case_record")
+    except Exception:  # noqa: BLE001 -- never break reading a case over a display step
+        logger.exception("intake: jurisdiction view failed")
+        return analysis
+
+
+def _fidelity_sources(ai_data: dict, evidence_text: str = "") -> list[str]:
+    """Sources besides the client's words that a number may come from: the
+    uploaded evidence, the bound law citations (an instrument's year), and the
+    deterministic currency notice built from the omission record. All are
+    system-provenanced, never model text."""
+    cites = " ".join(f"{c.get('statute', '')} {c.get('section', '')}"
+                     for c in ai_data.get("law_citations") or [])
+    return [evidence_text or "", cites, str(ai_data.get("currency_notice") or "")]
+
+
+def _fact_fidelity(ai_data: dict, understanding: dict, evidence_text: str = "") -> dict:
+    """Input fact fidelity of the canonical analysis (Batch 6A). Never raises."""
+    try:
+        from app.ai.fact_fidelity import check
+        return check(summary=str(ai_data.get("summary") or ""),
+                     actions=[str(a) for a in ai_data.get("recommended_actions") or []],
+                     understanding=understanding, extra_sources=_fidelity_sources(ai_data, evidence_text))
+    except Exception:  # noqa: BLE001 -- unchecked, never "consistent"
+        logger.warning("intake: fact fidelity check failed", exc_info=True)
+        from app.ai.fact_fidelity import FIDELITY_VERSION
+        return {"version": FIDELITY_VERSION, "status": "unchecked", "issues": []}
+
+
+def _localized_case_fields(ai_data: dict) -> dict:
+    """The case's client-facing Urdu fields, only from a successful rendering."""
+    out: dict = {}
+    for lang, loc in ((ai_data or {}).get("localized") or {}).items():
+        if (loc or {}).get("status") == "ok":
+            out[f"ai_summary_localized.{lang}"] = loc.get("summary")
+            out[f"ai_actions_localized.{lang}"] = list(loc.get("recommended_actions") or [])
+    return out
+
+
 async def _run_intake_ai(
     query: str,
     case_type: str,
@@ -803,8 +1322,23 @@ async def _run_intake_ai(
     client_id: str = "",
     evidence_text: str = "",
     evidence_status: list[dict] | None = None,
+    retrieval_query: str | None = None,
+    user_text: str | None = None,
 ) -> dict:
     from app.ai.graph.supervisor import intake_graph
+    from app.ai.nodes.intake_evidence_gate_node import scope_issues, strip_unsupported
+
+    # ISSUE BINDING (2026-10-13 acceptance review). A story that also asks for
+    # something the corpus cannot give (a live rate, a court statistic, a
+    # personal record) is split into issues, and retrieval runs on the
+    # answerable issue ONLY. The gate grants "partially_supported" solely on
+    # this binding; without it a mixed request is analysed on facts alone.
+    scope = scope_issues(user_text or query)
+    issue_scope = None
+    if scope["unsupported"] and not scope["pure"] and not scope["missing_instruments"]:
+        retrieval_query = strip_unsupported(retrieval_query or scope["supported_text"], scope) \
+            or scope["supported_text"]
+        issue_scope = {**scope, "retrieval_bound": True}
 
     state = {
         "query":                  query,
@@ -864,6 +1398,16 @@ async def _run_intake_ai(
         "clarification_attempts": 0,
         "convergence_status":     "pending",
         "messages":               [],
+        # Intake channels (Batch 2/3): what the retriever searches with, and
+        # the client's own words for named-statute affinity. Chat leaves these
+        # unset and keeps its behaviour.
+        "retrieval_query_supplement": retrieval_query or None,
+        "user_text":              user_text or None,
+        "issue_scope":            issue_scope,
+        # Intake evidence policy (Batch 4): no forced weak chunks, no ungraded
+        # tail reaching generation.
+        "retrieval_policy":       {"purpose": "intake", "min_chunks": 0, "include_ungraded": False,
+                                   "case_law": False},
     }
 
     # Minted BEFORE the graph runs, and stored on the analysis. A provenance
@@ -897,10 +1441,36 @@ async def _run_intake_ai(
         ]
         analysis["provenance_request_id"] = request_id
         analysis["evidence_extraction"] = evidence_status or []
+        analysis["retrieval_trace"] = result.get("retrieval_trace") or []
+        analysis["uncited_legal_actions"] = result.get("uncited_legal_actions") or []
+        # THE EVIDENCE GATE'S VERDICT IS THE ANALYSIS'S STATUS when no
+        # admissible law was found (Batch 4): the client sees why, the case
+        # carries no law and no risk reading, and a retrieval FAILURE is kept
+        # apart from "no relevant law" so it can be retried.
+        gate = result.get("evidence_gate") or {}
+        analysis["evidence_gate"] = gate
+        if gate and gate.get("status") not in _GROUNDED_GATE:
+            analysis["grounding_status"] = gate["status"]
+            analysis["grounded"] = False
+            analysis["risk_level"] = None
+            analysis["law_citations"] = []
+            analysis["applicable_laws"] = []
+
+        # THE OUTPUT CONTRACT (2026-10-13): unsupported / unbound / dead-law
+        # legal steps are removed here, once, before anything is recorded,
+        # localised, stored or returned -- so all four see the same analysis.
+        from app.ai.intake_output_guard import enforce
+        enforce(analysis, story=user_text or query)
+        # The Punjab-only CPC (ai/source_currency.py, batch 6): outside a
+        # confirmed-Punjab matter it is not shown as the law that applies. The
+        # province here is the client's step-1 choice or the stored case's --
+        # never inferred -- so "punjab" is confirmed and anything else is not.
+        from app.ai.source_currency import apply_intake_cpc
+        apply_intake_cpc(analysis, province, basis="case_record")
 
         await _record_intake_provenance(
             result, analysis, session_id, client_id, request_id)
-        return analysis
+        return await _with_localization(analysis, language)
     except Exception:
         logger.exception("Intake analysis pipeline failed for session %s", session_id)
         return {
@@ -919,6 +1489,8 @@ async def _run_intake_ai(
             "evidence_chunk_ids":  [],
             "provenance_request_id": request_id,
             "evidence_extraction": evidence_status or [],
+            # Kept so a retry analyses AND renders in the language chosen now.
+            "output_language":     _output_language(language),
         }
 
 
@@ -1874,6 +2446,7 @@ async def get_intake(token: str, client_id: str) -> dict:
     # was produced, the case itself records whether the client confirmed it.
     case_status = None
     case_type = None
+    case = None
     ai_case_type = intake.get("ai_case_type")
     if intake.get("case_id"):
         case = await case_repo.find_by_id(intake["case_id"])
@@ -1888,7 +2461,10 @@ async def get_intake(token: str, client_id: str) -> dict:
         "case_status":       case_status,
         "case_type":         case_type,
         "ai_case_type":      ai_case_type,
-        "ai_structured_case": intake.get("ai_structured_case"),
+        # Shown through the CPC jurisdiction step (a copy; batch 6).
+        "ai_structured_case": _jurisdiction_view(
+            intake.get("ai_structured_case"),
+            (intake.get("step1") or {}).get("province") or (case or {}).get("province")),
         "steps":             steps,
         "clarification_qa":  list(intake.get("clarification_qa") or []),
         # The extraction record lives on the analysis, because that is the run

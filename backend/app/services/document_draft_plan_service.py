@@ -139,6 +139,13 @@ _TYPE_ALIASES: dict[str, tuple[str, ...]] = {
 }
 
 
+# When no named template fits the description, the AI writes the document
+# itself (2026-10-19, the user's choice) -- see services/general_draft.py. It
+# asks no questions: the description is the whole input, and every fact the
+# client did not give becomes a [placeholder] in the text.
+GENERAL = "general_document"
+
+
 def supported_template_types() -> tuple[str, ...]:
     """Templates prompt extraction genuinely supports, never aspirational ones."""
     return tuple(sorted(
@@ -261,6 +268,8 @@ def _essential_fields(template_type: str) -> tuple[str, ...]:
 
 
 def questions_for(template_type: str | None, fields: dict | None) -> tuple[list[dict], int]:
+    if template_type == GENERAL:
+        return [], 0
     if not template_type:
         return ([{
             "id": "template_type",
@@ -354,7 +363,8 @@ async def create_plan(*, owner_id: str, prompt: str,
         raise AppValidationError("The drafting description is too long.")
     await _require_case(owner_id, case_id)
 
-    chosen = _require_supported(template_type) if template_type else infer_template_type(prompt)
+    chosen = (_require_supported(template_type) if template_type
+              else infer_template_type(prompt) or GENERAL)
     fingerprint = canonical_body_hash({
         "prompt": prompt, "template_type": chosen, "title": title,
         "case_id": case_id,
@@ -372,7 +382,7 @@ async def create_plan(*, owner_id: str, prompt: str,
     fields: dict = {}
     extraction_status = "not_run"
     extraction_notes: list[dict] = []
-    if chosen:
+    if chosen and chosen != GENERAL:
         fields, extraction_status, extraction_notes = await _extract(prompt, chosen)
 
     now = _now()
@@ -383,7 +393,8 @@ async def create_plan(*, owner_id: str, prompt: str,
         "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
         "template_type": chosen,
         "title": (title or "").strip() or (
-            f"{template_registry.label_for(chosen)} draft" if chosen
+            " ".join(prompt.split())[:90] if chosen == GENERAL
+            else f"{template_registry.label_for(chosen)} draft" if chosen
             else "Untitled legal draft"),
         "case_id": case_id,
         "fields": fields,
@@ -452,6 +463,9 @@ async def answer_plan(*, owner_id: str, plan_id: str, expected_version: int,
             plan.get("prompt") or "", chosen)
 
     submitted_fields = {k: v for k, v in answers.items() if k != "template_type"}
+    if chosen == GENERAL and submitted_fields:
+        raise AppValidationError(
+            "This document is written from your description. Change the description instead.")
     unknown = set(submitted_fields) - template_registry.fields_for(chosen)
     if unknown:
         raise AppValidationError(
@@ -497,7 +511,8 @@ async def confirm_plan(*, owner_id: str, plan_id: str,
     if questions and not skip_missing:
         raise AppValidationError(
             "Answer the displayed questions, or explicitly skip missing details.")
-    if not any(not _blank(v) for v in (plan.get("fields") or {}).values()):
+    if (template_type != GENERAL
+            and not any(not _blank(v) for v in (plan.get("fields") or {}).values())):
         raise AppValidationError(
             "The plan has no document details. Add at least one answer before confirming.")
 
@@ -557,6 +572,46 @@ async def _reclaim_generation(plan: dict, owner_id: str, idempotency_key: str) -
     return reclaimed
 
 
+async def _write_general(plan: dict, owner_id: str, idempotency_key: str) -> dict:
+    """The AI writes the document text, and it is kept ON THE PLAN before any
+    document exists: a retry after a later failure reuses it instead of paying
+    for (and getting a different) second draft. A failed write marks the plan
+    failed, like a failed render, so the client can retry with a new key."""
+    from app.services import general_draft
+
+    col = get_document_draft_plans_col()
+    case = None
+    if plan.get("case_id"):
+        case = await CaseRepository().find_by_id(plan["case_id"])
+    try:
+        written = await general_draft.write(plan.get("prompt") or "", case=case)
+    except Exception:
+        await col.find_one_and_update(
+            {"_id": plan["_id"], "owner_id": owner_id, "status": "generating",
+             "generation_idempotency_key": idempotency_key},
+            {"$set": {"status": "generation_failed",
+                      "failed_generation_key": idempotency_key,
+                      "generation_error": "draft_failed",
+                      "updated_at": _now()},
+             "$unset": {"generation_idempotency_key": ""},
+             "$inc": {"version": 1}},
+        )
+        raise
+    saved = await col.find_one_and_update(
+        {"_id": plan["_id"], "owner_id": owner_id, "status": "generating",
+         "generation_idempotency_key": idempotency_key},
+        {"$set": {"fields": {"body_html": written["body_html"], "title": written["title"]},
+                  "title": written["title"],
+                  "draft_withheld": written["withheld"],
+                  "updated_at": _now()}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if not saved:
+        raise ServiceUnavailableError(
+            "The draft was written but its plan could not be updated. Retry with the same key.")
+    return saved
+
+
 async def generate_plan(*, owner_id: str, plan_id: str,
                         expected_version: int,
                         idempotency_key: str) -> dict:
@@ -605,6 +660,8 @@ async def generate_plan(*, owner_id: str, plan_id: str,
         raise ConflictError("Confirm the draft plan before generating it.")
 
     template_type = plan["template_type"]
+    if template_type == GENERAL and not (plan.get("fields") or {}).get("body_html"):
+        plan = await _write_general(plan, owner_id, idempotency_key)
     document_id = (plan.get("generation") or {}).get("document_id")
     if document_id:
         document = await get_documents_col().find_one({

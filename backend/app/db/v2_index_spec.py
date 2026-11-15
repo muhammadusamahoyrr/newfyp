@@ -159,6 +159,21 @@ V2_INDEX_REQUIREMENTS: tuple[IndexSpec, ...] = (
              "state that precedes V2 generation, so duplicating it can later "
              "produce two legal documents for one click."),
     ),
+    # 2c — one document per create intent (2026-10-20).
+    IndexSpec(
+        collection="documents",
+        name="uniq_document_owner_create_key",
+        keys=(("client_id", ASCENDING), ("create_idempotency_key", ASCENDING)),
+        kind=CORRECTNESS, unique=True,
+        partial_filter={"create_idempotency_key": {"$type": "string"}},
+        why=("A retried create returns the SAME document. `create_document` "
+             "reads 'no row yet' and then inserts, so two simultaneous requests "
+             "with one key both inserted: two documents for one click. This "
+             "index makes the second insert fail, and the service then reads "
+             "the winner. PARTIAL, not plain: legacy documents carry no key, "
+             "and a plain unique index treats every missing field as one "
+             "shared null, so the second legacy row would collide."),
+    ),
     # 3 — one ledger row per document event.
     IndexSpec(
         collection="review_events",

@@ -163,13 +163,6 @@ test("the client cannot pretend to format a PDF", () => {
         "dead edit state remains, so a step that can never happen is displayed");
 });
 
-test("the client offers the edit the format actually supports", () => {
-    // Changing the answers and regenerating IS the edit, and it maps onto how
-    // the document is versioned: a change produces a new revision.
-    assert.match(client, /Change answers/);
-    assert.ok(!/✏️ Edit<\/button>/.test(client));
-});
-
 test("the lawyer asks for changes rather than implying they can make them", () => {
     // A reviewer who could alter the artifact would be reviewing something
     // nobody else saw — the submitted bytes have a hash.
@@ -180,23 +173,6 @@ test("the lawyer asks for changes rather than implying they can make them", () =
     assert.match(lawyer, /onDecide\("return", returnNote/);
     assert.ok(!/\? "👁 Preview" : "✏️ Edit"/.test(lawyer),
         "the toggle still says Edit");
-});
-
-test("the client preview asks for an exact revision and survives unmount", () => {
-    // Two bugs in one effect: it fetched "the current file", and a URL that
-    // arrived after unmount was never revoked because the cleanup's local was
-    // still null.
-    const effect = client.slice(client.indexOf("fetchRevisionPreview"));
-    const body = effect.slice(0, effect.indexOf("}, [docId"));
-    // Named, not "whatever is current". The `viewRev ||` prefix is the version
-    // history browser; docRevisionId is still what it falls back to, which is
-    // the property that matters — the pane never asks for an unnamed file.
-    assert.match(body, /revisionId: viewRev\?\.revision_id \|\| docRevisionId/);
-    assert.match(body, /expectedPdfSha256: viewRev\?\.pdf_sha256 \|\| docPdfSha256/);
-    assert.match(body, /if \(!live\)[\s\S]{0,200}revokeObjectURL/,
-        "a late-arriving preview URL is still leaked");
-    assert.match(body, /revision_changed/,
-        "a regenerated document is not reported to the user");
 });
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -292,100 +268,6 @@ test("the legacy path remains while the flag is off", () => {
  * The client half: generate and submit through V2
  * ══════════════════════════════════════════════════════════════════════════ */
 
-test("generation stores the revision id, hash and version", () => {
-    // Without all three the preview cannot be pinned and the submission cannot
-    // be validated — the two things the whole V2 path exists to make possible.
-    assert.match(client, /setDocRevisionId\(viaV2\.revisionId\)/);
-    assert.match(client, /setDocPdfSha256\(viaV2\.pdfSha256\)/);
-    assert.match(client, /setDocVersion\(viaV2\.version\)/);
-});
-
-test("submit sends the expected version and hash", () => {
-    const fn = client.slice(client.indexOf("const submitToLawyer"));
-    const body = fn.slice(0, fn.indexOf("\n    };"));
-    assert.match(body, /expectedVersion: docVersion/);
-    assert.match(body, /expectedPdfSha256: docPdfSha256/);
-    assert.match(body, /submitDocumentV2\(/);
-});
-
-test("one key per logical action, held across retries", () => {
-    // A key minted per HTTP call makes idempotency unreachable: the retry looks
-    // like a new intent and the server renders a second revision. Refs, not
-    // state, so a re-render between failure and retry cannot lose them.
-    assert.match(client, /const generateKeyRef = useRef\(null\)/);
-    assert.match(client, /const submitKeyRef = useRef\(null\)/);
-    assert.match(client, /generateKeyRef\.current = asKey\(retryKey\) \|\| idempotencyKey\(\)/);
-    assert.match(client,
-        /submitKeyRef\.current = asKey\(retryKey\) \|\| submitKeyRef\.current \|\| idempotencyKey\(\)/);
-});
-
-test("an automatic retry never mints a new key", () => {
-    // The retry button passes the stored key back in. A fresh key there would
-    // be a second charge for one intent.
-    assert.match(client, /submitToLawyer\(submitKeyRef\.current\)/);
-    assert.match(client, /handleGenerate\(generateKeyRef\.current\)/);
-});
-
-test("a new generation is a new intent", () => {
-    // "Change answers" then Generate must produce a NEW revision rather than
-    // reusing the one on screen. A fresh key is how that intent is expressed,
-    // and the stale submit intent is dropped with it.
-    const fn = client.slice(client.indexOf("const handleGenerate"));
-    const body = fn.slice(0, fn.indexOf("const _generateViaV2"));
-    assert.match(body, /submitKeyRef\.current = null/,
-        "a stale submit intent survives a regeneration");
-});
-
-test("regenerating keeps the identity and appends a revision", () => {
-    // The backend's revision history is real only if Regenerate calls generate
-    // on the existing identity. A changed case or instrument must still create
-    // a new identity.
-    const fn = client.slice(client.indexOf("const handleGenerate"));
-    const body = fn.slice(0, fn.indexOf("const _generateViaV2"));
-    assert.doesNotMatch(body, /setDocId\(null\)/);
-    assert.match(client, /const canAppend = Boolean\(docId/);
-    assert.match(client, /documentId = canAppend \? docId : null/);
-    assert.match(client, /documentTemplateType === backendType/);
-    assert.match(client, /documentIdentityTitle === requestedTitle/);
-});
-
-test("each V2 error class is handled and none is reported as success", () => {
-    // A draft the user believes exists, and then submits, is worse than a
-    // visible failure.
-    const gen = client.slice(client.indexOf("const handleGenerate"),
-                             client.indexOf("const _v2Issue"));
-    assert.match(gen, /setDocIssue\(viaV2\.issue\)/);
-    assert.match(gen, /return;/);
-
-    const sub = client.slice(client.indexOf("const submitToLawyer"));
-    const body = sub.slice(0, sub.indexOf("\n    };"));
-    assert.match(body, /status === 409/);
-    assert.match(body, /issue\.retryable/);
-
-    // Only 503-class failures offer a retry; 409/422 are decisions.
-    assert.match(client, /retryable: isRetryable\(status, error\)/);
-});
-
-test("the legacy path still works when the flag is off", () => {
-    // DOCUMENTS_V2 defaults off, so create returns feature_disabled and the
-    // screen must fall through. Removing this would break generation entirely
-    // the moment it shipped.
-    assert.match(client, /if \(viaV2\.unavailable\)/);
-    assert.match(client, /await generateDocument\(caseId, backendType, fields\)/);
-    assert.match(client, /errorCode\(created\.error\) === "feature_disabled"/);
-
-    const sub = client.slice(client.indexOf("const submitToLawyer"));
-    assert.match(sub.slice(0, sub.indexOf("\n    };")),
-        /: await submitDocumentForReview\(docId, \{/);
-});
-
-test("submit only uses V2 when the document actually has a revision", () => {
-    // Sending a null version and hash is what the server refuses; gating on
-    // their presence is what keeps every legacy draft submittable.
-    const sub = client.slice(client.indexOf("const submitToLawyer"));
-    assert.match(sub, /const viaV2 = docRevisionId && docPdfSha256 && docVersion != null/);
-});
-
 /* ══════════════════════════════════════════════════════════════════════════
  * The lawyer inbox: paginated
  * ══════════════════════════════════════════════════════════════════════════ */
@@ -461,45 +343,6 @@ function clientFn(name) {
     return fn.slice(0, fn.indexOf("\n    };"));
 }
 
-test("withdrawal carries its own idempotency key", () => {
-    // Reusing the submit key would have the server treat the withdrawal as a
-    // replay of the submission it undoes, and return the submission receipt —
-    // a success response for the opposite of what was asked.
-    const body = clientFn("withdrawFromReview");
-    assert.match(body, /withdrawKeyRef\.current = asKey\(retryKey\) \|\| withdrawKeyRef\.current \|\| idempotencyKey\(\)/);
-    assert.match(body, /withdrawDocumentV2\(docId, withdrawKeyRef\.current\)/);
-    assert.ok(!/submitKeyRef\.current\)/.test(body.split("if (error)")[0]),
-        "the withdrawal is sent under the submit key");
-});
-
-test("a withdrawal clears the submit key so re-submitting is a new intent", () => {
-    // Otherwise the next Submit replays the withdrawn submission's receipt and
-    // the client is told it was sent when nothing was.
-    const body = clientFn("withdrawFromReview");
-    const success = body.slice(body.lastIndexOf("setReviewSent(false)") - 400);
-    assert.match(success, /submitKeyRef\.current = null/);
-    assert.match(success, /withdrawKeyRef\.current = null/);
-});
-
-test("a race with the lawyer's decision is explained, not retried", () => {
-    // 409 here means they decided while the click was in flight. Repeating it
-    // cannot succeed, so offering a retry would loop the user on a dead action.
-    const body = clientFn("withdrawFromReview");
-    assert.match(body, /status === 409/);
-    assert.match(body, /already responded/);
-    assert.match(body, /status === 404 && errorCode\(error\) === "feature_disabled"/);
-});
-
-test("the withdraw button only exists while the document is under review", () => {
-    // A decided document cannot be un-decided; the server refuses, and a button
-    // that is certain to be refused reads as a broken screen rather than a rule.
-    const body = clientFn("withdrawFromReview");
-    assert.match(body, /reviewStatus !== "submitted"\) return;/);
-    assert.match(client, /Withdraw from review/);
-    const panel = client.slice(client.indexOf('reviewStatus === "submitted" && ('));
-    assert.match(panel.slice(0, 1400), /withdrawFromReview\(\)/);
-});
-
 test("the click event never becomes an idempotency key", () => {
     // `onClick={withdrawFromReview}` passes the React event as `retryKey`, and
     // the ref would hold a synthetic event where a UUID belongs.
@@ -524,12 +367,11 @@ test("browsing history never changes what is submitted or decided", () => {
         "the lawyer decides on whichever revision is on screen");
 });
 
-test("both surfaces say so while an older draft is displayed", () => {
+test("the lawyer surface says so while an older draft is displayed", () => {
     // Without the banner the pane silently shows different text under the same
     // verdict panel, which is the exact confusion revision pinning exists to
-    // prevent.
-    assert.match(client, /Showing an earlier version/);
-    assert.match(client, /Submitting still sends the latest/);
+    // prevent. (The client's half lived in the template guided flow, removed
+    // on 2026-10-19; the drafting workspace has its own version history.)
     assert.match(lawyer, /Reading an earlier draft/);
     assert.match(lawyer, /applies to the version the client submitted/);
 });
@@ -548,11 +390,6 @@ function generationFlow() {
     const end = client.indexOf("const Stepper", start);
     return client.slice(start, end > start ? end : undefined);
 }
-
-test("a regeneration drops the pinned older revision", () => {
-    // Otherwise a new draft lands behind a superseded one still on screen.
-    assert.match(generationFlow(), /setViewRev\(null\)/);
-});
 
 test("the history list reloads on new revisions, not on every click", () => {
     // `currentRevisionId` is what the caller is DISPLAYING and changes on each
@@ -593,13 +430,6 @@ test("a revision with no file is shown, not hidden", () => {
  * on the screen. Client document generation was unreachable.
  * ══════════════════════════════════════════════════════════════════════════ */
 
-test("the client can actually choose a document type", () => {
-    // The whole flow hinged on this one missing control.
-    assert.match(client, /Document Type/);
-    assert.match(client, /if \(spec\) pickType\(spec\)/);
-    assert.match(client, /Select a document type/);
-});
-
 test("the picker is fed by the server, not a list in this file", () => {
     // Two screens each hardcoding their own list is how one came to offer a
     // "Settlement Draft" nothing could build and a "Contract" wired to the NDA
@@ -607,12 +437,6 @@ test("the picker is fed by the server, not a list in this file", () => {
     assert.match(client, /listTemplates\(\)/);
     assert.ok(!/DOC_TYPE_MAP/.test(client), "the hardcoded type map survives");
     assert.ok(!/DOC_TYPES_DATA/.test(client), "the hardcoded type list survives");
-});
-
-test("generation sends the server's own template key", () => {
-    // Deriving a template key from a display name is exactly the mapping step
-    // that used to send "Contract" to the NDA builder.
-    assert.match(client, /const templateKey = selectedType\?\.template_type;/);
 });
 
 test("a catalogue that fails to load says so rather than falling back", () => {
@@ -626,24 +450,9 @@ test("a catalogue that fails to load says so rather than falling back", () => {
     assert.ok(!/DRAFTS_DATA/.test(body), "it falls back to a local list");
 });
 
-test("the picker shows what the builder actually emits", () => {
-    // Several entries are narrower than their name suggests — the Vakalatnama
-    // entry is an execution checklist and says so. A user who picks it
-    // expecting an appointment instrument must read that before drafting.
-    assert.match(client, /selectedType\?\.description && \(/);
-});
-
 /* ══════════════════════════════════════════════════════════════════════════
  * Answers that went nowhere
  * ══════════════════════════════════════════════════════════════════════════ */
-
-test("an unused answer is reported to the client who typed it", () => {
-    // The document rendered with an empty line exactly where the user believes
-    // they supplied something, and nothing anywhere said so.
-    assert.match(client, /fieldShape\?\.unknown\?\.length > 0/);
-    assert.match(client, /not used/);
-    assert.match(client, /check the document before submitting/);
-});
 
 test("and to the lawyer who signs it off", () => {
     // The reviewer carries the cost of a document with a hole in it.
@@ -652,22 +461,15 @@ test("and to the lawyer who signs it off", () => {
     assert.match(lawyer, /fieldShape: d\.field_shape/);
 });
 
-test("the legacy path clears the shape report rather than keeping a stale one", () => {
-    // It produces none. Leaving the previous V2 generation's report on screen
-    // would read it against different bytes.
-    const flow = generationFlow();
-    assert.match(flow, /setFieldShape\(null\)/);
-    assert.match(flow, /setFieldShape\(viaV2\.fieldShape \|\| null\)/);
-});
-
 test("the shape finding is never rendered as a compliance verdict", () => {
     // Requiredness belongs to pleading_rules, which is grounded in enumerated
     // statutory clauses. A shape pass shown as a compliance pass would assert a
     // statutory requirement nobody checked.
     // Bounded by the panel that follows it — a fixed character window runs into
     // the compliance panel and tests that one instead.
-    for (const [src, next] of [[client, "compliance?.checked"],
-                               [lawyer, "Statutory completeness"]]) {
+    // The lawyer surface; the client's shape panel was part of the template
+    // guided flow, removed on 2026-10-19.
+    for (const [src, next] of [[lawyer, "Statutory completeness"]]) {
         const idx = src.indexOf("fieldShape?.unknown?.length > 0");
         const panel = src.slice(idx, src.indexOf(next, idx));
         assert.ok(panel.length > 200, "the panel window is empty");
@@ -708,15 +510,9 @@ test("no screen still calls the raw legacy download", () => {
     for (const [name, src] of [["client", client], ["lawyer", lawyer]]) {
         assert.ok(!/[^A-Za-z]downloadDocument\(/.test(src),
             `the ${name} screen still downloads through the legacy route`);
-        assert.match(src, /downloadDocumentFile\(/);
     }
-});
-
-test("the client saves the revision it is showing", () => {
-    // Browsing history and then downloading must save the file on screen.
-    const idx = client.indexOf("downloadDocumentFile(");
-    const call = client.slice(idx, idx + 300);
-    assert.match(call, /viewRev\?\.revision_id \|\| docRevisionId/);
+    // The client module no longer downloads at all (the workspace does).
+    assert.match(lawyer, /downloadDocumentFile\(/);
 });
 
 test("the lawyer saves the SUBMITTED revision, whatever is on screen", () => {

@@ -1,0 +1,2590 @@
+{
+ "changes_and_reviews": [
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_0543",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XIII Rule 11",
+   "new_label": "Order XIII Rule 11",
+   "official_rules_spanned": [
+    "Order XIV (before rule 1)"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_0995",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order I (rule not shown)",
+   "new_label": "Order I Rule 8",
+   "official_rules_spanned": [
+    "Order I Rule 8"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_0998",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order I (rule not shown)",
+   "new_label": "Order I Rule 10",
+   "official_rules_spanned": [
+    "Order I Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_0999",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order I (rule not shown)",
+   "new_label": "Order I Rule 10",
+   "official_rules_spanned": [
+    "Order I Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1005",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order II (rule not shown)",
+   "new_label": "Order II Rule 2",
+   "official_rules_spanned": [
+    "Order II Rule 2"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order III Rule 4"
+   ],
+   "chunk_id": "statutes_cpc_1908_1013",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order III Rule 3",
+   "new_label": "Order III Rule 3",
+   "official_rules_spanned": [
+    "Order III Rule 3",
+    "Order III Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1014",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order III (rule not shown)",
+   "new_label": "Order III Rule 4",
+   "official_rules_spanned": [
+    "Order III Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1015",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order III (rule not shown)",
+   "new_label": "Order III Rule 4",
+   "official_rules_spanned": [
+    "Order III Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1016",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order III (rule not shown)",
+   "new_label": "Order III Rule 4",
+   "official_rules_spanned": [
+    "Order III Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1030",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 9",
+   "official_rules_spanned": [
+    "Order V Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1032",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 10",
+   "official_rules_spanned": [
+    "Order V Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1040",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 17",
+   "official_rules_spanned": [
+    "Order V Rule 17"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1044",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 20",
+   "official_rules_spanned": [
+    "Order V Rule 20"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1053",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 25",
+   "official_rules_spanned": [
+    "Order V Rule 25"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1054",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 25",
+   "official_rules_spanned": [
+    "Order V Rule 25"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1061",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 25",
+   "official_rules_spanned": [
+    "Order V Rule 25"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order V Rule 26A"
+   ],
+   "chunk_id": "statutes_cpc_1908_1062",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 25",
+   "official_rules_spanned": [
+    "Order V Rule 25",
+    "Order V Rule 26A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1063",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 26A",
+   "official_rules_spanned": [
+    "Order V Rule 26A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1067",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 29",
+   "official_rules_spanned": [
+    "Order V Rule 29"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1069",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order V (rule not shown)",
+   "new_label": "Order V Rule 30",
+   "official_rules_spanned": [
+    "Order V Rule 30"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1089",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VII (rule not shown)",
+   "new_label": "Order VII Rule 1",
+   "official_rules_spanned": [
+    "Order VII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1098",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VII (rule not shown)",
+   "new_label": "Order VII Rule 9",
+   "official_rules_spanned": [
+    "Order VII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1099",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order VII Rule 2",
+   "new_label": "Order VII Rule 2",
+   "official_rules_spanned": [
+    "Order VII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1100",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order VII Rule 3",
+   "new_label": "Order VII Rule 3",
+   "official_rules_spanned": [
+    "Order VII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1101",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order VII Rule 4",
+   "new_label": "Order VII Rule 4",
+   "official_rules_spanned": [
+    "Order VII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order VII Rule 19"
+   ],
+   "chunk_id": "statutes_cpc_1908_1110",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order VII Rule 18",
+   "new_label": "Order VII Rule 18",
+   "official_rules_spanned": [
+    "Order VII Rule 18",
+    "Order VII Rule 19"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1111",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VII (rule not shown)",
+   "new_label": "Order VII Rule 19",
+   "official_rules_spanned": [
+    "Order VII Rule 19"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1119",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VII (rule not shown)",
+   "new_label": "Order VII Rule 26",
+   "official_rules_spanned": [
+    "Order VII Rule 26"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1122",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VIII (rule not shown)",
+   "new_label": "Order VIII Rule 2",
+   "official_rules_spanned": [
+    "Order VIII Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1127",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VIII (rule not shown)",
+   "new_label": "Order VIII Rule 6",
+   "official_rules_spanned": [
+    "Order VIII Rule 6"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1128",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VIII (rule not shown)",
+   "new_label": "Order VIII Rule 6",
+   "official_rules_spanned": [
+    "Order VIII Rule 6"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1129",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VIII (rule not shown)",
+   "new_label": "Order VIII Rule 6",
+   "official_rules_spanned": [
+    "Order VIII Rule 6"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order VIII Rule 11"
+   ],
+   "chunk_id": "statutes_cpc_1908_1134",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order VIII Rule 10",
+   "new_label": "Order VIII Rule 10",
+   "official_rules_spanned": [
+    "Order VIII Rule 10",
+    "Order VIII Rule 11"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1135",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VIII (rule not shown)",
+   "new_label": "Order VIII Rule 11",
+   "official_rules_spanned": [
+    "Order VIII Rule 11"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1138",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order VIII (rule not shown)",
+   "new_label": "Order VIII Rule 13",
+   "official_rules_spanned": [
+    "Order VIII Rule 13"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1144",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order IX (rule not shown)",
+   "new_label": "Order IX Rule 5",
+   "official_rules_spanned": [
+    "Order IX Rule 5"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1146",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order IX (rule not shown)",
+   "new_label": "Order IX Rule 6",
+   "official_rules_spanned": [
+    "Order IX Rule 6"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order IX Rule 13"
+   ],
+   "chunk_id": "statutes_cpc_1908_1153",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order IX Rule 12",
+   "new_label": "Order IX Rule 12",
+   "official_rules_spanned": [
+    "Order IX Rule 12",
+    "Order IX Rule 13"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1154",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order IX (rule not shown)",
+   "new_label": "Order IX Rule 13",
+   "official_rules_spanned": [
+    "Order IX Rule 13"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1155",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order IX (rule not shown)",
+   "new_label": "Order IX Rule 13",
+   "official_rules_spanned": [
+    "Order IX Rule 13"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order X Rule 1A"
+   ],
+   "chunk_id": "statutes_cpc_1908_1160",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order X Rule 1",
+   "new_label": "Order X Rule 1",
+   "official_rules_spanned": [
+    "Order X Rule 1",
+    "Order X Rule 1A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1161",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order X (rule not shown)",
+   "new_label": "Order X Rule 1A",
+   "official_rules_spanned": [
+    "Order X Rule 1A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1167",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XI (rule not shown)",
+   "new_label": "Order XI Rule 2",
+   "official_rules_spanned": [
+    "Order XI Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1181",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XI (rule not shown)",
+   "new_label": "Order XI Rule 15",
+   "official_rules_spanned": [
+    "Order XI Rule 15"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1185",
+   "class": "REVIEW: the official text puts the next rule in this chunk, but the local copy shows no heading for it (no safe offset)",
+   "current_label": "Order XI (rule not shown)",
+   "new_label": "Order XI (rule not shown)",
+   "official_rules_spanned": [
+    "Order XI Rule 18",
+    "Order XI Rule 19"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1186",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XI (rule not shown)",
+   "new_label": "Order XI Rule 19",
+   "official_rules_spanned": [
+    "Order XI Rule 19"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1187",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XI (rule not shown)",
+   "new_label": "Order XI Rule 19",
+   "official_rules_spanned": [
+    "Order XI Rule 19"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XII Rule 4A"
+   ],
+   "chunk_id": "statutes_cpc_1908_1197",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XII (rule not shown)",
+   "new_label": "Order XII Rule 4",
+   "official_rules_spanned": [
+    "Order XII Rule 4",
+    "Order XII Rule 4A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1209",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XIII (rule not shown)",
+   "new_label": "Order XIII Rule 5",
+   "official_rules_spanned": [
+    "Order XIII Rule 5"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1215",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XIII (rule not shown)",
+   "new_label": "Order XIII Rule 9",
+   "official_rules_spanned": [
+    "Order XIII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1217",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XIII (rule not shown)",
+   "new_label": "Order XIII Rule 10",
+   "official_rules_spanned": [
+    "Order XIII Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1220",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XIV (rule not shown)",
+   "new_label": "Order XIV Rule 1",
+   "official_rules_spanned": [
+    "Order XIV Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1226",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XIV (rule not shown)",
+   "new_label": "Order XIV Rule 6",
+   "official_rules_spanned": [
+    "Order XIV Rule 6"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1231",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XV (rule not shown)",
+   "new_label": "Order XV Rule 3",
+   "official_rules_spanned": [
+    "Order XV Rule 3"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XVI Rule 1"
+   ],
+   "chunk_id": "statutes_cpc_1908_1232",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XV Rule 4",
+   "new_label": "Order XV Rule 4",
+   "official_rules_spanned": [
+    "Order XV Rule 4",
+    "Order XVI (before rule 1)",
+    "Order XVI Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1233",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 1",
+   "official_rules_spanned": [
+    "Order XVI Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1234",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 1",
+   "official_rules_spanned": [
+    "Order XVI Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1236",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 2",
+   "official_rules_spanned": [
+    "Order XVI Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1239",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 4",
+   "official_rules_spanned": [
+    "Order XVI Rule 4"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XVI Rule 7A"
+   ],
+   "chunk_id": "statutes_cpc_1908_1242",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XVI Rule 7",
+   "new_label": "Order XVI Rule 7",
+   "official_rules_spanned": [
+    "Order XVI Rule 7",
+    "Order XVI Rule 7A"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XVI Rule 8"
+   ],
+   "chunk_id": "statutes_cpc_1908_1243",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 7A",
+   "official_rules_spanned": [
+    "Order XVI Rule 7A",
+    "Order XVI Rule 8"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1246",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 10",
+   "official_rules_spanned": [
+    "Order XVI Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1247",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 10",
+   "official_rules_spanned": [
+    "Order XVI Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1254",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 16",
+   "official_rules_spanned": [
+    "Order XVI Rule 16"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XVI Rule 19"
+   ],
+   "chunk_id": "statutes_cpc_1908_1256",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XVI Rule 18",
+   "new_label": "Order XVI Rule 18",
+   "official_rules_spanned": [
+    "Order XVI Rule 18",
+    "Order XVI Rule 19"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1257",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVI (rule not shown)",
+   "new_label": "Order XVI Rule 19",
+   "official_rules_spanned": [
+    "Order XVI Rule 19"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1260",
+   "class": "REVIEW: the official text puts the next rule in this chunk, but the local copy shows no heading for it (no safe offset)",
+   "current_label": "Order XVII Rule 1",
+   "new_label": "Order XVII Rule 1",
+   "official_rules_spanned": [
+    "Order XVII Rule 1",
+    "Order XVII Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1261",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVII (rule not shown)",
+   "new_label": "Order XVII Rule 2",
+   "official_rules_spanned": [
+    "Order XVII Rule 2"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XVII Rule 4"
+   ],
+   "chunk_id": "statutes_cpc_1908_1263",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XVII Rule 3",
+   "new_label": "Order XVII Rule 3",
+   "official_rules_spanned": [
+    "Order XVII Rule 3",
+    "Order XVII Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1264",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVII (rule not shown)",
+   "new_label": "Order XVII Rule 4",
+   "official_rules_spanned": [
+    "Order XVII Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1282",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XVIII (rule not shown)",
+   "new_label": "Order XVIII Rule 16",
+   "official_rules_spanned": [
+    "Order XVIII Rule 16"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XX Rule 1"
+   ],
+   "chunk_id": "statutes_cpc_1908_1287",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XIX Rule 3",
+   "new_label": "Order XIX Rule 3",
+   "official_rules_spanned": [
+    "Order XIX Rule 3",
+    "Order XX (before rule 1)",
+    "Order XX Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1288",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XX (rule not shown)",
+   "new_label": "Order XX Rule 1",
+   "official_rules_spanned": [
+    "Order XX Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1299",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XX (rule not shown)",
+   "new_label": "Order XX Rule 11",
+   "official_rules_spanned": [
+    "Order XX Rule 11"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1301",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XX (rule not shown)",
+   "new_label": "Order XX Rule 12",
+   "official_rules_spanned": [
+    "Order XX Rule 12"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1303",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XX (rule not shown)",
+   "new_label": "Order XX Rule 13",
+   "official_rules_spanned": [
+    "Order XX Rule 13"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1305",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XX (rule not shown)",
+   "new_label": "Order XX Rule 14",
+   "official_rules_spanned": [
+    "Order XX Rule 14"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1311",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XX (rule not shown)",
+   "new_label": "Order XX Rule 18",
+   "official_rules_spanned": [
+    "Order XX Rule 18"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1316",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 2",
+   "official_rules_spanned": [
+    "Order XXI Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1325",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 11",
+   "official_rules_spanned": [
+    "Order XXI Rule 11"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1326",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 11",
+   "official_rules_spanned": [
+    "Order XXI Rule 11"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1332",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 16",
+   "official_rules_spanned": [
+    "Order XXI Rule 16"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1334",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 17",
+   "official_rules_spanned": [
+    "Order XXI Rule 17"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1336",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 18",
+   "official_rules_spanned": [
+    "Order XXI Rule 18"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1337",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 18",
+   "official_rules_spanned": [
+    "Order XXI Rule 18"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1338",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 18",
+   "official_rules_spanned": [
+    "Order XXI Rule 18"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1343",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 22",
+   "official_rules_spanned": [
+    "Order XXI Rule 22"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1344",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 22",
+   "official_rules_spanned": [
+    "Order XXI Rule 22"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1346",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 23",
+   "official_rules_spanned": [
+    "Order XXI Rule 23"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1351",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 26",
+   "official_rules_spanned": [
+    "Order XXI Rule 26"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1357",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 31",
+   "official_rules_spanned": [
+    "Order XXI Rule 31"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1358",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 31",
+   "official_rules_spanned": [
+    "Order XXI Rule 31"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1360",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 32",
+   "official_rules_spanned": [
+    "Order XXI Rule 32"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1361",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 32",
+   "official_rules_spanned": [
+    "Order XXI Rule 32"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1362",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 32",
+   "official_rules_spanned": [
+    "Order XXI Rule 32"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1363",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 32",
+   "official_rules_spanned": [
+    "Order XXI Rule 32"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1365",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 33",
+   "official_rules_spanned": [
+    "Order XXI Rule 33"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1367",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 34",
+   "official_rules_spanned": [
+    "Order XXI Rule 34"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1368",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 34",
+   "official_rules_spanned": [
+    "Order XXI Rule 34"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1369",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 34",
+   "official_rules_spanned": [
+    "Order XXI Rule 34"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1371",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 35",
+   "official_rules_spanned": [
+    "Order XXI Rule 35"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1374",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 37",
+   "official_rules_spanned": [
+    "Order XXI Rule 37"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXI Rule 40"
+   ],
+   "chunk_id": "statutes_cpc_1908_1375",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXI Rule 38",
+   "new_label": "Order XXI Rule 38",
+   "official_rules_spanned": [
+    "Order XXI Rule 38",
+    "Order XXI Rule 40"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1376",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 40",
+   "official_rules_spanned": [
+    "Order XXI Rule 40"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1379",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XXI Rule 11",
+   "new_label": "Order XXI Rule 11",
+   "official_rules_spanned": [
+    "Order XXI Rule 40"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1380",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 40",
+   "official_rules_spanned": [
+    "Order XXI Rule 40"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1385",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 44",
+   "official_rules_spanned": [
+    "Order XXI Rule 44"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1387",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 45",
+   "official_rules_spanned": [
+    "Order XXI Rule 45"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1388",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 45",
+   "official_rules_spanned": [
+    "Order XXI Rule 45"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1390",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 46",
+   "official_rules_spanned": [
+    "Order XXI Rule 46"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1394",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 48",
+   "official_rules_spanned": [
+    "Order XXI Rule 48"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1395",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 48",
+   "official_rules_spanned": [
+    "Order XXI Rule 48"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1396",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 48",
+   "official_rules_spanned": [
+    "Order XXI Rule 48"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1397",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 48",
+   "official_rules_spanned": [
+    "Order XXI Rule 48"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1402",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 49",
+   "official_rules_spanned": [
+    "Order XXI Rule 49"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1403",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 49",
+   "official_rules_spanned": [
+    "Order XXI Rule 49"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1405",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 49",
+   "official_rules_spanned": [
+    "Order XXI Rule 49"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1407",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 50",
+   "official_rules_spanned": [
+    "Order XXI Rule 50"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1408",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 50",
+   "official_rules_spanned": [
+    "Order XXI Rule 50"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1412",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 53",
+   "official_rules_spanned": [
+    "Order XXI Rule 53"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1413",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 53",
+   "official_rules_spanned": [
+    "Order XXI Rule 53"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1414",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 53",
+   "official_rules_spanned": [
+    "Order XXI Rule 53"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1420",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 58",
+   "official_rules_spanned": [
+    "Order XXI Rule 58"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXI Rule 59"
+   ],
+   "chunk_id": "statutes_cpc_1908_1421",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 58",
+   "official_rules_spanned": [
+    "Order XXI Rule 58",
+    "Order XXI Rule 59"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1425",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 62",
+   "official_rules_spanned": [
+    "Order XXI Rule 62"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1429",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 66",
+   "official_rules_spanned": [
+    "Order XXI Rule 66"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1430",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 66",
+   "official_rules_spanned": [
+    "Order XXI Rule 66"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1434",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 69",
+   "official_rules_spanned": [
+    "Order XXI Rule 69"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1438",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 72",
+   "official_rules_spanned": [
+    "Order XXI Rule 72"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1441",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 74",
+   "official_rules_spanned": [
+    "Order XXI Rule 74"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1447",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 79",
+   "official_rules_spanned": [
+    "Order XXI Rule 79"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1449",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 80",
+   "official_rules_spanned": [
+    "Order XXI Rule 80"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1450",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XXI Rule 81",
+   "new_label": "Order XXI Rule 81",
+   "official_rules_spanned": [
+    "Order XXI Rule 80"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1453",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 83",
+   "official_rules_spanned": [
+    "Order XXI Rule 83"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1461",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 89",
+   "official_rules_spanned": [
+    "Order XXI Rule 89"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1463",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 90",
+   "official_rules_spanned": [
+    "Order XXI Rule 90"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXI Rule 103"
+   ],
+   "chunk_id": "statutes_cpc_1908_1475",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXI Rule 102",
+   "new_label": "Order XXI Rule 102",
+   "official_rules_spanned": [
+    "Order XXI Rule 102",
+    "Order XXI Rule 103"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1476",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXI (rule not shown)",
+   "new_label": "Order XXI Rule 103",
+   "official_rules_spanned": [
+    "Order XXI Rule 103"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1480",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXII (rule not shown)",
+   "new_label": "Order XXII Rule 3",
+   "official_rules_spanned": [
+    "Order XXII Rule 3"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1482",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXII (rule not shown)",
+   "new_label": "Order XXII Rule 4",
+   "official_rules_spanned": [
+    "Order XXII Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1483",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXII (rule not shown)",
+   "new_label": "Order XXII Rule 4",
+   "official_rules_spanned": [
+    "Order XXII Rule 4"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXII Rule 9"
+   ],
+   "chunk_id": "statutes_cpc_1908_1488",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXII (rule not shown)",
+   "new_label": "Order XXII Rule 8",
+   "official_rules_spanned": [
+    "Order XXII Rule 8",
+    "Order XXII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1489",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXII (rule not shown)",
+   "new_label": "Order XXII Rule 9",
+   "official_rules_spanned": [
+    "Order XXII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1494",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXIII (rule not shown)",
+   "new_label": "Order XXIII Rule 1",
+   "official_rules_spanned": [
+    "Order XXIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1502",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXIV (rule not shown)",
+   "new_label": "Order XXIV Rule 4",
+   "official_rules_spanned": [
+    "Order XXIV Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1503",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXIV (rule not shown)",
+   "new_label": "Order XXIV Rule 4",
+   "official_rules_spanned": [
+    "Order XXIV Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1512",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVI (rule not shown)",
+   "new_label": "Order XXVI Rule 4",
+   "official_rules_spanned": [
+    "Order XXVI Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1517",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVI (rule not shown)",
+   "new_label": "Order XXVI Rule 8",
+   "official_rules_spanned": [
+    "Order XXVI Rule 8"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1520",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVI (rule not shown)",
+   "new_label": "Order XXVI Rule 10",
+   "official_rules_spanned": [
+    "Order XXVI Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1525",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVI (rule not shown)",
+   "new_label": "Order XXVI Rule 14",
+   "official_rules_spanned": [
+    "Order XXVI Rule 14"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1529",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVI (rule not shown)",
+   "new_label": "Order XXVI Rule 17",
+   "official_rules_spanned": [
+    "Order XXVI Rule 17"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1532",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVI (rule not shown)",
+   "new_label": "Order XXVI Rule 19",
+   "official_rules_spanned": [
+    "Order XXVI Rule 19"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1538",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVII (rule not shown)",
+   "new_label": "Order XXVII Rule 1",
+   "official_rules_spanned": [
+    "Order XXVII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1539",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XXVII Rule 2",
+   "new_label": "Order XXVII Rule 2",
+   "official_rules_spanned": [
+    "Order XXVII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1548",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XXVII Rule 8",
+   "new_label": "Order XXVII Rule 8",
+   "official_rules_spanned": [
+    "Order XXVII Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1549",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVII (rule not shown)",
+   "new_label": "Order XXVII Rule 8A",
+   "official_rules_spanned": [
+    "Order XXVII Rule 8A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1552",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVII (rule not shown)",
+   "new_label": "Order XXVII Rule 8B",
+   "official_rules_spanned": [
+    "Order XXVII Rule 8B"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1554",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XXVII Rule 1",
+   "new_label": "Order XXVII Rule 1",
+   "official_rules_spanned": [
+    "Order XXVII Rule 8B"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1555",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XXVII Rule 2",
+   "new_label": "Order XXVII Rule 2",
+   "official_rules_spanned": [
+    "Order XXVII Rule 8B"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1558",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVII (rule not shown)",
+   "new_label": "Order XXVII Rule 8B",
+   "official_rules_spanned": [
+    "Order XXVII Rule 8B"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1559",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XXVII Rule 3",
+   "new_label": "Order XXVII Rule 3",
+   "official_rules_spanned": [
+    "Order XXVII Rule 8B"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1560",
+   "class": "REVIEW: current label not in the official span",
+   "current_label": "Order XXVII Rule 4",
+   "new_label": "Order XXVII Rule 4",
+   "official_rules_spanned": [
+    "Order XXVII Rule 8B"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1562",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVIII (rule not shown)",
+   "new_label": "Order XXVIII Rule 1",
+   "official_rules_spanned": [
+    "Order XXVIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1564",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVIII (rule not shown)",
+   "new_label": "Order XXVIII Rule 1",
+   "official_rules_spanned": [
+    "Order XXVIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1565",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXVIII (rule not shown)",
+   "new_label": "Order XXVIII Rule 1",
+   "official_rules_spanned": [
+    "Order XXVIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1573",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXX (rule not shown)",
+   "new_label": "Order XXX Rule 1",
+   "official_rules_spanned": [
+    "Order XXX Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1575",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXX (rule not shown)",
+   "new_label": "Order XXX Rule 2",
+   "official_rules_spanned": [
+    "Order XXX Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1590",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXII (rule not shown)",
+   "new_label": "Order XXXII Rule 3",
+   "official_rules_spanned": [
+    "Order XXXII Rule 3"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1593",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXII (rule not shown)",
+   "new_label": "Order XXXII Rule 4",
+   "official_rules_spanned": [
+    "Order XXXII Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1596",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXII (rule not shown)",
+   "new_label": "Order XXXII Rule 6",
+   "official_rules_spanned": [
+    "Order XXXII Rule 6"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1600",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXII (rule not shown)",
+   "new_label": "Order XXXII Rule 9",
+   "official_rules_spanned": [
+    "Order XXXII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1604",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXII (rule not shown)",
+   "new_label": "Order XXXII Rule 12",
+   "official_rules_spanned": [
+    "Order XXXII Rule 12"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXXII Rule 16"
+   ],
+   "chunk_id": "statutes_cpc_1908_1607",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXXII Rule 15",
+   "new_label": "Order XXXII Rule 15",
+   "official_rules_spanned": [
+    "Order XXXII Rule 15",
+    "Order XXXII Rule 16"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXXIII Rule 11A"
+   ],
+   "chunk_id": "statutes_cpc_1908_1619",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXXIII Rule 11",
+   "new_label": "Order XXXIII Rule 11",
+   "official_rules_spanned": [
+    "Order XXXIII Rule 11",
+    "Order XXXIII Rule 11A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1620",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIII (rule not shown)",
+   "new_label": "Order XXXIII Rule 11A",
+   "official_rules_spanned": [
+    "Order XXXIII Rule 11A"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXXIII Rule 14"
+   ],
+   "chunk_id": "statutes_cpc_1908_1622",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXXIII Rule 13",
+   "new_label": "Order XXXIII Rule 13",
+   "official_rules_spanned": [
+    "Order XXXIII Rule 13",
+    "Order XXXIII Rule 14"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1623",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIII (rule not shown)",
+   "new_label": "Order XXXIII Rule 14",
+   "official_rules_spanned": [
+    "Order XXXIII Rule 14"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1626",
+   "class": "REVIEW: the official text puts the next rule in this chunk, but the local copy shows no heading for it (no safe offset)",
+   "current_label": "Order XXXIV Rule 1",
+   "new_label": "Order XXXIV Rule 1",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 1",
+    "Order XXXIV Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1627",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 2",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1628",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 2",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1629",
+   "class": "REVIEW: the official text puts the next rule in this chunk, but the local copy shows no heading for it (no safe offset)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV (rule not shown)",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 2",
+    "Order XXXIV Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1630",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 2",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1633",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 3",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 3"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1635",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 4",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1636",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 4",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1637",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 4",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1639",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 5",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 5"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1640",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 5",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 5"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1643",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 7",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1644",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 7",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1645",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 7",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1647",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 8",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 8"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1648",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 8",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 8"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1649",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 8",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 8"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXXIV Rule 10"
+   ],
+   "chunk_id": "statutes_cpc_1908_1651",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXXIV Rule 9",
+   "new_label": "Order XXXIV Rule 9",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 9",
+    "Order XXXIV Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1652",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 10",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 10"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1654",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 11",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 11"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1655",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 11",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 11"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1658",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 13",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 13"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXXIV Rule 15"
+   ],
+   "chunk_id": "statutes_cpc_1908_1659",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXXIV Rule 14",
+   "new_label": "Order XXXIV Rule 14",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 14",
+    "Order XXXIV Rule 15"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1660",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIV (rule not shown)",
+   "new_label": "Order XXXIV Rule 15",
+   "official_rules_spanned": [
+    "Order XXXIV Rule 15"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1665",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXV (rule not shown)",
+   "new_label": "Order XXXV Rule 4",
+   "official_rules_spanned": [
+    "Order XXXV Rule 4"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1667",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXV (rule not shown)",
+   "new_label": "Order XXXV Rule 5",
+   "official_rules_spanned": [
+    "Order XXXV Rule 5"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1670",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXVI (rule not shown)",
+   "new_label": "Order XXXVI Rule 1",
+   "official_rules_spanned": [
+    "Order XXXVI Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1675",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXVII (rule not shown)",
+   "new_label": "Order XXXVII Rule 1",
+   "official_rules_spanned": [
+    "Order XXXVII (before rule 1)",
+    "Order XXXVII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1677",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXVII (rule not shown)",
+   "new_label": "Order XXXVII Rule 2",
+   "official_rules_spanned": [
+    "Order XXXVII Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1678",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXVII (rule not shown)",
+   "new_label": "Order XXXVII Rule 2",
+   "official_rules_spanned": [
+    "Order XXXVII Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1686",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXVIII (rule not shown)",
+   "new_label": "Order XXXVIII Rule 1",
+   "official_rules_spanned": [
+    "Order XXXVIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1687",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXVIII (rule not shown)",
+   "new_label": "Order XXXVIII Rule 1",
+   "official_rules_spanned": [
+    "Order XXXVIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1692",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXVIII (rule not shown)",
+   "new_label": "Order XXXVIII Rule 5",
+   "official_rules_spanned": [
+    "Order XXXVIII Rule 5"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXXVIII Rule 13"
+   ],
+   "chunk_id": "statutes_cpc_1908_1700",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXXVIII Rule 12",
+   "new_label": "Order XXXVIII Rule 12",
+   "official_rules_spanned": [
+    "Order XXXVIII Rule 12",
+    "Order XXXVIII Rule 13"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1703",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIX (rule not shown)",
+   "new_label": "Order XXXIX Rule 2",
+   "official_rules_spanned": [
+    "Order XXXIX Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1704",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIX (rule not shown)",
+   "new_label": "Order XXXIX Rule 2",
+   "official_rules_spanned": [
+    "Order XXXIX Rule 2"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXXIX Rule 3"
+   ],
+   "chunk_id": "statutes_cpc_1908_1705",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIX (rule not shown)",
+   "new_label": "Order XXXIX Rule 2",
+   "official_rules_spanned": [
+    "Order XXXIX Rule 2",
+    "Order XXXIX Rule 3"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1706",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIX (rule not shown)",
+   "new_label": "Order XXXIX Rule 3",
+   "official_rules_spanned": [
+    "Order XXXIX Rule 3"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XXXIX Rule 4A"
+   ],
+   "chunk_id": "statutes_cpc_1908_1708",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XXXIX Rule 4",
+   "new_label": "Order XXXIX Rule 4",
+   "official_rules_spanned": [
+    "Order XXXIX Rule 4",
+    "Order XXXIX Rule 4A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1710",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIX (rule not shown)",
+   "new_label": "Order XXXIX Rule 4A",
+   "official_rules_spanned": [
+    "Order XXXIX Rule 4A"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1714",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIX (rule not shown)",
+   "new_label": "Order XXXIX Rule 7",
+   "official_rules_spanned": [
+    "Order XXXIX Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1717",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XXXIX (rule not shown)",
+   "new_label": "Order XXXIX Rule 9",
+   "official_rules_spanned": [
+    "Order XXXIX Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1720",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XL (rule not shown)",
+   "new_label": "Order XL Rule 1",
+   "official_rules_spanned": [
+    "Order XL Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1730",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 5",
+   "official_rules_spanned": [
+    "Order XLI Rule 5"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1732",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 6",
+   "official_rules_spanned": [
+    "Order XLI Rule 6"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1733",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 6",
+   "official_rules_spanned": [
+    "Order XLI Rule 6"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1741",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 13",
+   "official_rules_spanned": [
+    "Order XLI Rule 13"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1743",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 14",
+   "official_rules_spanned": [
+    "Order XLI Rule 14"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1752",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 22",
+   "official_rules_spanned": [
+    "Order XLI Rule 22"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1753",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 22",
+   "official_rules_spanned": [
+    "Order XLI Rule 22"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1765",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 33",
+   "official_rules_spanned": [
+    "Order XLI Rule 33"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1768",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLI (rule not shown)",
+   "new_label": "Order XLI Rule 35",
+   "official_rules_spanned": [
+    "Order XLI Rule 35"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1773",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLIII (rule not shown)",
+   "new_label": "Order XLIII Rule 1",
+   "official_rules_spanned": [
+    "Order XLIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1774",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLIII (rule not shown)",
+   "new_label": "Order XLIII Rule 1",
+   "official_rules_spanned": [
+    "Order XLIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1775",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLIII (rule not shown)",
+   "new_label": "Order XLIII Rule 1",
+   "official_rules_spanned": [
+    "Order XLIII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1777",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLIII (rule not shown)",
+   "new_label": "Order XLIII Rule 2",
+   "official_rules_spanned": [
+    "Order XLIII Rule 2"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1784",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 3",
+   "official_rules_spanned": [
+    "Order XLV Rule 3"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1785",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 3",
+   "official_rules_spanned": [
+    "Order XLV Rule 3"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1791",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 7",
+   "official_rules_spanned": [
+    "Order XLV Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1792",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 7",
+   "official_rules_spanned": [
+    "Order XLV Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1795",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 9",
+   "official_rules_spanned": [
+    "Order XLV Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1798",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 11",
+   "official_rules_spanned": [
+    "Order XLV Rule 11"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1801",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 13",
+   "official_rules_spanned": [
+    "Order XLV Rule 13"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1803",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 14",
+   "official_rules_spanned": [
+    "Order XLV Rule 14"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1805",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 15",
+   "official_rules_spanned": [
+    "Order XLV Rule 15"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1806",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLV (rule not shown)",
+   "new_label": "Order XLV Rule 15",
+   "official_rules_spanned": [
+    "Order XLV Rule 15"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1811",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLVI (rule not shown)",
+   "new_label": "Order XLVI Rule 1",
+   "official_rules_spanned": [
+    "Order XLVI Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1818",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLVI (rule not shown)",
+   "new_label": "Order XLVI Rule 7",
+   "official_rules_spanned": [
+    "Order XLVI Rule 7"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1820",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLVII (rule not shown)",
+   "new_label": "Order XLVII Rule 1",
+   "official_rules_spanned": [
+    "Order XLVII Rule 1"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1827",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order XLVII (rule not shown)",
+   "new_label": "Order XLVII Rule 7",
+   "official_rules_spanned": [
+    "Order XLVII Rule 7"
+   ]
+  },
+  {
+   "also_rules": [
+    "Order XLVII Rule 9"
+   ],
+   "chunk_id": "statutes_cpc_1908_1828",
+   "class": "B: label kept, later rule(s) in the same chunk added as also_rules",
+   "current_label": "Order XLVII Rule 8",
+   "new_label": "Order XLVII Rule 8",
+   "official_rules_spanned": [
+    "Order XLVII Rule 8",
+    "Order XLVII Rule 9"
+   ]
+  },
+  {
+   "also_rules": [],
+   "chunk_id": "statutes_cpc_1908_1836",
+   "class": "A: rule not shown -> official rule(s)",
+   "current_label": "Order L (rule not shown)",
+   "new_label": "Order L Rule 1",
+   "official_rules_spanned": [
+    "Order L Rule 1"
+   ]
+  }
+ ],
+ "counts": {
+  "A": 213,
+  "B": 20,
+  "REVIEW": 16,
+  "changes": 233
+ },
+ "derived_from": "ident_v2_metadata_diff.v2.json with 4 chunks moved to REVIEW: statutes_cpc_1908_1185, statutes_cpc_1908_1260, statutes_cpc_1908_1626, statutes_cpc_1908_1629",
+ "diff_version": "v3",
+ "frozen": "2026-10-15",
+ "official_sha256": "c51d194bfc14f076769f266db7efabc1901f1de2182da89c8f0ef82d92844b33",
+ "official_source": "https://pakistancode.gov.pk/pdffiles/administrator6598dabbad120033d4d42d717dcf9755.pdf"
+}

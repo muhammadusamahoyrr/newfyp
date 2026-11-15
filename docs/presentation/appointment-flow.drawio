@@ -1,0 +1,133 @@
+<mxGraphModel dx="2326" dy="1226" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1820" pageHeight="760" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <mxCell id="hdr" parent="1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.5;shadow=1;arcSize=6;align=left;spacingLeft=16;" value="&lt;div style=&quot;font-size:16px;font-weight:800;color:#0F172A;&quot;&gt;Attorney.AI — Lawyer Matching &amp;amp; Appointment Flow&lt;/div&gt;&lt;div style=&quot;font-size:11px;color:#64748B;margin-top:3px;&quot;&gt;Find Lawyer → Pick Slot → Book → Accept &amp;amp; Video Call → Outcome → Hire&lt;/div&gt;">
+      <mxGeometry x="50" y="25" width="1720" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- STAGE 1 -->
+    <mxCell id="col1" parent="1" vertex="1" value="  1. FIND A LAWYER" style="swimlane;startSize=30;fillColor=#BAE6FD;strokeColor=#BAE6FD;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#EFF6FF;collapsible=0;">
+      <mxGeometry x="50" y="90" width="310" height="560" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_ui" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#0284C7;font-size:12px;&quot;&gt;Client: Lawyers page&lt;/b&gt;&lt;br/&gt;Directory + filters · &lt;b&gt;Find My Match&lt;/b&gt;">
+      <mxGeometry x="15" y="45" width="280" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_api" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;GET&lt;/b&gt; /lawyers&lt;br/&gt;&lt;b&gt;GET&lt;/b&gt; /lawyers/match/{case_id}">
+      <mxGeometry x="15" y="130" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_svc" parent="col1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Matching engine&lt;/b&gt;&lt;br/&gt;• Vector similarity (case ↔ lawyer profile)&lt;br/&gt;• + specialization, province, rating&lt;br/&gt;• Top 5 lawyers with match reasons">
+      <mxGeometry x="15" y="210" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s1_db" parent="col1" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#0284C7;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;ChromaDB&lt;/b&gt; (lawyer vectors)&lt;br/&gt;&lt;b&gt;MongoDB&lt;/b&gt; users">
+      <mxGeometry x="15" y="460" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e1_1" parent="col1" edge="1" source="s1_ui" target="s1_api" style="strokeColor=#0284C7;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e1_2" parent="col1" edge="1" source="s1_api" target="s1_svc" style="strokeColor=#0284C7;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e1_3" parent="col1" edge="1" source="s1_svc" target="s1_db" style="strokeColor=#0284C7;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 2 -->
+    <mxCell id="col2" parent="1" vertex="1" value="  2. PICK A FREE SLOT" style="swimlane;startSize=30;fillColor=#99F6E4;strokeColor=#99F6E4;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#F0FDFA;collapsible=0;">
+      <mxGeometry x="400" y="90" width="310" height="560" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_ui" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#0D9488;font-size:12px;&quot;&gt;Booking modal&lt;/b&gt;&lt;br/&gt;Choose date → only free slots shown">
+      <mxGeometry x="15" y="45" width="280" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_api" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;GET&lt;/b&gt; /lawyers/{id}/bookable-slots">
+      <mxGeometry x="15" y="130" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_svc" parent="col2" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Free slots =&lt;/b&gt; working hours&lt;br/&gt;− booked appointments&lt;br/&gt;− court hearings · diary · days off">
+      <mxGeometry x="15" y="210" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s2_db" parent="col2" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#0D9488;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;lawyer_availability · appointments">
+      <mxGeometry x="15" y="460" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e2_1" parent="col2" edge="1" source="s2_ui" target="s2_api" style="strokeColor=#0D9488;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e2_2" parent="col2" edge="1" source="s2_api" target="s2_svc" style="strokeColor=#0D9488;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e2_3" parent="col2" edge="1" source="s2_svc" target="s2_db" style="strokeColor=#0D9488;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 3 -->
+    <mxCell id="col3" parent="1" vertex="1" value="  3. BOOK (CLASH-PROOF)" style="swimlane;startSize=30;fillColor=#FDE68A;strokeColor=#FDE68A;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#FEF3C7;collapsible=0;">
+      <mxGeometry x="750" y="90" width="310" height="560" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_ui" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#D97706;font-size:12px;&quot;&gt;Send request&lt;/b&gt;&lt;br/&gt;Video or In person · optional case &amp;amp; note">
+      <mxGeometry x="15" y="45" width="280" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_api" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;POST&lt;/b&gt; /appointments&lt;br/&gt;(Idempotency-Key)">
+      <mxGeometry x="15" y="130" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_svc" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Booking service&lt;/b&gt;&lt;br/&gt;• Unique slot index → no double booking&lt;br/&gt;• Retry / double click → same booking&lt;br/&gt;• Lawyer notified (live)">
+      <mxGeometry x="15" y="210" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_state" parent="col3" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#B45309;" value="Status: PENDING">
+      <mxGeometry x="15" y="320" width="280" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="s3_db" parent="col3" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#D97706;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;appointments">
+      <mxGeometry x="15" y="460" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e3_1" parent="col3" edge="1" source="s3_ui" target="s3_api" style="strokeColor=#D97706;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_2" parent="col3" edge="1" source="s3_api" target="s3_svc" style="strokeColor=#D97706;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_3" parent="col3" edge="1" source="s3_svc" target="s3_state" style="strokeColor=#D97706;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e3_4" parent="col3" edge="1" source="s3_state" target="s3_db" style="strokeColor=#D97706;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 4 -->
+    <mxCell id="col4" parent="1" vertex="1" value="  4. ACCEPT &amp; VIDEO CALL" style="swimlane;startSize=30;fillColor=#DDD6FE;strokeColor=#DDD6FE;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#F5F3FF;collapsible=0;">
+      <mxGeometry x="1100" y="90" width="310" height="560" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_ui" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#6D28D9;font-size:12px;&quot;&gt;Lawyer: Appointments&lt;/b&gt;&lt;br/&gt;Accept · Decline · Suggest time">
+      <mxGeometry x="15" y="45" width="280" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_api" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;PATCH&lt;/b&gt; /appointments/{id}/confirm&lt;br/&gt;&lt;b&gt;POST&lt;/b&gt; /appointment-video/{id}/join">
+      <mxGeometry x="15" y="130" width="280" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_svc" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Appointment + Video service&lt;/b&gt;&lt;br/&gt;• Only allowed status changes&lt;br/&gt;• Join → private Daily.co room&lt;br/&gt;• Messages &amp;amp; files during meeting">
+      <mxGeometry x="15" y="210" width="280" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_state" parent="col4" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#6D28D9;" value="Status: CONFIRMED">
+      <mxGeometry x="15" y="320" width="280" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="s4_db" parent="col4" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt; + &lt;b&gt;Daily.co&lt;/b&gt;&lt;br/&gt;appointments · messages">
+      <mxGeometry x="15" y="460" width="280" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e4_1" parent="col4" edge="1" source="s4_ui" target="s4_api" style="strokeColor=#7C3AED;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_2" parent="col4" edge="1" source="s4_api" target="s4_svc" style="strokeColor=#7C3AED;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_3" parent="col4" edge="1" source="s4_svc" target="s4_state" style="strokeColor=#7C3AED;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e4_4" parent="col4" edge="1" source="s4_state" target="s4_db" style="strokeColor=#7C3AED;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE 5 -->
+    <mxCell id="col5" parent="1" vertex="1" value="  5. OUTCOME &amp; HIRE" style="swimlane;startSize=30;fillColor=#A7F3D0;strokeColor=#A7F3D0;fontColor=#0F172A;fontStyle=1;fontSize=11;rounded=1;arcSize=6;shadow=1;swimlaneFillColor=#ECFDF5;collapsible=0;">
+      <mxGeometry x="1450" y="90" width="320" height="560" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_ui" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#059669;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b style=&quot;color:#059669;font-size:12px;&quot;&gt;After the meeting&lt;/b&gt;&lt;br/&gt;Lawyer: Completed / No-show&lt;br/&gt;Client: Request to hire · Review">
+      <mxGeometry x="15" y="45" width="290" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_api" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;PATCH&lt;/b&gt; /appointments/{id}/complete&lt;br/&gt;&lt;b&gt;POST&lt;/b&gt; /engagements (hire)">
+      <mxGeometry x="15" y="130" width="290" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_svc" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#475569;strokeWidth=1.5;shadow=1;arcSize=8;align=left;spacingLeft=12;fontSize=10;" value="&lt;b&gt;Hire flow&lt;/b&gt;&lt;br/&gt;• Needs a COMPLETED consultation&lt;br/&gt;• Lawyer sends terms → client accepts&lt;br/&gt;• Case assigned to lawyer">
+      <mxGeometry x="15" y="210" width="290" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_state" parent="col5" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;strokeWidth=1.5;fontSize=11;fontStyle=1;fontColor=#047857;" value="Status: COMPLETED → CASE">
+      <mxGeometry x="15" y="320" width="290" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="s5_db" parent="col5" vertex="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#FFFFFF;strokeColor=#059669;strokeWidth=1.5;shadow=1;fontSize=10;" value="&lt;b&gt;MongoDB&lt;/b&gt;&lt;br/&gt;engagements · cases · lawyer_reviews">
+      <mxGeometry x="15" y="460" width="290" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="e5_1" parent="col5" edge="1" source="s5_ui" target="s5_api" style="strokeColor=#059669;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5_2" parent="col5" edge="1" source="s5_api" target="s5_svc" style="strokeColor=#059669;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5_3" parent="col5" edge="1" source="s5_svc" target="s5_state" style="strokeColor=#059669;strokeWidth=2;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e5_4" parent="col5" edge="1" source="s5_state" target="s5_db" style="strokeColor=#059669;strokeWidth=1.5;dashed=1;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STAGE-TO-STAGE -->
+    <mxCell id="f12" parent="1" edge="1" source="s1_ui" target="s2_ui" style="strokeColor=#0284C7;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f23" parent="1" edge="1" source="s2_ui" target="s3_ui" style="strokeColor=#0D9488;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f34" parent="1" edge="1" source="s3_ui" target="s4_ui" style="strokeColor=#D97706;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f45" parent="1" edge="1" source="s4_ui" target="s5_ui" style="strokeColor=#7C3AED;strokeWidth=2.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- STATUS STRIP -->
+    <mxCell id="status_strip" parent="1" vertex="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.5;shadow=1;arcSize=12;align=center;fontSize=11;" value="&lt;b&gt;Status:&lt;/b&gt;&amp;nbsp; pending → confirmed → completed &amp;nbsp;|&amp;nbsp; no_show &amp;nbsp;|&amp;nbsp; cancelled">
+      <mxGeometry x="50" y="665" width="1720" height="36" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>

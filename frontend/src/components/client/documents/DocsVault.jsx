@@ -572,11 +572,11 @@ export default function DocsVault({ onBack, onEdit, reviewLink = null, previewId
                     </div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                         {/* No upload backend yet: shown disabled and labelled, never as a working action. */}
-                        <button type="button" className="cv-btn" disabled data-vault-soon="Upload File" title="Uploading files isn't connected yet — coming soon." style={{ height: 48 }}>
-                            {svg(G.cloud, 18)} Upload File <span className="cv-soon">Soon</span>
+                        <button type="button" className="cv-btn hd" disabled data-vault-soon="Upload File" title="Uploading files isn't connected yet — coming soon.">
+                            {svg(G.cloud, 16)} Upload File <span className="cv-soon">Soon</span>
                         </button>
-                        <button type="button" className="cv-cta k3d" data-create-folder onClick={() => setNaming({ mode: "create" })}>
-                            {svg(G.folderPlus, 19)} Create Folder
+                        <button type="button" className="cv-cta k3d hd" data-create-folder onClick={() => setNaming({ mode: "create" })}>
+                            {svg(G.folderPlus, 17)} Create Folder
                         </button>
                     </div>
                 </div>

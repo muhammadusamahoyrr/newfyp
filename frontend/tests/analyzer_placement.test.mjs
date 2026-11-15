@@ -55,8 +55,9 @@ test("the old client analyzer URL redirects to Documents", () => {
 
 // ── the lawyer dashboard: the same workspace ────────────────────────────────
 
-test("the lawyer dashboard lists the Document Analyzer and routes to it", () => {
-    assert.match(src("components/lawyer/layout.jsx"), /\{ id: "doc-analyzer", label: "Document [Aa]nalyzer"/);
+test("the lawyer dashboard hides the Document Analyzer from navigation but keeps its route", () => {
+    assert.doesNotMatch(src("components/lawyer/layout.jsx"), /\{ id: "doc-analyzer", label: "Document [Aa]nalyzer"/);
+    assert.doesNotMatch(src("components/lawyer/DashboardPage.jsx"), /\["doc-analyzer",\s*"Document Analyzer"\]/);
     assert.match(src("components/lawyer/App.jsx"), /"doc-analyzer": DocAnalyzerPage/);
     assert.match(src("app/lawyer/documents/analyzer/page.jsx"), /<App initialPage="doc-analyzer" \/>/);
 });

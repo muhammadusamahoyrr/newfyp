@@ -74,6 +74,13 @@ def intake_finalizer_node(state: AgentState) -> dict:
     # structure; these carry the words, in the shape those readers already
     # expect. Derived rather than kept in parallel, so they cannot drift.
     parsed["applicable_laws"] = render_applicable_laws(citations)
+    # The kind of each action, kept beside the derived strings (same order):
+    # "general" guidance is labelled as such; "legal" needs a citation.
+    parsed["recommended_action_kinds"] = [
+        (a.get("kind") if isinstance(a, dict) else None) or "legal"
+        for a in (parsed.get("recommended_actions") or [])
+        if (a.get("text") if isinstance(a, dict) else str(a)).strip()
+    ]
     parsed["recommended_actions"] = render_recommended_actions(
         parsed.get("recommended_actions") or [])
 

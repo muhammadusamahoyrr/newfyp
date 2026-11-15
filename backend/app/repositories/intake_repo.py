@@ -73,6 +73,31 @@ class IntakeRepository(BaseRepository):
             {"$set": {"ai_structured_case": ai_data, "updated_at": datetime.now(timezone.utc)}},
         )
 
+    async def claim_analysis_retry(self, token: str, owner: str, ttl) -> bool:
+        """Take the one analysis-retry slot of a converted intake whose analysis
+        failed. A claim left by a dead worker expires after `ttl`."""
+        now = datetime.now(timezone.utc)
+        return await self.update_one(
+            {"session_token": token, "completed": True,
+             "ai_structured_case.grounding_status": {"$in": ["pipeline_failed", "retrieval_error"]},
+             "$or": [{"analysis_retry_until": {"$exists": False}},
+                     {"analysis_retry_until": None},
+                     {"analysis_retry_until": {"$lte": now}}]},
+            {"$set": {"analysis_retry_owner": owner, "analysis_retry_until": now + ttl}},
+        )
+
+    async def finish_analysis_retry(self, token: str, owner: str, ai_data: dict) -> bool:
+        return await self.update_one(
+            {"session_token": token, "analysis_retry_owner": owner},
+            {"$set": {"ai_structured_case": ai_data, "updated_at": datetime.now(timezone.utc)}},
+        )
+
+    async def release_analysis_retry(self, token: str, owner: str) -> bool:
+        return await self.update_one(
+            {"session_token": token, "analysis_retry_owner": owner},
+            {"$unset": {"analysis_retry_owner": "", "analysis_retry_until": ""}},
+        )
+
     async def save_evidence_review_state(
         self, token: str, statuses: list[dict], owner: str
     ) -> bool:

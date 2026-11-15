@@ -28,12 +28,29 @@ export function notificationCategory(type) {
  *  Returns null when there is nowhere better than where the lawyer is. */
 export function lawyerNotificationTarget(type, payload = {}) {
     const t = String(type || "");
-    const caseId = payload?.case_id || null;
+    // Ids are used only when they are real strings; otherwise the page opens
+    // without them (its list), never on a malformed id.
+    const idOf = v => (typeof v === "string" && v.trim() ? v : null);
+    const caseId = idOf(payload?.case_id);
+    const appointmentId = idOf(payload?.appointment_id);
+    // Meeting proposals (2026-10-12): an answered-no or lapsed proposal is acted
+    // on from its CASE (propose new times there); an accepted one is the
+    // appointment it became.
+    if (t === "appointment_proposal_declined" || t === "appointment_proposal_expired"
+        || t === "appointment_proposal_withdrawn") {
+        return { page: "cases", caseId };
+    }
     if (t === "case_message" || t === "case_update" || t === "hearing_scheduled" || t === "hearing_reminder"
         || t === "lawyer_assigned" || t.startsWith("engagement_")) {
         return { page: "cases", caseId };
     }
-    if (t.startsWith("appointment_")) return { page: "appointments", caseId: null };
+    // A message opens THAT appointment on its thread (before the generic rule).
+    if (t === "appointment_message") {
+        return appointmentId ? { page: "appointments", caseId: null, appointmentId, thread: true } : { page: "appointments", caseId: null };
+    }
+    if (t.startsWith("appointment_")) {
+        return appointmentId ? { page: "appointments", caseId: null, appointmentId } : { page: "appointments", caseId: null };
+    }
     // The document itself, not just the inbox: Document review opens it (2026-10-09).
     if (t.startsWith("document_")) return { page: "documents", caseId: null, docId: payload?.doc_id || null };
     if (t.startsWith("review_request_")) return { page: "review-queue", caseId: null };
@@ -42,6 +59,33 @@ export function lawyerNotificationTarget(type, payload = {}) {
     if (t.startsWith("dispute_")) return { page: "overseas-disputes", caseId: null };
     if (t === "causelist_listed") return { page: "causelist", caseId: null };
     if (t.startsWith("kyc_") || t === "review_received") return { page: "profile", caseId: null };
+    return null;
+}
+
+/** The CLIENT page a notification opens (2026-10-12), or null for none.
+ *  Clicking one used to only mark it read: "Meeting proposed", "Appointment
+ *  confirmed", "Request declined" or "Terms received" led nowhere. */
+export function clientNotificationTarget(type, payload = {}) {
+    const t = String(type || "");
+    const apptId = payload?.appointment_id || null;
+    // A message opens the appointment ON its thread.
+    if (t === "appointment_message") {
+        return apptId ? `/appointments?appointment=${encodeURIComponent(apptId)}&thread=open` : "/appointments";
+    }
+    // A proposal is answered on the Appointments page; once accepted, it is
+    // the appointment it became.
+    if (t.startsWith("appointment_propos")) {
+        return apptId ? `/appointments?appointment=${encodeURIComponent(apptId)}` : "/appointments";
+    }
+    if (t.startsWith("appointment_")) {
+        return apptId ? `/appointments?appointment=${encodeURIComponent(apptId)}` : "/appointments";
+    }
+    // Hiring is answered on the Lawyers page (requests and proposed terms);
+    // once the lawyer is engaged, the case is followed on Tracking.
+    if (t === "engagement_accepted" || t === "lawyer_assigned") return "/tracking";
+    if (t.startsWith("engagement_")) return "/lawyers";
+    if (t === "case_message" || t === "case_update" || t.startsWith("hearing_")) return "/tracking";
+    if (t.startsWith("agreement_")) return "/agreements";
     return null;
 }
 

@@ -30,6 +30,32 @@ class AgentState(TypedDict):
     # `query` is never replaced: named-statute affinity reads the raw query and
     # generation answers it, so overwriting it would silently change both.
     retrieval_query_supplement: str
+    # Intake (2026-10-12). user_text: the client's own words, which drive
+    # named-statute affinity when set (chat leaves it unset and uses `query`).
+    # retrieval_policy: purpose-specific evidence rules, e.g. intake allows
+    # zero retained chunks. evidence_gate / retrieval_trace: the auditable
+    # decisions of the intake evidence gate and multi-query retrieval.
+    user_text: str
+    retrieval_policy: dict
+    issue_scope: Optional[dict]
+    # Response-length policy (2026-10-13). `surface` is set by the trusted
+    # route only ("client" for the client chat socket); `response_mode` is the
+    # mode the answer was generated in; `followup_base_query` is the question a
+    # "make it short" / "explain in detail" follow-up re-answers.
+    surface: Optional[str]
+    response_mode: Optional[str]
+    followup_base_query: Optional[str]
+    # Client chat (2026-10-14): provisions the user named -> whether their own
+    # text was found by exact lookup (ai/exact_provision.py).
+    requested_provisions: Optional[dict]
+    # Client chat: period statements the finalizer withdrew (ai/period_support).
+    periods_removed: Optional[list]
+    # Tool lookup misses superseded by a retrieved source, and answers withheld
+    # for denying a provision whose text was in evidence (ai/tool_contract.py).
+    tool_conflicts: Optional[list]
+    evidence_gate: dict
+    retrieval_trace: list
+    uncited_legal_actions: list
     # Authenticated caller. Document tools are BOUND to this id — it is never a
     # tool argument, so the model cannot reach another user's uploads.
     user_id: str
@@ -80,6 +106,9 @@ class AgentState(TypedDict):
     # rather than spending a second fast-tier call to recompute the same string.
     expanded_query:   str
     expansion_for:    str
+    # Client chat (2026-10-21): English retrieval/scoring query for a general
+    # Urdu / Roman-Urdu / "Briefly," question, or None (ai/retrieval_query.py).
+    retrieval_query:  Optional[str]
     # Case-law (LHC judgment) hits — kept out of the statute grading loop so they
     # don't skew relevance_score, but folded into generation + grounding context.
     case_law_chunks:  list[dict]
@@ -126,6 +155,9 @@ class AgentState(TypedDict):
     refusal_kind:     str
     refusal_reason:   str
     refusal_redirect: str
+    # Registered authorities this question needs but the matter's province
+    # does not hold (ai/authority_registry.py, batch 10).
+    authority_limits: dict
     answer:      str
     citations:   list[dict]
     confidence:  float
@@ -133,6 +165,9 @@ class AgentState(TypedDict):
     # `confidence` above is consumed internally (degraded by hallucination_node,
     # stored by the cache); neither is what the UI shows — see answer_confidence.
     model_confidence: float
+    # An English answer still used Urdu script after one safe translation try.
+    # The answer remains visible, but confidence must not imply a clean result.
+    language_mismatch: bool
     # The EXACT id-stamped evidence generation was given. Citation matching and
     # the grounding judge both resolve against this, so a source id cannot mean
     # one thing in the prompt and another downstream.

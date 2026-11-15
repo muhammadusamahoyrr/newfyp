@@ -234,7 +234,8 @@ async def _already_sent(event_ids: list[str]) -> set[str]:
 
 # ── The messages ──────────────────────────────────────────────────────────────
 
-def _body(window: str, when: str, other_party: str, for_client: bool) -> str:
+def _body(window: str, when: str, other_party: str, for_client: bool,
+          needs_link: bool = False) -> str:
     """What each party reads.
 
     CARRIES NOTHING PRIVATE. No `lawyer_notes`, no cancellation reason, no
@@ -244,11 +245,14 @@ def _body(window: str, when: str, other_party: str, for_client: bool) -> str:
     the reminder's.
     """
     lead = ("Tomorrow" if window == WINDOW_24H else "Starting soon")
-    if for_client:
-        return (f"{lead}: your consultation with {other_party} is at {when}. "
-                "Open the appointment for the details.")
-    return (f"{lead}: your consultation with {other_party} is at {when}. "
+    text = (f"{lead}: your consultation with {other_party} is at {when}. "
             "Open the appointment for the details.")
+    # A video consultation with no meeting link and no in-app video:
+    # say so while there is still time to fix it. Names no link, only its absence.
+    if needs_link:
+        text += (" Your lawyer hasn't added a meeting link yet." if for_client
+                 else " There is no meeting link yet. Add one from the appointment.")
+    return text
 
 
 async def _name(user_id: str, cache: dict, fallback: str) -> str:
@@ -346,6 +350,10 @@ async def send_due_reminders(
             when = _slot_text(fresh["scheduled_at"])
             client_name = await _name(fresh.get("client_id"), names, "your client")
             lawyer_name = await _name(fresh.get("lawyer_id"), names, "your lawyer")
+            from app.services import appointment_video
+            needs_link = (str(fresh.get("mode")) == "video"
+                          and not fresh.get("meeting_link")
+                          and not appointment_video.configured())
 
             for recipient, event_id in outstanding:
                 for_client = recipient == fresh.get("client_id")
@@ -356,7 +364,7 @@ async def send_due_reminders(
                            else "Appointment starting soon"),
                     body=_body(window, when,
                                lawyer_name if for_client else client_name,
-                               for_client),
+                               for_client, needs_link),
                     event_id=event_id,
                 )
                 report["sent" if ok else "failed"] += 1

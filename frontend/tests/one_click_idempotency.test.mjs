@@ -108,8 +108,11 @@ test("the lawyer downloads the petition revision that was shared", () => {
 });
 
 test("a finished generation retires its key, so an edit is a new render", () => {
-    const docs = read("../src/components/client/ModDocuments.jsx");
-    const i = docs.indexOf("setGenPct(100);");
-    const block = docs.slice(i, docs.indexOf("setGenDone(true)", i));
-    assert.match(block, /generateKeyRef\.current = null;/);
+    // Generation runs in the drafting workspace (the template guided flow
+    // that held its own key was removed on 2026-10-19).
+    const docs = read("../src/components/client/documents/DocsDrafts.jsx");
+    const i = docs.indexOf("planStore.drop(GEN_KEY_PREFIX + plan.id); planStore.drop(PLAN_KEY);");
+    assert.ok(i > 0, "the workspace's successful generation path moved");
+    const block = docs.slice(i, docs.indexOf("loadWorkspace(", i));
+    assert.match(block, /generationKey\.current = null;/);
 });

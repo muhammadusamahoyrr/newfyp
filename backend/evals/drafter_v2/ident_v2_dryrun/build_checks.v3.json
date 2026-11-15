@@ -1,0 +1,44 @@
+{
+ "source": "civil_collection__ident_v1",
+ "target": "civil_collection__ident_v2",
+ "diff": "ident_v2_metadata_diff.v3.json",
+ "build": true,
+ "gate_sha256": "04806e18c4db30d5cb4fee60752a7d96bd1d013c59790c88cfdc3f95ae1890d6",
+ "diff_sha256": "eda16e32634a6e5a34cc091de773fa0e80ea809663d98f665f2a43a5fbfb0462",
+ "locked_counts": {
+  "A": 213,
+  "B": 20,
+  "REVIEW": 16,
+  "changes": 233
+ },
+ "store": "live backend/chroma_data",
+ "source_chunks": 4648,
+ "source_fingerprint_before": "987f36c7c829273932a0caf258dfd6a49e59bfc4e110ee9ae1ce71892fae0787",
+ "stats": {
+  "review_rows_skipped": 16,
+  "class_A": 213,
+  "chunks_with_rule_spans": 26,
+  "class_B": 20,
+  "planned_changes": 233
+ },
+ "problems": [],
+ "pre_checks_passed": true,
+ "build_run_id": "646c85cde01548758dc06f97f8938b86",
+ "chunks_written": 4648,
+ "metadata_changed": 233,
+ "embeddings": {
+  "vectors": 4648,
+  "byte_identical": 4414,
+  "within_1_ulp_not_identical": 234,
+  "over_tolerance": 0,
+  "max_ulps": 1.0,
+  "max_abs_delta": 1.4901161193847656e-08,
+  "exact_topk_identical": 4648,
+  "hnsw_agreement_source": 4591,
+  "hnsw_agreement_new": 4573,
+  "hnsw_floor": 4569
+ },
+ "source_fingerprint_after": "987f36c7c829273932a0caf258dfd6a49e59bfc4e110ee9ae1ce71892fae0787",
+ "post_problems": [],
+ "post_checks_passed": true
+}

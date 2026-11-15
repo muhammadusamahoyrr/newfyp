@@ -1,10 +1,12 @@
 import asyncio
 import logging
+import math
 import secrets
 from datetime import datetime, timezone
 
 from pymongo.errors import DuplicateKeyError
 
+from app.core.constants import CaseType, Province
 from app.core.exceptions import (
     AppValidationError,
     ConflictError,
@@ -142,6 +144,35 @@ async def search_lawyers(
     )
     result.items = [_inject_coords(_sanitize(u)) for u in result.items]
     return result
+
+
+async def directory_counts(
+    province: str | None,
+    min_rating: float,
+    availability: bool | None,
+    specializations: list[str],
+) -> dict:
+    """Counts for the client directory in ONE request.
+
+    The Lawyers page used to send a separate 1-row search per practice-area chip
+    plus two more for its totals: nine HTTP round trips on every open. Each
+    area count is under the page's other filters (province, rating,
+    availability); the two totals are for the whole directory, unfiltered,
+    exactly as before. The filter is user_repo.lawyer_filter, the same one the
+    list itself uses, so a chip's number always matches what clicking it lists.
+    """
+    base = {"province": province, "min_rating": min_rating, "availability": availability}
+    areas = list(dict.fromkeys(specializations))
+    counts = await asyncio.gather(
+        *(user_repo.count_lawyers(**base, specialization=a) for a in areas),
+        user_repo.count_lawyers(),
+        user_repo.count_lawyers(availability=True),
+    )
+    return {
+        "by_specialization": dict(zip(areas, counts[:len(areas)])),
+        "total": counts[len(areas)],
+        "accepting": counts[len(areas) + 1],
+    }
 
 
 _RELATED_TERMS: dict[str, list[str]] = {
@@ -361,6 +392,15 @@ def _is_matchable(lawyer: dict | None) -> bool:
     return bool((lawyer.get("lawyer_profile") or {}).get("kyc_verified"))
 
 
+def _has_listable_profile(lawyer: dict) -> bool:
+    """Same completeness rule as UserRepository.lawyer_filter: a bar number
+    and at least one practice area. Approval at sign-up (LAWYER_AUTO_APPROVE)
+    comes before onboarding, so an approved lawyer may have neither yet."""
+    from app.repositories.user_repo import lawyer_profile_complete
+
+    return lawyer_profile_complete(lawyer)
+
+
 async def _semantic_candidates(
     query_text: str, province: str, limit: int
 ) -> dict[str, tuple[dict, float]]:
@@ -401,10 +441,12 @@ async def _semantic_candidates(
     stale: list[str] = []
     for hit in hits:
         lawyer = found.get(hit["lawyer_id"])
-        if _is_matchable(lawyer):
-            resolved[hit["lawyer_id"]] = (lawyer, hit["semantic_score"])
-        else:
+        if not _is_matchable(lawyer):
             stale.append(hit["lawyer_id"])
+        elif _has_listable_profile(lawyer):
+            resolved[hit["lawyer_id"]] = (lawyer, hit["semantic_score"])
+        # else: a real, approved lawyer still onboarding. Skipped, NOT stale:
+        # deleting the row would only have the reconcile sweep re-add it.
 
     if stale:
         logger.info("removing %d unresolvable lawyer vector(s): %s",
@@ -439,7 +481,7 @@ async def _general_listing(province: str, top_n: int) -> tuple[list[dict], str] 
                  else f"in {province}")
         return list(nearby.items), (
             f"No lawyer on the platform lists this case type {where} yet. "
-            f"These are verified lawyers available {where} — browse them "
+            f"These are registered lawyers available {where} — browse them "
             f"or refine your search."
         )
 
@@ -449,8 +491,8 @@ async def _general_listing(province: str, top_n: int) -> tuple[list[dict], str] 
     )
     if anywhere.items:
         return list(anywhere.items), (
-            f"No verified lawyer is registered in {province} yet. These are "
-            f"verified lawyers practising elsewhere in Pakistan."
+            f"No lawyer is registered in {province} yet. These are "
+            f"registered lawyers practising elsewhere in Pakistan."
         )
 
     return None
@@ -595,7 +637,7 @@ async def match_lawyers_for_case(case_id: str, top_n: int = 5) -> dict:
     if listing is None:
         return {
             "result_kind": "none",
-            "notice": ("No verified lawyers are available on the platform yet. "
+            "notice": ("No registered lawyers are available on the platform yet. "
                        "Please check back shortly."),
             "matches": [],
         }
@@ -612,6 +654,99 @@ async def match_lawyers_for_case(case_id: str, top_n: int = 5) -> dict:
              "match_reason": None}
             for l in lawyers
         ],
+    }
+
+
+# ── Provisional suggestions from a conversation (2026-10-16) ─────────────────
+#
+# The client chat surface has NO case binding, deliberately: a client used to be
+# able to bind their chat to any case id they could name. Matching that needs a
+# case therefore cannot run there, and the chat showed "unavailable" at exactly
+# the moment it told the client to see a lawyer.
+#
+# This is the other answer: lawyers who handle the KIND of matter the
+# conversation is about, from signals the server itself derived — the graph's
+# case-type classification, its confidence and the resolved province — never
+# from a case, and never from an unrelated "latest" case of the client's. It is
+# a browse list, not a ranking: no match score, and the notice says so.
+#
+# MongoDB only. The vector store is not consulted (it is a case-text search, and
+# a read there can prune rows), so this path cannot touch it.
+
+# Below this, the case type is a guess and suggesting lawyers for it would
+# present a guess as a recommendation. On the 0..1 scale of
+# `case_type_confidence`; the graph's own routing asks a clarifying question at
+# lower values.
+_PROVISIONAL_MIN_CONFIDENCE = 0.7
+
+KIND_PROVISIONAL = "provisional"
+KIND_UNAVAILABLE = "unavailable"
+
+_CASE_TYPE_VALUES = frozenset(c.value for c in CaseType)
+_PROVINCE_VALUES = frozenset(p.value for p in Province)
+
+def _no_suggestion() -> dict:
+    # Nothing is said: a low-confidence or unknown topic is not "no lawyers".
+    return {"result_kind": KIND_UNAVAILABLE, "notice": "", "matches": []}
+
+
+async def suggest_lawyers_from_signals(
+    *, case_type: str | None, case_type_confidence, province: str | None,
+    top_n: int = 3,
+) -> dict:
+    """Verified lawyers who handle this kind of matter. Provisional by design.
+
+    Returns the same shape as `match_lawyers_for_case`, with `result_kind`:
+      provisional  — lawyers listing this case type; `match_score` None
+      none         — the type is clear but no verified lawyer lists it
+      unavailable  — the signals are too weak to suggest anyone (silent)
+    """
+    ct = str(case_type or "").strip().lower()
+    try:
+        confidence = float(case_type_confidence)
+    except (TypeError, ValueError):
+        confidence = 0.0
+    if (ct not in _CASE_TYPE_VALUES or not math.isfinite(confidence)
+            or confidence < _PROVISIONAL_MIN_CONFIDENCE):
+        return _no_suggestion()
+
+    prov = str(province or "").strip().lower()
+    prov = prov if prov in _PROVINCE_VALUES else None
+    top_n = max(1, min(int(top_n), 10))
+
+    pool = await user_repo.find_lawyers(
+        province=prov, case_type=ct, min_rating=0.0,
+        page=1, page_size=top_n * 4,
+        # Same eligibility as the matcher: a provincial matter admits that
+        # province plus nationwide advocates. No province: no filter.
+        include_federal=True,
+    )
+    # Only lawyers who actually list the type -- never padded with others.
+    listed = [l for l in pool.items if _is_matchable(l)
+              and _specialization_boost(
+                  [str(s) for s in ((l.get("lawyer_profile") or {}).get("specializations") or [])],
+                  ct) == 0.20]
+    area = ct
+    where = (" across Pakistan" if prov is None
+             else " for a federal matter" if prov == "federal"
+             else f" in {prov.capitalize() if prov != 'kpk' else 'KPK'}")
+    if not listed:
+        return {"result_kind": "none",
+                "notice": f"No registered lawyer lists {area} matters{where} yet.",
+                "matches": []}
+
+    # Ordered by the factors that are not about this case's facts (we have no
+    # case): province, rating, availability, experience. The score itself is
+    # NOT returned -- a number here would read as a measured fit.
+    listed.sort(key=lambda l: _score_lawyer(l, ct, None, case_province=prov)[0],
+                reverse=True)
+    return {
+        "result_kind": KIND_PROVISIONAL,
+        "notice": (f"Based on this conversation, these registered lawyers handle "
+                   f"{area} matters{where}. They have not been matched to your "
+                   f"facts — complete a Legal Intake for a proper match."),
+        "matches": [{**_inject_coords(_sanitize(l)), "match_score": None,
+                     "match_reason": None} for l in listed[:top_n]],
     }
 
 
@@ -677,6 +812,34 @@ async def list_reviews(lawyer_id: str, page: int, page_size: int) -> dict:
     }
 
 
+async def _has_review_relationship(client_id: str, lawyer_id: str) -> bool:
+    """The one relationship rule for reviews, shared by the eligibility check
+    and the submission: a retained engagement (accepted, completed or
+    terminated) OR a completed appointment (AGREEMENTS_PRODUCT_PLAN.md §17 R5-6)."""
+    if await engagement_repo.exists_retained_relationship(client_id, lawyer_id):
+        return True
+    return await appointment_repo.exists_completed(client_id, lawyer_id)
+
+
+async def review_eligibility(lawyer_id: str, client_id: str) -> dict:
+    """Whether THIS client may review this lawyer now (2026-10-12).
+
+    Asked before the form is shown, so a client is not left to write a review
+    the server will refuse. The same rules as `submit_review`: one review per
+    (client, lawyer), and only after working together. Per-client state, so it
+    is its own authenticated read and never part of the public profile.
+    """
+    lawyer = await user_repo.find_by_id(lawyer_id)
+    if not lawyer or lawyer.get("role") != "lawyer":
+        raise NotFoundError("Lawyer")
+    if await get_lawyer_reviews_col().find_one(
+            {"client_id": client_id, "lawyer_id": lawyer_id}, {"_id": 1}):
+        return {"can_review": False, "already_reviewed": True, "reason": "already_reviewed"}
+    if not await _has_review_relationship(client_id, lawyer_id):
+        return {"can_review": False, "already_reviewed": False, "reason": "no_completed_relationship"}
+    return {"can_review": True, "already_reviewed": False, "reason": None}
+
+
 async def submit_review(
     lawyer_id: str, client_id: str, stars: int, comment: str | None
 ) -> None:
@@ -695,10 +858,7 @@ async def submit_review(
     # No executed letter is required any more. That was remediation plan §2 R5;
     # new engagements have no letter at all (R5-3), so keeping it would refuse
     # every review of a lawyer the client actually hired. R5 is superseded.
-    has_engagement  = await engagement_repo.exists_retained_relationship(
-        client_id, lawyer_id)
-    has_appointment = await appointment_repo.exists_completed(client_id, lawyer_id)
-    if not (has_engagement or has_appointment):
+    if not await _has_review_relationship(client_id, lawyer_id):
         raise ForbiddenError("You can only review a lawyer you have worked with")
 
     # One review per (client, lawyer), enforced by a unique index. The review is

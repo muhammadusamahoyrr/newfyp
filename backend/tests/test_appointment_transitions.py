@@ -794,7 +794,7 @@ async def test_a_premature_no_show_notifies_nobody(parties):
     appt = await _book(parties)
     await _confirm(appt["id"], parties["lawyer_id"])   # not yet started
 
-    with pytest.raises(AppValidationError, match="has not started"):
+    with pytest.raises(AppValidationError, match="only 15 minutes after the appointment starts"):
         await appointment_service.mark_no_show(appt["id"], parties["lawyer_id"])
 
     assert await _no_show_notifications(appt["id"]) == []

@@ -445,10 +445,10 @@ async def test_expiring_releases_the_slot(parties):
     await _patch(appt["id"],
                  expires_at=datetime.now(timezone.utc) - timedelta(minutes=1))
 
-    # The friendly pre-check, which is a 422 rather than the index's conflict.
+    # The friendly pre-check (a 409 conflict since 2026-10-12; it was a 422).
     # Either way the hour is unavailable while the request holds it, which is
     # the precondition this test needs.
-    with pytest.raises(AppValidationError):
+    with pytest.raises((AppValidationError, ConflictError)):
         await appointment_service.book_appointment(
             client_id=parties["client2_id"], lawyer_id=parties["lawyer_id"],
             case_id=None, scheduled_at=when, duration_minutes=60,

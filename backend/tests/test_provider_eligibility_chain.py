@@ -52,8 +52,13 @@ def providers(tier="fast"):
 
 
 def test_chain_order_is_preserved():
-    """Gemini -> groq -> groq2 -> openrouter. Gemini has no key, so it drops."""
-    assert llm_mod._FALLBACK_ORDER == ["gemini", "groq", "groq2", "openrouter"]
+    """groq -> groq2 -> groq3 -> groq4 -> cerebras -> gemini -> openrouter
+    (2026-10-13: two more Groq accounts, Gemini behind Groq as a free fallback;
+    2026-10-14: Cerebras, the same gpt-oss-120b on its own quota, right after
+    the Groq keys; groq5, a fifth account drafting starts on). Gemini and
+    Cerebras have no key here, so they drop; groq3-groq5 are not registered in
+    this test's builders, so they drop too."""
+    assert llm_mod._FALLBACK_ORDER == ["groq", "groq2", "groq3", "groq4", "groq5", "cerebras", "gemini", "openrouter"]
     assert providers() == ["groq", "groq2", "openrouter"]
 
 

@@ -178,66 +178,83 @@ function started(over = {}) {
     });
 }
 
-test("a confirmed appointment that has started offers the No Show action", async () => {
+/* ONE outcome interface (2026-10-20): there is no standalone "No Show"
+ * button. "Record outcome" opens the four-option dialog, whose "The client
+ * didn't attend" records the no-show through the same endpoint. */
+const listButtons = (ui) => [...ui.container.querySelectorAll('button:not([role="tab"])')];
+async function press(ui, el) {
+    assert.ok(el, "control missing");
+    await act(async () => { el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+}
+async function recordNoShow(ui) {
+    await press(ui, listButtons(ui).find(b => b.textContent.trim() === "Record outcome"));
+    await press(ui, [...dom.window.document.querySelectorAll('[role="radio"]')].find(b => b.textContent.trim() === "The client didn't attend"));
+    await press(ui, dom.window.document.querySelector("[data-close-confirm]"));
+}
+
+test("an ended meeting offers Record outcome, and no standalone No Show button", async () => {
     const ui = await mountAppointments([started()]);
-
-    const noShow = [...ui.container.querySelectorAll('button:not([role="tab"])')]
-        .find(b => b.textContent.trim() === "No Show");
-    assert.ok(noShow, "no No Show control on a started confirmed appointment");
-    assert.equal(noShow.disabled, false, "it must be usable, not merely present");
+    const rec = listButtons(ui).find(b => b.textContent.trim() === "Record outcome");
+    assert.ok(rec, "no Record outcome on an ended confirmed appointment");
+    assert.equal(rec.disabled, false, "it must be usable, not merely present");
+    assert.equal(listButtons(ui).filter(b => /^No[- ]?Show$/i.test(b.textContent.trim())).length, 0, "a standalone No Show button is back");
     await ui.unmount();
 });
 
-test("No Show is offered but disabled before the appointment starts", async () => {
-    // Present, so the lawyer can see the action exists and when it applies —
-    // and disabled, because the server refuses it. The alternative is a button
-    // that is always there and always fails.
+test("a meeting under way: Record outcome opens with only 'The client didn't attend' open", async () => {
+    const ui = await mountAppointments([appointment({ scheduled_at: new Date(Date.now() - 20 * 6e4).toISOString(), duration_minutes: 60 })]);
+    await press(ui, listButtons(ui).find(b => b.textContent.trim() === "Record outcome"));
+    const radios = [...dom.window.document.querySelectorAll('[role="radio"]')];
+    const opt = label => radios.find(b => b.textContent.trim() === label);
+    assert.equal(opt("The client didn't attend").disabled, false);
+    assert.equal(opt("The client didn't attend").getAttribute("aria-checked"), "true", "the only open choice was not preselected");
+    assert.equal(opt("It took place").disabled, true, "a meeting not yet ended could be completed");
+    await ui.unmount();
+});
+
+test("No outcome control before the appointment starts", async () => {
+    // Outcome controls appear when they apply instead of sitting disabled.
     const ui = await mountAppointments([appointment({ status: "confirmed" })]);
-
-    const noShow = [...ui.container.querySelectorAll('button:not([role="tab"])')]
-        .find(b => b.textContent.trim() === "No Show");
-    assert.ok(noShow, "the action should still be visible");
-    assert.equal(noShow.disabled, true,
-                 "a future appointment cannot be a no-show yet");
-
-    await ui.click("No Show");
-    assert.equal(api.__calls("markNoShow").length, 0,
-                 "a disabled control must not reach the API at all");
+    assert.equal(listButtons(ui).find(b => /^(No Show|Record outcome)$/.test(b.textContent.trim())), undefined,
+        "a future appointment offered an outcome");
+    assert.equal(api.__calls("markNoShow").length, 0);
     await ui.unmount();
 });
 
-test("marking a no-show calls the existing endpoint and updates the row",
+test("a no-show recorded from the dialog calls the existing endpoint and updates the row",
      async () => {
     api.__respond("markNoShow", { data: { success: true } });
     const ui = await mountAppointments([started()]);
+    // The server now holds a no-show; the re-read after recording shows it.
+    api.__respond("listAppointments", () => ({ data: { items: [started({ status: "no_show" })] } }));
 
-    assert.deepEqual(ui.badges(), ["Upcoming"],
-                     "the row did not start as a confirmed appointment");
+    // An ended confirmed appointment reads "Needs outcome" (2026-10-19).
+    assert.ok(ui.container.querySelector("[data-needs-outcome]"),
+              "the row did not start as a confirmed appointment awaiting its outcome");
 
-    await ui.click("No Show");
+    await recordNoShow(ui);
 
     // The EXISTING API function, with the appointment id — no new endpoint.
     const calls = api.__calls("markNoShow");
     assert.equal(calls.length, 1, "markNoShow was not called exactly once");
     assert.deepEqual(calls[0].args, ["apt-1"]);
-
-    // And the row now reads as a no-show rather than staying Upcoming.
     assert.deepEqual(ui.badges(), ["No Show"]);
     await ui.unmount();
 });
 
 test("a refused no-show leaves the appointment unchanged", async () => {
-    // The server allows this only on a CONFIRMED appointment, so a stale card
-    // is refused. The row must not optimistically flip on a failure.
+    // The row must not optimistically flip on a failure.
     api.__respond("markNoShow",
                   { data: null, error: { message: "An appointment in 'cancelled' status cannot be marked 'no_show'." } });
     const ui = await mountAppointments([started()]);
 
-    await ui.click("No Show");
+    await recordNoShow(ui);
 
     assert.equal(api.__calls("markNoShow").length, 1);
-    assert.deepEqual(ui.badges(), ["Upcoming"],
-                     "the row changed despite the server refusing");
+    assert.ok(ui.container.querySelector("[data-needs-outcome]"),
+              "the row changed despite the server refusing");
+    assert.deepEqual(ui.badges(), []);
     await ui.unmount();
 });
 
@@ -250,5 +267,21 @@ test("a completed appointment offers no No Show action", async () => {
         .map(b => b.textContent.trim());
     assert.ok(!labels.includes("No Show"),
               `No Show offered on a completed appointment; buttons: ${labels}`);
+    await ui.unmount();
+});
+
+/* ── a case meeting is marked apart (2026-10-20) ─────────────────────────── */
+
+test("a meeting on an engaged case carries a Case meeting chip and edge; a consultation does not", async () => {
+    const ui = await mountAppointments([
+        appointment({ id: "a-case", case_meeting: true, case_number: "ATT-2026-1" }),
+        appointment({ id: "a-cons", scheduled_at: new Date(Date.now() + 5 * 36e5).toISOString() }),
+    ]);
+    const caseCard = ui.container.querySelector('[data-appt-card="a-case"]');
+    assert.ok(caseCard.classList.contains("case-meet"), "the case meeting is not marked");
+    assert.equal(caseCard.querySelector("[data-case-meeting-chip]")?.textContent, "Case meeting · ATT-2026-1");
+    const cons = ui.container.querySelector('[data-appt-card="a-cons"]');
+    assert.ok(!cons.classList.contains("case-meet"));
+    assert.equal(cons.querySelector("[data-case-meeting-chip]"), null);
     await ui.unmount();
 });

@@ -49,10 +49,14 @@ const NEXT_STUBS = {
                 prefetch: () => {},
             };
         }
-        export function useSearchParams() {
-            return { get: (k) => (nav.params.get(k) ?? null),
-                     toString: () => "" };
-        }
+        // ONE object, as Next.js gives per URL: a fresh object per render made
+        // every effect that depends on it re-run on every render. It still
+        // reads the current params, so a test can change them.
+        const searchParams = (nav.searchParams ||= {
+            get: (k) => (nav.params.get(k) ?? null),
+            toString: () => new URLSearchParams([...nav.params]).toString(),
+        });
+        export function useSearchParams() { return searchParams; }
         export function usePathname() { return nav.pathname || "/"; }
         export function redirect(u) { (nav.redirected ||= []).push(u); }
     `,

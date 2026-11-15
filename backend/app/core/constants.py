@@ -302,6 +302,16 @@ class NotificationType(str, Enum):
     # turned up.
     APPOINTMENT_NO_SHOW = "appointment_no_show"
     APPOINTMENT_EXPIRED = "appointment_expired"
+    # Meeting proposals (2026-10-12): a lawyer proposes times on a case, the
+    # client chooses one (it becomes a confirmed appointment) or declines.
+    APPOINTMENT_PROPOSED = "appointment_proposed"
+    APPOINTMENT_PROPOSAL_ACCEPTED = "appointment_proposal_accepted"
+    APPOINTMENT_PROPOSAL_DECLINED = "appointment_proposal_declined"
+    APPOINTMENT_PROPOSAL_WITHDRAWN = "appointment_proposal_withdrawn"
+    # Every proposed time passed with no choice made; to the LAWYER only.
+    APPOINTMENT_PROPOSAL_EXPIRED = "appointment_proposal_expired"
+    # A message on an appointment's own thread (2026-10-12); no text in it.
+    APPOINTMENT_MESSAGE = "appointment_message"
     # RESERVED, and still unused: the T-24h / T-1h reminders before a
     # consultation. Kept distinct from the nudge below because the two say
     # opposite things — one is "this is about to happen", the other is "this
@@ -353,3 +363,9 @@ class AppointmentMode(str, Enum):
 PRACTICE_AREAS = ("civil", "criminal", "family", "constitutional", "property",
                   "corporate", "banking", "tax", "labour", "cyber")
 SPECIALIZATION_PATTERN = "^(" + "|".join(PRACTICE_AREAS) + ")$"
+
+
+# Versions of /terms and /privacy a new account agrees to. Bump when either
+# page changes: the stored consent says which text was accepted.
+TERMS_VERSION = "2026-10-18"
+PRIVACY_VERSION = "2026-10-18"

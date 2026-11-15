@@ -179,6 +179,11 @@ def _tool_evidence(state: dict) -> list[dict]:
     verifier treats as ground truth, so an audit that omitted them could not
     explain why an answer was accepted as grounded.
     """
+    from app.ai import tool_contract
+    # Lookup misses that generation never saw because a retrieved source was
+    # the named provision itself (ai/tool_contract.reconcile).
+    superseded = {c.get("tool") for c in (state.get("tool_conflicts") or [])
+                  if c.get("resolution") == "lookup_miss_superseded_by_exact_source"}
     out: list[dict] = []
     for call in (state.get("tool_results") or [])[:_MAX_TOOLS]:
         result = call.get("result")
@@ -187,8 +192,9 @@ def _tool_evidence(state: dict) -> list[dict]:
             ok = not result.get("error")
         elif isinstance(result, list):
             ok = any(isinstance(r, dict) and not r.get("error") for r in result)
+        outcome = tool_contract.outcome_of(result)
 
-        out.append({
+        entry = {
             "tool": call.get("tool", ""),
             "args": {
                 k: _truncate(v, _ARG_MAX)
@@ -196,7 +202,12 @@ def _tool_evidence(state: dict) -> list[dict]:
             },
             "ok":     ok,
             "result": _truncate(result, _RESULT_MAX),
-        })
+        }
+        if outcome:
+            entry["outcome"] = outcome
+        if call.get("tool") in superseded and outcome in ("not_in_table", "error"):
+            entry["superseded_by_source"] = True
+        out.append(entry)
     return out
 
 

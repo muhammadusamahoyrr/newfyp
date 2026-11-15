@@ -14,7 +14,10 @@ Fixes vs previous version
           before any confidence/province logic runs.
 """
 
+import re
+
 from app.ai.graph.state import AgentState
+from app.ai.response_policy import presentation_base_query
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
 _RELEVANCE_THRESHOLD           = 0.40  # below → retry retrieval if budget allows
@@ -47,11 +50,73 @@ def route_after_classifier(state: AgentState) -> str:
     return "triage_node"
 
 
+_GENERAL_QUESTION = re.compile(
+    r"^\s*(?:please\s+)?(?:can\s+you\s+|could\s+you\s+)?"
+    r"(?:what\s+(?:is|are|does|do)\b|what'?s\b|which\b|list\b|name\b|explain\b|define\b|describe\b|"
+    r"tell\s+me\b|give\s+me\b|how\s+many\b|overview\b|summari[sz]e\b|difference\s+between\b)",
+    re.IGNORECASE)
+# "Briefly, what is khula?" asks the same general question (2026-10-21).
+_LENGTH_PREFIX = re.compile(
+    r"^\s*(?:briefly|in\s+short|shortly|quickly|simply|in\s+simple\s+(?:words|terms)|in\s+detail)"
+    r"\s*[,:\-]?\s*", re.IGNORECASE)
+# Roman Urdu and Urdu put the question word last ("chori ki saza kya hai?",
+# "خلع کیا ہے؟"), so these are searched anywhere, not anchored (2026-10-21).
+_GENERAL_QUESTION_UR = re.compile(
+    r"\b(?:kya|kia)\s+(?:hai|hain|he|hota|hoti|hote|matlab)\b|\bkis(?:e|ay|ko)\s+kehte\b|\bka\s+matlab\b|"
+    r"کیا\s*ہے|کیا\s*ہیں|کیا\s*ہوتا|کیا\s*ہوتی|کیا\s*ہوتے|کسے\s*کہتے|سے\s*کیا\s*مراد|کا\s*مطلب",
+    re.IGNORECASE)
+# The asker's own matter ("my landlord...", "I was arrested", "meri biwi...",
+# "میرے شوہر...") is not a general question.
+_OWN_MATTER = re.compile(
+    r"\b(?:my|mine|our|i\s+(?:am|was|have|had|got)|we\s+(?:are|were|have|had))\b|"
+    r"\b(?:mera|meri|mere|mujhe|mujh|maine|main\s+ne|hamara|hamari|hamare|humne|hum\s+ne)\b|"
+    r"\b(?:sakta|sakti|chahta|chahti)\s+(?:hun|hoon|hu)\b|"
+    r"میرا|میری|میرے|مجھے|مجھ\s|ہمارا|ہماری|ہمارے|میں\s*نے|ہم\s*نے", re.IGNORECASE)
+
+
+def is_general_question(query: str | None) -> bool:
+    """An educational question about the law, not one about the asker's matter."""
+    q = (query or "").strip()
+    if not q or len(q) > 300 or _OWN_MATTER.search(q):
+        return False
+    return bool(_GENERAL_QUESTION.search(_LENGTH_PREFIX.sub("", q)) or _GENERAL_QUESTION_UR.search(q))
+
+
 def route_after_triage(state: AgentState) -> str:
+    # A question ABOUT the assistant ("can you guide me?", "kya aap meri madad
+    # kar sakte hain?") has no facts to search: the finalizer answers it in the
+    # asker's language (ai/client_help.py, 2026-10-20).
+    from app.ai.client_help import is_capability_question
+    if is_capability_question(state.get("query")):
+        return "finalizer_node"
+
     # FIX 3: off_topic check always runs first — never falls through to
     # province/confidence logic on dead-end queries.
     if state.get("convergence_status") == "off_topic":
         return "finalizer_node"
+
+    # A client "make it short" / "explain in detail" turn re-answers a question
+    # the user already asked: never ask them a new question about it. With a
+    # case type it goes on to the normal checked path; without one it ends with
+    # the honest message triage set, rather than searching the civil default.
+    # The confidence logic below must not decide this -- the keyword classifier
+    # scores many valid questions at 0.0 ("What is Section 506 PPC?").
+    # presentation_base_query is None for lawyer research, so research routing
+    # is unchanged.
+    if presentation_base_query(state):
+        if state.get("case_type") in ("civil", "criminal", "family", "constitutional"):
+            return "fact_gap_node"
+        return "finalizer_node"
+
+    # A LAWYER's general / educational question ("what are the fundamental
+    # rights?", "explain bail before arrest") is not a matter with a province
+    # or facts to pin down: asking for them sent a basic question round two
+    # clarifications (2026-10-20). Research proceeds; if the library holds too
+    # little, the lawyer gets labelled general guidance (ai/general_guidance.py).
+    # The same holds for a CLIENT asking what the law is ("What is khula and
+    # how can a wife get it?", 2026-10-20): it is answered, not questioned.
+    if state.get("surface") in ("research", "client") and is_general_question(state.get("query")):
+        return "fact_gap_node"
 
     routing_mode = state.get("routing_mode", "single")
 

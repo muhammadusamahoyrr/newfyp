@@ -50,6 +50,7 @@ from app.db.collections import (
     get_users_col,
 )
 from app.models import review_request as rr
+from app.services import quick_review
 from app.services import review_request_lifecycle as lifecycle
 
 logger = logging.getLogger(__name__)
@@ -92,7 +93,11 @@ def trash_view(row: dict) -> dict:
         "current_version": row.get("current_version", 0),
         "deleted_at": _iso(row.get("deleted_at")),
         "purge_after": _iso(row.get("purge_after")),
-        "restorable": row.get("purge_started_at") is None,
+        # Restorable means restore WILL work: also before the deadline, which
+        # restore_document enforces (audit 2026-10-15, F1: the button was offered
+        # between purge_after and the purge job, and every click failed).
+        "restorable": row.get("purge_started_at") is None
+        and (row.get("purge_after") is None or _aware(row["purge_after"]) > _now()),
     }
 
 
@@ -153,19 +158,32 @@ async def delete_document(*, client_id: str, document_id: str) -> dict:
     entry = {**doc, "deleted_at": now, "deleted_by": client_id,
              "purge_after": now + timedelta(days=settings.vault_recovery_days), "purge_started_at": None}
 
+    # NOT UNDER REVIEW, IN THE DELETE ITSELF (audit 2026-10-15, B2). The check
+    # above reads; a quick-review ACCEPT submitting the document between that
+    # read and the delete would otherwise remove a document a lawyer now holds.
+    deletable = {"_id": document_id, "client_id": client_id, "schema_version": 2,
+                 "review_status": {"$ne": "submitted"}}
+    closed: list[dict] = []
+
     if lifecycle.enabled():
         from app.services.review_request_service import _in_transaction
 
         async def op(session):
+            nonlocal closed
             await trash.replace_one({"_id": document_id}, entry, upsert=True, session=session)
-            removed = await documents.delete_one(
-                {"_id": document_id, "client_id": client_id, "schema_version": 2}, session=session)
+            removed = await documents.delete_one(deletable, session=session)
             if removed.deleted_count != 1:
-                raise _not_found()
+                raise _UnderReviewOrGone()
             await lifecycle.end_for_document(session, document_id=document_id, now=now)
+            # Its quick-review requests close with it (kept, with an audit entry).
+            closed = await quick_review.close_for_deleted_document(
+                doc_id=document_id, by=client_id, now=now, session=session)
 
         try:
             await _in_transaction(op)
+        except _UnderReviewOrGone:
+            # Rolled back, trash write included: only the answer is left to give.
+            return await _after_failed_delete(documents, trash, document_id, client_id)
         except Exception as exc:
             # The transaction wrapper's own refusal carries a status; surface it.
             if getattr(exc, "status", None) == 503:
@@ -175,8 +193,37 @@ async def delete_document(*, client_id: str, document_id: str) -> dict:
         # No transaction: trash first, then remove -- a crash in between
         # leaves a duplicate (resolved by the next attempt), never a loss.
         await trash.replace_one({"_id": document_id}, entry, upsert=True)
-        await documents.delete_one({"_id": document_id, "client_id": client_id, "schema_version": 2})
+        removed = await documents.delete_one(deletable)
+        if removed.deleted_count != 1:
+            # Take back our trash entry ONLY while the document is still here
+            # (it went under review). If it is gone, a concurrent delete moved
+            # it, and the trash entry -- ours may have replaced theirs -- is now
+            # its only copy: removing it would lose the document.
+            if await documents.find_one({"_id": document_id}, {"_id": 1}) is not None:
+                await trash.delete_one({"_id": document_id, "deleted_at": now})
+            return await _after_failed_delete(documents, trash, document_id, client_id)
+        closed = await quick_review.close_for_deleted_document(doc_id=document_id, by=client_id, now=now)
+    await quick_review.notify_closed_for_deleted_document(closed)
     return trash_view(entry)
+
+
+class _UnderReviewOrGone(Exception):
+    """The atomic delete matched nothing; the transaction rolls back."""
+
+
+async def _after_failed_delete(documents, trash, document_id: str, client_id: str) -> dict:
+    """The atomic delete matched nothing: the document went under review
+    (409), or a concurrent delete already moved it -- answered like any repeat
+    delete, with its trash entry."""
+    now_doc = await documents.find_one({"_id": document_id, "client_id": client_id})
+    if now_doc is not None and now_doc.get("review_status") == "submitted":
+        raise VaultDeletionError(409, "document_under_review",
+                                 "This document is with a lawyer for review. Withdraw it from review before deleting it.")
+    if now_doc is None:
+        already = await trash.find_one({"_id": document_id, "client_id": client_id})
+        if already is not None:
+            return trash_view(already)
+    raise _not_found()
 
 
 async def restore_document(*, client_id: str, document_id: str) -> dict:

@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import AwareDatetime
@@ -20,10 +21,21 @@ from app.schemas.appointment import (
     ConfirmAppointmentRequest,
     RescheduleAppointmentRequest,
     SetMeetingLinkRequest,
+    SuggestTimesRequest,
+    AcceptSuggestionRequest,
+    RescheduleProposalRequest,
+    RescheduleProposalAccept,
+    SharedSummaryRequest,
+)
+from app.schemas.appointment_message import (
+    AppointmentMessageCreate,
+    AppointmentMessagePage,
+    AppointmentMessageSent,
 )
 from app.schemas.common import PaginatedResponse, StatusResponse
 from app.services import (
     appointment_disputes,
+    appointment_message_service,
     appointment_outcomes,
     appointment_service,
 )
@@ -71,6 +83,11 @@ async def list_appointments(
     # instants with an offset; omitted, the listing is exactly as before.
     starts_from: AwareDatetime | None = Query(default=None),
     starts_before: AwareDatetime | None = Query(default=None),
+    # Lawyer list only (2026-10-20): Upcoming = confirmed and not yet ended;
+    # order=action lists "All" as it is worked (needs outcome, requests,
+    # upcoming, then history).
+    upcoming_only: bool = Query(default=False),
+    order: Literal["time", "action"] = Query(default="time"),
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -85,6 +102,8 @@ async def list_appointments(
         page_size=page_size,
         starts_from=starts_from,
         starts_before=starts_before,
+        upcoming_only=upcoming_only,
+        order=order,
     )
 
 
@@ -182,6 +201,9 @@ async def pending_outcomes(
     after_end_at: datetime | None = Query(default=None),
     after_id: str | None = Query(default=None),
     cutoff: datetime | None = Query(default=None),
+    # The Needs outcome list (2026-10-20): a meeting is listed the moment it
+    # ends. The two-hour grace stays the default for reminders.
+    immediate: bool = Query(default=False),
     current_user: dict = Depends(require_lawyer),
 ):
     """Consultations this lawyer has finished and not yet reported on.
@@ -206,7 +228,41 @@ async def pending_outcomes(
         after_end_at=after_end_at,
         after_id=after_id,
         cutoff=cutoff,
+        grace=timedelta(0) if immediate else appointment_outcomes.DEFAULT_GRACE,
     )
+
+
+@router.get("/{appointment_id}/messages", response_model=AppointmentMessagePage)
+async def list_appointment_messages(
+    appointment_id: str,
+    page_size: int = Query(default=30, ge=1, le=100),
+    before_created_at: datetime | None = Query(default=None),
+    before_id: str | None = Query(default=None, max_length=64),
+    current_user: dict = Depends(get_current_user),
+):
+    """This appointment's own thread, for its client and its lawyer only.
+
+    Newest page first, oldest-first within it; pass `next_cursor` back whole
+    to read older messages. `can_send` / `send_state` are the server's rule
+    for whether the thread is open -- the UI does not re-derive it.
+    """
+    return await appointment_message_service.list_messages(
+        appointment_id, current_user, page_size=page_size,
+        before_created_at=before_created_at, before_id=before_id)
+
+
+@router.post("/{appointment_id}/messages", status_code=201, response_model=AppointmentMessageSent)
+async def send_appointment_message(
+    appointment_id: str,
+    body: AppointmentMessageCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Send a plain-text message on an open (confirmed) appointment thread.
+    The sender is the signed-in user; the recipient is the other party on the
+    stored appointment. Retry with the same `idempotency_key` after a lost
+    reply: the stored message is returned, never a second one."""
+    return await appointment_message_service.send_message(
+        appointment_id, current_user, body.text, body.idempotency_key)
 
 
 @router.get("/{appointment_id}", response_model=AppointmentOut)
@@ -299,6 +355,96 @@ async def reschedule_appointment(
     )
 
 
+@router.post("/{appointment_id}/suggest-times", response_model=AppointmentOut)
+@limiter.limit(_LIMIT_RESCHEDULE)
+async def suggest_times(
+    request: Request,
+    appointment_id: str,
+    body: SuggestTimesRequest,
+    current_user: dict = Depends(require_lawyer),
+):
+    """The lawyer offers up to three other times for a pending request; the
+    client is told and picks one (services/appointment_suggestions.py)."""
+    from app.services import appointment_suggestions
+    return await appointment_suggestions.suggest_times(
+        appointment_id, current_user["_id"], body.options, body.note)
+
+
+@router.post("/{appointment_id}/accept-suggestion", response_model=AppointmentOut)
+@limiter.limit(_LIMIT_RESCHEDULE)
+async def accept_suggestion(
+    request: Request,
+    appointment_id: str,
+    body: AcceptSuggestionRequest,
+    current_user: dict = Depends(require_client),
+):
+    """The client picks one of the lawyer's suggested times: the request moves
+    there and is confirmed, since the lawyer already offered it."""
+    from app.services import appointment_suggestions
+    return await appointment_suggestions.accept_suggestion(
+        appointment_id, current_user["_id"], body.scheduled_at, body.schedule_version)
+
+
+# ── A case summary the client chooses to share (2026-10-19) ──────────────────
+# Separate from documents. services/appointment_summary_share.py holds the rules.
+
+@router.get("/{appointment_id}/summary/draft")
+async def summary_draft(appointment_id: str, current_user: dict = Depends(require_client)):
+    from app.services import appointment_summary_share as ss
+    return await ss.draft(appointment_id, current_user)
+
+
+@router.get("/{appointment_id}/summary")
+async def read_summary(appointment_id: str, current_user: dict = Depends(get_current_user)):
+    from app.services import appointment_summary_share as ss
+    return await ss.read(appointment_id, current_user)
+
+
+@router.put("/{appointment_id}/summary")
+async def share_summary(appointment_id: str, body: SharedSummaryRequest,
+                        current_user: dict = Depends(require_client)):
+    from app.services import appointment_summary_share as ss
+    return await ss.share(appointment_id, current_user, body.text)
+
+
+@router.delete("/{appointment_id}/summary")
+async def revoke_summary(appointment_id: str, current_user: dict = Depends(require_client)):
+    from app.services import appointment_summary_share as ss
+    return await ss.revoke(appointment_id, current_user)
+
+
+# ── Moving a CONFIRMED appointment by agreement (2026-10-19) ────────────────
+# Either party proposes; the other accepts or declines; the proposer can
+# withdraw. services/appointment_reschedule_proposals.py holds the rules.
+
+@router.post("/{appointment_id}/reschedule-proposal", response_model=AppointmentOut)
+@limiter.limit(_LIMIT_RESCHEDULE)
+async def propose_new_time(request: Request, appointment_id: str, body: RescheduleProposalRequest,
+                           current_user: dict = Depends(get_current_user)):
+    from app.services import appointment_reschedule_proposals as rp
+    return await rp.propose(appointment_id, current_user, body.scheduled_at, body.note)
+
+
+@router.post("/{appointment_id}/reschedule-proposal/withdraw", response_model=AppointmentOut)
+async def withdraw_new_time(appointment_id: str, current_user: dict = Depends(get_current_user)):
+    from app.services import appointment_reschedule_proposals as rp
+    return await rp.withdraw(appointment_id, current_user)
+
+
+@router.post("/{appointment_id}/reschedule-proposal/decline", response_model=AppointmentOut)
+async def decline_new_time(appointment_id: str, current_user: dict = Depends(get_current_user)):
+    from app.services import appointment_reschedule_proposals as rp
+    return await rp.decline(appointment_id, current_user)
+
+
+@router.post("/{appointment_id}/reschedule-proposal/accept", response_model=AppointmentOut)
+@limiter.limit(_LIMIT_RESCHEDULE)
+async def accept_new_time(request: Request, appointment_id: str, body: RescheduleProposalAccept,
+                          current_user: dict = Depends(get_current_user)):
+    from app.services import appointment_reschedule_proposals as rp
+    return await rp.accept(appointment_id, current_user, body.proposal_id)
+
+
 @router.patch("/{appointment_id}/cancel", response_model=StatusResponse)
 async def cancel_appointment(
     appointment_id: str,
@@ -316,6 +462,7 @@ async def cancel_appointment(
         user_id=current_user["_id"],
         user_role=current_user["role"],
         reason=reason,
+        outcome_code=body.outcome_code if body else None,
     )
     return StatusResponse(success=True, message="Appointment cancelled")
 
