@@ -61,7 +61,7 @@ langchain-ollama==0.3.10   # local Ollama — required by LLM_LOCAL_ONLY runs
 # 2.1.12 is the last line built on langchain-core 0.3.x; 4.x would pull
 # langchain-core 1.x and pydantic upgrades that break the pins above.
 # llm.py still imports it lazily and skips Gemini when absent.
-langchain-google-genai==2.1.12
+langchain-google-genai==4.5.0
 
 # Voice / STT
 faster-whisper
