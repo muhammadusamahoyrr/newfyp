@@ -116,7 +116,10 @@ def _lawyer(_id: str, *, verified: bool = True, active: bool = True) -> dict:
     return {"_id": _id, "role": "lawyer", "is_active": active,
             "email": f"{_id}@test.invalid", "full_name": "Adv Test",
             "province": "punjab", "created_at": datetime.now(timezone.utc),
+            # A bar number too: the directory lists only lawyers with one
+            # (user_repo.lawyer_filter, the LAWYER_AUTO_APPROVE policy).
             "lawyer_profile": {"specializations": ["criminal"],
+                               "bar_number": f"BAR-{_id}",
                                "kyc_verified": verified, "rating": 4.0,
                                "total_reviews": 0, "availability": True,
                                "experience_years": 5}}

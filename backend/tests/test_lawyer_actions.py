@@ -7,6 +7,7 @@ import pytest
 
 from app.db.collections import get_appointments_col, get_engagements_col
 from app.services import lawyer_actions as la
+from app.services.appointment_slots import occupied_slots
 
 pytestmark = pytest.mark.integration
 
@@ -19,6 +20,7 @@ async def _appt(_id, status, minutes, lawyer=L, expires_in=None):
     await get_appointments_col().insert_one({
         "_id": _id, "client_id": "la-c1", "lawyer_id": lawyer, "status": status, "mode": "video",
         "scheduled_at": start, "end_at": start + timedelta(minutes=30),
+        "occupied_slots": occupied_slots(start, 30),
         "expires_at": None if expires_in is None else NOW + timedelta(minutes=expires_in)})
 
 
@@ -87,7 +89,7 @@ async def test_to_do_is_the_sum_of_the_three_action_queues():
     await _appt("la-p", "pending", 600)
     await _appt("la-o", "confirmed", -60)
     await _eng("la-h", "requested")
-    await _appt("la-u", "confirmed", 600)
+    await _appt("la-u", "confirmed", 700)   # not 600: one lawyer, one slot (la-p holds it)
     await _eng("la-w", "terms_proposed")
     r = await la.action_counts(L, now=NOW)
     assert r["to_do"] == 3

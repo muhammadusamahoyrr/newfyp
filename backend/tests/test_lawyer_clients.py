@@ -8,6 +8,7 @@ import pytest
 
 from app.db.collections import get_appointments_col, get_cases_col, get_engagements_col, get_users_col
 from app.services import lawyer_clients as lc
+from app.services.appointment_slots import occupied_slots
 
 pytestmark = pytest.mark.integration
 
@@ -20,6 +21,7 @@ async def _appt(_id, client, status, hours, lawyer=L, expires_hours=None):
     start = NOW + timedelta(hours=hours)
     await get_appointments_col().insert_one({"_id": _id, "client_id": client, "lawyer_id": lawyer, "status": status,
                                              "scheduled_at": start, "end_at": start + timedelta(minutes=30), "mode": "video",
+                                             "occupied_slots": occupied_slots(start, 30),
                                              "expires_at": None if expires_hours is None else NOW + timedelta(hours=expires_hours)})
 
 
@@ -30,7 +32,7 @@ async def _eng(_id, client, status, lawyer=L, hours_ago=1):
 
 async def _case(_id, client, status, lawyer=L):
     await get_cases_col().insert_one({"_id": _id, "client_id": client, "lawyer_id": lawyer, "status": status,
-                                      "title": f"Case {_id}", "province": "punjab", "created_at": NOW - timedelta(days=5)})
+                                      "title": f"Case {_id}", "case_number": f"LC-{_id}", "province": "punjab", "created_at": NOW - timedelta(days=5)})
 
 
 @pytest.fixture(autouse=True)
@@ -54,7 +56,7 @@ async def _by_id():
 
 async def test_each_stage_is_derived_from_the_records():
     await _appt("lc-a1", "lc-c1", "pending", 24)                       # requested
-    await _appt("lc-a2", "lc-c2", "confirmed", 24)                     # scheduled
+    await _appt("lc-a2", "lc-c2", "confirmed", 26)                     # scheduled (not lc-a1's slot)
     await _appt("lc-a3", "lc-c3", "completed", -48)                    # completed
     await _case("lc-k4", "lc-c4", "in_progress")                       # engaged
     await _appt("lc-a4", "lc-c4", "completed", -72)
@@ -137,7 +139,7 @@ async def test_an_engaged_client_still_owes_an_outcome():
     c = by["lc-c1"]
     assert c["stage"] == lc.ENGAGED, "the relationship is engaged"
     assert c["next_action"] == {"kind": "record_outcome", "target_id": "lc-a1"}, "the outcome is the action"
-    assert c["message"] == {"kind": "case", "target_id": "lc-k1", "case_number": None}
+    assert c["message"] == {"kind": "case", "target_id": "lc-k1", "case_number": "LC-lc-k1"}
     assert c["targets"]["next_appointment_id"] == "lc-a2"
 
 

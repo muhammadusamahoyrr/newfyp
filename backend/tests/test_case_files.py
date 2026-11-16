@@ -27,9 +27,9 @@ async def _setup(mongo, monkeypatch, tmp_path):
     cases = get_cases_col()
     await cases.delete_many({"_id": {"$in": [CASE, CLOSED, NOT_MINE]}})
     await cases.insert_many([
-        {"_id": CASE, "client_id": CLIENT, "lawyer_id": LAWYER, "status": "in_progress", "title": "A"},
-        {"_id": CLOSED, "client_id": CLIENT, "lawyer_id": LAWYER, "status": "closed", "title": "B"},
-        {"_id": NOT_MINE, "client_id": CLIENT, "lawyer_id": OTHER, "status": "in_progress", "title": "C"},
+        {"_id": CASE, "client_id": CLIENT, "lawyer_id": LAWYER, "status": "in_progress", "title": "A", "case_number": "CF-T-0001"},
+        {"_id": CLOSED, "client_id": CLIENT, "lawyer_id": LAWYER, "status": "closed", "title": "B", "case_number": "CF-T-0002"},
+        {"_id": NOT_MINE, "client_id": CLIENT, "lawyer_id": OTHER, "status": "in_progress", "title": "C", "case_number": "CF-T-0003"},
     ])
     await get_database()["case_files"].delete_many({"case_id": {"$in": [CASE, CLOSED, NOT_MINE]}})
     yield

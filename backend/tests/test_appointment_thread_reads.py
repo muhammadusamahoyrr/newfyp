@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from app.db.collections import get_appointment_messages_col, get_appointments_col
 from app.db.mongodb import get_database
 from app.services import appointment_thread_reads as tr
+from app.services.appointment_slots import occupied_slots
 
 pytestmark = pytest.mark.integration
 
@@ -32,8 +33,13 @@ async def _setup(mongo):
         await get_appointment_messages_col().delete_many({"appointment_id": {"$in": [A1, A2]}})
         await get_database()["appointment_thread_reads"].delete_many({"appointment_id": {"$in": [A1, A2]}})
     await clean()
-    for a in (A1, A2):
-        await get_appointments_col().insert_one({"_id": a, "client_id": CLIENT["_id"], "lawyer_id": LAWYER["_id"], "status": "confirmed"})
+    # Two real, non-overlapping bookings: the slot indexes (once any test has
+    # built them in this session) refuse two active rows with no slots.
+    for i, a in enumerate((A1, A2)):
+        start = T0 + timedelta(hours=i)
+        await get_appointments_col().insert_one({
+            "_id": a, "client_id": CLIENT["_id"], "lawyer_id": LAWYER["_id"], "status": "confirmed",
+            "scheduled_at": start, "duration_minutes": 30, "occupied_slots": occupied_slots(start, 30)})
     yield
     await clean()
 

@@ -475,7 +475,8 @@ async def _confirm(appt_id: str, lawyer_id: str, version=None):
 
 
 async def _start_now(appt_id: str) -> None:
-    """Move a booked appointment's window to one that has just begun.
+    """Move a booked appointment's window to one that began 20 minutes ago --
+    past the 15-minute no-show grace (appointment_transitions.NO_SHOW_GRACE).
 
     Written against the stored row on purpose. Every route into the service
     refuses a past `scheduled_at`, so there is no legitimate API call that
@@ -483,7 +484,7 @@ async def _start_now(appt_id: str) -> None:
     """
     from app.db.collections import get_appointments_col
 
-    started = datetime.now(timezone.utc) - timedelta(minutes=5)
+    started = datetime.now(timezone.utc) - timedelta(minutes=20)
     await get_appointments_col().update_one(
         {"_id": appt_id},
         {"$set": {"scheduled_at": started, "end_at": started + timedelta(minutes=30)}},
@@ -514,7 +515,7 @@ async def test_an_appointment_that_has_not_started_is_not_a_no_show_yet(parties)
     appt = await _book(parties, _slot())  # 48 hours away
     await _confirm(appt["id"], parties["lawyer_id"])
 
-    with pytest.raises(AppValidationError, match="has not started"):
+    with pytest.raises(AppValidationError, match="only 15 minutes after the appointment starts"):
         await appointment_service.mark_no_show(appt["id"], parties["lawyer_id"])
 
 

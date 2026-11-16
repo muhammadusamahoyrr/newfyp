@@ -147,7 +147,7 @@ async def test_a_lawyer_unverified_since_the_request_is_refused_at_acceptance(p)
     eid = await _terms_on_the_table(p)
     await _set_lawyer(p, {"lawyer_profile.kyc_verified": False})
 
-    with pytest.raises(AppValidationError, match="KYC"):
+    with pytest.raises(AppValidationError, match="not approved yet"):
         await engagement_service.accept_terms(eid, p["client_id"])
     await _assert_nothing_accepted(p, eid)
 
@@ -198,7 +198,7 @@ async def test_a_refusal_leaves_nothing_to_undo(p):
 # ── 5: request-time KYC is unchanged ────────────────────────────────────────
 
 @pytest.mark.parametrize("fields, error, match", [
-    ({"lawyer_profile.kyc_verified": False}, AppValidationError, "KYC"),
+    ({"lawyer_profile.kyc_verified": False}, AppValidationError, "not approved yet"),
     ({"is_active": False}, AppValidationError, "no longer active"),
     ({"role": "client"}, NotFoundError, None),
 ])

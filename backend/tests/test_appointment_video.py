@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.db.collections import get_appointments_col
 from app.db.mongodb import get_database
 from app.services import appointment_video as av
+from app.services.appointment_slots import occupied_slots
 
 pytestmark = pytest.mark.integration
 
@@ -49,7 +50,10 @@ async def _setup(mongo, monkeypatch):
     await get_appointments_col().delete_many({"_id": APPT})
     await get_appointments_col().insert_one({
         "_id": APPT, "client_id": CLIENT["_id"], "lawyer_id": LAWYER["_id"], "status": "confirmed",
-        "mode": "video", "scheduled_at": START, "end_at": END, "schedule_version": 0})
+        "mode": "video", "scheduled_at": START, "end_at": END, "schedule_version": 0,
+        # Real slots, as booking writes them: active rows without any collide
+        # on the slot indexes once a test in the session has built them.
+        "occupied_slots": occupied_slots(START, 30)})
     await db["appointment_video_rooms"].delete_many({"_id": APPT})
     await db["video_usage"].delete_many({"_id": MONTH})
     yield fake
@@ -298,7 +302,7 @@ async def live_appt(_setup):
     await get_appointments_col().insert_one({
         "_id": LIVE, "client_id": CLIENT["_id"], "lawyer_id": LAWYER["_id"], "status": "confirmed",
         "mode": "video", "scheduled_at": start, "end_at": start + timedelta(minutes=60),
-        "duration_minutes": 60, "schedule_version": 0})
+        "duration_minutes": 60, "schedule_version": 0, "occupied_slots": occupied_slots(start, 60)})
     yield start
     await get_appointments_col().delete_many({"_id": LIVE})
     await get_database()["notifications"].delete_many({"payload.appointment_id": LIVE})

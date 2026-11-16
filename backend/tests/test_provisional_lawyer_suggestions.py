@@ -58,9 +58,11 @@ async def lawyers(mongo, monkeypatch):
     ])
     await get_cases_col().insert_many([
         {"_id": "PS-CASE-DRAFT", "client_id": "PS-CLIENT", "case_type": "civil",
-         "province": "punjab", "title": "Rent", "description": "Unpaid rent.", "status": "draft"},
+         "province": "punjab", "title": "Rent", "description": "Unpaid rent.", "status": "draft",
+         "case_number": "PS-T-0001"},
         {"_id": "PS-CASE-OTHER", "client_id": "PS-OTHER", "case_type": "civil",
-         "province": "punjab", "title": "Rent", "description": "Unpaid rent.", "status": "open"},
+         "province": "punjab", "title": "Rent", "description": "Unpaid rent.", "status": "open",
+         "case_number": "PS-T-0002"},
     ])
     yield
     await get_users_col().delete_many({"_id": {"$regex": "^PS-"}})
