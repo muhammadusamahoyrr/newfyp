@@ -1,5 +1,15 @@
-# Dependabot keeps dependencies patched and flags vulnerable versions.
+# Dependabot keeps dependencies patched.
 # Docs: https://docs.github.com/code-security/dependabot
+#
+# Tuned 2026-11-18 for a project heading to a live demo:
+#   * MAJOR version bumps are ignored. They carry breaking changes (Next 16,
+#     Tailwind 4, LangChain 1.x, ...) and are done deliberately, by hand, with
+#     the full test suite -- not merged from a bot PR.
+#   * Minor and patch bumps are GROUPED: one PR per ecosystem per week instead
+#     of one per package, so related packages (react + react-dom) move together.
+#   * No labels: the ones listed before did not exist in the repo, and every PR
+#     carried a "labels could not be found" warning.
+# Vulnerability alerts still appear in the repository's Security tab.
 version: 2
 updates:
   # Python backend
@@ -7,32 +17,38 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "backend"
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "deps(backend)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      backend-minor-and-patch:
+        update-types: ["minor", "patch"]
 
   # Next.js frontend
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "frontend"
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "deps(frontend)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      frontend-minor-and-patch:
+        update-types: ["minor", "patch"]
 
   # GitHub Actions workflows
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    labels:
-      - "dependencies"
-      - "ci"
     commit-message:
       prefix: "deps(ci)"
+    groups:
+      ci-actions:
+        patterns: ["*"]
