@@ -45,6 +45,8 @@ TIERS = {
 }
 
 _PAID_TIERS = {SubscriptionTier.PROFESSIONAL.value, SubscriptionTier.FIRM.value}
+_TIER_RANK = {SubscriptionTier.FREE.value: 0, SubscriptionTier.PROFESSIONAL.value: 1,
+              SubscriptionTier.FIRM.value: 2}
 
 
 def _now() -> datetime:
@@ -153,16 +155,21 @@ async def activate(payment: dict, session=None) -> dict:
     now = _now()
     length = timedelta(days=365) if cycle == BillingCycle.ANNUAL.value else timedelta(days=30)
 
-    # Paying again for the SAME plan while it is still paid for extends it: the
-    # new period starts when the current one ends, so no paid day is lost.
-    # (A different tier cannot reach here mid-period; subscribe() refuses it.)
+    # A payment settling while a paid period is still running never shortens
+    # it: the new period starts when the current one ends, so no paid day is
+    # lost. subscribe() refuses a plan switch mid-period, but two checkouts
+    # opened while on Free can both be paid, and money taken must be honoured.
     period_start = now
     existing = await get_subscriptions_col().find_one(
         {"lawyer_id": lawyer_id}, session=session)
-    if existing and existing.get("tier") == tier and _live_paid_period(existing):
+    if existing and _live_paid_period(existing):
         end = _aware(existing.get("current_period_end"))
         if end and end > now:
             period_start = end
+        # Two plans paid for while on Free: the higher one stays in force
+        # (the lawyer paid for it), never a mid-period downgrade.
+        if _TIER_RANK.get(existing.get("tier"), 0) > _TIER_RANK.get(tier, 0):
+            tier = existing["tier"]
     period_end = period_start + length
 
     await get_subscriptions_col().update_one(

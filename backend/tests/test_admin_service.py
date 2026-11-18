@@ -48,46 +48,47 @@ async def admin_and_users(mongo):
         {"_id": {"$in": ["ADM-1", "ADM-CLIENT", "ADM-LAWYER"]}})
 
 
+@pytest.fixture
+def reset_email_works(monkeypatch):
+    """The reset path sends the link FIRST and changes nothing if it cannot.
+    Tests that exercise the lock-out need a link that 'goes'."""
+    from app.services import auth_service
+
+    async def delivered(email):
+        return True
+    monkeypatch.setattr(auth_service, "issue_reset_link", delivered)
+
+
 # ── an admin password reset ends the user's sessions ─────────────────────────
 
 @pytest.mark.integration
-async def test_an_admin_reset_revokes_the_users_existing_sessions(admin_and_users):
-    """The third password-change path. auth_service.reset_password and
-    user_service.change_password already revoked; this one did not — and it is
-    the one an admin reaches for when an account is suspected compromised."""
+async def test_an_admin_reset_revokes_the_users_existing_sessions(admin_and_users, reset_email_works):
+    """The path an admin reaches for when an account is suspected compromised:
+    every existing token must stop working."""
     from app.db.collections import get_users_col
     from app.services import admin_service
 
     uid = admin_and_users["client"]
-    await admin_service.reset_user_password(uid, "BrandNewPass1")
+    await admin_service.reset_user_password(uid)
 
     user = await get_users_col().find_one({"_id": uid})
     assert user.get(TOKENS_VALID_FROM) is not None, "no revocation cutoff written"
-
-    # a token issued before the reset is now refused
     stale = {"sub": uid, "type": "refresh",
              "iat": (datetime.now(timezone.utc) - timedelta(minutes=5)).timestamp()}
     assert token_predates_password_change(stale, user) is True
 
 
 @pytest.mark.integration
-async def test_the_admin_reset_actually_changes_the_password(admin_and_users):
+async def test_an_admin_reset_locks_out_the_old_password_and_sets_none_the_admin_knows(admin_and_users, reset_email_works):
+    """The admin no longer chooses the new password: the old one stops working
+    and the owner sets a new one from the emailed link."""
+    from app.core.exceptions import AuthError
     from app.services import admin_service, auth_service
 
-    await admin_service.reset_user_password(admin_and_users["client"], "BrandNewPass1")
+    await admin_service.reset_user_password(admin_and_users["client"])
 
-    assert await auth_service.login("ac@x.test", "BrandNewPass1")
-    from app.core.exceptions import AuthError
     with pytest.raises(AuthError):
         await auth_service.login("ac@x.test", "Str0ngPass1")
-
-
-@pytest.mark.integration
-async def test_an_admin_reset_rejects_a_weak_password(admin_and_users):
-    from app.services import admin_service
-
-    with pytest.raises(AppValidationError):
-        await admin_service.reset_user_password(admin_and_users["client"], "short")
 
 
 @pytest.mark.integration
@@ -95,7 +96,7 @@ async def test_resetting_an_unknown_user_is_refused(admin_and_users):
     from app.services import admin_service
 
     with pytest.raises(NotFoundError):
-        await admin_service.reset_user_password("NO-SUCH-USER", "BrandNewPass1")
+        await admin_service.reset_user_password("NO-SUCH-USER")
 
 
 # ── the admin view never carries internal state ──────────────────────────────
@@ -157,3 +158,26 @@ async def test_every_admin_listing_uses_the_shared_view(admin_and_users):
         lp = row.get("lawyer_profile")
         if isinstance(lp, dict):
             assert "specialization_embedding" not in lp
+
+
+@pytest.mark.integration
+async def test_a_reset_whose_email_cannot_go_changes_nothing(admin_and_users, monkeypatch):
+    """Replacing the password with no link to set a new one would lock the
+    user out for good."""
+    from app.services import admin_service, auth_service
+
+    async def not_delivered(email):
+        return False
+    monkeypatch.setattr(auth_service, "issue_reset_link", not_delivered)
+
+    assert await admin_service.reset_user_password(admin_and_users["client"]) is False
+    assert await auth_service.login("ac@x.test", "Str0ngPass1")   # still works
+
+
+@pytest.mark.integration
+async def test_an_admin_cannot_reset_their_own_password_here(admin_and_users, reset_email_works):
+    from app.services import admin_service
+
+    me = {"_id": admin_and_users["client"], "role": "admin"}
+    with pytest.raises(AppValidationError):
+        await admin_service.reset_user_password(admin_and_users["client"], actor=me)

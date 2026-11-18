@@ -1,22 +1,24 @@
 'use client';
 import { useState, useEffect } from "react";
 import { StatCard, IconBox, Ic } from "./components.jsx";
-import { BarChart, DonutChart } from "./charts.jsx";
 import { IC } from "./icons.js";
 import { adminGetAnalytics } from "@/lib/api.js";
 
 export const Dashboard = ({ T, nav }) => {
-  const dk = T.mode === "dark";
   const [analytics, setAnalytics] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
-  useEffect(() => {
-    adminGetAnalytics().then(({ data }) => { if (data) setAnalytics(data); });
-  }, []);
-
-  const sparkUsers   = [62, 65, 68, 66, 72, 74, 78, 82];
-  const sparkCases   = [45, 52, 48, 60, 57, 65, 70, 68];
-  const sparkDocs    = [340, 380, 360, 420, 400, 450, 480, 490];
-  const sparkLawyers = [82, 84, 85, 86, 87, 88, 89, 89];
+  // Everything on this page comes from GET /admin/analytics/overview. The
+  // trend lines, the monthly chart, the donut and "Recent Activity" used to be
+  // hard-coded and were shown as if they were live; they are gone.
+  const load = () => {
+    setLoadError(null);
+    adminGetAnalytics().then(({ data, error }) => {
+      if (data) setAnalytics(data);
+      else setLoadError(error?.message || "Could not load the overview.");
+    });
+  };
+  useEffect(() => { load(); }, []);
 
   const totalUsers   = analytics ? analytics.total_users.toLocaleString() : "…";
   const totalCases   = analytics ? analytics.total_cases.toLocaleString() : "…";
@@ -25,27 +27,19 @@ export const Dashboard = ({ T, nav }) => {
   const pendingKYC   = analytics?.pending_kyc ?? 0;
 
   const stats = [
-    { label: "Total Users",    value: totalUsers,  sub: `${analytics?.users_by_role?.client ?? 0} clients · ${analytics?.users_by_role?.lawyer ?? 0} lawyers`, sparkData: sparkUsers, sparkColor: dk ? "#40F0DC" : T.primary, icon: <IconBox icon={IC.users} variant="Primary" T={T} size={42} />, onClick: () => nav("users") },
-    { label: "Total Cases",    value: totalCases,  sub: `${analytics?.cases_by_status?.open ?? 0} open · ${analytics?.cases_by_status?.in_progress ?? 0} in progress`, sparkData: sparkCases, sparkColor: T.warn, icon: <IconBox icon={IC.briefcase} variant="Warn" T={T} size={42} />, onClick: () => nav("cases") },
-    { label: "Documents",      value: totalDocs,   sub: `${analytics?.total_agreements ?? 0} agreements`, sparkData: sparkDocs, sparkColor: T.info, icon: <IconBox icon={IC.file} variant="Info" T={T} size={42} />, onClick: () => nav("users") },
-    { label: "Active Lawyers", value: lawyerCount, sub: pendingKYC > 0 ? `${pendingKYC} pending verification` : "All verified", subColor: pendingKYC > 0 ? T.warn : T.success, sparkData: sparkLawyers, sparkColor: T.success, icon: <IconBox icon={IC.balance} variant="Success" T={T} size={42} />, onClick: () => nav("kyc") },
+    { label: "Total Users",    value: totalUsers,  sub: `${analytics?.users_by_role?.client ?? 0} clients · ${analytics?.users_by_role?.lawyer ?? 0} lawyers`, icon: <IconBox icon={IC.users} variant="Primary" T={T} size={42} />, onClick: () => nav("users") },
+    { label: "Total Cases",    value: totalCases,  sub: `${analytics?.cases_by_status?.open ?? 0} open · ${analytics?.cases_by_status?.in_progress ?? 0} in progress`, icon: <IconBox icon={IC.briefcase} variant="Warn" T={T} size={42} />, onClick: () => nav("cases") },
+    // There is no documents screen in the admin panel, so this card does not navigate.
+    { label: "Documents",      value: totalDocs,   sub: `${analytics?.total_agreements ?? 0} agreements`, icon: <IconBox icon={IC.file} variant="Info" T={T} size={42} /> },
+    { label: "Lawyers",        value: lawyerCount, sub: pendingKYC > 0 ? `${pendingKYC} pending verification` : "None waiting for verification", subColor: pendingKYC > 0 ? T.warn : T.success, icon: <IconBox icon={IC.balance} variant="Success" T={T} size={42} />, onClick: () => nav("kyc") },
   ];
-  const barCols  = dk ? ["#40F0DC","#5AB3FF"] : ["#2C8C99","#6B8FD4"];
-  const barData  = [[45,28],[52,40],[40,32],[60,47],[57,50],[65,52],[72,60],[68,53],[75,62],[60,58]];
-  const barLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"];
-  const donut = [
-    { label: "Filed",         value: 45, color: dk ? "#5AB3FF" : "#6B8FD4" },
-    { label: "Under Hearing", value: 38, color: dk ? "#FFC857" : "#E8A838" },
-    { label: "Adjourned",     value: 12, color: dk ? "#FF6B7A" : "#E05C70" },
-    { label: "Closed",        value: 69, color: dk ? "#4DD4A3" : "#2C9E7A" },
-  ];
-  const recent = [
-    { text: "Emily Rodriguez submitted KYC verification", time: "2m ago",  dot: T.warn,      action: () => nav("kyc") },
-    { text: "New case CASE-2024-089 filed (Labor)",       time: "18m ago", dot: T.info },
-    { text: "Michael Chen account activated",             time: "1h ago",  dot: T.success },
-    { text: "Template 'Demand Letter' updated",           time: "2h ago",  dot: T.primary },
-    { text: "Q1 performance report generated",           time: "3h ago",  dot: T.textFaint },
-  ];
+  // The REAL breakdown the backend already sends; statuses with no cases are left out.
+  const STATUS_LABEL = { draft: "Draft", open: "Open", pending_lawyer: "Waiting for lawyer", in_progress: "In progress", closed: "Closed", dismissed: "Dismissed" };
+  const statusColors = [T.info, T.warn, T.primary, T.success, T.danger, T.textMuted];
+  const statusRows = Object.entries(analytics?.cases_by_status || {})
+    .filter(([, n]) => n > 0)
+    .map(([k, n], i) => ({ key: k, label: STATUS_LABEL[k] || k, value: n, color: statusColors[i % statusColors.length] }));
+  const statusMax = Math.max(1, ...statusRows.map(r => r.value));
 
   return (
     <div>
@@ -80,35 +74,29 @@ export const Dashboard = ({ T, nav }) => {
         ))}
       </div>
 
-      <div className="rgrid" style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 14, marginBottom: 16 }}>
-        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", boxShadow: T.shadowCard }}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: T.text, marginBottom: 10 }}>Case Trends</div>
-          <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
-            {[["Total Cases", barCols[0]], ["New Cases", barCols[1]]].map(([l, c]) => (
-              <div key={l} style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
-                <span style={{ color: T.textMuted, fontSize: 12 }}>{l}</span>
-              </div>
-            ))}
-          </div>
-          <BarChart data={barData} labels={barLabels} colors={barCols} T={T} />
+      {loadError && (
+        <div role="alert" style={{ display: "flex", alignItems: "center", gap: 12, background: T.card, border: `1px solid ${T.danger}`, borderRadius: 12, padding: "12px 16px", marginBottom: 16, color: T.danger, fontSize: 13 }}>
+          <span style={{ flex: 1 }}>{loadError}</span>
+          <button onClick={load} style={{ background: "transparent", border: `1px solid ${T.danger}`, color: T.danger, borderRadius: 8, padding: "5px 12px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Retry</button>
         </div>
-        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", boxShadow: T.shadowCard }}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: T.text, marginBottom: 16 }}>Case Status</div>
-          <DonutChart segments={donut} T={T} onSegmentClick={() => nav("cases")} />
-        </div>
-      </div>
+      )}
 
       <div className="rgrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", boxShadow: T.shadowCard }}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: T.text, marginBottom: 14 }}>Recent Activity</div>
-          {recent.map((a, i) => (
-            <div key={i} onClick={a.action} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < recent.length - 1 ? `1px solid ${T.border}40` : "none", cursor: a.action ? "pointer" : "default" }}>
-              <div style={{ width: 7, height: 7, borderRadius: "50%", background: a.dot, marginTop: 5, flexShrink: 0 }} />
-              <span style={{ color: T.textDim, fontSize: 12.5, flex: 1 }}>{a.text}</span>
-              <span style={{ color: T.textFaint, fontSize: 11, flexShrink: 0 }}>{a.time}</span>
-            </div>
-          ))}
+          <div style={{ fontWeight: 600, fontSize: 14, color: T.text, marginBottom: 14 }}>Cases by status</div>
+          {!analytics ? <div style={{ color: T.textFaint, fontSize: 12.5 }}>…</div>
+            : statusRows.length === 0 ? <div style={{ color: T.textFaint, fontSize: 12.5 }}>No cases yet.</div>
+            : statusRows.map(r => (
+              <button key={r.key} onClick={() => nav("cases")} style={{ display: "block", width: "100%", background: "transparent", border: "none", padding: "6px 0", cursor: "pointer", textAlign: "left" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 4 }}>
+                  <span style={{ color: T.textDim }}>{r.label}</span>
+                  <span style={{ color: T.text, fontWeight: 700 }}>{r.value}</span>
+                </div>
+                <div style={{ height: 6, borderRadius: 4, background: `${T.border}60` }}>
+                  <div style={{ width: `${(r.value / statusMax) * 100}%`, height: "100%", borderRadius: 4, background: r.color }} />
+                </div>
+              </button>
+            ))}
         </div>
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", boxShadow: T.shadowCard }}>
           <div style={{ fontWeight: 600, fontSize: 14, color: T.text, marginBottom: 14 }}>Quick Actions</div>

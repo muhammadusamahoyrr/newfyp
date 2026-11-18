@@ -472,3 +472,64 @@ async def test_a_replayed_decision_does_not_append_a_second_cycle(enabled):
 
     stored = await get_documents_col().find_one({"_id": doc["id"]})
     assert len(stored["review_cycles"]) == 1
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Audit 2026-11-17: the past reviewer's view, and withdrawing a second opinion
+# ══════════════════════════════════════════════════════════════════════════════
+
+async def test_a_past_reviewer_sees_only_their_own_notes(enabled):
+    """After the client resubmits to Lawyer B with a new note and B decides,
+    Lawyer A's detail view must not show the client's note to B or B's note."""
+    doc_id, rev1, rev2 = await _two_cycles("return")
+    await _decide(doc_id, rev2, LAWYER_B, "reject")
+
+    seen = await v2api.get_document_v2(doc_id, current_user=LAWYER_A)
+
+    assert seen["review_note"] == "return by mc-lawyer-a"
+    assert seen.get("client_note") != "reject by mc-lawyer-b"
+    assert "content_epoch" not in seen
+
+
+async def test_withdrawing_a_second_opinion_keeps_the_approval_and_its_note(enabled):
+    doc = await v2api.create_document_v2(
+        v2api.CreateBody(template_type="legal_notice", title="Approved notice"),
+        idempotency_key=key(), current_user=CLIENT)
+    doc_id = doc["id"]
+    rev = await _generate(doc_id, "pay the demand")
+    await _submit(doc_id, rev, LAWYER_A)
+    await _decide(doc_id, rev, LAWYER_A, "approve")
+    before = await get_documents_col().find_one({"_id": doc_id})
+
+    # Second opinion on the same, unchanged bytes -- then withdrawn.
+    await v2api.submit_document(
+        doc_id,
+        v2api.SubmitBody(expected_version=rev["version"],
+                         expected_pdf_sha256=rev["pdf_sha256"],
+                         lawyer_id=LAWYER_B["_id"], note="second opinion please"),
+        idempotency_key=key(), current_user=CLIENT)
+    await v2api.withdraw_document(doc_id, idempotency_key=key(), current_user=CLIENT)
+
+    after = await get_documents_col().find_one({"_id": doc_id})
+    assert after["review_status"] == "approved"
+    assert after["approved_revision_id"] == rev["revision_id"]
+    assert after["review_note"] == "approve by mc-lawyer-a"
+    assert after.get("client_note") == before.get("client_note")
+    assert len(after.get("approval_history") or []) == len(before.get("approval_history") or [])
+
+
+async def test_a_note_starting_with_a_dollar_is_stored_as_typed(enabled):
+    doc = await v2api.create_document_v2(
+        v2api.CreateBody(template_type="legal_notice", title="Dollar note"),
+        idempotency_key=key(), current_user=CLIENT)
+    doc_id = doc["id"]
+    rev = await _generate(doc_id, "pay")
+    await v2api.submit_document(
+        doc_id,
+        v2api.SubmitBody(expected_version=rev["version"],
+                         expected_pdf_sha256=rev["pdf_sha256"],
+                         lawyer_id=LAWYER_A["_id"], note="$title"),
+        idempotency_key=key(), current_user=CLIENT)
+
+    row = await get_documents_col().find_one({"_id": doc_id})
+    assert row["client_note"] == "$title"

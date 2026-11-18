@@ -81,9 +81,17 @@ async def _ensure_indexes() -> None:
 
 
 async def _notify(user_id: str, ntype: NotificationType, title: str, body: str, data: dict) -> None:
+    """Best-effort. Every caller has ALREADY committed its state change; a
+    failed notification write used to turn that success into an error, and the
+    client's retry then met a 409 for something that had worked."""
     # Lazy: the notification service pulls in the websocket layer.
     from app.services.notification_service import create_notification
-    await create_notification(user_id, ntype, title, body, data)
+    try:
+        await create_notification(user_id, ntype, title, body, data)
+    except Exception:  # noqa: BLE001 -- the action stands; the notice is lost
+        import logging
+        logging.getLogger(__name__).exception(
+            "quick review notification %s to %s failed", ntype, user_id)
 
 
 # ── the lawyer's offer ───────────────────────────────────────────────────────
@@ -188,9 +196,15 @@ async def _recover_stuck_accepting(match: dict) -> None:
     async for req in _col().find({**match, "status": _ACCEPTING,
                                   "$or": [{"accepting_since": {"$lte": cutoff}},
                                           {"accepting_since": {"$exists": False}}]}):
-        doc = await get_documents_col().find_one({"_id": req["doc_id"]},
-                                                 {"quick_review_id": 1})
-        if doc and doc.get("quick_review_id") == req["_id"]:
+        doc = await get_documents_col().find_one({"_id": req["doc_id"]})
+        # "Was it sent?" is answered by the submission's own idempotency
+        # receipt (accept() submits with key quick-review.<id>), which a later
+        # submission cannot overwrite the way it overwrites quick_review_id.
+        from app.services import document_transitions as tx
+        sent = bool(doc) and (
+            doc.get("quick_review_id") == req["_id"]
+            or await tx._find_receipt(doc, req["doc_id"], f"quick-review.{req['_id']}") is not None)
+        if sent:
             due = now + timedelta(hours=int(req.get("turnaround_hours") or TURNAROUNDS[0]))
             update = {"$set": {"status": ACCEPTED, "decided_at": now, "due_at": due}}
         elif doc is None:

@@ -99,6 +99,8 @@ _CONFLICT_MESSAGE = (
     "This message id was already used for a different question. "
     "Send a new message id."
 )
+# The lawyer research page waits on THIS 409 by matching its first words
+# (AILegalPage.jsx, isBusy); keep them stable or update both.
 _BUSY_MESSAGE = (
     "Another message is still being answered in this conversation. "
     "Wait for it to finish before sending the next one."

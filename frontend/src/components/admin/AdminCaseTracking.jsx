@@ -2,17 +2,29 @@
 import { useState, useEffect, useCallback } from "react";
 import { Badge, Btn, Modal, Ic, EmptyState, Paginator } from "./components.jsx";
 import { IC } from "./icons.js";
-import { adminListCases, adminUpdateCaseStatus } from "@/lib/api.js";
+import { adminListCases, adminEndCase } from "@/lib/api.js";
+
+// Case Tracking is an OVERSIGHT view (2026-11-18).
+//
+// It used to offer one-click buttons for every status, so an admin could move a
+// live case back to "draft" with no rule, no confirmation and no word to the
+// client or lawyer. A case's lifecycle belongs to its parties. The admin can
+// now only END a case that cannot end normally (close or dismiss), with a
+// reason that both parties are sent. The list also no longer carries the
+// client's description: a lawyer-client matter is confidential, and the server
+// sends this screen metadata only.
 
 // Backend status → display label + badge type
 const STATUS_META = {
-  open:           { label: "Open",           type: "info"    },
-  in_progress:    { label: "In Progress",    type: "warn"    },
-  pending_lawyer: { label: "Pending Lawyer", type: "primary" },
-  closed:         { label: "Closed",         type: "gray"    },
   draft:          { label: "Draft",          type: "gray"    },
+  open:           { label: "Open",           type: "info"    },
+  pending_lawyer: { label: "Pending Lawyer", type: "primary" },
+  in_progress:    { label: "In Progress",    type: "warn"    },
+  closed:         { label: "Closed",         type: "gray"    },
+  dismissed:      { label: "Dismissed",      type: "danger"  },
 };
 const ALL_STATUSES = Object.keys(STATUS_META);
+const ENDED = new Set(["closed", "dismissed"]);
 
 function fmtDate(iso) {
   if (!iso) return "—";
@@ -28,12 +40,18 @@ export const CaseTracking = ({ T }) => {
   const [page, setPage]       = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast]     = useState("");
+  const [loadError, setLoadError] = useState(null);
+  const [toast, setToast]     = useState(null);      // { text, ok }
+  // The "end this case" form inside the details window.
+  const [ending, setEnding]   = useState(null);      // { status, reason } | null
+  const [saving, setSaving]   = useState(false);
+  const [endError, setEndError] = useState(null);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2800); };
+  const showToast = (text, ok = true) => { setToast({ text, ok }); setTimeout(() => setToast(null), 3200); };
 
   const fetchCases = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     const { data, error } = await adminListCases({
       page,
       pageSize: perPage,
@@ -43,6 +61,9 @@ export const CaseTracking = ({ T }) => {
     if (!error && data) {
       setCases(data.items || []);
       setTotal(data.total || 0);
+    } else {
+      // A failed load is not "no cases": say so and offer a retry.
+      setLoadError(error?.message || "Could not load cases.");
     }
     setLoading(false);
   }, [page, perPage, sf, search]);
@@ -50,40 +71,36 @@ export const CaseTracking = ({ T }) => {
   useEffect(() => { fetchCases(); }, [fetchCases]);
   useEffect(() => { setPage(1); }, [sf, search]);
 
-  const changeStatus = async (c, newStatus) => {
-    setCases(p => p.map(x => x._id === c._id ? { ...x, status: newStatus } : x));
-    if (modal?._id === c._id) setModal(prev => ({ ...prev, status: newStatus }));
-    const { error } = await adminUpdateCaseStatus(c._id, newStatus);
-    if (error) {
-      setCases(p => p.map(x => x._id === c._id ? { ...x, status: c.status } : x));
-      showToast("Failed to update status");
-    } else {
-      showToast(`Case ${c.case_number} → ${STATUS_META[newStatus]?.label || newStatus}`);
-    }
+  const openDetails = (c) => { setModal(c); setEnding(null); setEndError(null); };
+
+  const submitEnd = async () => {
+    if (!modal || !ending) return;
+    const reason = ending.reason.trim();
+    if (reason.length < 10) { setEndError("Give a reason of at least 10 characters. Both parties will see it."); return; }
+    setSaving(true);
+    setEndError(null);
+    const { error } = await adminEndCase(modal._id, ending.status, reason);
+    setSaving(false);
+    if (error) { setEndError(error.message || "The case could not be ended."); return; }
+    showToast(`Case ${modal.case_number || ""} ${ending.status}. Both parties were notified.`);
+    setModal(null);
+    setEnding(null);
+    fetchCases();
   };
 
-  const sm = (s) => STATUS_META[s] || { label: s, type: "gray" };
-
-  const MILESTONE_STEPS = ["Open", "Lawyer Assigned", "In Progress", "Hearing", "Closed"];
-  const stepsDone = (c) => {
-    if (c.status === "closed") return 5;
-    if (c.status === "in_progress") return 3;
-    if (c.status === "pending_lawyer") return 2;
-    if (c.status === "open") return 1;
-    return 0;
-  };
+  const sm = (s) => STATUS_META[s] || { label: s || "—", type: "gray" };
 
   return (
     <div>
       {toast && (
-        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 999, background: T.success, color: "#fff", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 4px 18px rgba(0,0,0,0.18)" }}>
-          {toast}
+        <div role={toast.ok ? "status" : "alert"} style={{ position: "fixed", bottom: 24, right: 24, zIndex: 999, background: toast.ok ? T.success : T.danger, color: "#fff", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 4px 18px rgba(0,0,0,0.18)" }}>
+          {toast.text}
         </div>
       )}
 
       <div style={{ marginBottom: 26 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: T.text, letterSpacing: -0.5 }}>Case Tracking</h1>
-        <p style={{ margin: "4px 0 0", color: T.textMuted, fontSize: 14 }}>Monitor case timelines, statuses, milestones, and court instructions</p>
+        <p style={{ margin: "4px 0 0", color: T.textMuted, fontSize: 14 }}>An overview of every case: who, what kind and where it stands. Case contents stay private to the client and lawyer.</p>
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
@@ -107,69 +124,41 @@ export const CaseTracking = ({ T }) => {
 
       {loading ? (
         <div style={{ padding: 40, textAlign: "center", color: T.textMuted, fontSize: 14 }}>Loading cases…</div>
+      ) : loadError ? (
+        <div role="alert" style={{ padding: 28, textAlign: "center", background: T.card, border: `1px solid ${T.danger}`, borderRadius: 14 }}>
+          <div style={{ color: T.danger, fontSize: 14, fontWeight: 600, marginBottom: 10 }}>{loadError}</div>
+          <Btn T={T} variant="outline" onClick={fetchCases}>Retry</Btn>
+        </div>
       ) : cases.length === 0 ? (
         <EmptyState T={T} icon={IC.briefcase} title="No cases found" sub="Try a different filter or search term."
           actionLabel="Clear" onAction={() => { setSf("all"); setSearch(""); setPage(1); }} />
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {cases.map(c => {
-              const done = stepsDone(c);
-              return (
-                <div key={c._id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 20, boxShadow: T.shadowCard }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-                    <div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ color: T.primary, fontWeight: 600, fontSize: 14 }}>{c.case_number}</span>
-                        <Badge label={sm(c.status).label} type={sm(c.status).type} T={T} />
-                        <Badge label={c.case_type || c.type || "—"} type="gray" T={T} />
-                      </div>
-                      <div style={{ color: T.textMuted, fontSize: 13 }}>
-                        {c.title && <span style={{ color: T.textDim, marginRight: 8 }}>{c.title}</span>}
-                        {c.client_name && <span>Client: <span style={{ color: T.textDim }}>{c.client_name}</span></span>}
-                        {c.lawyer_name && <span style={{ marginLeft: 12 }}>Lawyer: <span style={{ color: T.textDim }}>{c.lawyer_name}</span></span>}
-                      </div>
+            {cases.map(c => (
+              <div key={c._id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 20, boxShadow: T.shadowCard }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
+                      <span style={{ color: T.primary, fontWeight: 600, fontSize: 14 }}>{c.case_number || "—"}</span>
+                      <Badge label={sm(c.status).label} type={sm(c.status).type} T={T} />
+                      <Badge label={c.case_type || "—"} type="gray" T={T} />
                     </div>
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ color: T.textFaint, fontSize: 12 }}>Filed: {fmtDate(c.created_at)}</div>
+                    <div style={{ color: T.textMuted, fontSize: 13 }}>
+                      {c.title && <span style={{ color: T.textDim, marginRight: 8 }}>{c.title}</span>}
+                      {c.client_name && <span>Client: <span style={{ color: T.textDim }}>{c.client_name}</span></span>}
+                      <span style={{ marginLeft: 12 }}>Lawyer: <span style={{ color: T.textDim }}>{c.lawyer_name || "Unassigned"}</span></span>
                     </div>
                   </div>
-
-                  {/* Progress tracker */}
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 0, marginBottom: 14 }}>
-                    {MILESTONE_STEPS.map((m, i) => {
-                      const isDone = done > i;
-                      return (
-                        <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                          <div style={{ width: "100%", display: "flex", alignItems: "center" }}>
-                            {i > 0 && <div style={{ flex: 1, height: 2, background: isDone ? T.success : T.border }} />}
-                            <div style={{ width: 20, height: 20, borderRadius: "50%", background: isDone ? T.success : T.border, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              {isDone && <Ic d={IC.check} size={10} color={T.mode === "dark" ? T.bg : "#fff"} sw={2.5} />}
-                            </div>
-                            {i < MILESTONE_STEPS.length-1 && <div style={{ flex: 1, height: 2, background: done > i+1 ? T.success : T.border }} />}
-                          </div>
-                          <span style={{ color: isDone ? T.textMuted : T.textFaint, fontSize: 9.5, marginTop: 4, textAlign: "center" }}>{m}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    <button onClick={() => setModal(c)} style={{ display: "flex", gap: 6, alignItems: "center", padding: "7px 14px", border: `1px solid ${T.border}`, borderRadius: 9, background: "transparent", color: T.textMuted, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
+                  <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                    <div style={{ color: T.textFaint, fontSize: 12 }}>Filed: {fmtDate(c.created_at)}</div>
+                    <button onClick={() => openDetails(c)} style={{ display: "flex", gap: 6, alignItems: "center", padding: "7px 14px", border: `1px solid ${T.border}`, borderRadius: 9, background: "transparent", color: T.textMuted, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
                       <Ic d={IC.eye} size={13} color={T.textMuted} /> View Details
                     </button>
-                    <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {ALL_STATUSES.map(s => (
-                        <button key={s} onClick={() => changeStatus(c, s)}
-                          style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${c.status===s ? T.primary : T.border}`, background: c.status===s ? T.primaryGlow2 : "transparent", color: c.status===s ? T.primary : T.textFaint, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                          {STATUS_META[s].label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
           <div style={{ marginTop: 14 }}>
             <Paginator T={T} total={total} page={page} perPage={perPage} onPage={setPage} onPerPage={n => { setPerPage(n); setPage(1); }} />
@@ -177,46 +166,62 @@ export const CaseTracking = ({ T }) => {
         </>
       )}
 
-      <Modal open={!!modal} onClose={() => setModal(null)} title="Case Details" T={T}>
+      <Modal open={!!modal} onClose={() => { if (!saving) setModal(null); }} title="Case Details" T={T}>
         {modal && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-              <span style={{ color: T.primary, fontWeight: 700, fontSize: 15 }}>{modal.case_number}</span>
+              <span style={{ color: T.primary, fontWeight: 700, fontSize: 15 }}>{modal.case_number || "—"}</span>
               <Badge label={sm(modal.status).label} type={sm(modal.status).type} T={T} />
             </div>
             {[
               ["Title",       modal.title || "—"],
               ["Type",        modal.case_type || "—"],
-              ["Client",      modal.client_name || modal.client_id || "—"],
-              ["Lawyer",      modal.lawyer_name || (modal.lawyer_id ? modal.lawyer_id.slice(-8) : "Unassigned")],
+              ["Client",      modal.client_name || "—"],
+              ["Lawyer",      modal.lawyer_name || "Unassigned"],
               ["Province",    modal.province || "—"],
-              ["Status",      sm(modal.status).label],
               ["Filed",       fmtDate(modal.created_at)],
               ["Last Update", fmtDate(modal.updated_at)],
+              ...(modal.closed_at ? [["Ended", fmtDate(modal.closed_at)]] : []),
             ].map(([k, v]) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: `1px solid ${T.border}40` }}>
                 <span style={{ color: T.textMuted, fontSize: 13 }}>{k}</span>
                 <span style={{ color: T.text, fontWeight: 600, fontSize: 13 }}>{v}</span>
               </div>
             ))}
-            {modal.description && (
-              <div style={{ marginTop: 12, padding: "10px 12px", background: `${T.info}10`, border: `1px solid ${T.info}25`, borderRadius: 8, fontSize: 12, color: T.textDim }}>
-                <strong style={{ color: T.info }}>Description:</strong> {modal.description}
+            <p style={{ margin: "12px 0 0", fontSize: 11.5, color: T.textFaint }}>
+              The case's story, documents and messages are private to the client and lawyer and are not shown here.
+            </p>
+
+            {!ENDED.has(modal.status) && !ending && (
+              <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Btn T={T} variant="ghost" onClick={() => setEnding({ status: "closed", reason: "" })}>Close case…</Btn>
+                <Btn T={T} variant="ghost" onClick={() => setEnding({ status: "dismissed", reason: "" })}>Dismiss case…</Btn>
               </div>
             )}
-            <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Change Status</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {ALL_STATUSES.map(s => (
-                  <button key={s} onClick={() => changeStatus(modal, s)}
-                    style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${modal.status===s ? T.primary : T.border}`, background: modal.status===s ? T.primaryGlow2 : "transparent", color: modal.status===s ? T.primary : T.textMuted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    {STATUS_META[s].label}
-                  </button>
-                ))}
+
+            {ending && (
+              <div style={{ marginTop: 16, padding: 14, border: `1px solid ${T.warn}`, borderRadius: 10, background: `${T.warn}10` }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 6 }}>
+                  {ending.status === "closed" ? "Close this case" : "Dismiss this case"}
+                </div>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 10 }}>
+                  Use this only when the client and lawyer cannot end the case themselves. It cannot be undone here.
+                  The client and the lawyer will both be sent your reason.
+                </div>
+                <label htmlFor="admin-end-reason" style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: T.textMuted, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.6 }}>Reason</label>
+                <textarea id="admin-end-reason" value={ending.reason} maxLength={500} rows={3}
+                  onChange={e => setEnding(p => ({ ...p, reason: e.target.value }))}
+                  style={{ width: "100%", boxSizing: "border-box", background: T.inputBg, border: `1px solid ${T.border}`, borderRadius: 9, padding: "9px 12px", color: T.text, fontSize: 13, resize: "vertical", fontFamily: "inherit" }} />
+                {endError && <div role="alert" style={{ color: T.danger, fontSize: 12.5, marginTop: 8 }}>{endError}</div>}
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 10 }}>
+                  <Btn T={T} variant="ghost" onClick={() => { setEnding(null); setEndError(null); }} disabled={saving}>Cancel</Btn>
+                  <Btn T={T} variant="danger" onClick={submitEnd} disabled={saving}>{saving ? "Saving…" : (ending.status === "closed" ? "Close case" : "Dismiss case")}</Btn>
+                </div>
               </div>
-            </div>
+            )}
+
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
-              <Btn T={T} variant="ghost" onClick={() => setModal(null)}>Close</Btn>
+              <Btn T={T} variant="ghost" onClick={() => setModal(null)} disabled={saving}>Close</Btn>
             </div>
           </>
         )}

@@ -289,7 +289,7 @@ async def create_subscription_payment(lawyer_id: str, tier: str, cycle: str, amo
 async def _maybe_expire(payment: dict) -> dict:
     """Lazily flip an unpaid, past-due request to `expired` (safeguard 4)."""
     if (
-        payment["status"] in (PaymentStatus.CREATED.value, PaymentStatus.PENDING.value)
+        payment["status"] in _PAYABLE_STATUSES      # FAILED is payable, so it expires too
         and payment.get("expires_at")
         and _now() > _aware(payment["expires_at"])
     ):
@@ -436,9 +436,12 @@ async def _settle(payment: dict, event_id: str, status: str) -> dict:
                         payment["_id"], status)
             return {"ignored": True, "status": status}
         # One notification per provider event: a redelivered failure is a no-op.
+        # Keyed apart from success events: a provider may reuse one id (e.g.
+        # the tracker) for a decline and then the successful retry on the same
+        # checkout, and a stored failure must never dedupe away that payment.
         try:
             await events.insert_one({
-                "event_id": event_id, "payment_id": payment["_id"],
+                "event_id": f"{event_id}:failed", "payment_id": payment["_id"],
                 "outcome": "failed", "applied": True, "created_at": now,
             })
         except DuplicateKeyError:
@@ -545,6 +548,13 @@ async def handle_webhook(headers: dict, raw_body: bytes) -> dict:
     if not payment:
         logger.warning("webhook for unknown provider_ref %s", event.get("provider_ref"))
         return {"ignored": True}
+    # An earlier checkout still SETTLES (money taken there is real), but its
+    # failure must not fail the attempt the payer is on now.
+    if (str(event.get("status") or "").lower() != "paid"
+            and payment.get("provider_ref") and ref != payment.get("provider_ref")):
+        logger.info("payment %s: failure for superseded checkout %s ignored",
+                    payment["_id"], ref)
+        return {"ignored": True, "superseded": True}
     return await _settle(payment, event["event_id"], event["status"])
 
 

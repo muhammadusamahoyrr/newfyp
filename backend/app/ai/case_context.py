@@ -89,9 +89,12 @@ def next_hearing(hearings: Any, today: Optional[date] = None) -> Optional[str]:
       * it assumed every entry parsed, so one malformed row raised inside a
         request that was otherwise fine.
 
-    "Today" is evaluated in UTC. A hearing dated today is still upcoming.
+    "Today" is the PAKISTAN calendar day (hearing dates are Pakistan dates;
+    UTC was a day behind from 00:00 to 05:00 PKT). A hearing dated today is
+    still upcoming.
     """
-    today = today or datetime.now(timezone.utc).date()
+    from app.core.pkt import pkt_today
+    today = today or pkt_today()
     upcoming: list[date] = []
     for row in hearings or []:
         if not isinstance(row, dict):

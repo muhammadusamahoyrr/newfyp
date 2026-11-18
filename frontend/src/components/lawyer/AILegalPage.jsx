@@ -1,6 +1,7 @@
 'use client';
 // Lawyer AI Legal Page — paste your code here
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { pktToday } from "@/lib/bookingTime.js";
 import VoiceButton, { SendArrow } from "@/components/shared/VoiceButton.jsx";
 import { useToast as useLawyerToast } from "@/components/lawyer/Toast.jsx";
 import { useTheme, ThemeCtx } from "./theme.js";
@@ -1079,7 +1080,12 @@ function AILegalScreen() {
                 // again with that id until it lands: a finished turn replays
                 // its stored answer, and asking can never start a second run.
                 const waitUntil = Date.now() + RESEARCH_TIMEOUT_MS;
-                while ((error || !data) && status === 409
+                // Only the BUSY 409 clears by waiting (conversation_turns
+                // _BUSY_MESSAGE). The other 409 -- the id reused for different
+                // content -- never clears, so it fails at once.
+                const isBusy = (st, err) => st === 409
+                    && String(err?.message || "").startsWith("Another message is still being answered");
+                while ((error || !data) && isBusy(status, error)
                         && !cancelledRef.current && Date.now() < waitUntil) {
                     await new Promise(r => setTimeout(r, 5000));
                     if (cancelledRef.current) break;
@@ -1174,14 +1180,18 @@ function AILegalScreen() {
         const waiting = attemptRef.current;
         const sid = sessionIdRef.current;
         if (!waiting || !sid) return;
-        cancelledRef.current = true;
-        try { waiting.controller?.abort(); } catch { /* already settled */ }
         // The server says what actually happened — stopped, already answered,
         // already ended. Displaying "Stopped." regardless is a claim the next
         // reload contradicts: the answer it says was discarded is sitting in
-        // the thread.
+        // the thread. So ASK FIRST and abort after: aborting first landed in
+        // the catch, which showed the default "Stopped." before the server's
+        // answer arrived.
         const { data } = await cancelResearchTurn(sid, waiting.id);
+        // The answer landed while we asked: it is on screen, nothing to stop.
+        if (attemptRef.current !== waiting) return;
         stopNoticeRef.current = data?.message || "Stopped.";
+        cancelledRef.current = true;
+        try { waiting.controller?.abort(); } catch { /* already settled */ }
     }, []);
 
     const hasMessages = msgs.length > 0;
@@ -1209,8 +1219,9 @@ function AILegalScreen() {
     }, [rowMenu]);
     // Cases with a hearing coming up, soonest first: the "From your cases"
     // cards. Dates are the case's own next unheard hearing, nothing invented.
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const weekKey = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+    // Pakistan calendar days: UTC keys were a day behind from 00:00 to 05:00 PKT.
+    const todayKey = pktToday();
+    const weekKey = pktToday(new Date(Date.now() + 7 * 864e5));
     const upcoming = apiCases
         .filter(c => c.nextHearing !== "TBD" && c.nextHearing >= todayKey)
         .sort((a, b) => a.nextHearing.localeCompare(b.nextHearing));

@@ -455,14 +455,22 @@ const ModChatbot = () => {
 
             } else if (msg.type === "final") {
                 clearTimeout(deadlineRef.current);
+                clearTimeout(resumePollRef.current);
                 attemptRef.current = null;
                 setTyping(false);
                 setStage(null);
+                // A resume asked while the turn was finishing replays the SAME
+                // stored answer the live socket just delivered. Same audit id
+                // means same answer: show it once.
+
                 // Keep the objects: `status` says whether the answer actually
                 // cited a source or whether it was merely consulted, and the two
                 // must not be presented as the same thing.
                 const citations = normaliseCitations(msg.citations);
-                setMsgs(m => [...m, {
+                // Checked INSIDE the update, against the latest list: two frames
+                // landing in one tick both saw a stale ref when this was a
+                // separate read.
+                setMsgs(m => (msg.request_id && m.some(x => x.role === "ai" && x.requestId === msg.request_id)) ? m : [...m, {
                     role: "ai",
                     text: msg.content || "",
                     time: now,

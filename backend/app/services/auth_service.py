@@ -350,9 +350,18 @@ async def verify_email(token: str) -> None:
 
 
 async def forgot_password(email: str) -> None:
+    """The PUBLIC "forgot password" path. Returns nothing, whatever happened,
+    so it can never reveal whether an account exists or an email went."""
+    await issue_reset_link(email)
+
+
+async def issue_reset_link(email: str) -> bool | None:
+    """Send a reset link. True/False for delivered/not; None when nothing was
+    sent (unknown address, or a link sent moments ago). Only trusted callers
+    (the admin panel) may surface this; the public path discards it."""
     user = await user_repo.find_by_email(email)
     if not user:
-        return  # silent — don't leak whether email exists
+        return None  # silent — don't leak whether email exists
 
     reset_token = secrets.token_urlsafe(32)
     token_key = _reset_token_key(reset_token)
@@ -374,10 +383,9 @@ async def forgot_password(email: str) -> None:
         # the page said "sent"), so the unused link is swapped for a new one.
         previous = await _replace_reset_link(email.lower(), token_key)
         if previous is None:
-            return
-        await _send_reset_link(email, reset_token, token_key, previous)
-        return
-    await _send_reset_link(email, reset_token, token_key, None)
+            return None
+        return await _send_reset_link(email, reset_token, token_key, previous)
+    return await _send_reset_link(email, reset_token, token_key, None)
 
 
 # A second request inside this window keeps the link already sent.
@@ -398,11 +406,12 @@ async def _replace_reset_link(email: str, token_key: str) -> dict | None:
 
 
 async def _send_reset_link(email: str, reset_token: str, token_key: str,
-                           previous: dict | None) -> None:
+                           previous: dict | None) -> bool:
     try:
         delivered = await send_password_reset_email(email, reset_token)
         if not delivered:
             raise RuntimeError("email_not_configured")
+        return True
     except Exception as exc:
         # Existing and unknown accounts keep the same public response even
         # during an SMTP outage. Undo only what this request wrote: a new row
@@ -420,6 +429,7 @@ async def _send_reset_link(email: str, reset_token: str, token_key: str,
             "Password reset email was not delivered; error_type=%s",
             type(exc).__name__,
         )
+        return False
 
 
 async def reset_password(token: str, new_password: str) -> None:

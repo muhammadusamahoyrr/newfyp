@@ -331,3 +331,125 @@ async def test_an_accepting_claim_whose_submission_landed_becomes_accepted(mongo
     finally:
         await qr._col().delete_one({"_id": rid})
         await get_documents_col().delete_one({"_id": doc_id})
+
+
+# ── second review (2026-11-18) ───────────────────────────────────────────────
+
+async def test_a_success_reusing_a_declines_event_id_still_settles(fee):
+    """Safepay can fall back to the tracker as the event id, so a decline and
+    the successful retry on the same checkout may share it."""
+    from app.services import payment_service as ps
+
+    await ps.create_checkout(fee["payment_id"], fee["payer"])
+    ref = (await _payment(fee["payment_id"]))["provider_ref"]
+    shared = f"evt-{_tag()}"
+    await ps.handle_webhook({}, _body(ref, shared, status="failed"))
+
+    out = await ps.handle_webhook({}, _body(ref, shared, status="paid"))
+
+    assert out == {"status": "paid"}
+    assert (await _payment(fee["payment_id"]))["status"] == "paid"
+
+
+async def test_a_failed_fee_past_its_expiry_cannot_be_paid(fee):
+    from app.db.collections import get_payments_col
+    from app.services import payment_service as ps
+
+    await get_payments_col().update_one(
+        {"_id": fee["payment_id"]},
+        {"$set": {"status": "failed",
+                  "expires_at": datetime.now(timezone.utc) - timedelta(minutes=1)}})
+
+    with pytest.raises(ConflictError):
+        await ps.create_checkout(fee["payment_id"], fee["payer"])
+    assert (await _payment(fee["payment_id"]))["status"] == "expired"
+
+
+async def test_a_late_failure_from_an_old_checkout_does_not_fail_the_new_one(fee):
+    from app.services import payment_service as ps
+
+    await ps.create_checkout(fee["payment_id"], fee["payer"])
+    old_ref = (await _payment(fee["payment_id"]))["provider_ref"]
+    await ps.create_checkout(fee["payment_id"], fee["payer"])
+
+    out = await ps.handle_webhook({}, _body(old_ref, f"evt-{_tag()}", status="failed"))
+
+    assert out.get("superseded") is True
+    assert (await _payment(fee["payment_id"]))["status"] == "pending"
+
+
+async def test_a_different_plan_paid_mid_period_does_not_shorten_it(subscribed):
+    from app.db.collections import get_subscriptions_col
+    from app.services import subscription_service as ss
+
+    before = (await get_subscriptions_col().find_one({"lawyer_id": subscribed}))["current_period_end"]
+    await ss.activate({"_id": "pay-y", "payer_id": subscribed,
+                       "meta": {"tier": "firm", "cycle": "monthly"}})
+    row = await get_subscriptions_col().find_one({"lawyer_id": subscribed})
+
+    assert row["current_period_end"] - before >= timedelta(days=30) - timedelta(seconds=5)
+
+
+# ── third round (2026-11-18): interrupted two-write flows, notices, PKT ─────
+
+async def test_accept_replay_repairs_a_case_left_unassigned(proposed):
+    """Crash between 'engagement accepted' and 'case assigned': pressing
+    Accept again must finish the job, not return early."""
+    from app.db.collections import get_cases_col, get_engagements_col
+    from app.services import engagement_service as es
+
+    await get_engagements_col().update_one(
+        {"_id": proposed["_id"]}, {"$set": {"status": "accepted"}})
+    case = await get_cases_col().find_one({"_id": proposed["case_id"]})
+    assert case["lawyer_id"] is None        # the interrupted state
+
+    await es._ensure_case_claimed(await get_engagements_col().find_one({"_id": proposed["_id"]}))
+
+    case = await get_cases_col().find_one({"_id": proposed["case_id"]})
+    assert case["lawyer_id"] == proposed["lawyer_id"]
+    assert case["status"] == "in_progress"
+
+
+async def test_completion_retry_closes_a_case_left_open(proposed):
+    from app.db.collections import get_cases_col, get_engagements_col
+    from app.services import engagement_service as es
+
+    await get_engagements_col().update_one(
+        {"_id": proposed["_id"]}, {"$set": {"status": "completed"}})
+    await get_cases_col().update_one(
+        {"_id": proposed["case_id"]},
+        {"$set": {"lawyer_id": proposed["lawyer_id"], "status": "in_progress"}})
+
+    with pytest.raises(AppValidationError):     # still refused, as before
+        await es.complete_engagement(proposed["_id"], proposed["client_id"])
+
+    case = await get_cases_col().find_one({"_id": proposed["case_id"]})
+    assert case["status"] == "closed" and case.get("closed_at")
+
+
+async def test_a_failed_quick_review_notice_does_not_fail_the_action(monkeypatch):
+    from app.services import notification_service
+    from app.services import quick_review as qr
+
+    async def boom(*a, **k):
+        raise RuntimeError("notification store down")
+    monkeypatch.setattr(notification_service, "create_notification", boom)
+
+    await qr._notify("someone", qr.NotificationType.QUICK_REVIEW_CANCELLED,
+                     "t", "b", {})   # must not raise
+
+
+def test_next_hearing_uses_the_pakistan_date(monkeypatch):
+    """02:00 PKT on the 10th is still the 9th in UTC; a hearing on the 9th
+    has passed in Pakistan and must not be offered as the next one."""
+    from datetime import date
+    import app.core.pkt as pkt
+    from app.ai.case_context import next_hearing
+
+    now = datetime(2026, 3, 9, 21, 0, tzinfo=timezone.utc)   # 02:00 PKT, 10 Mar
+    assert pkt.pkt_today(now) == date(2026, 3, 10)
+    real = pkt.pkt_today
+    monkeypatch.setattr(pkt, "pkt_today", lambda n=None: real(now))
+    hearings = [{"date": "2026-03-09"}, {"date": "2026-03-12"}]
+    # No `today` passed: the default must be the Pakistan date.
+    assert next_hearing(hearings) == "2026-03-12"

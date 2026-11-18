@@ -1,4 +1,5 @@
 import logging
+import re
 import secrets
 from datetime import datetime, timezone
 
@@ -97,9 +98,10 @@ def _safe_user(u: dict) -> dict:
     return out
 
 
-async def list_pending_kyc() -> list[dict]:
-    users = await user_repo.find_many(
-        {
+def _pending_kyc_filter() -> dict:
+    """THE definition of "waiting for KYC review". The queue and the
+    dashboard count both read it, so the two numbers cannot disagree."""
+    return {
             "role": "lawyer",
             "lawyer_profile.kyc_verified": False,
             "lawyer_profile.bar_number": {"$ne": None},
@@ -116,8 +118,11 @@ async def list_pending_kyc() -> list[dict]:
                 {"lawyer_profile.kyc_status": {"$exists": False}},
                 {"lawyer_profile.kyc_status": None},
             ],
-        }
-    )
+    }
+
+
+async def list_pending_kyc() -> list[dict]:
+    users = await user_repo.find_many(_pending_kyc_filter())
     # _safe_user rather than an inline copy of it — the duplicate here is how
     # this endpoint would have kept leaking the embedding after the shared
     # helper was fixed.
@@ -239,17 +244,7 @@ async def get_analytics() -> dict:
     total_documents = await get_documents_col().count_documents({})
     # Counts what the QUEUE shows. Using kyc_verified alone would include
     # rejected lawyers, so the dashboard number and the review list disagreed.
-    pending_kyc = await users_col.count_documents(
-        {
-            "role": "lawyer",
-            "lawyer_profile.kyc_verified": False,
-            "$or": [
-                {"lawyer_profile.kyc_status": KycStatus.PENDING.value},
-                {"lawyer_profile.kyc_status": {"$exists": False}},
-                {"lawyer_profile.kyc_status": None},
-            ],
-        }
-    )
+    pending_kyc = await users_col.count_documents(_pending_kyc_filter())
 
     users_by_role: dict[str, int] = {}
     for role in ["client", "lawyer", "admin"]:
@@ -290,9 +285,13 @@ async def list_users(page: int, page_size: int, role: str | None, search: str | 
     if role and role != "all":
         query["role"] = role
     if search:
+        # Escaped: the admin types text, not a pattern. Raw, "(" or "[" made
+        # an invalid regex (the list came back as "no users"), and a crafted
+        # pattern could make every search scan expensively.
+        pattern = re.escape(search.strip()[:100])
         query["$or"] = [
-            {"full_name": {"$regex": search, "$options": "i"}},
-            {"email": {"$regex": search, "$options": "i"}},
+            {"full_name": {"$regex": pattern, "$options": "i"}},
+            {"email": {"$regex": pattern, "$options": "i"}},
         ]
     result = await user_repo.paginate(query, page, page_size)
     return {
@@ -304,10 +303,15 @@ async def list_users(page: int, page_size: int, role: str | None, search: str | 
     }
 
 
-async def create_user(full_name: str, email: str, role: str, password: str,
+async def create_user(full_name: str, email: str, role: str,
                       actor: dict | None = None) -> dict:
-    if not validate_password_strength(password):
-        raise AppValidationError(PASSWORD_POLICY)
+    """Create an account and email its owner a link to set their password.
+
+    The admin used to type the password, so an admin knew it and could sign
+    in as that person. The stored hash is now of a random secret nobody sees;
+    the account becomes usable when its owner follows the link.
+    """
+    password = secrets.token_urlsafe(32)
     existing = await user_repo.find_by_email(email)
     if existing:
         raise ConflictError("Email already registered")
@@ -331,7 +335,11 @@ async def create_user(full_name: str, email: str, role: str, password: str,
     }
     await user_repo.insert(doc)
     await _audit(actor, "user.created", user_id, {"role": role, "email": email.lower()})
-    return _safe_user(doc)
+    from app.services.auth_service import issue_reset_link
+    delivered = await issue_reset_link(email.lower())
+    out = _safe_user(doc)
+    out["setup_link_sent"] = delivered is not False   # None = a recent link still valid
+    return out
 
 
 async def update_user(user_id: str, data: dict, actor: dict | None = None) -> dict:
@@ -339,6 +347,10 @@ async def update_user(user_id: str, data: dict, actor: dict | None = None) -> di
     if not user:
         raise NotFoundError("User")
     updates = {k: v for k, v in data.items() if v is not None}
+    # A closed account has been anonymised. Switching it back on would revive
+    # an empty shell and break the promise that deleting means deleted.
+    if user.get("is_closed"):
+        raise AppValidationError("This account was deleted and cannot be changed or reactivated.")
 
     # An admin removing their OWN access is almost always a misclick, and it is
     # unrecoverable from inside the app: register() refuses the admin role, so
@@ -395,17 +407,35 @@ async def update_user(user_id: str, data: dict, actor: dict | None = None) -> di
     return _safe_user(updated)
 
 
-async def reset_user_password(user_id: str, new_password: str,
-                              actor: dict | None = None) -> None:
-    if not validate_password_strength(new_password):
-        raise AppValidationError(PASSWORD_POLICY)
+async def reset_user_password(user_id: str, actor: dict | None = None) -> bool:
+    """Sign the user out everywhere and email them a reset link.
+
+    The admin no longer chooses the new password (and so never knows it). The
+    old password is replaced with a random secret straight away, which is what
+    an admin reset is for: the account is locked to its owner, who sets a new
+    password from the link. Returns whether the email was delivered.
+    """
     user = await user_repo.find_by_id(user_id)
     if not user:
         raise NotFoundError("User")
+    if user.get("is_closed"):
+        raise AppValidationError("This account was deleted.")
+    if _is_self(actor, user_id):
+        # Locking yourself out from here is unrecoverable if the email does
+        # not arrive. Admins change their own password under Account.
+        raise AppValidationError("Change your own password under Account.")
+
+    # The link FIRST. If it cannot be sent, nothing is changed: replacing the
+    # password with no way to set a new one would lock the user out for good.
+    # None = a link sent moments ago is still valid, which counts as sent.
+    from app.services.auth_service import issue_reset_link
+    delivered = await issue_reset_link(user["email"])
+    if delivered is False:
+        return False
     await user_repo.update_one(
         {"_id": user_id},
         {"$set": {
-            "password_hash": hash_password(new_password),
+            "password_hash": hash_password(secrets.token_urlsafe(32)),
             # The THIRD password-change path, and the one most likely to be
             # incident response: an admin resets a password precisely when an
             # account is suspected compromised. Without this the attacker's
@@ -417,6 +447,9 @@ async def reset_user_password(user_id: str, new_password: str,
         }},
     )
     await _audit(actor, "user.password_reset", user_id)
+    from app.services import auth_sessions
+    await auth_sessions.revoke_all_best_effort(user_id, reason="admin_password_reset")
+    return True
 
 
 async def delete_user(user_id: str, actor: dict | None = None) -> None:
@@ -448,9 +481,10 @@ async def list_admin_cases(page: int, page_size: int, status: str | None, search
     if status and status != "all":
         query["status"] = status
     if search:
+        pattern = re.escape(search.strip()[:100])   # text, not a pattern
         query["$or"] = [
-            {"case_number": {"$regex": search, "$options": "i"}},
-            {"title": {"$regex": search, "$options": "i"}},
+            {"case_number": {"$regex": pattern, "$options": "i"}},
+            {"title": {"$regex": pattern, "$options": "i"}},
         ]
     result = await case_repo.paginate(query, page, page_size)
 
@@ -460,18 +494,27 @@ async def list_admin_cases(page: int, page_size: int, status: str | None, search
     user_docs = await user_repo.find_many({"_id": {"$in": list(user_ids)}}) if user_ids else []
     user_map = {u["_id"]: u for u in user_docs}
 
-    from app.services.case_service import _public_case  # strips case_embedding vector
-
+    # An ALLOWLIST, not the case document: the admin oversees the platform
+    # and does not read the client's story, facts, AI summary or documents.
     enriched = []
     for c in result.items:
-        c = _public_case(c)
         client = user_map.get(c.get("client_id") or "")
-        if client:
-            c["client_name"] = client.get("full_name", "")
         lawyer = user_map.get(c.get("lawyer_id") or "")
-        if lawyer:
-            c["lawyer_name"] = lawyer.get("full_name", "")
-        enriched.append(c)
+        enriched.append({
+            "_id": c["_id"],
+            "case_number": c.get("case_number"),
+            "title": c.get("title"),
+            "case_type": c.get("case_type"),
+            "status": c.get("status"),
+            "province": c.get("province"),
+            "client_id": c.get("client_id"),
+            "client_name": (client or {}).get("full_name"),
+            "lawyer_id": c.get("lawyer_id"),
+            "lawyer_name": (lawyer or {}).get("full_name"),
+            "created_at": c.get("created_at"),
+            "updated_at": c.get("updated_at"),
+            "closed_at": c.get("closed_at"),
+        })
     return {
         "items": enriched,
         "total": result.total,
@@ -481,39 +524,69 @@ async def list_admin_cases(page: int, page_size: int, status: str | None, search
     }
 
 
-async def update_case_status(case_id: str, status: str, actor: dict | None = None) -> dict:
+async def end_case(case_id: str, status: str, reason: str,
+                   actor: dict | None = None) -> dict:
+    """End a case as an administrator: `closed` or `dismissed`, with a reason.
+
+    This replaces a control that could set ANY status in one click -- including
+    moving a live matter back to `draft` -- with no rule, no confirmation and no
+    word to the people whose case it is. A case's lifecycle belongs to its
+    client and lawyer; the admin's only intervention is ending one that cannot
+    end normally, and both parties are told why.
+    """
+    if status not in TERMINAL_CASE_STATUSES:
+        raise AppValidationError("An admin can only close or dismiss a case.")
+    reason = (reason or "").strip()
+    if len(reason) < 10:
+        raise AppValidationError("Give a reason of at least 10 characters; both parties will see it.")
     case = await case_repo.find_by_id(case_id)
     if not case:
         raise NotFoundError("Case")
+    if case.get("status") in TERMINAL_CASE_STATUSES:
+        raise ConflictError("This case has already ended.")
+
+    # A hired lawyer's engagement has its own exits (complete / terminate),
+    # with their consequences for the case. Ending the case under it would
+    # leave an active engagement on an ended case.
+    from app.db.collections import get_engagements_col
+    engagements = get_engagements_col()
+    if await engagements.find_one({"case_id": case_id, "status": "accepted"}, {"_id": 1}):
+        raise ConflictError(
+            "A lawyer is engaged on this case. The client or lawyer must complete "
+            "or end that engagement first.")
 
     now = datetime.now(timezone.utc)
-    changes: dict = {"status": status, "updated_at": now}
+    # Guarded on the status read above, so two admins cannot both end it and
+    # an end cannot land on a case that changed meanwhile.
+    changed = await case_repo.update_one(
+        {"_id": case_id, "status": case.get("status")},
+        {"$set": {"status": status, "updated_at": now, "closed_at": now,
+                  "ended_by_admin": {"status": status, "reason": reason, "at": now}}},
+    )
+    if not changed:
+        raise ConflictError("This case changed just now. Reload and try again.")
+    # Requests still waiting on the case end with it, so accepting old terms
+    # cannot bring the case back.
+    await engagements.update_many(
+        {"case_id": case_id, "status": {"$in": ["requested", "terms_proposed"]}},
+        {"$set": {"status": "cancelled", "cancelled_by": "support",
+                  "updated_at": now, "responded_at": now}})
+    await _audit(actor, "case.ended_by_admin", case_id,
+                 {"from": case.get("status"), "to": status, "reason": reason})
 
-    # The retention clock. This is the only path that can both end a matter and
-    # revive one, so both edges are handled here.
-    #
-    # ENTERING terminal stamps the closure instant. LEAVING it clears the stamp
-    # — a reopened case that kept its old `closed_at` would keep counting down
-    # while somebody was actively working it, and expire mid-matter.
-    #
-    # Terminal → terminal (closed → dismissed) is neither edge and is left
-    # alone. The matter ended once; re-labelling how it ended does not reopen
-    # it, and re-stamping would let a status toggle silently restart a
-    # twelve-year clock.
-    was_terminal = case.get("status") in TERMINAL_CASE_STATUSES
-    now_terminal = status in TERMINAL_CASE_STATUSES
-    if now_terminal and not was_terminal:
-        changes["closed_at"] = now
-    elif was_terminal and not now_terminal:
-        changes["closed_at"] = None
+    label = "closed" if status == "closed" else "dismissed"
+    title = case.get("title") or case.get("case_number") or "your case"
+    for party in {case.get("client_id"), case.get("lawyer_id")} - {None}:
+        try:
+            await create_notification(
+                party, NotificationType.CASE_UPDATE, f"Case {label} by support",
+                f'"{title}" was {label} by the platform support team. Reason: {reason}',
+                payload={"case_id": case_id},
+            )
+        except Exception:  # noqa: BLE001 -- the decision stands; logged
+            logger.exception("case-ended notification to %s failed", party)
 
-    await case_repo.update_one({"_id": case_id}, {"$set": changes})
-    await _audit(actor, "case.status_changed", case_id,
-                 {"from": case.get("status"), "to": status})
-
-    from app.services.case_service import _public_case  # strips case_embedding vector
-
-    return _public_case(await case_repo.find_by_id(case_id))
+    return {"_id": case_id, "status": status}
 
 
 # ── Lawyer monitoring ─────────────────────────────────────────────────────────

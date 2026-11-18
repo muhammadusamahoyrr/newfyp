@@ -11,6 +11,7 @@ import { AppointmentDisputes } from '@/components/admin/AdminDisputes.jsx';
 import { AccountSettings } from '@/components/admin/AdminAccountSettings.jsx';
 import { IC } from '@/components/admin/icons.js';
 import { Ic } from '@/components/admin/AdminComponent.jsx';
+import { useAuth } from '@/context/AuthContext.jsx';
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard',        icon: IC.dashboard ?? IC.home ?? "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
@@ -34,6 +35,14 @@ const PAGE_MAP = {
 
 export default function AdminApp({ initialSection = 'dashboard' }) {
   const T = DARK;
+  const { user, logout } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+  // There was no way to sign out of the admin panel at all.
+  const signOut = async () => {
+    setSigningOut(true);
+    await logout();
+    window.location.assign('/login');
+  };
   const normalizedInitial = PAGE_MAP[initialSection] ? initialSection : 'dashboard';
   const [nav, setNav] = useState(normalizedInitial);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -132,6 +141,19 @@ export default function AdminApp({ initialSection = 'dashboard' }) {
             );
           })}
         </nav>
+        <div style={{ padding: '12px 10px 0', borderTop: `1px solid ${T.border}40` }}>
+          {user?.email && (
+            <div title={user.email} style={{ padding: '0 12px 8px', fontSize: 11, color: T.textFaint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+          )}
+          <button onClick={signOut} disabled={signingOut} style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', width: '100%',
+            borderRadius: 10, border: 'none', background: 'transparent', cursor: signingOut ? 'default' : 'pointer',
+            color: T.textMuted, fontSize: 13, textAlign: 'left', borderLeft: '3px solid transparent',
+          }}>
+            <Ic d={IC.logout} size={16} color={T.textMuted} />
+            {signingOut ? 'Signing out…' : 'Log out'}
+          </button>
+        </div>
       </aside>
 
       {/* Main content */}
