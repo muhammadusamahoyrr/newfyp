@@ -49,6 +49,12 @@ _TIER_RANK = {SubscriptionTier.FREE.value: 0, SubscriptionTier.PROFESSIONAL.valu
               SubscriptionTier.FIRM.value: 2}
 
 
+def _daily_price(tier: str, cycle: str) -> float:
+    """PKR per day of a plan. Prices are per month; annual is billed for 12."""
+    price = TIERS.get(tier, {}).get("price", {}).get(cycle, 0)
+    return price * 12 / 365 if cycle == BillingCycle.ANNUAL.value else price / 30
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -160,17 +166,32 @@ async def activate(payment: dict, session=None) -> dict:
     # lost. subscribe() refuses a plan switch mid-period, but two checkouts
     # opened while on Free can both be paid, and money taken must be honoured.
     period_start = now
+    period_end = now + length
     existing = await get_subscriptions_col().find_one(
         {"lawyer_id": lawyer_id}, session=session)
-    if existing and _live_paid_period(existing):
-        end = _aware(existing.get("current_period_end"))
-        if end and end > now:
+    end = _aware((existing or {}).get("current_period_end"))
+    if existing and _live_paid_period(existing) and end and end > now:
+        if existing.get("tier") == tier and existing.get("cycle", cycle) == cycle:
+            # Renewing the same plan: the new period follows the current one.
             period_start = end
-        # Two plans paid for while on Free: the higher one stays in force
-        # (the lawyer paid for it), never a mid-period downgrade.
-        if _TIER_RANK.get(existing.get("tier"), 0) > _TIER_RANK.get(tier, 0):
-            tier = existing["tier"]
-    period_end = period_start + length
+            period_end = end + length
+        else:
+            # Two different plans paid while on Free. Time is converted BY
+            # VALUE: what is left of the running period plus what was just
+            # paid, as days of the higher plan at that plan's daily price.
+            # Extending the higher plan by the cheaper plan's full length
+            # (or upgrading the cheaper plan's remaining days for free) would
+            # let a lawyer pay less than the plan they get.
+            old_tier = existing["tier"]
+            old_cycle = existing.get("cycle") or BillingCycle.MONTHLY.value
+            keep = old_tier if _TIER_RANK.get(old_tier, 0) > _TIER_RANK.get(tier, 0) else tier
+            keep_cycle = old_cycle if keep == old_tier else cycle
+            remaining_s = (end - now).total_seconds()
+            value = (remaining_s * _daily_price(old_tier, old_cycle)
+                     + length.total_seconds() * _daily_price(tier, cycle))
+            rate = _daily_price(keep, keep_cycle)
+            tier, cycle = keep, keep_cycle
+            period_end = now + timedelta(seconds=value / rate) if rate else end + length
 
     await get_subscriptions_col().update_one(
         {"lawyer_id": lawyer_id},

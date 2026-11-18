@@ -211,5 +211,10 @@ async def test_a_second_paid_plan_never_downgrades_a_running_period(mongo):
                            "meta": {"tier": "professional", "cycle": "monthly"}})
         row = await get_subscriptions_col().find_one({"lawyer_id": lawyer})
         assert row["tier"] == "firm"
+        # Professional's 30 days buy only ~7.5 Firm days, not 30 (the bypass
+        # an automated security review caught): 20 + 30*1999/7999 days.
+        end = row["current_period_end"].replace(tzinfo=timezone.utc)
+        expected = now + timedelta(days=20) + timedelta(days=30 * 1999 / 7999)
+        assert abs((end - expected).total_seconds()) < 120
     finally:
         await get_subscriptions_col().delete_many({"lawyer_id": lawyer})

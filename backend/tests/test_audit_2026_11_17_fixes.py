@@ -378,16 +378,23 @@ async def test_a_late_failure_from_an_old_checkout_does_not_fail_the_new_one(fee
     assert (await _payment(fee["payment_id"]))["status"] == "pending"
 
 
-async def test_a_different_plan_paid_mid_period_does_not_shorten_it(subscribed):
+async def test_a_different_plan_paid_mid_period_is_converted_by_value(subscribed):
+    """Professional (25 days left) then Firm paid: the result is Firm, and the
+    25 Professional days become Firm days at Firm's price, not 25 free Firm
+    days and not lost days."""
     from app.db.collections import get_subscriptions_col
     from app.services import subscription_service as ss
 
     before = (await get_subscriptions_col().find_one({"lawyer_id": subscribed}))["current_period_end"]
+    now = datetime.now(timezone.utc)
     await ss.activate({"_id": "pay-y", "payer_id": subscribed,
                        "meta": {"tier": "firm", "cycle": "monthly"}})
     row = await get_subscriptions_col().find_one({"lawyer_id": subscribed})
 
-    assert row["current_period_end"] - before >= timedelta(days=30) - timedelta(seconds=5)
+    remaining = (before.replace(tzinfo=timezone.utc) - now).total_seconds()
+    expected = now + timedelta(days=30) + timedelta(seconds=remaining * 1999 / 7999)
+    assert row["tier"] == "firm"
+    assert abs((row["current_period_end"].replace(tzinfo=timezone.utc) - expected).total_seconds()) < 60
 
 
 # ── third round (2026-11-18): interrupted two-write flows, notices, PKT ─────
