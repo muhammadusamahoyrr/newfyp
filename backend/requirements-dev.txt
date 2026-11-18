@@ -8,7 +8,7 @@ pytest-asyncio==0.24.0
 # NOTE: fakeredis simulates XADD/XREADGROUP/XACK/XAUTOCLAIM semantics well enough
 # for logic tests, but XAUTOCLAIM recovery *timing* (min-idle reclaim under real
 # latency) should be spot-checked against a real Redis 7 before the demo.
-fakeredis>=2.26
+fakeredis>=2.40.0
 
 # Process/port inspection for scripts/analyzer_demo.py (and its tests).
 psutil==7.2.2
