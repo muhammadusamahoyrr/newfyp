@@ -12,7 +12,8 @@ const PLANS = [
     ctaHref: '/register',
     highlight: false,
     features: [
-      '5 AI chat queries per month',
+      'AI legal chat',
+      '1 cause-list watch',
       'Basic document preview',
       'Access to Pakistani statute library',
       'Legal information (not advice)',
@@ -25,7 +26,7 @@ const PLANS = [
     price: { monthly: 1999, annual: 1499 },
     badge: 'Most Popular',
     desc: 'For practising lawyers, paralegals, and serious legal researchers.',
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     ctaHref: '/register',
     highlight: true,
     features: [
@@ -62,8 +63,8 @@ const PLANS = [
 ];
 
 const FAQ_PRICING = [
-  { q: 'Can I switch plans at any time?', a: 'Yes. You can upgrade or downgrade your plan at any time from your account settings. Changes take effect at the start of your next billing cycle.' },
-  { q: 'Is there a free trial for paid plans?', a: 'Yes — Professional includes a 7-day free trial. No credit card required to start.' },
+  { q: 'Can I switch plans at any time?', a: 'You can choose or renew a plan from your account settings. Renewing the same plan adds a new period after your current one, so no paid days are lost. To move to a different plan, wait until your current paid period ends. If you cancel, paid features stay on until that period ends.' },
+  { q: 'Is there a free trial for paid plans?', a: 'There is no free trial. The Free plan stays free and needs no card, so you can try the platform there first.' },
   { q: 'What payment methods do you accept?', a: 'We accept all major credit and debit cards, JazzCash, Easypaisa, and bank transfers for Firm plans.' },
   { q: 'Can I get a refund?', a: 'We offer a 7-day money-back guarantee on all paid plans. See our Refund Policy for details.' },
 ];

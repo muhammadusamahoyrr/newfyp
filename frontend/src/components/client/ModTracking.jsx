@@ -1199,6 +1199,7 @@ function PagePayments({ t }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [payingId, setPayingId] = useState(null);
+    const [payError, setPayError] = useState({});   // payment id -> message
 
     const load = async () => {
         const { data } = await listPayments();
@@ -1209,10 +1210,17 @@ function PagePayments({ t }) {
 
     const pay = async (p) => {
         setPayingId(p.id);
+        setPayError(m => ({ ...m, [p.id]: null }));
         const { data, error } = await startCheckout(p.id);
-        if (error) { setPayingId(null); return; }
+        if (error) {
+            setPayError(m => ({ ...m, [p.id]: error.message || T("Payment could not be started. Try again.", "ادائیگی شروع نہیں ہو سکی۔ دوبارہ کوشش کریں۔") }));
+            setPayingId(null);
+            await load();             // e.g. it expired meanwhile: show its real status
+            return;
+        }
         if (data?.dry_run) {
-            await mockPay(p.id);          // dev/test: settle immediately
+            const res = await mockPay(p.id);          // dev/test: settle immediately
+            if (res?.error) setPayError(m => ({ ...m, [p.id]: res.error.message || T("Payment did not go through.", "ادائیگی مکمل نہیں ہوئی۔") }));
         } else if (data?.checkout_url) {
             window.open(data.checkout_url, "_blank", "noopener");
         }
@@ -1261,10 +1269,14 @@ function PagePayments({ t }) {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
                         {badge(p.status)}
-                        {(p.status === "created" || p.status === "pending") && (
+                        {/* failed is payable again: the payer was told to try again */}
+                        {(p.status === "created" || p.status === "pending" || p.status === "failed") && (
                             <button onClick={() => pay(p)} disabled={payingId === p.id} style={{ padding: "0 20px", height: 40, borderRadius: 10, border: "none", background: t.primary, color: t.mode === "dark" ? "#0F2A30" : "#fff", fontSize: 13.5, fontWeight: 800, cursor: payingId === p.id ? "default" : "pointer", fontFamily: "inherit" }}>
-                                {payingId === p.id ? T("Processing…", "زیرِ عمل…") : `${T("Pay", "ادا کریں")} PKR ${Number(p.amount).toLocaleString()}`}
+                                {payingId === p.id ? T("Processing…", "زیرِ عمل…") : `${p.status === "failed" ? T("Try again", "دوبارہ کوشش") + " · " : ""}${T("Pay", "ادا کریں")} PKR ${Number(p.amount).toLocaleString()}`}
                             </button>
+                        )}
+                        {payError[p.id] && (
+                            <div role="alert" style={{ fontSize: 11.5, color: t.danger || "#B42318", maxWidth: 220, textAlign: "right" }}>{payError[p.id]}</div>
                         )}
                         {p.status === "paid" && (
                             <button onClick={() => downloadReceipt(p.id, `receipt-${p.id}.pdf`)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${t.border}`, background: "transparent", color: t.primary, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>

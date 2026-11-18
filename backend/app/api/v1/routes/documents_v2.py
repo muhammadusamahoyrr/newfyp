@@ -1066,9 +1066,25 @@ async def get_document_v2(
             out.pop(field, None)
         if level == ACCESS_PAST_REVIEWER:
             for field in ("submitted_to", "submitted_at", "submitted_version",
-                          "urgency"):
+                          "urgency", "content_epoch"):
                 out.pop(field, None)
             out["review_status"] = _my_last_status(doc, user_id)
+            # The notes and decision time on the document describe its LATEST
+            # review, which after a resubmission is another lawyer's: the
+            # client's note to them and their verdict. A past reviewer sees
+            # their own cycle only, as the review queue already shows it.
+            mine = _my_cycles(doc, user_id)
+            if mine:
+                last = mine[-1]
+                out["review_note"] = last.get("note")
+                out["client_note"] = last.get("client_note")
+                out["reviewed_at"] = last.get("decided_at") or out.get("reviewed_at")
+            elif doc.get("review_cycles"):
+                # Cycles exist but none is this lawyer's: the document-level
+                # fields are someone else's, so show none of them.
+                out["review_note"] = None
+                out["client_note"] = None
+                out["reviewed_at"] = None
 
     current = None
     if revision_id:

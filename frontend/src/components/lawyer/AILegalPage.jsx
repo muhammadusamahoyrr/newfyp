@@ -1063,7 +1063,10 @@ function AILegalScreen() {
             // failures worth retrying, and exactly the ones a new id would turn
             // into a duplicate charge. A 4xx is a decision; repeating it
             // changes nothing.
+            // A 503 the SERVER sent with `turn_timeout` is not ambiguous: it
+            // stopped the turn itself, and resending would run it again.
             if ((error || !data) && isAmbiguousFailure(status)
+                    && error?.code !== "turn_timeout"
                     && !cancelledRef.current) {
                 attempt = retryAttempt(attempt);
                 attemptRef.current = attempt;
@@ -1071,6 +1074,17 @@ function AILegalScreen() {
                 // previous poll stopped when the attempt object changed.
                 watchStage(sid, attempt.id);
                 ({ data, error, status } = await send(attempt));
+                // 409 on the SAME id means the first send is still being
+                // answered (the connection dropped, the work did not). Ask
+                // again with that id until it lands: a finished turn replays
+                // its stored answer, and asking can never start a second run.
+                const waitUntil = Date.now() + RESEARCH_TIMEOUT_MS;
+                while ((error || !data) && status === 409
+                        && !cancelledRef.current && Date.now() < waitUntil) {
+                    await new Promise(r => setTimeout(r, 5000));
+                    if (cancelledRef.current) break;
+                    ({ data, error, status } = await send(attempt));
+                }
             }
 
             if (cancelledRef.current) {

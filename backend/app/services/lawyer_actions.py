@@ -39,9 +39,16 @@ def queries(lawyer_id: str, now: datetime) -> dict:
     """THE predicates, as database filters. The Clients index groups the same
     filters by client, so a card can never disagree with these counts.
     Keys: requests, outcomes, upcoming (appointments); hire, waiting (engagements)."""
+    # A request past its answer time is only dead when expiry is ON: then the
+    # sweep retires it and confirm refuses it. With expiry off (the default)
+    # it is still listed on the Appointments page and can still be accepted,
+    # so it must still count here too.
+    from app.services.appointment_expiry import expiry_enabled
+    requests = {"lawyer_id": lawyer_id, "status": "pending"}
+    if expiry_enabled():
+        requests["$or"] = [{"expires_at": None}, {"expires_at": {"$gt": now}}]
     return {
-        "requests": {"lawyer_id": lawyer_id, "status": "pending",
-                     "$or": [{"expires_at": None}, {"expires_at": {"$gt": now}}]},
+        "requests": requests,
         "outcomes": {"lawyer_id": lawyer_id, "status": "confirmed", "end_at": {"$lt": now}},
         "upcoming": {"lawyer_id": lawyer_id, "status": "confirmed", "end_at": {"$gte": now}},
         "hire": {"lawyer_id": lawyer_id, "status": "requested"},

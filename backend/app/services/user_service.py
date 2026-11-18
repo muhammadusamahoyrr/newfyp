@@ -13,7 +13,7 @@ from app.core.security import (
 )
 from app.repositories.user_repo import UserRepository
 from app.services import auth_sessions
-from app.utils.validators import validate_password_strength
+from app.utils.validators import PASSWORD_POLICY, validate_password_strength
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ async def change_password(user_id: str, current_password: str, new_password: str
     if not verify_password(current_password, user["password_hash"]):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     if not validate_password_strength(new_password):
-        raise AppValidationError("Password must be at least 8 characters with a number")
+        raise AppValidationError(PASSWORD_POLICY)
     changed = await user_repo.update_one(
         {"_id": user_id, "password_hash": user["password_hash"], "is_active": True},
         {"$set": {

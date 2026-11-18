@@ -352,6 +352,13 @@ async def update_user(user_id: str, data: dict, actor: dict | None = None) -> di
     if losing_admin:
         await _assert_not_last_admin(user_id)
 
+    # Promoting an account to lawyer: it has no lawyer sub-document (a client's
+    # is null), and every lawyer-profile write is `$set lawyer_profile.<x>`,
+    # which Mongo refuses inside null. Give it the same one sign-up creates.
+    if updates.get("role") == "lawyer" and not isinstance(user.get("lawyer_profile"), dict):
+        from app.services.auth_service import new_lawyer_profile
+        updates["lawyer_profile"] = new_lawyer_profile()
+
     updates["updated_at"] = datetime.now(timezone.utc)
     await user_repo.update_one({"_id": user_id}, {"$set": updates})
     await _audit(actor, "user.updated", user_id,

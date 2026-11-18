@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.core.constants import CaseStatus
-from app.dependencies import get_current_user, require_lawyer
+from app.dependencies import get_current_user, require_client, require_lawyer
 from app.schemas.case import (
     CaseConfirm,
     CaseCreate,
@@ -29,7 +29,10 @@ router = APIRouter(prefix="/cases", tags=["cases"])
 @router.post("", response_model=CaseOut)
 async def create_case(
     body: CaseCreate,
-    current_user: dict = Depends(get_current_user),
+    # Clients only: the caller becomes the case's CLIENT. A lawyer creating
+    # one here named themselves as client and then could not read it.
+    # Lawyers open cases through /cases/walk-in.
+    current_user: dict = Depends(require_client),
 ):
     return await case_service.create_case(current_user["_id"], body.model_dump())
 

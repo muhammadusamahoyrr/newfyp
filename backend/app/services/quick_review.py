@@ -169,12 +169,45 @@ def _public(req: dict) -> dict:
     }
 
 
+# An `accepting` claim older than this was left by an accept() that never
+# finished (process restart, cancelled request). accept() itself takes seconds.
+_ACCEPTING_STUCK_AFTER = timedelta(minutes=2)
+
+
+async def _recover_stuck_accepting(match: dict) -> None:
+    """Settle `accepting` claims abandoned mid-accept.
+
+    The unique index treats `accepting` as open, and cancel() only matches
+    `requested`, so an abandoned claim used to block the document from every
+    new review request forever. Whether the submission landed is read from the
+    document itself: if it carries this request's id, the lawyer has it and the
+    request is accepted; otherwise nothing was sent and it is waiting again.
+    """
+    now = _now()
+    cutoff = now - _ACCEPTING_STUCK_AFTER
+    async for req in _col().find({**match, "status": _ACCEPTING,
+                                  "$or": [{"accepting_since": {"$lte": cutoff}},
+                                          {"accepting_since": {"$exists": False}}]}):
+        doc = await get_documents_col().find_one({"_id": req["doc_id"]},
+                                                 {"quick_review_id": 1})
+        if doc and doc.get("quick_review_id") == req["_id"]:
+            due = now + timedelta(hours=int(req.get("turnaround_hours") or TURNAROUNDS[0]))
+            update = {"$set": {"status": ACCEPTED, "decided_at": now, "due_at": due}}
+        elif doc is None:
+            update = _closing(DOCUMENT_DELETED, "system", now)
+        else:
+            update = {"$set": {"status": OPEN}}
+        await _col().update_one({"_id": req["_id"], "status": _ACCEPTING}, update)
+
+
 async def _expire_due(match: dict) -> None:
     """Close open requests whose window has passed, telling the client.
 
     Lazy, on read: no scheduler is needed for a request nobody is looking at.
     Each one is claimed with a guarded update, so two readers never both notify.
+    Abandoned `accepting` claims are settled first (_recover_stuck_accepting).
     """
+    await _recover_stuck_accepting(match)
     now = _now()
     async for req in _col().find({**match, "status": OPEN, "expires_at": {"$lte": now}}):
         res = await _col().update_one({"_id": req["_id"], "status": OPEN},
@@ -334,7 +367,7 @@ async def accept(*, lawyer_id: str, request_id: str) -> dict:
         raise ConflictError("This request has expired.")
     claimed = await _col().find_one_and_update(
         {"_id": request_id, "lawyer_id": lawyer_id, "status": OPEN},
-        {"$set": {"status": _ACCEPTING}}, return_document=True)
+        {"$set": {"status": _ACCEPTING, "accepting_since": now}}, return_document=True)
     if not claimed:
         raise ConflictError("This request is no longer waiting.")
 

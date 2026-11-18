@@ -8,6 +8,7 @@ import { KYCVerification } from '@/components/admin/AdminKYCVerification.jsx';
 import { CaseTracking } from '@/components/admin/AdminCaseTracking.jsx';
 import { LawyerMonitoring } from '@/components/admin/AdminLawyerMonitoring.jsx';
 import { AppointmentDisputes } from '@/components/admin/AdminDisputes.jsx';
+import { AccountSettings } from '@/components/admin/AdminAccountSettings.jsx';
 import { IC } from '@/components/admin/icons.js';
 import { Ic } from '@/components/admin/AdminComponent.jsx';
 
@@ -18,6 +19,7 @@ const NAV = [
   { id: 'cases',     label: 'Case Tracking',     icon: IC.briefcase },
   { id: 'lawyers',   label: 'Lawyer Monitoring', icon: IC.balance ?? IC.scale ?? "M12 3v18M6 6l-3 6h6L6 6zM18 6l-3 6h6L18 6z" },
   { id: 'disputes',  label: 'Appointment Reports', icon: IC.flag ?? IC.alert ?? "M4 3v18M4 4h12l-2 4 2 4H4z" },
+  { id: 'account',   label: 'Account',           icon: IC.settings ?? IC.lock ?? "M12 15a3 3 0 100-6 3 3 0 000 6zM5 21v-1a7 7 0 0114 0v1" },
 ];
 
 const PAGE_MAP = {
@@ -27,6 +29,7 @@ const PAGE_MAP = {
   cases:     CaseTracking,
   lawyers:   LawyerMonitoring,
   disputes:  AppointmentDisputes,
+  account:   AccountSettings,
 };
 
 export default function AdminApp({ initialSection = 'dashboard' }) {

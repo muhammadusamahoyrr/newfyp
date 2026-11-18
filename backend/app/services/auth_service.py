@@ -111,6 +111,22 @@ async def _revoke_idempotently(token: str | None, expected_type: str) -> None:
         return
 
 
+def new_lawyer_profile() -> dict:
+    """The lawyer sub-document an account needs before any lawyer-profile
+    write can land (they all `$set lawyer_profile.<field>`). Used at sign-up
+    and when an admin moves an existing account onto the lawyer role."""
+    return {
+        "bar_number": None,
+        "specializations": [],
+        **initial_kyc_fields(),
+        "kyc_rejection_reason": None,
+        "rating": 0.0,
+        "total_reviews": 0,
+        "availability": True,
+        "bio": None,
+    }
+
+
 async def register(data: RegisterRequest) -> dict:
     # Public registration is client/lawyer only — admins are provisioned by an existing admin
     if data.role.value not in ("client", "lawyer"):
@@ -147,16 +163,7 @@ async def register(data: RegisterRequest) -> dict:
         "province": None,
         "avatar_url": None,
         "is_active": True,
-        "lawyer_profile": {
-            "bar_number": None,
-            "specializations": [],
-            **initial_kyc_fields(),
-            "kyc_rejection_reason": None,
-            "rating": 0.0,
-            "total_reviews": 0,
-            "availability": True,
-            "bio": None,
-        } if data.role.value == "lawyer" else None,
+        "lawyer_profile": new_lawyer_profile() if data.role.value == "lawyer" else None,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }

@@ -190,6 +190,14 @@ async def create_watch(
                 "Upgrade to Professional for unlimited watches."
             )
 
+    # A linked case must be one this lawyer is on. The id flows into hearing
+    # entries and reminders, so an unchecked one would attach this lawyer's
+    # listing to somebody else's case.
+    if case_id:
+        from app.db.collections import get_cases_col
+        if not await get_cases_col().find_one({"_id": case_id, "lawyer_id": lawyer_id}, {"_id": 1}):
+            raise AppValidationError("That case is not one of yours to link this watch to")
+
     watch = {
         "_id": secrets.token_urlsafe(16),
         "lawyer_id": lawyer_id,

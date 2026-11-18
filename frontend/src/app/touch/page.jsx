@@ -14,8 +14,16 @@ export default function TouchPage() {
 
   const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
+  // There is no contact endpoint on the server, so this form used to say
+  // "Message Sent!" and send nothing. It now hands the message to the
+  // visitor's email app, addressed to support, and says that is what happened.
   const handleSubmit = e => {
     e.preventDefault();
+    const subject = form.subject || 'Message from the website';
+    const body = `${form.message}
+
+— ${form.name}${form.email ? ` (${form.email})` : ''}`;
+    window.location.href = `mailto:support@aiattorney.pk?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     setSent(true);
   };
 
@@ -68,8 +76,8 @@ export default function TouchPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-[#004743] mb-2">Message Sent!</h2>
-                <p className="text-gray-500 text-base">Thanks for reaching out. We'll get back to you within 24 hours.</p>
+                <h2 className="text-2xl font-bold text-[#004743] mb-2">Almost done</h2>
+                <p className="text-gray-500 text-base">Your email app should have opened with your message to support@aiattorney.pk. Press Send there to reach us. If nothing opened, email us at that address directly.</p>
                 <button
                   onClick={() => { setSent(false); setForm({ name: '', email: '', subject: '', message: '' }); }}
                   className="mt-6 text-sm font-semibold text-[#025E56] hover:underline"

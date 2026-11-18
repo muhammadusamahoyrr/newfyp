@@ -1551,7 +1551,10 @@ ${!aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSES
             if (intake?.ai_structured_case?.summary && intake.ai_structured_case.summary !== "pending") {
                 setAiStructured(intake.ai_structured_case);
             }
-            analysisFailed = intake?.ai_structured_case?.grounding_status === "pipeline_failed";
+            // A failed law-library search is a failed analysis too: the review
+            // screen says no law was checked, so the toast must not say done.
+            analysisFailed = ["pipeline_failed", "retrieval_error"].includes(
+                intake?.ai_structured_case?.grounding_status);
         }
 
         setOcrReviewRequired(false);

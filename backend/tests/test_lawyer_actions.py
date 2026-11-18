@@ -56,13 +56,26 @@ async def test_a_meeting_needs_its_outcome_the_moment_it_ends_and_is_not_upcomin
     assert r["upcoming"] == 2, "an ended meeting was counted as upcoming"
 
 
-async def test_requests_past_their_answer_time_are_not_counted():
+async def test_requests_past_their_answer_time_are_not_counted_when_expiry_is_on(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "appointment_expiry_enabled", True)
     await _appt("la-open", "pending", 600, expires_in=60)
     await _appt("la-noexp", "pending", 900)
     await _appt("la-lapsed", "pending", 300, expires_in=-5)
     r = await la.action_counts(L, now=NOW)
     assert r["appointment_requests"] == 2
     assert r["next"]["appointment_request"] == "la-open"
+
+
+async def test_with_expiry_off_a_lapsed_request_still_counts(monkeypatch):
+    """Expiry off (the default): the request is still listed on the
+    Appointments page and can still be accepted, so the counts must agree."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "appointment_expiry_enabled", False)
+    await _appt("la-open", "pending", 600, expires_in=60)
+    await _appt("la-lapsed", "pending", 300, expires_in=-5)
+    r = await la.action_counts(L, now=NOW)
+    assert r["appointment_requests"] == 2
 
 
 async def test_hire_requests_are_actions_terms_sent_are_not():

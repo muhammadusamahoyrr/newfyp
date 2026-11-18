@@ -378,6 +378,10 @@ async def submit(
         # Which quick review this submission came from, if any -- the lawyer's
         # inbox marks it, since there is no engagement behind it.
         "quick_review_id": quick_review_id,
+        # What the document was before this submission, so a WITHDRAWAL can
+        # put it back: withdrawing a second-opinion request on an approved
+        # document must not erase the approval its unchanged bytes still hold.
+        "pre_submit_status": doc.get("review_status") or "none",
         "approval_history": {"$concatArrays": [
             {"$ifNull": ["$approval_history", []]},
             {"$cond": [{"$eq": ["$review_status", "approved"]},
@@ -638,10 +642,20 @@ async def withdraw(*, document_id: str, actor_id: str, idempotency_key: str) -> 
 
     reviewer_id = doc.get("submitted_to")
     submitted_rev = doc.get("submitted_revision_id")
+    # Back to "approved" only when this submission started from an approval of
+    # these exact bytes: same revision submitted as was approved, and still the
+    # client's current revision. Anything else returns to a plain draft.
+    restore_approval = (
+        doc.get("pre_submit_status") == "approved"
+        and submitted_rev is not None
+        and doc.get("approved_revision_id") == submitted_rev
+        and doc.get("current_revision_id") == submitted_rev
+    )
+    new_status = "approved" if restore_approval else "none"
     set_fields = {
-        "review_status": "none", "submitted_to": None,
+        "review_status": new_status, "submitted_to": None,
         "submitted_revision_id": None, "submitted_version": None,
-        "submitted_pdf_sha256": None,
+        "submitted_pdf_sha256": None, "pre_submit_status": None,
     }
     notif = _notif(reviewer_id, NotificationType.DOCUMENT_WITHDRAWN,
                    "Document withdrawn",
@@ -650,8 +664,10 @@ async def withdraw(*, document_id: str, actor_id: str, idempotency_key: str) -> 
     return await _apply(
         document_id=document_id, actor_id=actor_id, actor_role="client",
         action="withdraw", idempotency_key=idempotency_key, request_body={},
-        guard={"client_id": actor_id, "review_status": "submitted"},
-        set_fields=set_fields, new_status="none",
+        guard={"client_id": actor_id, "review_status": "submitted",
+               "submitted_revision_id": submitted_rev,
+               "current_revision_id": doc.get("current_revision_id")},
+        set_fields=set_fields, new_status=new_status,
         intent_core={"revision_id": submitted_rev, "pdf_sha256": None, "note": None},
         notif=notif)
 

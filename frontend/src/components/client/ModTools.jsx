@@ -74,7 +74,7 @@ function InheritanceCalc() {
         setBusy(true);
         const { data, error } = await inheritanceCalculate(estateNum, heirs);
         setBusy(false);
-        if (error || !data) return toast.show("❌ " + (error?.detail || "Calculation failed"), "danger");
+        if (error || !data) return toast.show("❌ " + (error?.message || "Calculation failed"), "danger");
         setResult(data);
     };
 
@@ -86,7 +86,7 @@ function InheritanceCalc() {
         };
         const { data, error } = await inheritanceSettlementPdf(req, keyForIntent(settlementKey, req));
         setBusy(false);
-        if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "PDF failed"), "danger");
+        if (error || !data?.doc_id) return toast.show("❌ " + (error?.message || "PDF failed"), "danger");
         await downloadDocumentFile(data.doc_id, "inheritance-share-statement.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         toast.show("✅ Share statement downloaded", "success");
     };
@@ -103,7 +103,7 @@ function InheritanceCalc() {
         };
         const { data, error } = await inheritanceDemandLetter(req, keyForIntent(demandKey, req));
         setBusy(false);
-        if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "PDF failed"), "danger");
+        if (error || !data?.doc_id) return toast.show("❌ " + (error?.message || "PDF failed"), "danger");
         await downloadDocumentFile(data.doc_id, "inheritance-demand-notice.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         setDemandOpen(false);
         toast.show("✅ Demand notice downloaded", "success");
@@ -254,7 +254,7 @@ function WasiyyatBuilder() {
         setBusy(true);
         const { data, error } = await wasiyyatCompute(payload());
         setBusy(false);
-        if (error || !data) return toast.show("❌ " + (error?.detail || "Calculation failed"), "danger");
+        if (error || !data) return toast.show("❌ " + (error?.message || "Calculation failed"), "danger");
         setResult(data);
     };
 
@@ -263,7 +263,7 @@ function WasiyyatBuilder() {
         const req = { ...payload(), ...will };
         const { data, error } = await wasiyyatPdf(req, keyForIntent(willKey, req));
         setBusy(false);
-        if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "PDF failed"), "danger");
+        if (error || !data?.doc_id) return toast.show("❌ " + (error?.message || "PDF failed"), "danger");
         await downloadDocumentFile(data.doc_id, "wasiyyat-nama.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         toast.show("✅ Wasiyyat Nama downloaded", "success");
     };
@@ -443,7 +443,7 @@ function CourtFeePanel() {
         setBusy(true);
         const { data, error } = await courtFeeCalculate({ claim_value: parseInt(String(claim).replace(/[^0-9]/g, "")) || 0, suit_type: suit, province: prov });
         setBusy(false);
-        if (error || !data) return toast.show("❌ " + (error?.detail || "Failed"), "danger");
+        if (error || !data) return toast.show("❌ " + (error?.message || "Failed"), "danger");
         setRes(data);
     };
 
@@ -500,7 +500,7 @@ function LabourDuesPanel() {
         setBusy(true);
         const { data, error } = await labourDuesCalculate(payload());
         setBusy(false);
-        if (error || !data) return toast.show("❌ " + (error?.detail || "Failed"), "danger");
+        if (error || !data) return toast.show("❌ " + (error?.message || "Failed"), "danger");
         setRes(data);
     };
 
@@ -510,7 +510,7 @@ function LabourDuesPanel() {
         const req = { ...payload(), ...dm };
         const { data, error } = await labourDemandPdf(req, keyForIntent(labourKey, req));
         setBusy(false);
-        if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "PDF failed"), "danger");
+        if (error || !data?.doc_id) return toast.show("❌ " + (error?.message || "PDF failed"), "danger");
         await downloadDocumentFile(data.doc_id, "labour-demand-notice.pdf", { revisionId: data.revision_id, expectedPdfSha256: data.pdf_sha256 });
         toast.show("✅ Demand notice downloaded", "success");
     };
@@ -707,7 +707,7 @@ function InstantDocs() {
         const { data, error } = await quickNotice(text.trim(), tmpl, null,
             keyForIntent(noticeKey, { text: text.trim(), tmpl }));
         setBusy(false);
-        if (error || !data?.doc_id) return toast.show("❌ " + (error?.detail || "Generation failed"), "danger");
+        if (error || !data?.doc_id) return toast.show("❌ " + (error?.message || "Generation failed"), "danger");
         setDone(data);
         toast.show("✅ Document ready", "success");
     };
@@ -815,7 +815,7 @@ function BailCheckerTab() {
         setBusy(true);
         const { data, error } = await bailSearch(q.trim());
         setBusy(false);
-        if (error) return toast.show("❌ " + (error?.detail || "Search failed"), "danger");
+        if (error) return toast.show("❌ " + (error?.message || "Search failed"), "danger");
         setSearched(true);
         setResults(data?.results || []);
         setRes(null); setSelected(null);
@@ -826,7 +826,7 @@ function BailCheckerTab() {
         setBusy(true);
         const { data, error } = await bailCheck({ law: offence.law, section: offence.section, arrested: isArrested });
         setBusy(false);
-        if (error || !data) return toast.show("❌ " + (error?.detail || "Check failed"), "danger");
+        if (error || !data) return toast.show("❌ " + (error?.message || "Check failed"), "danger");
         setRes(data);
     };
 

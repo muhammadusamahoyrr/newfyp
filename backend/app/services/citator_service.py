@@ -451,11 +451,18 @@ async def search(query: str, n: int = 8, province: str | None = None) -> list[di
     semantic search.
     """
     from app.ai.pipelines.retriever import _embeddings
-    emb = _embeddings()
-    qvec = emb.embed_query(query)
-    chroma = get_collection("judgments_collection")
-    res = chroma.query(query_embeddings=[qvec], n_results=min(n * 4, 60),
-                       include=["metadatas", "documents", "distances"])
+
+    # Embedding (CPU model) and the Chroma query are both synchronous. Run on
+    # a worker thread: called directly they froze the event loop, and with it
+    # every other request and websocket on this worker, for the whole search.
+    def _run():
+        emb = _embeddings()
+        qvec = emb.embed_query(query)
+        chroma = get_collection("judgments_collection")
+        return chroma.query(query_embeddings=[qvec], n_results=min(n * 4, 60),
+                            include=["metadatas", "documents", "distances"])
+
+    res = await asyncio.to_thread(_run)
 
     best: dict[str, dict] = {}
     for i, meta in enumerate(res["metadatas"][0]):

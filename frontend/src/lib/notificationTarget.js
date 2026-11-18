@@ -17,7 +17,8 @@ export function notificationCategory(type) {
     if (t === "case_message") return "message";
     if (t === "hearing_scheduled" || t === "hearing_reminder" || t === "causelist_listed") return "hearing";
     if (t.startsWith("appointment_")) return "appointment";
-    if (t.startsWith("document_") || t.startsWith("review_request_") || t.startsWith("agreement_")) return "document";
+    if (t.startsWith("document_") || t.startsWith("review_request_") || t.startsWith("agreement_")
+        || t.startsWith("quick_review_")) return "document";
     if (t.startsWith("engagement_") || t === "lawyer_assigned" || t === "case_update") return "case";
     if (t.startsWith("payment_") || t.startsWith("subscription_")) return "payment";
     if (t.startsWith("dispute_")) return "dispute";
@@ -54,8 +55,14 @@ export function lawyerNotificationTarget(type, payload = {}) {
     // The document itself, not just the inbox: Document review opens it (2026-10-09).
     if (t.startsWith("document_")) return { page: "documents", caseId: null, docId: payload?.doc_id || null };
     if (t.startsWith("review_request_")) return { page: "review-queue", caseId: null };
-    if (t.startsWith("agreement_")) return { page: "agreements", caseId: null };
-    if (t.startsWith("payment_")) return { page: "payments", caseId: null };
+    // Quick review requests are answered from the Document review inbox.
+    if (t.startsWith("quick_review_")) return { page: "documents", caseId: null };
+    // The Agreements and Payments pages are hidden from the lawyer UI
+    // (App.jsx HIDDEN_PAGES), so routing there landed on the dashboard. Open
+    // the case the notice is about instead; with no case, stay put.
+    if (t.startsWith("agreement_") || t.startsWith("payment_")) {
+        return caseId ? { page: "cases", caseId } : null;
+    }
     if (t.startsWith("dispute_")) return { page: "overseas-disputes", caseId: null };
     if (t === "causelist_listed") return { page: "causelist", caseId: null };
     if (t.startsWith("kyc_") || t === "review_received") return { page: "profile", caseId: null };

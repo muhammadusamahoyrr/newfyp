@@ -27,7 +27,7 @@ TIERS = {
         "name": "Free",
         "price": {"monthly": 0, "annual": 0},
         "blurb": "Occasional legal guidance.",
-        "features": ["5 AI chat queries / month", "1 cause-list watch", "Statute library", "EN & UR"],
+        "features": ["AI legal chat", "1 cause-list watch", "Statute library", "EN & UR"],
     },
     SubscriptionTier.PROFESSIONAL.value: {
         "name": "Professional",
@@ -64,9 +64,12 @@ async def get_my_subscription(lawyer_id: str) -> dict:
     _pe = sub.get("current_period_end")
     if _pe is not None and _pe.tzinfo is None:
         _pe = _pe.replace(tzinfo=timezone.utc)
+    # A cancelled plan keeps its access until the period it was paid for ends
+    # (cancel()), so it lapses the same way an active one does.
     if (
         _pe
-        and sub["status"] == SubscriptionStatus.ACTIVE.value
+        and sub["status"] in (SubscriptionStatus.ACTIVE.value,
+                              SubscriptionStatus.CANCELLED.value)
         and _now() > _pe
     ):
         await get_subscriptions_col().update_one(
@@ -78,12 +81,30 @@ async def get_my_subscription(lawyer_id: str) -> dict:
     return sub
 
 
+def _aware(dt):
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _live_paid_period(sub: dict | None) -> bool:
+    """A paid tier whose period is still running: active, or cancelled but
+    not yet at the end of the period it was paid for."""
+    if not sub or sub.get("tier") not in _PAID_TIERS:
+        return False
+    if sub.get("status") == SubscriptionStatus.TRIALING.value:
+        return True
+    if sub.get("status") not in (SubscriptionStatus.ACTIVE.value,
+                                 SubscriptionStatus.CANCELLED.value):
+        return False
+    end = _aware(sub.get("current_period_end"))
+    return end is None or end > _now()
+
+
 async def get_tier(lawyer_id: str) -> str:
     """Effective tier right now — free unless there's a live paid subscription."""
     sub = await get_my_subscription(lawyer_id)
-    if sub["tier"] in _PAID_TIERS and sub["status"] in (
-        SubscriptionStatus.ACTIVE.value, SubscriptionStatus.TRIALING.value
-    ):
+    if _live_paid_period(sub):
         return sub["tier"]
     return SubscriptionTier.FREE.value
 
@@ -98,6 +119,17 @@ async def subscribe(lawyer_id: str, tier: str, cycle: str) -> dict:
     if cycle not in (BillingCycle.MONTHLY.value, BillingCycle.ANNUAL.value):
         raise AppValidationError("Invalid billing cycle")
     amount = TIERS[tier]["price"][cycle]
+
+    # Renewing the same plan adds a period after the current one (activate()).
+    # Switching plan mid-period has no proration, so it would throw away paid
+    # time; it is refused until the current period ends.
+    current = await get_subscriptions_col().find_one({"lawyer_id": lawyer_id})
+    if _live_paid_period(current) and current.get("tier") != tier:
+        end = _aware(current.get("current_period_end"))
+        until = f" until {end:%d %b %Y}" if end else ""
+        raise AppValidationError(
+            f"Your {TIERS[current['tier']]['name']} plan is paid{until}. "
+            "You can switch plans after it ends.")
 
     from app.services import payment_service
     payment = await payment_service.create_subscription_payment(lawyer_id, tier, cycle, amount)
@@ -119,7 +151,19 @@ async def activate(payment: dict, session=None) -> dict:
     cycle = meta.get("cycle", BillingCycle.MONTHLY.value)
     lawyer_id = payment["payer_id"]
     now = _now()
-    period_end = now + (timedelta(days=365) if cycle == BillingCycle.ANNUAL.value else timedelta(days=30))
+    length = timedelta(days=365) if cycle == BillingCycle.ANNUAL.value else timedelta(days=30)
+
+    # Paying again for the SAME plan while it is still paid for extends it: the
+    # new period starts when the current one ends, so no paid day is lost.
+    # (A different tier cannot reach here mid-period; subscribe() refuses it.)
+    period_start = now
+    existing = await get_subscriptions_col().find_one(
+        {"lawyer_id": lawyer_id}, session=session)
+    if existing and existing.get("tier") == tier and _live_paid_period(existing):
+        end = _aware(existing.get("current_period_end"))
+        if end and end > now:
+            period_start = end
+    period_end = period_start + length
 
     await get_subscriptions_col().update_one(
         {"lawyer_id": lawyer_id},
@@ -128,7 +172,7 @@ async def activate(payment: dict, session=None) -> dict:
             "tier":                tier,
             "cycle":               cycle,
             "status":              SubscriptionStatus.ACTIVE.value,
-            "current_period_start": now,
+            "current_period_start": period_start,
             "current_period_end":  period_end,
             "last_payment_id":     payment["_id"],
             "cancelled_at":        None,
