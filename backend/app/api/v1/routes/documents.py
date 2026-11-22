@@ -320,8 +320,8 @@ async def get_document(
     meant the citation-verification record those documents already stored, and
     the compliance record they now store, were written and never readable.
 
-    Authorization is `document_service.get_document`, unchanged: creator, admin,
-    the assigned lawyer, or the lawyer it was submitted to.
+    Authorization is `document_service.get_document`: the creator, the
+    assigned lawyer, or the lawyer it was submitted to (not an admin).
     """
     return await document_service.get_document(
         doc_id, current_user["_id"], current_user.get("role", "client")

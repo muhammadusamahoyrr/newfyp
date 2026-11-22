@@ -28,6 +28,7 @@ from app.core.exceptions import (
     ConflictError,
     ForbiddenError,
     NotFoundError,
+    ServiceUnavailableError,
 )
 from app.db.collections import (
     get_engagements_col,
@@ -38,6 +39,7 @@ from app.db.mongodb import get_client
 from app.repositories.case_repo import CaseRepository
 from app.repositories.user_repo import UserRepository
 from app.services.payments import get_provider
+from app.services.payments.base import WebhookSignatureError
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,26 @@ case_repo = CaseRepository()
 user_repo = UserRepository()
 
 _FEE_PURPOSES = {PaymentPurpose.PESHI_FEE.value, PaymentPurpose.PROFESSIONAL_FEE.value}
+
+# Statuses a payer may start (or restart) checkout from.
+_PAYABLE_STATUSES = (
+    PaymentStatus.CREATED.value,
+    PaymentStatus.PENDING.value,
+    PaymentStatus.FAILED.value,
+)
+
+# Provider outcomes that END an attempt unsuccessfully. Anything that is neither
+# "paid" nor one of these (a started / in-progress / unknown state) is not a
+# settlement at all and must not mark the payment failed.
+_FAILURE_STATES = frozenset({
+    "failed", "failure", "declined", "cancelled", "canceled", "expired",
+    "error", "rejected", "voided",
+})
+
+# An event row whose settlement never finished. A row this old was left by a
+# process that died between recording the event and marking the payment paid;
+# the provider's redelivery completes it instead of being deduped forever.
+_STALE_EVENT_AFTER = timedelta(seconds=60)
 
 
 def _now() -> datetime:
@@ -64,6 +86,10 @@ async def _notify(user_id, ntype, title, body, payload):
         await notification_service.create_notification(user_id, ntype, title, body, payload=payload)
     except Exception:
         logger.exception("payment notification failed for %s", user_id)
+
+
+def _mock_outside_dry_run(provider) -> bool:
+    return provider.name == "mock" and not settings.payments_dry_run
 
 
 def _public(doc: dict) -> dict:
@@ -263,7 +289,7 @@ async def create_subscription_payment(lawyer_id: str, tier: str, cycle: str, amo
 async def _maybe_expire(payment: dict) -> dict:
     """Lazily flip an unpaid, past-due request to `expired` (safeguard 4)."""
     if (
-        payment["status"] in (PaymentStatus.CREATED.value, PaymentStatus.PENDING.value)
+        payment["status"] in _PAYABLE_STATUSES      # FAILED is payable, so it expires too
         and payment.get("expires_at")
         and _now() > _aware(payment["expires_at"])
     ):
@@ -294,21 +320,37 @@ async def create_checkout(payment_id: str, payer_id: str) -> dict:
     payment = await _maybe_expire(payment)
     if payment["status"] == PaymentStatus.PAID.value:
         raise ConflictError("This payment has already been completed")
-    if payment["status"] not in (PaymentStatus.CREATED.value, PaymentStatus.PENDING.value):
+    # FAILED is payable again: a declined card is the payer's to retry, and
+    # the failure notification tells them to.
+    if payment["status"] not in _PAYABLE_STATUSES:
         raise ConflictError(f"This payment cannot be paid (status: {payment['status']})")
 
     provider = get_provider()
+    if _mock_outside_dry_run(provider):
+        # Live mode with no Safepay key: a mock checkout could never settle
+        # (mock-pay is dry-run only), so the payer would wait forever.
+        logger.error("payments_dry_run is off but no Safepay key is set")
+        raise ServiceUnavailableError("Online payment is not available right now")
     result = await provider.create_checkout(payment)
-    await get_payments_col().update_one(
-        {"_id": payment_id},
-        {"$set": {
-            "provider":     provider.name,
-            "provider_ref": result["provider_ref"],
-            "checkout_url": result["checkout_url"],
-            "status":       PaymentStatus.PENDING.value,
-            "updated_at":   _now(),
-        }},
+    # The new tracker becomes current, but every earlier one is KEPT: a payer
+    # can open checkout twice and complete it in the first tab, and that
+    # provider event must still resolve to this payment (handle_webhook).
+    # The status guard stops a settle racing this write from being undone.
+    res = await get_payments_col().update_one(
+        {"_id": payment_id, "status": {"$in": list(_PAYABLE_STATUSES)}},
+        {
+            "$set": {
+                "provider":     provider.name,
+                "provider_ref": result["provider_ref"],
+                "checkout_url": result["checkout_url"],
+                "status":       PaymentStatus.PENDING.value,
+                "updated_at":   _now(),
+            },
+            "$addToSet": {"provider_refs": result["provider_ref"]},
+        },
     )
+    if res.matched_count == 0:
+        raise ConflictError("This payment has just changed; refresh and try again")
     return {
         "checkout_url": result["checkout_url"],
         "provider":     provider.name,
@@ -382,13 +424,38 @@ async def _settle_subscription_txn(payment: dict, event_id: str, now: datetime) 
 async def _settle(payment: dict, event_id: str, status: str) -> dict:
     """Shared idempotent settlement core for both webhooks and mock-pay."""
     col = get_payments_col()
+    events = get_payment_events_col()
     now = _now()
+    status = (status or "").lower()
 
     if status != "paid":
-        await col.update_one(
-            {"_id": payment["_id"], "status": {"$nin": [PaymentStatus.PAID.value, PaymentStatus.REFUNDED.value]}},
+        if status not in _FAILURE_STATES:
+            # Started / in-progress / unrecognised: not an outcome. Treating it
+            # as a failure would dead-end a payment that may still succeed.
+            logger.info("payment %s: non-final provider state %r ignored",
+                        payment["_id"], status)
+            return {"ignored": True, "status": status}
+        # One notification per provider event: a redelivered failure is a no-op.
+        # Keyed apart from success events: a provider may reuse one id (e.g.
+        # the tracker) for a decline and then the successful retry on the same
+        # checkout, and a stored failure must never dedupe away that payment.
+        try:
+            await events.insert_one({
+                "event_id": f"{event_id}:failed", "payment_id": payment["_id"],
+                "outcome": "failed", "applied": True, "created_at": now,
+            })
+        except DuplicateKeyError:
+            return {"deduped": True}
+        res = await col.update_one(
+            {"_id": payment["_id"], "status": {"$in": [
+                PaymentStatus.CREATED.value, PaymentStatus.PENDING.value,
+                PaymentStatus.FAILED.value]}},
             {"$set": {"status": PaymentStatus.FAILED.value, "updated_at": now}},
         )
+        if res.matched_count == 0:
+            # Already paid, refunded, expired or cancelled: a late failure for
+            # an old attempt changes nothing and tells the payer nothing.
+            return {"status": "failed", "applied": False}
         await _notify(
             payment["payer_id"], NotificationType.PAYMENT_FAILED, "Payment did not go through",
             f"Your payment of PKR {payment['amount']:,.0f} could not be completed. Please try again.",
@@ -402,14 +469,31 @@ async def _settle(payment: dict, event_id: str, status: str) -> dict:
     if payment["kind"] == PaymentKind.SUBSCRIPTION.value:
         return await _settle_subscription_txn(payment, event_id, now)
 
-    # ── Fee settlement (single state write + notifications; unchanged) ──
-    # Safeguard 3a: unique event id — a replayed event is a no-op.
+    # ── Fee settlement ──
+    # Safeguard 3a: unique event id — a replayed event is a no-op. The row is
+    # written `applied: False` and flipped once the payment is marked paid, so
+    # a process that dies between the two writes is not deduped forever: the
+    # provider's redelivery finds a STALE unapplied row for a still-unpaid
+    # payment and finishes the job. A fresh unapplied row is a settle still in
+    # flight, and a concurrent replay of it is deduped as before.
     try:
-        await get_payment_events_col().insert_one(
-            {"event_id": event_id, "payment_id": payment["_id"], "created_at": now}
-        )
+        await events.insert_one({
+            "event_id": event_id, "payment_id": payment["_id"],
+            "outcome": "paid", "applied": False, "created_at": now,
+        })
     except DuplicateKeyError:
-        return {"deduped": True}
+        prior = await events.find_one({"event_id": event_id})
+        stale = (
+            prior is not None
+            and prior.get("applied") is False
+            and prior.get("payment_id") == payment["_id"]
+            and prior.get("created_at") is not None
+            and now - _aware(prior["created_at"]) > _STALE_EVENT_AFTER
+        )
+        if not stale:
+            return {"deduped": True}
+        logger.warning("payment %s: completing settlement left unfinished by "
+                       "event %s", payment["_id"], event_id)
 
     # Safeguard 3b + 3c: status guard + atomic conditional transition.
     res = await col.update_one(
@@ -421,6 +505,7 @@ async def _settle(payment: dict, event_id: str, status: str) -> dict:
             "updated_at": now,
         }},
     )
+    await events.update_one({"event_id": event_id}, {"$set": {"applied": True}})
     if res.modified_count == 0:
         return {"already_paid": True}
 
@@ -448,11 +533,28 @@ async def _settle(payment: dict, event_id: str, status: str) -> dict:
 async def handle_webhook(headers: dict, raw_body: bytes) -> dict:
     """Provider webhook entrypoint — verify, resolve payment, settle idempotently."""
     provider = get_provider()
+    if _mock_outside_dry_run(provider):
+        # The mock parser checks no signature and defaults to "paid". Outside
+        # dry-run it must never settle anything (fail closed -> HTTP 401).
+        raise WebhookSignatureError(
+            "mock_outside_dry_run", "Payment webhook verification is not configured")
     event = await provider.verify_and_parse_webhook(headers, raw_body)
-    payment = await get_payments_col().find_one({"provider_ref": event["provider_ref"]})
+    ref = event.get("provider_ref")
+    # Any tracker this payment was ever given, not only the latest: a payer who
+    # opened checkout twice may finish in the first tab (create_checkout).
+    payment = await get_payments_col().find_one(
+        {"$or": [{"provider_refs": ref}, {"provider_ref": ref}]}
+    ) if ref else None
     if not payment:
         logger.warning("webhook for unknown provider_ref %s", event.get("provider_ref"))
         return {"ignored": True}
+    # An earlier checkout still SETTLES (money taken there is real), but its
+    # failure must not fail the attempt the payer is on now.
+    if (str(event.get("status") or "").lower() != "paid"
+            and payment.get("provider_ref") and ref != payment.get("provider_ref")):
+        logger.info("payment %s: failure for superseded checkout %s ignored",
+                    payment["_id"], ref)
+        return {"ignored": True, "superseded": True}
     return await _settle(payment, event["event_id"], event["status"])
 
 

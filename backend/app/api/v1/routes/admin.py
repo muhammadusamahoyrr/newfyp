@@ -3,15 +3,14 @@ from pydantic import BaseModel, Field
 
 from app.dependencies import require_admin
 from app.schemas.admin import (
-    AdminPasswordReset,
+    AdminCaseRow,
     AdminUserCreate,
     AdminUserUpdate,
     AnalyticsOverview,
-    CaseStatusUpdate,
+    CaseEnd,
     KYCAction,
     LawyerMonitoringItem,
 )
-from app.schemas.case import CaseOut
 from app.schemas.appointment_dispute import (
     DisputeQueue,
     DisputeSupportView,
@@ -29,14 +28,16 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def view_kyc_document(
     lawyer_id: str,
     kind: str,
-    _: dict = Depends(require_admin),
+    current_user: dict = Depends(require_admin),
 ):
     """A lawyer's uploaded KYC file, for the admin reviewing it. Shown inline,
-    never cached: these are identity documents."""
+    never cached: these are identity documents. Every view is recorded (which
+    admin, whose document, which kind, when)."""
     from fastapi.responses import FileResponse
     from app.services import kyc_documents
 
     path, filename, mime = await kyc_documents.file_for(lawyer_id, kind)
+    await admin_service._audit(current_user, "kyc.document_viewed", lawyer_id, {"kind": kind})
     return FileResponse(path, media_type=mime, filename=filename,
                         content_disposition_type="inline",
                         headers={"Cache-Control": "private, no-store"})
@@ -141,7 +142,7 @@ async def create_user(
     current_user: dict = Depends(require_admin),
 ):
     return await admin_service.create_user(
-        body.full_name, str(body.email), body.role, body.password, actor=current_user)
+        body.full_name, str(body.email), body.role, actor=current_user)
 
 
 @router.patch("/users/{user_id}", response_model=UserProfileResponse)
@@ -157,11 +158,16 @@ async def update_user(
 @router.post("/users/{user_id}/reset-password", response_model=StatusResponse)
 async def reset_user_password(
     user_id: str,
-    body: AdminPasswordReset,
     current_user: dict = Depends(require_admin),
 ):
-    await admin_service.reset_user_password(user_id, body.new_password, actor=current_user)
-    return StatusResponse(success=True, message="Password reset successfully")
+    """Sign the user out everywhere and email them a link to set a new
+    password. The admin never chooses or sees the password."""
+    sent = await admin_service.reset_user_password(user_id, actor=current_user)
+    return StatusResponse(
+        success=sent,
+        message=("Signed out everywhere. A reset link was emailed to the user." if sent
+                 else "The reset email could not be sent, so nothing was changed. "
+                      "Check the email settings and try again."))
 
 
 @router.delete("/users/{user_id}", response_model=StatusResponse)
@@ -175,7 +181,7 @@ async def delete_user(
 
 # ── Case management ───────────────────────────────────────────────────────────
 
-@router.get("/cases", response_model=PaginatedResponse[CaseOut])
+@router.get("/cases", response_model=PaginatedResponse[AdminCaseRow])
 async def list_admin_cases(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -186,13 +192,16 @@ async def list_admin_cases(
     return await admin_service.list_admin_cases(page, page_size, status, search)
 
 
-@router.patch("/cases/{case_id}/status", response_model=CaseOut)
-async def update_case_status(
+@router.post("/cases/{case_id}/end", response_model=StatusResponse)
+async def end_case(
     case_id: str,
-    body: CaseStatusUpdate,
+    body: CaseEnd,
     current_user: dict = Depends(require_admin),
 ):
-    return await admin_service.update_case_status(case_id, body.status, actor=current_user)
+    """Close or dismiss a case, with a reason both parties are sent. The only
+    case status an admin can change."""
+    await admin_service.end_case(case_id, body.status, body.reason, actor=current_user)
+    return StatusResponse(success=True, message=f"Case {body.status}")
 
 
 # ── Lawyer monitoring ─────────────────────────────────────────────────────────

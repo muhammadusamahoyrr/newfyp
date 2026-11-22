@@ -36,7 +36,10 @@ def _iso(v):
 def row(a: dict) -> dict:
     return {"id": str(a["_id"]), "scheduled_at": _iso(a.get("scheduled_at")), "end_at": _iso(a.get("end_at")),
             "duration_minutes": a.get("duration_minutes"), "mode": a.get("mode"),
-            "status": a.get("status"), "note": a.get("notes") or ""}
+            "status": a.get("status"), "note": a.get("notes") or "",
+            # The pasted joining link, for a confirmed meeting only. Without
+            # it a video meeting had no Join unless in-app video was set up.
+            "meeting_link": a.get("meeting_link") if a.get("status") == "confirmed" else None}
 
 
 async def consultations_for(engagements: list[dict]) -> dict[str, dict | None]:

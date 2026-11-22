@@ -6,6 +6,7 @@ from pymongo.errors import DuplicateKeyError
 
 from app.core.constants import (
     ENGAGEMENT_OPEN_STATUSES,
+    TERMINAL_CASE_STATUSES,
     AgreementStatus,
     CaseStatus,
     EngagementStatus,
@@ -276,12 +277,16 @@ async def propose_terms(engagement_id: str, lawyer_id: str, terms: dict) -> dict
     if not case:
         raise NotFoundError("Case")
     if case.get("lawyer_id"):
-        # The case was taken while this request sat unanswered.
-        await engagement_repo.set_status(engagement_id, EngagementStatus.CANCELLED.value)
+        # The case was taken while this request sat unanswered. Cancelled by
+        # the system, and recorded as such so the client is not told they did it.
+        await engagement_repo.claim_transition(
+            engagement_id, EngagementStatus.REQUESTED.value,
+            EngagementStatus.CANCELLED.value, {"cancelled_by": "system"})
         raise ConflictError("This case is no longer available — it was assigned to someone else")
 
-    await engagement_repo.set_status(
+    await _transition_or_conflict(
         engagement_id,
+        EngagementStatus.REQUESTED.value,
         EngagementStatus.TERMS_PROPOSED.value,
         {
             "fee_amount":       fee_amount,
@@ -322,6 +327,11 @@ async def accept_terms(engagement_id: str, client_id: str) -> dict:
     # button a client double-clicks, and the second press must not be able to
     # damage what the first one achieved.
     if eng["status"] == EngagementStatus.ACCEPTED.value:
+        # ...and finishes what the first press may not have. Acceptance is two
+        # writes (engagement, then case); a crash between them left an
+        # accepted engagement on an unassigned case, and this replay used to
+        # return without looking, so the case was never repaired.
+        await _ensure_case_claimed(eng)
         return await _public_engagement(engagement_id)
     if eng["status"] != EngagementStatus.TERMS_PROPOSED.value:
         raise AppValidationError(
@@ -371,7 +381,9 @@ async def accept_terms(engagement_id: str, client_id: str) -> dict:
     # THEN the case. Still the only thing standing between two lawyers and one
     # case; it moved from the lawyer's call to this one, it did not disappear.
     claimed = await case_repo.update_one(
-        {"_id": eng["case_id"], "lawyer_id": None},
+        {"_id": eng["case_id"], "lawyer_id": None,
+         # An ended case (closed/dismissed by support) is never revived.
+         "status": {"$nin": sorted(TERMINAL_CASE_STATUSES)}},
         {"$set": {
             "lawyer_id": lawyer_id,
             "status": CaseStatus.IN_PROGRESS.value,
@@ -383,8 +395,9 @@ async def accept_terms(engagement_id: str, client_id: str) -> dict:
         # here too. Only a case held by SOMEONE ELSE means the client lost it.
         case_now = await case_repo.find_by_id(eng["case_id"])
         if not (case_now and case_now.get("lawyer_id") == lawyer_id):
-            await engagement_repo.set_status(
-                engagement_id, EngagementStatus.CANCELLED.value)
+            await engagement_repo.claim_transition(
+                engagement_id, EngagementStatus.ACCEPTED.value,
+                EngagementStatus.CANCELLED.value, {"cancelled_by": "system"})
             raise ConflictError(
                 "This case is no longer available — it was assigned or removed")
 
@@ -458,8 +471,9 @@ async def decline_terms(engagement_id: str, client_id: str, reason: str | None) 
             f"'{eng['status']}'"
         )
 
-    await engagement_repo.set_status(
-        engagement_id, EngagementStatus.DECLINED.value,
+    await _transition_or_conflict(
+        engagement_id, EngagementStatus.TERMS_PROPOSED.value,
+        EngagementStatus.DECLINED.value,
         {"decline_reason": reason, "declined_by": "client"},
     )
     await _reopen_case(eng["case_id"])
@@ -494,8 +508,8 @@ async def decline_engagement(engagement_id: str, lawyer_id: str, reason: str | N
     # client was told it was. Same transition, said truthfully, and recorded
     # so the client's history can say it too.
     withdrawn = eng["status"] == EngagementStatus.TERMS_PROPOSED.value
-    await engagement_repo.set_status(
-        engagement_id, EngagementStatus.DECLINED.value,
+    await _transition_or_conflict(
+        engagement_id, eng["status"], EngagementStatus.DECLINED.value,
         {"decline_reason": reason, "declined_by": "lawyer", "terms_withdrawn": withdrawn},
     )
     await _reopen_case(eng["case_id"])
@@ -532,7 +546,9 @@ async def cancel_engagement(engagement_id: str, client_id: str) -> dict:
     if eng["status"] not in ENGAGEMENT_OPEN_STATUSES:
         raise AppValidationError(f"Cannot cancel a request in '{eng['status']}' status")
 
-    await engagement_repo.set_status(engagement_id, EngagementStatus.CANCELLED.value)
+    await _transition_or_conflict(
+        engagement_id, eng["status"], EngagementStatus.CANCELLED.value,
+        {"cancelled_by": "client"})
     await _reopen_case(eng["case_id"])
 
     client = await user_repo.find_by_id(client_id)
@@ -557,6 +573,67 @@ async def _reopen_case(case_id: str) -> None:
         {"_id": case_id, "lawyer_id": None, "status": CaseStatus.PENDING_LAWYER.value},
         {"$set": {"status": CaseStatus.OPEN.value, "updated_at": datetime.now(timezone.utc)}},
     )
+
+
+async def _ensure_case_claimed(eng: dict) -> None:
+    """Give an ACCEPTED engagement's case to its lawyer if it is still free.
+
+    Idempotent: matches only an unassigned case, so a case already held (by
+    this lawyer, or legitimately by someone else) is left alone.
+    """
+    now = datetime.now(timezone.utc)
+    claimed = await case_repo.update_one(
+        {"_id": eng["case_id"], "lawyer_id": None,
+         # An ended case (closed/dismissed by support) is never revived.
+         "status": {"$nin": sorted(TERMINAL_CASE_STATUSES)}},
+        {"$set": {"lawyer_id": eng["lawyer_id"],
+                  "status": CaseStatus.IN_PROGRESS.value, "updated_at": now}},
+    )
+    if claimed:
+        logger.warning("engagement %s: repaired case %s left unassigned by an "
+                       "interrupted acceptance", eng["_id"], eng["case_id"])
+
+
+async def _close_case_for_completion(eng: dict, now: datetime) -> None:
+    """Close a COMPLETED engagement's case, with its lawyer kept on it.
+
+    Idempotent: an already-closed case is not touched, so `closed_at` (the
+    retention clock) is stamped once. A case this engagement's lawyer is not on
+    is logged, never forced closed.
+    """
+    closed = await case_repo.update_one(
+        {"_id": eng["case_id"], "lawyer_id": eng["lawyer_id"],
+         # Neither closed nor dismissed: an ended case keeps how and when it
+         # ended (a support dismissal must not turn into "closed").
+         "status": {"$nin": sorted(TERMINAL_CASE_STATUSES)}},
+        {"$set": {"status": CaseStatus.CLOSED.value,
+                  "updated_at": now, "closed_at": now}},
+    )
+    if not closed:
+        case = await case_repo.find_by_id(eng["case_id"])
+        if case and case.get("status") not in TERMINAL_CASE_STATUSES:
+            logger.error("engagement %s completed but case %s could not be "
+                         "closed (lawyer on case: %s)", eng["_id"],
+                         eng["case_id"], case.get("lawyer_id"))
+
+
+async def _transition_or_conflict(
+    engagement_id: str, from_status: str, to_status: str, extra: dict | None = None,
+) -> None:
+    """Move the engagement only if it is still in the status the caller read.
+
+    Every exit from an open or accepted engagement goes through this, so two
+    parties acting at once cannot both win: the client's Accept and the
+    lawyer's withdrawal, or a cancel racing a proposal. The loser is told the
+    request changed instead of silently overwriting the winner's state.
+    """
+    won = await engagement_repo.claim_transition(
+        engagement_id, from_status, to_status, extra)
+    if not won:
+        current = await engagement_repo.find_by_id(engagement_id) or {}
+        raise ConflictError(
+            "This request has just changed (it is now "
+            f"'{current.get('status', 'unknown')}'). Refresh to see where it stands.")
 
 
 def _quoted(text: str) -> str:
@@ -620,6 +697,11 @@ async def complete_engagement(
     if not eng:
         raise NotFoundError("Engagement")
     party = _party_of(eng, user_id)
+    if eng["status"] == EngagementStatus.COMPLETED.value:
+        # Completion is two writes (engagement, then case). A crash between
+        # them left a completed engagement on an open case, and the retry was
+        # refused before it could close it. Close it now, then refuse as before.
+        await _close_case_for_completion(eng, datetime.now(timezone.utc))
     if eng["status"] != EngagementStatus.ACCEPTED.value:
         raise AppValidationError(
             f"Only an active engagement can be completed — this one is "
@@ -631,8 +713,9 @@ async def complete_engagement(
 
     if not one_sided and proposed_by is None:
         # First mover: record the proposal, change nothing else.
-        await engagement_repo.update_one(
-            {"_id": engagement_id},
+        proposed = await engagement_repo.update_one(
+            {"_id": engagement_id, "status": EngagementStatus.ACCEPTED.value,
+             "completion_proposed_by": None},
             {"$set": {
                 "completion_proposed_by": party,
                 "completion_proposed_at": now,
@@ -640,6 +723,9 @@ async def complete_engagement(
                 "updated_at":             now,
             }},
         )
+        if not proposed:
+            raise ConflictError(
+                "This engagement has just changed. Refresh to see where it stands.")
         client_name, lawyer_name = await _party_names(eng)
         case = await case_repo.find_by_id(eng["case_id"])
         await _notify(
@@ -678,8 +764,11 @@ async def complete_engagement(
     if not review_request_lifecycle.enabled():
         # DOCUMENT_REVIEW_REQUESTS off: the original path, unchanged -- no
         # transaction, so a standalone Mongo completes engagements as before.
-        await engagement_repo.set_status(
-            engagement_id, EngagementStatus.COMPLETED.value, completion)
+        # Conditional on `accepted`: a termination that won the race leaves
+        # the case released, and completing over it would close it unassigned.
+        await _transition_or_conflict(
+            engagement_id, EngagementStatus.ACCEPTED.value,
+            EngagementStatus.COMPLETED.value, completion)
     else:
         await _complete_with_review_requests(engagement_id, now, completion)
 
@@ -692,12 +781,7 @@ async def complete_engagement(
     # close a case twice, and a second engagement cannot reach ACCEPTED here —
     # both the request and accept paths require `lawyer_id: None`, and the line
     # above deliberately leaves the lawyer on the case.
-    await case_repo.update_one(
-        {"_id": eng["case_id"], "lawyer_id": eng["lawyer_id"]},
-        {"$set": {"status": CaseStatus.CLOSED.value,
-                  "updated_at": now,
-                  "closed_at": now}},
-    )
+    await _close_case_for_completion(eng, now)
 
     case = await case_repo.find_by_id(eng["case_id"])
     await case_repo.add_milestone(eng["case_id"], {

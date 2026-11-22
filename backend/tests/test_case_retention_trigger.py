@@ -209,7 +209,7 @@ async def test_an_admin_closing_a_case_stamps_the_closure_instant(tag):
     case_id = await _case(tag, "admin-close")
     before = datetime.now(timezone.utc)
 
-    await admin_service.update_case_status(case_id, CaseStatus.CLOSED.value, ADMIN)
+    await admin_service.end_case(case_id, CaseStatus.CLOSED.value, "Ended by support after review", ADMIN)
 
     stored = await _stored(case_id)
     assert stored["status"] == CaseStatus.CLOSED.value
@@ -223,7 +223,7 @@ async def test_dismissing_a_case_stamps_it_too(tag):
     stamped would be protected for ever — the safe failure, but still wrong."""
     case_id = await _case(tag, "admin-dismiss")
 
-    await admin_service.update_case_status(case_id, CaseStatus.DISMISSED.value, ADMIN)
+    await admin_service.end_case(case_id, CaseStatus.DISMISSED.value, "Ended by support after review", ADMIN)
 
     assert (await _stored(case_id))["closed_at"] is not None
 
@@ -288,46 +288,36 @@ async def test_a_completed_engagement_cannot_also_be_terminated(engagement_parti
 # Reopening clears it
 # ══════════════════════════════════════════════════════════════════════════════
 
-async def test_reopening_a_closed_case_clears_the_stamp(tag):
-    """The sharpest edge in the change. A reopened case that kept its stamp
-    would keep counting down while somebody was actively working it."""
+async def test_an_admin_cannot_reopen_an_ended_case(tag):
+    """Admins may only END a case (2026-11-18). Reopening, or moving a live
+    matter backwards, is the parties' business; the old one-click control that
+    allowed it is gone, so the stamp an end writes cannot be undone from here."""
+    from app.core.exceptions import ConflictError
     case_id = await _case(tag, "reopen")
-    await admin_service.update_case_status(case_id, CaseStatus.CLOSED.value, ADMIN)
-    assert (await _stored(case_id))["closed_at"] is not None
+    await admin_service.end_case(case_id, CaseStatus.CLOSED.value, "Ended by support after review", ADMIN)
+    stamped = (await _stored(case_id))["closed_at"]
 
-    await admin_service.update_case_status(case_id, CaseStatus.OPEN.value, ADMIN)
-
-    stored = await _stored(case_id)
-    assert stored["status"] == CaseStatus.OPEN.value
-    assert stored["closed_at"] is None
-
-
-async def test_a_reopened_case_is_not_selected_even_though_it_was_once_closed(tag):
-    """The clearing has to be visible to the SELECTOR, not just to the field.
-    Closed long ago, reopened today: it is live, and no age can select it."""
-    case_id = await _case(tag, "reopen-aged")
-    await admin_service.update_case_status(case_id, CaseStatus.CLOSED.value, ADMIN)
-    await _cases_col().update_one(
-        {"_id": case_id},
-        {"$set": {"closed_at": datetime.now(timezone.utc)
-                  - timedelta(days=CASE_DATA_DAYS + 400)}})
-    await admin_service.update_case_status(case_id, CaseStatus.OPEN.value, ADMIN)
-
-    assert case_id not in await _selected(_expired_closed(datetime.now(timezone.utc)))
-
-
-async def test_relabelling_one_terminal_status_as_another_keeps_the_first_instant(tag):
-    """closed → dismissed is neither entering nor leaving. The matter ended
-    once; re-stamping would let a status toggle restart a twelve-year clock."""
-    case_id = await _case(tag, "relabel")
-    await admin_service.update_case_status(case_id, CaseStatus.CLOSED.value, ADMIN)
-    original = (await _stored(case_id))["closed_at"]
-
-    await admin_service.update_case_status(case_id, CaseStatus.DISMISSED.value, ADMIN)
+    with pytest.raises(ConflictError):
+        await admin_service.end_case(case_id, CaseStatus.DISMISSED.value, "Ended by support after review", ADMIN)
 
     stored = await _stored(case_id)
-    assert stored["status"] == CaseStatus.DISMISSED.value
-    assert stored["closed_at"] == original
+    assert stored["status"] == CaseStatus.CLOSED.value
+    assert stored["closed_at"] == stamped
+
+
+async def test_an_admin_can_only_close_or_dismiss(tag):
+    from app.core.exceptions import AppValidationError
+    case_id = await _case(tag, "no-reopen")
+    for target in (CaseStatus.OPEN.value, CaseStatus.DRAFT.value, CaseStatus.IN_PROGRESS.value):
+        with pytest.raises(AppValidationError):
+            await admin_service.end_case(case_id, target, "Ended by support after review", ADMIN)
+
+
+async def test_ending_a_case_needs_a_reason(tag):
+    from app.core.exceptions import AppValidationError
+    case_id = await _case(tag, "no-reason")
+    with pytest.raises(AppValidationError):
+        await admin_service.end_case(case_id, CaseStatus.CLOSED.value, "  short ", ADMIN)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -411,11 +401,10 @@ async def test_a_live_case_is_not_selected_even_if_it_carries_a_stale_stamp(tag)
 
 
 async def test_no_live_case_is_left_carrying_a_closure_instant(tag):
-    """The invariant the two chokepoints exist to maintain, asserted over the
+    """The invariant the chokepoints exist to maintain, asserted over the
     collection rather than over one document."""
     case_id = await _case(tag, "invariant")
-    await admin_service.update_case_status(case_id, CaseStatus.CLOSED.value, ADMIN)
-    await admin_service.update_case_status(case_id, CaseStatus.IN_PROGRESS.value, ADMIN)
+    await admin_service.end_case(case_id, CaseStatus.CLOSED.value, "Ended by support after review", ADMIN)
 
     leaked = await _selected({
         "_id": {"$regex": f"^{tag}"},

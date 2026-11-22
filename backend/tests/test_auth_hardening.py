@@ -128,7 +128,9 @@ async def test_concurrent_reset_consumes_the_token_before_password_update(monkey
 
     monkeypatch.setattr(auth.user_repo, "find_by_email", by_email)
     monkeypatch.setattr(auth.user_repo, "update_one", update)
-    monkeypatch.setattr(auth, "hash_password", lambda password: "hash:" + password)
+    async def _fake_hash(password):
+        return "hash:" + password
+    monkeypatch.setattr(auth, "hash_password_async", _fake_hash)
 
     import asyncio
     results = await asyncio.gather(
@@ -172,7 +174,9 @@ async def test_failed_password_write_keeps_the_reset_link_usable(monkeypatch):
 
     monkeypatch.setattr(auth.user_repo, "find_by_email", by_email)
     monkeypatch.setattr(auth.user_repo, "update_one", update)
-    monkeypatch.setattr(auth, "hash_password", lambda password: "hash:" + password)
+    async def _fake_hash(password):
+        return "hash:" + password
+    monkeypatch.setattr(auth, "hash_password_async", _fake_hash)
     monkeypatch.setattr(auth.auth_sessions, "revoke_all_best_effort", no_revoke)
 
     with pytest.raises(RuntimeError):
@@ -355,9 +359,13 @@ async def test_concurrent_self_service_password_changes_have_one_winner(monkeypa
 
     repo = Repo()
     monkeypatch.setattr(user_service, "user_repo", repo)
-    monkeypatch.setattr(user_service, "verify_password", lambda *_: True)
+    async def _always_ok(*_):
+        return True
+    monkeypatch.setattr(user_service, "verify_password_async", _always_ok)
     monkeypatch.setattr(user_service, "validate_password_strength", lambda *_: True)
-    monkeypatch.setattr(user_service, "hash_password", lambda value: "hash:" + value)
+    async def _fake_hash_us(value):
+        return "hash:" + value
+    monkeypatch.setattr(user_service, "hash_password_async", _fake_hash_us)
 
     import asyncio
     results = await asyncio.gather(

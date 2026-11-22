@@ -33,6 +33,9 @@ export const KYCVerification = ({ T }) => {
   const [notif, setNotif]             = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch]           = useState("");
+  // Rejecting needs a reason the lawyer can act on ("Not specified" helped
+  // nobody). { lawyer, text, error } while the reject form is open.
+  const [rejecting, setRejecting]     = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -50,7 +53,7 @@ export const KYCVerification = ({ T }) => {
         bar: u.lawyer_profile?.bar_number || "N/A",
         docs: kycDocs(u),
         status: "pending",
-        submitted: fmtDate(u.created_at),
+        joined: fmtDate(u.created_at),
       })));
       setLoading(false);
     });
@@ -78,9 +81,9 @@ export const KYCVerification = ({ T }) => {
       ))
     : <DocTag label="No documents uploaded" T={T} />);
 
-  const setStatus = async (id, st) => {
+  const setStatus = async (id, st, reason = null) => {
     const lawyer = lawyers.find(l => l.id === id);
-    const { error } = await adminProcessKYC(id, st === "approved");
+    const { error } = await adminProcessKYC(id, st === "approved", reason);
     if (error) {
       // The server says WHY: approval is refused when a profile has no
       // province or no specialization, because such a lawyer is verified but
@@ -99,6 +102,17 @@ export const KYCVerification = ({ T }) => {
     setNotif({ name: lawyer.name, email: lawyer.email, action: st });
     setTimeout(() => setNotif(null), 4000);
     if (modal) setModal(null);
+    setRejecting(null);
+  };
+
+  const openReject = (lawyer) => setRejecting({ lawyer, text: "", error: null });
+  const submitReject = () => {
+    const text = rejecting.text.trim();
+    if (text.length < 5) {
+      setRejecting(r => ({ ...r, error: "Tell the lawyer what to fix (at least 5 characters)." }));
+      return;
+    }
+    setStatus(rejecting.lawyer.id, "rejected", text);
   };
 
   const filtered = useMemo(() => lawyers.filter(l => {
@@ -135,19 +149,15 @@ export const KYCVerification = ({ T }) => {
         <p style={{ margin: "4px 0 0", color: T.textMuted, fontSize: 14 }}>Review and verify lawyer credentials · click cards to filter</p>
       </div>
 
+      {/* Only real numbers. The approved/rejected cards and every sparkline were
+          made up; what this screen can honestly count is the queue it loaded
+          and the decisions taken since. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 22 }}>
-        <StatCard label="Pending Requests" value={pending} sub="Requires attention" subColor={T.danger}
-          sparkData={[1,2,2,3,2,2,2,pending]} sparkColor={T.warn}
+        <StatCard label="Waiting for review" value={pending} sub={pending ? "Requires attention" : "Nothing waiting"} subColor={pending ? T.danger : T.success}
           iconEl={<IconBox icon={IC.clock} variant="Warn" T={T} size={42} />}
           onClick={() => setStatusFilter(statusFilter === "pending" ? "all" : "pending")} T={T} />
-        <StatCard label="Approved" value={approved} sub="This month"
-          sparkData={[1,1,2,2,3,3,4,approved]} sparkColor={T.success}
-          iconEl={<IconBox icon={IC.checkCircle} variant="Success" T={T} size={42} />}
-          onClick={() => setStatusFilter(statusFilter === "approved" ? "all" : "approved")} T={T} />
-        <StatCard label="Rejected" value={rejected} sub="This month" subColor={T.textMuted}
-          sparkData={[0,1,1,1,1,1,1,rejected]} sparkColor={T.danger}
-          iconEl={<IconBox icon={IC.xCircle} variant="Danger" T={T} size={42} />}
-          onClick={() => setStatusFilter(statusFilter === "rejected" ? "all" : "rejected")} T={T} />
+        <StatCard label="Decided since this page opened" value={approved + rejected} sub={`${approved} approved · ${rejected} rejected`} subColor={T.textMuted}
+          iconEl={<IconBox icon={IC.checkCircle} variant="Success" T={T} size={42} />} T={T} />
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
@@ -190,7 +200,7 @@ export const KYCVerification = ({ T }) => {
                 <div style={{ flex: 1, minWidth: 160 }}>
                   <div style={{ fontWeight: 700, fontSize: 15, color: T.text }}>{l.name}</div>
                   <div style={{ color: T.textMuted, fontSize: 12.5, marginTop: 1 }}>{l.email} · Bar #{l.bar}</div>
-                  <div style={{ color: T.textFaint, fontSize: 11.5, marginTop: 2 }}>Submitted {l.submitted}</div>
+                  <div style={{ color: T.textFaint, fontSize: 11.5, marginTop: 2 }}>Joined {l.joined}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                   <DocLinks lawyer={l} />
@@ -202,7 +212,7 @@ export const KYCVerification = ({ T }) => {
                   </button>
                   {l.status === "pending" && <>
                     <Btn T={T} variant="success" onClick={() => setStatus(l.id, "approved")}>Approve</Btn>
-                    <Btn T={T} variant="danger"  onClick={() => setStatus(l.id, "rejected")}>Reject</Btn>
+                    <Btn T={T} variant="danger"  onClick={() => openReject(l)}>Reject</Btn>
                   </>}
                 </div>
               </div>
@@ -222,7 +232,7 @@ export const KYCVerification = ({ T }) => {
                 <div style={{ marginTop: 6 }}><Badge label={sb(modal.status).label} type={sb(modal.status).type} T={T} /></div>
               </div>
             </div>
-            {[["Bar License No.", `#${modal.bar}`], ["Documents", <span key="d" style={{ display: "inline-flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}><DocLinks lawyer={modal} /></span>], ["Submitted", modal.submitted], ["Status", sb(modal.status).label]].map(([k, v]) => (
+            {[["Bar License No.", `#${modal.bar}`], ["Documents", <span key="d" style={{ display: "inline-flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}><DocLinks lawyer={modal} /></span>], ["Joined", modal.joined], ["Status", sb(modal.status).label]].map(([k, v]) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: `1px solid ${T.border}40` }}>
                 <span style={{ color: T.textMuted, fontSize: 13 }}>{k}</span>
                 <span style={{ color: T.text, fontWeight: 600, fontSize: 13 }}>{v}</span>
@@ -236,8 +246,28 @@ export const KYCVerification = ({ T }) => {
               <Btn T={T} variant="ghost" onClick={() => setModal(null)}>Close</Btn>
               {modal.status === "pending" && <>
                 <Btn T={T} variant="success" onClick={() => setStatus(modal.id, "approved")}>Approve & Notify</Btn>
-                <Btn T={T} variant="danger"  onClick={() => setStatus(modal.id, "rejected")}>Reject & Notify</Btn>
+                <Btn T={T} variant="danger"  onClick={() => openReject(modal)}>Reject & Notify</Btn>
               </>}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={!!rejecting} onClose={() => setRejecting(null)} title="Reject verification" T={T}>
+        {rejecting && (
+          <div>
+            <div style={{ fontSize: 13, color: T.textDim, lineHeight: 1.6, marginBottom: 12 }}>
+              <strong style={{ color: T.text }}>{rejecting.lawyer.name}</strong> will be sent this reason in the app and by email, so say what they need to fix.
+            </div>
+            <label htmlFor="kyc-reject-reason" style={{ display: "block", color: T.textMuted, fontSize: 11.5, fontWeight: 700, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.6 }}>Reason</label>
+            <textarea id="kyc-reject-reason" rows={3} maxLength={500} value={rejecting.text}
+              onChange={e => setRejecting(r => ({ ...r, text: e.target.value, error: null }))}
+              placeholder="e.g. The bar council certificate is unreadable — please upload a clear scan."
+              style={{ width: "100%", boxSizing: "border-box", background: T.inputBg, border: `1px solid ${T.border}`, borderRadius: 9, padding: "9px 12px", color: T.text, fontSize: 13, resize: "vertical", fontFamily: "inherit" }} />
+            {rejecting.error && <div role="alert" style={{ color: T.danger, fontSize: 12.5, marginTop: 8 }}>{rejecting.error}</div>}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 14 }}>
+              <Btn T={T} variant="ghost" onClick={() => setRejecting(null)}>Cancel</Btn>
+              <Btn T={T} variant="danger" onClick={submitReject}>Reject & Notify</Btn>
             </div>
           </div>
         )}

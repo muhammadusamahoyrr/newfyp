@@ -97,12 +97,12 @@ export function AppointmentDisputes({ T }) {
     };
 
     if (state === 'loading') {
-        return <div style={{ padding: 20, fontSize: 13 }}>Loading reports…</div>;
+        return <div style={{ padding: 20, fontSize: 13, color: t.textMuted }}>Loading reports…</div>;
     }
     if (state === 'error') {
         return (
-            <div style={{ padding: 20 }}>
-                <div role="alert" style={{ fontSize: 13, marginBottom: 10 }}>
+            <div style={{ padding: 20, color: t.text }}>
+                <div role="alert" style={{ fontSize: 13, marginBottom: 10, color: t.danger }}>
                     The report queue could not be loaded. That is not the same
                     as having none — the request failed.
                 </div>
@@ -114,8 +114,8 @@ export function AppointmentDisputes({ T }) {
     }
 
     return (
-        <div style={{ padding: 20 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+        <div style={{ padding: 20, color: t.text }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: t.text }}>
                 Appointment reports
             </h2>
             <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 14 }}>
@@ -159,8 +159,8 @@ function DisputeCard({ dispute, t, busy, onDecide }) {
 
     return (
         <div style={{
-            border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12,
-            padding: 16, marginBottom: 12,
+            border: `1px solid ${t.border || 'rgba(255,255,255,0.12)'}`, borderRadius: 12,
+            padding: 16, marginBottom: 12, background: t.card, color: t.text,
         }}>
             <div style={{ fontSize: 12, opacity: 0.75 }}>
                 Appointment {dispute.appointment_id} · report {dispute.id}
@@ -235,20 +235,20 @@ function DisputeCard({ dispute, t, busy, onDecide }) {
     );
 }
 
-function btn() {
+function btn(t = {}) {
     return {
         minHeight: 40, padding: '9px 16px', borderRadius: 9,
-        border: '1px solid rgba(255,255,255,0.25)', background: 'transparent',
-        color: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+        border: `1px solid ${t.primary || 'rgba(255,255,255,0.25)'}`, background: 'transparent',
+        color: t.primary || 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer',
         fontFamily: 'inherit',
     };
 }
 
-function field() {
+function field(t = {}) {
     return {
         display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 6,
         padding: '8px 10px', borderRadius: 8,
-        border: '1px solid rgba(255,255,255,0.2)', background: 'transparent',
-        color: 'inherit', fontSize: 12, fontFamily: 'inherit', resize: 'vertical',
+        border: `1px solid ${t.border || 'rgba(255,255,255,0.2)'}`, background: t.inputBg || 'transparent',
+        color: t.text || 'inherit', fontSize: 12, fontFamily: 'inherit', resize: 'vertical',
     };
 }

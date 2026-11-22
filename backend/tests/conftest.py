@@ -282,6 +282,23 @@ def _signature_encryption_key():
 
 
 @pytest.fixture(autouse=True)
+def _fresh_rate_limit_counters():
+    """Each test starts with empty rate-limit counters.
+
+    The app limiter is in-memory under tests, so counts carried over from
+    earlier tests in the same process: the per-user AI limits (e.g. /ai/compare
+    at 3/minute) made results depend on test order. Limits still apply WITHIN a
+    test. Only memory storage is reset, never a real Redis.
+    """
+    from limits.storage import MemoryStorage
+    from app.core.rate_limit import limiter
+
+    if isinstance(limiter._storage, MemoryStorage):
+        limiter.reset()
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _empty_corpus_index():
     """Every test starts with an EMPTY corpus index unless it installs its own.
 

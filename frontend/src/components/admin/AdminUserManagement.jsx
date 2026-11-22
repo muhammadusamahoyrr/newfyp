@@ -15,8 +15,9 @@ export const UserManagement = ({ T }) => {
   const [modal, setModal]   = useState(null);
   const [sel, setSel]       = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
-  const [toastMsg, setToastMsg]     = useState("");
+  const [toast, setToast]           = useState(null);   // { text, ok }
   const [loading, setLoading]       = useState(true);
+  const [loadError, setLoadError]   = useState(null);
 
   // Server-side data
   const [users, setUsers]   = useState([]);
@@ -28,20 +29,20 @@ export const UserManagement = ({ T }) => {
   const [formName, setFormName]     = useState("");
   const [formEmail, setFormEmail]   = useState("");
   const [formRole, setFormRole]     = useState("client");
-  const [formPass, setFormPass]     = useState("");
-  const [formPass2, setFormPass2]   = useState("");
   const [formSaving, setFormSaving] = useState(false);
 
   // Sort is client-side on the current page only
   const [sort, setSort] = useState({ field: "full_name", dir: "asc" });
   const handleSort = (field) => setSort(p => ({ field, dir: p.field === field && p.dir === "asc" ? "desc" : "asc" }));
 
-  const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(""), 2800); };
+  // Failures show in red, successes in green (errors used the success style).
+  const showToast = (text, ok = true) => { setToast({ text, ok }); setTimeout(() => setToast(null), ok ? 2800 : 5000); };
 
   const roleForTab = { all: null, clients: "client", lawyers: "lawyer", admins: "admin" };
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     const { data, error } = await adminListUsers({
       page,
       pageSize: perPage,
@@ -51,6 +52,9 @@ export const UserManagement = ({ T }) => {
     if (!error && data) {
       setUsers(data.items || []);
       setTotal(data.total || 0);
+    } else {
+      // A failed load is not "no users found".
+      setLoadError(error?.message || "Could not load users.");
     }
     setLoading(false);
   }, [page, perPage, tab, search]);
@@ -73,7 +77,7 @@ export const UserManagement = ({ T }) => {
     const { error } = await adminUpdateUser(u._id, { is_active: next });
     if (error) {
       setUsers(p => p.map(x => x._id === u._id ? { ...x, is_active: u.is_active } : x));
-      showToast("Failed to update status");
+      showToast(error.message || "Failed to update status", false);
     } else {
       showToast(`${u.full_name} account ${next ? "activated" : "deactivated"}`);
     }
@@ -85,24 +89,29 @@ export const UserManagement = ({ T }) => {
     setTotal(p => p - 1);
     const { error } = await adminDeleteUser(u._id);
     if (error) {
-      showToast("Failed to delete user");
+      showToast(error.message || "Failed to delete user", false);
       fetchUsers();
     } else {
       showToast(`${u.full_name} deleted`);
     }
   };
 
-  const openAdd = () => { setSel(null); setFormName(""); setFormEmail(""); setFormRole("client"); setFormPass(""); setFormPass2(""); setModal("add"); };
+  const openAdd = () => { setSel(null); setFormName(""); setFormEmail(""); setFormRole("client"); setModal("add"); };
   const openEdit = (u) => { setSel(u); setFormName(u.full_name); setFormEmail(u.email); setFormRole(u.role); setModal("edit"); };
-  const openPw = (u) => { setSel(u); setFormPass(""); setFormPass2(""); setModal("pw"); };
+  const openPw = (u) => { setSel(u); setModal("pw"); };
 
+  // No password field: the new user is emailed a link to set their own, so
+  // no admin ever knows another person's password.
   const saveAdd = async () => {
-    if (!formName.trim() || !formEmail.trim() || !formPass.trim()) return;
+    if (!formName.trim() || !formEmail.trim()) return;
     setFormSaving(true);
-    const { data, error } = await adminCreateUser({ full_name: formName, email: formEmail, role: formRole, password: formPass });
+    const { data, error } = await adminCreateUser({ full_name: formName.trim(), email: formEmail.trim(), role: formRole });
     setFormSaving(false);
-    if (error) { showToast(`Failed: ${error?.detail || "server error"}`); return; }
-    showToast(`User ${formName} created`);
+    if (error) { showToast(`Failed: ${error?.message || "server error"}`, false); return; }
+    showToast(data?.setup_link_sent
+      ? `${formName} created. A link to set their password was emailed.`
+      : `${formName} created, but the email could not be sent. Ask them to use "Forgot password".`,
+      !!data?.setup_link_sent);
     setModal(null);
     fetchUsers();
   };
@@ -112,19 +121,21 @@ export const UserManagement = ({ T }) => {
     setFormSaving(true);
     const { error } = await adminUpdateUser(sel._id, { full_name: formName, role: formRole });
     setFormSaving(false);
-    if (error) { showToast(`Failed: ${error?.detail || "server error"}`); return; }
+    if (error) { showToast(`Failed: ${error?.message || "server error"}`, false); return; }
     setUsers(p => p.map(u => u._id === sel._id ? { ...u, full_name: formName, role: formRole } : u));
     showToast("Changes saved");
     setModal(null);
   };
 
+  // The admin no longer types a new password: the user is signed out
+  // everywhere and emailed a link to set one themselves.
   const savePw = async () => {
-    if (!sel || !formPass.trim() || formPass !== formPass2) return;
+    if (!sel) return;
     setFormSaving(true);
-    const { error } = await adminResetPassword(sel._id, formPass);
+    const { data, error } = await adminResetPassword(sel._id);
     setFormSaving(false);
-    if (error) { showToast(`Failed: ${error?.detail || "server error"}`); return; }
-    showToast(`Password reset for ${sel.full_name}`);
+    if (error) { showToast(`Failed: ${error?.message || "server error"}`, false); return; }
+    showToast(data?.message || `Reset link sent to ${sel.full_name}`, data?.success !== false);
     setModal(null);
   };
 
@@ -137,9 +148,9 @@ export const UserManagement = ({ T }) => {
 
   return (
     <div style={{ position: "relative" }}>
-      {toastMsg && (
-        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 999, background: T.success, color: T.mode==="dark"?"#0a1f1a":"#fff", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 4px 18px rgba(0,0,0,0.18)", display: "flex", alignItems: "center", gap: 8 }}>
-          <Ic d={IC.check} size={15} color={T.mode==="dark"?"#0a1f1a":"#fff"} sw={2.5} /> {toastMsg}
+      {toast && (
+        <div role={toast.ok ? "status" : "alert"} style={{ position: "fixed", bottom: 24, right: 24, zIndex: 999, maxWidth: 420, background: toast.ok ? T.success : T.danger, color: toast.ok && T.mode==="dark" ? "#0a1f1a" : "#fff", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 4px 18px rgba(0,0,0,0.18)", display: "flex", alignItems: "center", gap: 8 }}>
+          <Ic d={toast.ok ? IC.check : "M12 9v4M12 17h.01"} size={15} color={toast.ok && T.mode==="dark" ? "#0a1f1a" : "#fff"} sw={2.5} /> {toast.text}
         </div>
       )}
 
@@ -151,7 +162,7 @@ export const UserManagement = ({ T }) => {
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 6 }}>Delete account?</div>
             <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 20, lineHeight: 1.65 }}>
-              This will permanently remove <strong style={{ color: T.text }}>{confirmDel.full_name}</strong>'s account. This action cannot be undone.
+              This closes <strong style={{ color: T.text }}>{confirmDel.full_name}</strong>'s account and erases their personal details. It is refused while they have open engagements or payments. This cannot be undone.
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <Btn T={T} variant="ghost" onClick={() => setConfirmDel(null)} style={{ flex: 1, justifyContent: "center" }}>Cancel</Btn>
@@ -198,6 +209,11 @@ export const UserManagement = ({ T }) => {
             <tbody>
               {loading ? (
                 <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: T.textMuted, fontSize: 13 }}>Loading users…</td></tr>
+              ) : loadError ? (
+                <tr><td colSpan={6} role="alert" style={{ padding: 28, textAlign: "center" }}>
+                  <div style={{ color: T.danger, fontSize: 13.5, fontWeight: 600, marginBottom: 10 }}>{loadError}</div>
+                  <Btn T={T} variant="outline" onClick={fetchUsers}>Retry</Btn>
+                </td></tr>
               ) : sortedUsers.length === 0 ? (
                 <tr><td colSpan={6}>
                   <EmptyState T={T} icon={IC.users} title="No users found" sub="Try adjusting the filter or search term." actionLabel="Clear filters" onAction={() => { setSearch(""); setTab("all"); setPage(1); }} />
@@ -215,19 +231,24 @@ export const UserManagement = ({ T }) => {
                   <td style={{ padding: "12px 18px", color: T.textMuted, fontSize: 13 }}>{u.email}</td>
                   <td style={{ padding: "12px 18px" }}><Badge label={u.role.charAt(0).toUpperCase()+u.role.slice(1)} type={u.role==="admin"?"primary":u.role==="lawyer"?"info":"gray"} T={T} /></td>
                   <td style={{ padding: "12px 18px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Toggle on={u.is_active} onChange={() => toggleStatus(u)} />
-                      <span style={{ fontSize: 12, color: u.is_active ? T.success : T.textFaint, fontWeight: 500 }}>{u.is_active ? "Active" : "Inactive"}</span>
-                    </div>
+                    {u.is_closed ? (
+                      // Deleted accounts are anonymised and cannot be reactivated.
+                      <Badge label="Deleted" type="danger" T={T} />
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Toggle on={u.is_active} onChange={() => toggleStatus(u)} />
+                        <span style={{ fontSize: 12, color: u.is_active ? T.success : T.textFaint, fontWeight: 500 }}>{u.is_active ? "Active" : "Inactive"}</span>
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: "12px 18px", color: T.textMuted, fontSize: 13 }}>{fmtDate(u.created_at)}</td>
                   <td style={{ padding: "12px 14px" }}>
-                    <ActionMenu T={T} actions={[
+                    {!u.is_closed && <ActionMenu T={T} actions={[
                       { label: "Edit user",      icon: IC.edit,  fn: () => openEdit(u) },
-                      { label: "Reset password", icon: IC.key,   fn: () => openPw(u) },
+                      { label: "Send password reset", icon: IC.key, fn: () => openPw(u) },
                       { label: u.is_active ? "Deactivate" : "Activate", icon: IC.lock, fn: () => toggleStatus(u) },
                       { label: "Delete user",    icon: IC.trash, fn: () => setConfirmDel(u), danger: true },
-                    ]} />
+                    ]} />}
                   </td>
                 </tr>
               ))}
@@ -240,7 +261,18 @@ export const UserManagement = ({ T }) => {
       {/* Add / Edit User Modal */}
       <Modal open={modal==="add"||modal==="edit"} onClose={() => setModal(null)} title={modal==="add" ? "Add User" : "Edit User"} T={T}>
         <Input label="Full Name" value={formName} onChange={e => setFormName(e.target.value)} T={T} placeholder="Full name" />
-        <Input label="Email" type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} T={T} placeholder="Email address" />
+        {modal === "add" ? (
+          <Input label="Email" type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} T={T} placeholder="Email address" />
+        ) : (
+          // Read-only. The email is the sign-in and password-reset address, so
+          // an admin who could change it could take over the account. Users
+          // change their own email, confirmed by email.
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", color: T.textMuted, fontSize: 11.5, fontWeight: 700, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.6 }}>Email</label>
+            <div style={{ padding: "9px 13px", borderRadius: 9, border: `1px solid ${T.border}`, color: T.textMuted, fontSize: 13.5 }}>{formEmail}</div>
+            <div style={{ marginTop: 5, fontSize: 11.5, color: T.textFaint }}>Only the user can change their email.</div>
+          </div>
+        )}
         <div style={{ marginBottom: 14 }}>
           <label style={{ display: "block", color: T.textMuted, fontSize: 11.5, fontWeight: 700, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.6 }}>Role</label>
           <select value={formRole} onChange={e => setFormRole(e.target.value)}
@@ -256,7 +288,9 @@ export const UserManagement = ({ T }) => {
           )}
         </div>
         {modal === "add" && (
-          <Input label="Password" type="password" value={formPass} onChange={e => setFormPass(e.target.value)} T={T} placeholder="Temporary password" />
+          <div style={{ marginBottom: 14, fontSize: 12, color: T.textMuted }}>
+            The new user will be emailed a link to set their own password.
+          </div>
         )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <Btn T={T} variant="ghost" onClick={() => setModal(null)}>Cancel</Btn>
@@ -267,16 +301,15 @@ export const UserManagement = ({ T }) => {
       </Modal>
 
       {/* Reset Password Modal */}
-      <Modal open={modal==="pw"} onClose={() => setModal(null)} title="Reset Password" T={T}>
-        <Input label="New Password" type="password" value={formPass} onChange={e => setFormPass(e.target.value)} T={T} placeholder="New password" />
-        <Input label="Confirm Password" type="password" value={formPass2} onChange={e => setFormPass2(e.target.value)} T={T} placeholder="Confirm password" />
-        {formPass && formPass2 && formPass !== formPass2 && (
-          <div style={{ fontSize: 12, color: T.danger, marginBottom: 10 }}>Passwords do not match</div>
-        )}
+      <Modal open={modal==="pw"} onClose={() => setModal(null)} title="Send password reset" T={T}>
+        <div style={{ fontSize: 13, color: T.textDim, lineHeight: 1.6, marginBottom: 18 }}>
+          <strong style={{ color: T.text }}>{sel?.full_name}</strong> will be signed out on every device, their current
+          password will stop working, and they will be emailed a link to set a new one. You will not see or choose the password.
+        </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <Btn T={T} variant="ghost" onClick={() => setModal(null)}>Cancel</Btn>
-          <Btn T={T} icon={IC.key} onClick={savePw} disabled={formSaving || !formPass || formPass !== formPass2}>
-            {formSaving ? "Saving…" : "Reset"}
+          <Btn T={T} icon={IC.key} onClick={savePw} disabled={formSaving}>
+            {formSaving ? "Sending…" : "Sign out and send link"}
           </Btn>
         </div>
       </Modal>

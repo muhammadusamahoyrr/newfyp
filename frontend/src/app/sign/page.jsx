@@ -78,12 +78,20 @@ function InvitationSigner() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
+  // Dev StrictMode runs this effect twice. The first run scrubs the fragment,
+  // so the token must be read only once; the second run reuses the ref. The
+  // view call itself is a read and is safe to repeat.
+  const tokenRead = useRef(false);
+
   useEffect(() => {
-    const fragment = new URLSearchParams(window.location.hash.slice(1));
-    tokenRef.current = fragment.get('token') || '';
-    if (window.location.hash) {
-      window.history.replaceState(
-        null, '', `${window.location.pathname}${window.location.search}`);
+    if (!tokenRead.current) {
+      tokenRead.current = true;
+      const fragment = new URLSearchParams(window.location.hash.slice(1));
+      tokenRef.current = fragment.get('token') || '';
+      if (window.location.hash) {
+        window.history.replaceState(
+          null, '', `${window.location.pathname}${window.location.search}`);
+      }
     }
     if (!tokenRef.current) {
       setState({ loading: false, error: 'This link is missing its signing token. Ask the sender for a new one.', doc: null });

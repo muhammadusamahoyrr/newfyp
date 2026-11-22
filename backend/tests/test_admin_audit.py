@@ -92,15 +92,19 @@ async def test_kyc_rejection_records_the_reason_given(admin_and_users, audit):
 
 @pytest.mark.integration
 async def test_a_password_reset_is_audited_without_recording_the_password(
-        admin_and_users, audit):
-    from app.services import admin_service
+        admin_and_users, audit, monkeypatch):
+    from app.services import admin_service, auth_service
+
+    async def delivered(email):
+        return True
+    monkeypatch.setattr(auth_service, "issue_reset_link", delivered)
 
     await admin_service.reset_user_password(
-        admin_and_users["client"], "BrandNewPass1", actor=_actor())
+        admin_and_users["client"], actor=_actor())
 
     (entry,) = await _entries(audit, admin_and_users["client"])
     assert entry["action"] == "user.password_reset"
-    assert "BrandNewPass1" not in str(entry), "the new password must not reach the audit"
+    assert "password_hash" not in str(entry), "no credential may reach the audit"
 
 
 @pytest.mark.integration
@@ -109,7 +113,7 @@ async def test_creation_and_deletion_are_both_audited(admin_and_users, audit):
     from app.services import admin_service
 
     created = await admin_service.create_user(
-        "New Person", "aud-new@x.test", "client", "Str0ngPass1", actor=_actor())
+        "New Person", "aud-new@x.test", "client", actor=_actor())
     try:
         await admin_service.delete_user(created["_id"], actor=_actor())
         actions = {e["action"] for e in await _entries(audit, created["_id"])}
@@ -213,7 +217,7 @@ def test_every_mutating_route_forwards_the_acting_user():
 
     source = inspect.getsource(admin_routes)
     for call in ("process_kyc", "create_user", "update_user",
-                 "reset_user_password", "delete_user", "update_case_status",
+                 "reset_user_password", "delete_user", "end_case",
                  # The retention sweep is the most destructive action an admin
                  # has: it erases a client's evidence. The guard only covers
                  # what it is told to, so a route added without a line here is

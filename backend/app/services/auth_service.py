@@ -21,10 +21,10 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    hash_password,
+    hash_password_async,
     token_storage_key,
     token_predates_password_change,
-    verify_password,
+    verify_password_async,
 )
 from app.db.collections import (
     get_email_verification_col,
@@ -111,6 +111,22 @@ async def _revoke_idempotently(token: str | None, expected_type: str) -> None:
         return
 
 
+def new_lawyer_profile() -> dict:
+    """The lawyer sub-document an account needs before any lawyer-profile
+    write can land (they all `$set lawyer_profile.<field>`). Used at sign-up
+    and when an admin moves an existing account onto the lawyer role."""
+    return {
+        "bar_number": None,
+        "specializations": [],
+        **initial_kyc_fields(),
+        "kyc_rejection_reason": None,
+        "rating": 0.0,
+        "total_reviews": 0,
+        "availability": True,
+        "bio": None,
+    }
+
+
 async def register(data: RegisterRequest) -> dict:
     # Public registration is client/lawyer only — admins are provisioned by an existing admin
     if data.role.value not in ("client", "lawyer"):
@@ -141,22 +157,13 @@ async def register(data: RegisterRequest) -> dict:
         "terms_consent": {"terms_version": TERMS_VERSION,
                           "privacy_version": PRIVACY_VERSION, "accepted_at": now},
         "email": data.email.lower(),
-        "password_hash": hash_password(data.password),
+        "password_hash": await hash_password_async(data.password),
         "full_name": data.full_name,
         "phone": data.phone,
         "province": None,
         "avatar_url": None,
         "is_active": True,
-        "lawyer_profile": {
-            "bar_number": None,
-            "specializations": [],
-            **initial_kyc_fields(),
-            "kyc_rejection_reason": None,
-            "rating": 0.0,
-            "total_reviews": 0,
-            "availability": True,
-            "bio": None,
-        } if data.role.value == "lawyer" else None,
+        "lawyer_profile": new_lawyer_profile() if data.role.value == "lawyer" else None,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }
@@ -179,7 +186,7 @@ async def login(email: str, password: str, *, user_agent: str = "") -> dict:
     # `if user` skipped bcrypt entirely for an unknown address, so the response
     # came back in microseconds instead of ~250ms and the timing said what the
     # message no longer does. Always exactly one checkpw, against a real hash.
-    password_ok = verify_password(
+    password_ok = await verify_password_async(
         password, user["password_hash"] if user else DUMMY_PASSWORD_HASH
     )
 
@@ -343,9 +350,18 @@ async def verify_email(token: str) -> None:
 
 
 async def forgot_password(email: str) -> None:
+    """The PUBLIC "forgot password" path. Returns nothing, whatever happened,
+    so it can never reveal whether an account exists or an email went."""
+    await issue_reset_link(email)
+
+
+async def issue_reset_link(email: str) -> bool | None:
+    """Send a reset link. True/False for delivered/not; None when nothing was
+    sent (unknown address, or a link sent moments ago). Only trusted callers
+    (the admin panel) may surface this; the public path discards it."""
     user = await user_repo.find_by_email(email)
     if not user:
-        return  # silent — don't leak whether email exists
+        return None  # silent — don't leak whether email exists
 
     reset_token = secrets.token_urlsafe(32)
     token_key = _reset_token_key(reset_token)
@@ -367,10 +383,9 @@ async def forgot_password(email: str) -> None:
         # the page said "sent"), so the unused link is swapped for a new one.
         previous = await _replace_reset_link(email.lower(), token_key)
         if previous is None:
-            return
-        await _send_reset_link(email, reset_token, token_key, previous)
-        return
-    await _send_reset_link(email, reset_token, token_key, None)
+            return None
+        return await _send_reset_link(email, reset_token, token_key, previous)
+    return await _send_reset_link(email, reset_token, token_key, None)
 
 
 # A second request inside this window keeps the link already sent.
@@ -391,11 +406,12 @@ async def _replace_reset_link(email: str, token_key: str) -> dict | None:
 
 
 async def _send_reset_link(email: str, reset_token: str, token_key: str,
-                           previous: dict | None) -> None:
+                           previous: dict | None) -> bool:
     try:
         delivered = await send_password_reset_email(email, reset_token)
         if not delivered:
             raise RuntimeError("email_not_configured")
+        return True
     except Exception as exc:
         # Existing and unknown accounts keep the same public response even
         # during an SMTP outage. Undo only what this request wrote: a new row
@@ -413,6 +429,7 @@ async def _send_reset_link(email: str, reset_token: str, token_key: str,
             "Password reset email was not delivered; error_type=%s",
             type(exc).__name__,
         )
+        return False
 
 
 async def reset_password(token: str, new_password: str) -> None:
@@ -467,7 +484,7 @@ async def _apply_password_reset(record: dict, new_password: str) -> None:
         {"_id": user["_id"]},
         {
             "$set": {
-                "password_hash": hash_password(new_password),
+                "password_hash": await hash_password_async(new_password),
                 # End every existing session. A reset is very often triggered
                 # BY a compromise, and without this the attacker's refresh
                 # token stayed valid for up to 7 days afterwards.

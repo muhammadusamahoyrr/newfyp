@@ -414,6 +414,16 @@ async def get_clarification(
     intake = await intake_repo.find_by_token(token)
     if not intake or intake.get("client_id") != client_id:
         raise NotFoundError("Intake session")
+    # Refused BEFORE the model is called: the save below would refuse anyway,
+    # so asking the provider first only paid for a question nobody can see.
+    if (intake.get("completed") or "conversion_claim_owner" in intake
+            or "conversion_claimed_at" in intake):
+        raise ConflictError(
+            "This intake changed or started converting. Reload before answering.")
+    # A whitespace-only answer is no answer. Left as "  " it was truthy here
+    # and stored as "", leaving a round that counted as neither open nor
+    # answered.
+    answer = (answer or "").strip() or None
 
     qa_list  = list(intake.get("clarification_qa") or [])
     step2    = intake.get("step2") or {}
@@ -1155,8 +1165,15 @@ async def retry_analysis(token: str, client_id: str, language: str = "en") -> di
         ai_data["input_fact_fidelity"] = _fact_fidelity(ai_data, understanding, evidence_text)
         if not await intake_repo.finish_analysis_retry(token, owner, ai_data):
             raise ConflictError("The analysis retry lost its claim — reload and try again.")
+        # Matched on the case still having NO analysis, not on it still being
+        # a draft. The client can confirm the case while this retry runs; the
+        # draft filter then matched nothing, leaving the intake showing the new
+        # analysis and the lawyer's case showing "failed" with no summary.
+        # Filling in an analysis the case never had is safe after confirmation;
+        # overwriting one it already has is not, and this filter never does.
         await case_repo.update_one(
-            {"_id": case_id, "status": CaseStatus.DRAFT.value},
+            {"_id": case_id, "client_id": client_id,
+             "analysis_status": {"$in": ["failed", "retrieval_failed"]}},
             {"$set": {
                 "ai_summary": _case_summary(ai_data),
                 # Batch 7: this summary went through the CPC jurisdiction step,

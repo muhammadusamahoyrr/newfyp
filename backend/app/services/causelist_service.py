@@ -14,6 +14,7 @@ import secrets
 from datetime import datetime, timezone
 
 import httpx
+from pymongo.errors import DuplicateKeyError
 from bs4 import BeautifulSoup
 
 from app.core.constants import NotificationType
@@ -182,13 +183,22 @@ async def create_watch(
     # Soft gating: free tier is capped at one cause-list watch (the anchor of the
     # Professional plan). Paid tiers are unlimited.
     from app.services import subscription_service
-    if not await subscription_service.is_paid(lawyer_id):
+    paid = await subscription_service.is_paid(lawyer_id)
+    if not paid:
         current = await watch_repo.count({"lawyer_id": lawyer_id})
         if current >= 1:
             raise AppValidationError(
                 "The free plan includes 1 cause-list watch. "
                 "Upgrade to Professional for unlimited watches."
             )
+
+    # A linked case must be one this lawyer is on. The id flows into hearing
+    # entries and reminders, so an unchecked one would attach this lawyer's
+    # listing to somebody else's case.
+    if case_id:
+        from app.db.collections import get_cases_col
+        if not await get_cases_col().find_one({"_id": case_id, "lawyer_id": lawyer_id}, {"_id": 1}):
+            raise AppValidationError("That case is not one of yours to link this watch to")
 
     watch = {
         "_id": secrets.token_urlsafe(16),
@@ -202,7 +212,20 @@ async def create_watch(
         "last_listed_date": None,
         "created_at": datetime.now(timezone.utc),
     }
-    await watch_repo.insert(watch)
+    if not paid:
+        # The free plan's single slot, unique per lawyer (uniq_causelist_free_slot).
+        # The count above only gives the friendly message; this makes it hold
+        # when two submits race past it.
+        watch["free_slot"] = lawyer_id
+    try:
+        await watch_repo.insert(watch)
+    except DuplicateKeyError as exc:
+        if "free_slot" in str(exc):
+            raise AppValidationError(
+                "The free plan includes 1 cause-list watch. "
+                "Upgrade to Professional for unlimited watches."
+            ) from None
+        raise AppValidationError(f"You are already watching {norm}") from None
     return watch
 
 
@@ -265,7 +288,10 @@ async def check_watch(watch: dict) -> list[dict]:
             **e,
             "found_at": datetime.now(timezone.utc),
         }
-        await entry_repo.insert(doc)
+        try:
+            await entry_repo.insert(doc)
+        except DuplicateKeyError:
+            continue   # a concurrent check stored (and notified) it first
         await _notify(watch["lawyer_id"], doc)
         new_entries.append(doc)
 

@@ -997,8 +997,11 @@ async def seal_threads_for(case_id: str, lawyer_id: str, session=None) -> None:
 
 
 def _assert_access(case: dict, user_id: str, role: str) -> None:
-    if role == "admin":
-        return
+    # No admin pass-through. The admin panel deliberately shows an allowlist of
+    # case fields (admin_service.list_admin_cases) and ends cases through its
+    # own audited route; an `admin -> return` here let the same account read
+    # every case's messages, tasks and contents through the ordinary routes,
+    # unaudited. Only the case's own client and lawyer get in.
     if role == "client" and case.get("client_id") == user_id:
         return
     if role == "lawyer" and case.get("lawyer_id") == user_id:

@@ -2181,12 +2181,18 @@ const meetingAhead = (k, now = Date.now()) => ["confirmed", "pending"].includes(
 // Join for one case meeting (2026-10-20): the same in-app video as the
 // Appointments page, opening a day before; a meeting not by video says how.
 function MeetingJoin({ k, clientName }) {
-    if (k.status !== "confirmed") return <span className="cw-consult-note" style={{ margin: 0 }}>Waiting for the client to confirm</span>;
+    // A pending case meeting is a client's booking waiting on the lawyer:
+    // meetings born from an accepted proposal are created already confirmed.
+    if (k.status !== "confirmed") return <span className="cw-consult-note" style={{ margin: 0 }}>Request waiting for your answer on Appointments</span>;
     if (k.mode !== "video") return <span className="cw-consult-note" style={{ margin: 0 }}>{k.mode === "phone" ? "Phone call" : "In person"} — no joining link</span>;
+    // The pasted link works whether or not in-app video is configured
+    // (VideoJoin renders nothing without it). Only http(s) links are shown.
+    const link = typeof k.meeting_link === "string" && /^https?:\/\//i.test(k.meeting_link.trim()) ? k.meeting_link.trim() : null;
     return (
         <div data-case-meeting-join={k.id} style={{ minWidth: 0 }}>
             <VideoJoin apptId={k.id} status="confirmed" mode="video" accent="#13806b" muted="var(--muted)" danger="var(--danger)"
                 otherName={clientName || "your client"} />
+            {link && <a href={link} target="_blank" rel="noopener noreferrer" className="cw-consult-note" style={{ margin: 0, color: "#13806b", fontWeight: 700 }}>Open meeting link ↗</a>}
         </div>
     );
 }

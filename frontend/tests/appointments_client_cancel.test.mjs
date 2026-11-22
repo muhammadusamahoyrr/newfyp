@@ -70,6 +70,15 @@ const api = await import("./support/api-stub.mjs");
 const { createElement: h } = React;
 
 /* An appointment as the API returns one. */
+/* Test dates are counted from TODAY, never written out. A fixed date became a
+ * past date (2026-11-20, then 2026-12-01): the reschedule form hides and
+ * refuses past times, so those tests began failing on the calendar alone.
+ * A UTC calendar day; with these offsets the PKT day is the same one. */
+function futureDay(days) {
+    return new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
+}
+const CUR_DAY = futureDay(30);              // the appointment's current day
+
 function appointment(over = {}) {
     const when = new Date(Date.now() + 72 * 36e5);
     when.setUTCMinutes(0, 0, 0);
@@ -887,10 +896,10 @@ test("the failed-read state offers a way to try again", async () => {
 // have passed, the lawyer may have confirmed — so the new time appears only
 // after the server confirms it on reload.
 
-const NEW_DATE = "2026-12-01";
+const NEW_DATE = futureDay(40);
 const NEW_TIME = "15:30";
 // 15:30 PKT is 10:30Z — PKT is UTC+5 year-round, with no DST since 2009.
-const NEW_ISO = "2026-12-01T10:30:00.000Z";
+const NEW_ISO = `${NEW_DATE}T10:30:00.000Z`;
 
 async function openReschedule(ui) {
     await ui.click("Change time");
@@ -944,7 +953,7 @@ test("the form is pre-filled with the appointment's own PKT time", async () => {
     // Not blank, and not the browser's zone: the client edits the time they
     // were shown.
     serveAppointments([appointment({
-        status: "pending", scheduled_at: "2026-11-20T09:00:00.000Z",
+        status: "pending", scheduled_at: `${CUR_DAY}T09:00:00.000Z`,
     })]);
     const ui = await mountTracking();
     await ui.openAppointments();
@@ -952,7 +961,7 @@ test("the form is pre-filled with the appointment's own PKT time", async () => {
 
     const date = ui.container.querySelector('input[type="date"]');
     const time = ui.container.querySelector("select");
-    assert.equal(date.value, "2026-11-20");
+    assert.equal(date.value, CUR_DAY);
     assert.equal(time.value, "14:00", "09:00Z is 14:00 in Karachi");
     await ui.unmount();
 });
@@ -984,7 +993,7 @@ test("a successful change sends PKT converted to UTC, with the version", async (
 test("the new time shown is the server's, after a reload", async () => {
     // The server is made to answer with a time the client did NOT choose. A
     // component that moved the card itself would show the chosen time.
-    const serverTime = "2026-12-05T06:00:00.000Z";   // 11:00 PKT
+    const serverTime = `${futureDay(44)}T06:00:00.000Z`;   // 11:00 PKT
     serveAppointments(
         [appointment({ status: "pending" })],
         [appointment({ status: "pending", scheduled_at: serverTime })],
@@ -1002,7 +1011,7 @@ test("the new time shown is the server's, after a reload", async () => {
 });
 
 test("the server's new time survives a remount", async () => {
-    const serverTime = "2026-12-05T06:00:00.000Z";
+    const serverTime = `${futureDay(44)}T06:00:00.000Z`;
     serveAppointments(
         [appointment({ status: "pending" })],
         [appointment({ status: "pending", scheduled_at: serverTime })],
@@ -1432,7 +1441,7 @@ test("the client is never shown the lawyer's private notes", async () => {
 const optionValues = (sel) => [...sel.querySelectorAll("option")].map(o => o.value).filter(Boolean);
 
 test("the time list is the lawyer's free times, plus the current one marked", async () => {
-    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: "2026-11-20T09:00:00.000Z" })]);
+    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: `${CUR_DAY}T09:00:00.000Z` })]);
     const ui = await mountTracking();
     await ui.openAppointments();
     await ui.click("Change time");
@@ -1442,12 +1451,12 @@ test("the time list is the lawyer's free times, plus the current one marked", as
     assert.match(sel.textContent, /14:00 \(current\)/);
     assert.ok(!optionValues(sel).includes("03:00"));
     const call = api.__calls("getBookableSlots").at(-1);
-    assert.deepEqual(call.args, ["law-9", { from: "2026-11-20", duration_minutes: 60 }]);
+    assert.deepEqual(call.args, ["law-9", { from: CUR_DAY, duration_minutes: 60 }]);
     await ui.unmount();
 });
 
 test("keeping the current time is refused before anything is sent", async () => {
-    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: "2026-11-20T09:00:00.000Z" })]);
+    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: `${CUR_DAY}T09:00:00.000Z` })]);
     const ui = await mountTracking();
     await ui.openAppointments();
     await ui.click("Change time");
@@ -1460,7 +1469,7 @@ test("keeping the current time is refused before anything is sent", async () => 
 
 test("a lawyer with no working hours gets an explanation, not a list of every hour", async () => {
     api.__respond("getBookableSlots", { data: { configured: false, days: [] }, error: null, status: 200 });
-    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: "2026-11-20T09:00:00.000Z" })]);
+    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: `${CUR_DAY}T09:00:00.000Z` })]);
     const ui = await mountTracking();
     await ui.openAppointments();
     await ui.click("Change time");
@@ -1531,7 +1540,7 @@ test("Join Meeting is offered only on a confirmed consultation that has not ende
 
 test("a lawyer with no hours, while hours are not enforced, can be ASKED for a new time", async () => {
     api.__respond("getBookableSlots", { data: { configured: false, enforced: false, days: [] }, error: null, status: 200 });
-    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: "2026-11-20T09:00:00.000Z" })]);
+    serveAppointments([appointment({ status: "pending", lawyer_id: "law-9", scheduled_at: `${CUR_DAY}T09:00:00.000Z` })]);
     const ui = await mountTracking();
     await ui.openAppointments();
     await ui.click("Change time");

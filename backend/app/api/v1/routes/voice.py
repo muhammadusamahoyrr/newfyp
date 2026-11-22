@@ -29,7 +29,18 @@ async def transcribe_audio(
     language: Literal["ur", "en", "auto"] = Form("auto"),
     current_user: dict = Depends(get_current_user),
 ):
-    content = await audio.read()
+    # Bounded read: `await audio.read()` buffered the whole body before the
+    # size check, so a huge upload was held in memory just to be refused.
+    chunks, total = [], 0
+    while True:
+        chunk = await audio.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_BYTES:
+            raise HTTPException(status_code=413, detail="Audio too large. Maximum 10 MB.")
+        chunks.append(chunk)
+    content = b"".join(chunks)
     if not content:
         raise HTTPException(status_code=400, detail="Empty audio file.")
     if len(content) > MAX_BYTES:

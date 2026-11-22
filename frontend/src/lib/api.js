@@ -2385,10 +2385,12 @@ export async function adminListUsers({ page = 1, pageSize = 20, role, search } =
   return apiFetch(`/admin/users?${q}`);
 }
 
-export async function adminCreateUser({ full_name, email, role, password }) {
+// No password: the new user is emailed a link to set their own, so no admin
+// ever knows another person's password. The response carries setup_link_sent.
+export async function adminCreateUser({ full_name, email, role }) {
   return apiFetch('/admin/users', {
     method: 'POST',
-    body: JSON.stringify({ full_name, email, role, password }),
+    body: JSON.stringify({ full_name, email, role }),
   });
 }
 
@@ -2399,11 +2401,10 @@ export async function adminUpdateUser(userId, data) {
   });
 }
 
-export async function adminResetPassword(userId, newPassword) {
-  return apiFetch(`/admin/users/${userId}/reset-password`, {
-    method: 'POST',
-    body: JSON.stringify({ new_password: newPassword }),
-  });
+// Signs the user out everywhere and emails them a reset link. The admin
+// never chooses or sees the new password.
+export async function adminResetPassword(userId) {
+  return apiFetch(`/admin/users/${userId}/reset-password`, { method: 'POST' });
 }
 
 export async function adminDeleteUser(userId) {
@@ -2417,10 +2418,12 @@ export async function adminListCases({ page = 1, pageSize = 20, status, search }
   return apiFetch(`/admin/cases?${q}`);
 }
 
-export async function adminUpdateCaseStatus(caseId, status) {
-  return apiFetch(`/admin/cases/${caseId}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status }),
+// The only case change an admin may make: close or dismiss, with a reason
+// both parties are sent.
+export async function adminEndCase(caseId, status, reason) {
+  return apiFetch(`/admin/cases/${encodeURIComponent(caseId)}/end`, {
+    method: 'POST',
+    body: JSON.stringify({ status, reason }),
   });
 }
 

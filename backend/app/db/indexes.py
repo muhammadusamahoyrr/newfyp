@@ -520,6 +520,46 @@ async def create_all_indexes() -> None:
     await _document_folder_indexes()
     await _meeting_proposal_indexes()
     await _appointment_message_indexes()
+    await _causelist_indexes()
+
+
+async def _causelist_indexes() -> None:
+    """Cause-list watches and the hearings found for them.
+
+    Queries: a lawyer's watches newest first, the scheduler's active watches, a
+    lawyer's upcoming hearings by date, and a deleted watch's entries.
+
+    Guards, both enforced here because the service only reads first:
+    - one watch per (lawyer, case number, court): a double click created two;
+    - one FREE-plan watch per lawyer: a free watch carries `free_slot` =
+      lawyer id, so two quick submits of different cases cannot both pass the
+      count check and both insert;
+    - one entry per (lawyer, case, hearing date, source): a manual check racing
+      the scheduler stored (and notified) the same hearing twice.
+    """
+    from app.db.collections import get_causelist_entries_col, get_causelist_watches_col
+    watches = get_causelist_watches_col()
+    entries = get_causelist_entries_col()
+    await watches.create_indexes([
+        IndexModel([("lawyer_id", ASCENDING), ("created_at", DESCENDING)],
+                   name="causelist_watch_by_lawyer"),
+        IndexModel([("active", ASCENDING)], name="causelist_watch_active"),
+    ])
+    await entries.create_indexes([
+        IndexModel([("lawyer_id", ASCENDING), ("hearing_date", ASCENDING)],
+                   name="causelist_entry_by_lawyer_date"),
+        IndexModel([("watch_id", ASCENDING)], name="causelist_entry_by_watch"),
+    ])
+    await _try_unique_partial(
+        watches, [("lawyer_id", ASCENDING), ("case_no", ASCENDING), ("court", ASCENDING)],
+        "uniq_causelist_watch")
+    await _try_unique_partial(
+        watches, [("free_slot", ASCENDING)], "uniq_causelist_free_slot",
+        filter_expression={"free_slot": {"$type": "string"}})
+    await _try_unique_partial(
+        entries, [("lawyer_id", ASCENDING), ("case_no", ASCENDING),
+                  ("hearing_date", ASCENDING), ("source", ASCENDING)],
+        "uniq_causelist_entry")
 
 
 async def _meeting_proposal_indexes() -> None:
@@ -612,12 +652,19 @@ async def _provenance_indexes() -> None:
         IndexModel([("created_at", DESCENDING)]),
     ])
 
-    # Human relevance judgements. Unique on request_id so re-labelling replaces
-    # a verdict instead of accumulating contradictory duplicates.
+    # Human relevance judgements. Unique per (request_id, labeler): one
+    # annotator re-labelling replaces their own verdict, while a SECOND
+    # annotator adds theirs -- inter-annotator agreement needs both rows.
+    # The old index was unique on request_id alone, so the second annotator's
+    # upsert (labeling_service.save_label) hit a duplicate key; it is dropped.
+    try:
+        await get_retrieval_labels_col().drop_index("uniq_label_request_id")
+    except Exception:  # noqa: BLE001 -- absent is the goal
+        pass
     await _try_unique_partial(
         get_retrieval_labels_col(),
-        [("request_id", ASCENDING)],
-        name="uniq_label_request_id",
+        [("request_id", ASCENDING), ("labeler", ASCENDING)],
+        name="uniq_label_request_labeler",
     )
     await get_retrieval_labels_col().create_indexes([
         IndexModel([("answer_verdict", ASCENDING)]),
@@ -1089,6 +1136,11 @@ async def _payments_indexes() -> None:
         IndexModel([("kind", ASCENDING)]),
         IndexModel([("status", ASCENDING)]),
         IndexModel([("created_at", DESCENDING)]),
+        # Webhook resolution. Every checkout tracker a payment was ever given
+        # is kept, so a provider event for an earlier checkout tab still finds
+        # its payment (handle_webhook).
+        IndexModel([("provider_refs", ASCENDING)], sparse=True),
+        IndexModel([("provider_ref", ASCENDING)], sparse=True),
     ])
     await get_subscriptions_col().create_indexes([
         IndexModel([("lawyer_id", ASCENDING)], unique=True),

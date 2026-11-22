@@ -74,7 +74,7 @@ async def test_admin_created_lawyer_follows_the_setting(repo, monkeypatch, auto,
     from app.services import admin_service
 
     monkeypatch.setattr(settings, "lawyer_auto_approve", auto)
-    await admin_service.create_user("Bilal Ahmed", "bilal@example.com", "lawyer", "Str0ngPass")
+    await admin_service.create_user("Bilal Ahmed", "bilal@example.com", "lawyer")
     assert repo.inserted[-1]["lawyer_profile"]["kyc_verified"] is verified
 
 

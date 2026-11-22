@@ -22,6 +22,12 @@ class UserProfileResponse(BaseModel):
     province: str | None = None
     avatar_url: str | None = None
     is_active: bool = True
+    # A deleted (closed, anonymised) account. The admin list shows it as
+    # such and offers no actions on it.
+    is_closed: bool = False
+    # Set only on the admin create-user response: whether the email with the
+    # set-your-password link actually went.
+    setup_link_sent: bool | None = None
     lawyer_profile: dict | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None

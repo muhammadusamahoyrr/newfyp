@@ -746,7 +746,7 @@ async def _resume_pending(rev: dict) -> str:
 
 # ── scheduled sweep (DOCUMENTS_V2 relay) ──────────────────────────────────────
 
-async def sweep() -> dict:
+async def sweep(*, include_files: bool = True) -> dict:
     """One pass of all V2 background work: materialise pending transition events,
     drain the notification outbox, and reconcile stuck generations.
 
@@ -773,12 +773,21 @@ async def sweep() -> dict:
     # crash leaves a `.claim` marker, and an uncollected claim BLOCKS
     # republication of that key — turning one dropped connection into a
     # permanently unpublishable artifact.
-    staging_swept = store.sweep_staging(older_than_seconds=STAGING_TTL_SECONDS)
-    finals_swept = await _sweep_unreferenced_finals()
-
-    return {"materialized": materialized.get("materialized", 0),
-            **delivered, **reconciled, **trimmed,
-            "staging_swept": staging_swept, "finals_swept": finals_swept}
+    #
+    # `include_files=False` skips it: the background loop runs the Mongo half
+    # every 15 s but this half far less often (main._documents_v2_relay). Staging
+    # files are only collected after an hour and finals after six, yet every
+    # tick re-read EVERY revision's artifact_key and walked both folders.
+    out = {"materialized": materialized.get("materialized", 0),
+           **delivered, **reconciled, **trimmed}
+    if not include_files:
+        return out
+    import asyncio
+    # Directory walk in a worker thread, not on the event loop.
+    out["staging_swept"] = await asyncio.to_thread(
+        store.sweep_staging, older_than_seconds=STAGING_TTL_SECONDS)
+    out["finals_swept"] = await _sweep_unreferenced_finals()
+    return out
 
 
 # Long enough that no live render is still filling a staging file, short enough

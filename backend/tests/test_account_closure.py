@@ -37,7 +37,9 @@ def acct(monkeypatch):
 
     monkeypatch.setattr(us.user_repo, "find_by_id", _find)
     monkeypatch.setattr(us.user_repo, "update_one", _update)
-    monkeypatch.setattr(us, "verify_password", lambda p, h: p == "correct")
+    async def _verify(p, h):
+        return p == "correct"
+    monkeypatch.setattr(us, "verify_password_async", _verify)
 
     import app.db.collections as dbc
     monkeypatch.setattr(dbc, "get_engagements_col", lambda: _Col(state["engagements"]))

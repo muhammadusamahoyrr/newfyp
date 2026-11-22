@@ -5,7 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from app.core.config import settings
 from app.core.exceptions import AuthError
 from app.core.security import decode_token
-from app.core.rate_limit import limiter
+from app.core.rate_limit import enforce_keyed_limit, limiter
 from app.dependencies import get_current_user
 from app.schemas.auth import (
     ForgotPasswordRequest,
@@ -31,6 +31,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
 _REFRESH_MAX_AGE = settings.refresh_token_expire_days * 24 * 3600
+
+# Behind the Next proxy every visitor shares one IP (see app/core/rate_limit.py),
+# so the decorator limits on the pre-auth routes below are a loose GLOBAL
+# ceiling, and the real per-person limit is keyed on the email or token.
 
 
 def _bearer_token(request: Request) -> str | None:
@@ -58,8 +62,9 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
 
 
 @router.post("/register", response_model=StatusResponse)
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 async def register(request: Request, body: RegisterRequest, background: BackgroundTasks):
+    await enforce_keyed_limit("3/minute", "register", body.email)
     user = await auth_service.register(body)
     if user.get("email_verified") is False:
         # After the response, like forgot-password: SMTP takes seconds.
@@ -76,16 +81,18 @@ async def _send_verification_quietly(email: str) -> None:
 
 
 @router.post("/verify-email", response_model=StatusResponse)
-@limiter.limit("10/minute")
+@limiter.limit("60/minute")
 async def verify_email(request: Request, body: VerifyEmailRequest):
+    await enforce_keyed_limit("5/minute", "verify-email", body.token)
     await auth_service.verify_email(body.token)
     return StatusResponse(success=True, message="Email confirmed")
 
 
 @router.post("/resend-verification", response_model=StatusResponse)
-@limiter.limit("3/minute")
+@limiter.limit("30/minute")
 async def resend_verification(request: Request, body: ResendVerificationRequest,
                               background: BackgroundTasks):
+    await enforce_keyed_limit("3/minute", "resend-verification", body.email)
     # Same answer and timing for every address (see forgot-password).
     background.add_task(_send_verification_quietly, body.email)
     return StatusResponse(success=True,
@@ -93,8 +100,9 @@ async def resend_verification(request: Request, body: ResendVerificationRequest,
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit("60/minute")
 async def login(request: Request, body: LoginRequest, response: Response):
+    await enforce_keyed_limit("5/minute", "login", body.email)
     result = await auth_service.login(
         body.email,
         body.password,
@@ -179,8 +187,9 @@ async def _forgot_password_quietly(email: str) -> None:
 
 
 @router.post("/forgot-password", response_model=StatusResponse)
-@limiter.limit("3/minute")
+@limiter.limit("30/minute")
 async def forgot_password(request: Request, body: ForgotPasswordRequest, background: BackgroundTasks):
+    await enforce_keyed_limit("3/minute", "forgot-password", body.email)
     # The lookup, token write and SMTP send run AFTER the response is sent.
     # Awaiting them here returned instantly for unknown emails and slowly for
     # real accounts, so the response time revealed who has an account even
@@ -193,7 +202,8 @@ async def forgot_password(request: Request, body: ForgotPasswordRequest, backgro
 
 
 @router.post("/reset-password", response_model=StatusResponse)
-@limiter.limit("5/minute")
+@limiter.limit("60/minute")
 async def reset_password(request: Request, body: ResetPasswordRequest):
+    await enforce_keyed_limit("5/minute", "reset-password", body.token)
     await auth_service.reset_password(body.token, body.new_password)
     return StatusResponse(success=True, message="Password updated successfully")

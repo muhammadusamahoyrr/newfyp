@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.exceptions import ForbiddenError, ServiceUnavailableError
-from app.dependencies import get_current_user, require_lawyer
+from app.dependencies import get_current_user, require_admin, require_lawyer
 from app.schemas.common import StatusResponse
 from app.ai.provider_health import (
     PURPOSE_DIRECT_CHAT, PURPOSE_DRAFT_STREAM, PURPOSE_MODEL_COMPARE,
@@ -275,10 +275,14 @@ def _build_messages(body: QueryRequest) -> list[dict]:
     return messages
 
 
+# ADMIN ONLY. These two call the model directly: no retrieval, no grounding
+# check, no turn ledger, no audit record and no rate limit. No product screen
+# uses them; left open to every signed-in account they were an unmetered,
+# unaudited LLM endpoint on the shared provider quota.
 @router.post("/query", response_model=AiQueryResult)
 async def ai_query(
     body: QueryRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
 ):
     from app.ai.llm import get_llm
     llm = get_llm(purpose=PURPOSE_DIRECT_CHAT)
@@ -674,9 +678,14 @@ async def ai_research(
         await turns.fail_turn(turn_record["_id"], owner_token, reason="timeout")
         logger.warning("ai.research: turn %s timed out after %ss",
                        turn_record["_id"], turns.TURN_TIMEOUT_S)
-        raise ServiceUnavailableError(
-            "That took longer than expected and was stopped. Your question was "
-            "not lost — send it again, or try a narrower one.") from exc
+        # A machine code as well as the words: the page's automatic retry must
+        # not resend a turn the SERVER stopped (it would run the whole graph a
+        # second time); only a gateway-level failure is worth retrying.
+        raise ServiceUnavailableError({
+            "code": "turn_timeout",
+            "message": "That took longer than expected and was stopped. Your "
+                       "question was not lost — send it again, or try a "
+                       "narrower one."}) from exc
     except Exception as exc:
         await turns.fail_turn(turn_record["_id"], owner_token,
                               reason=type(exc).__name__)
@@ -991,7 +1000,7 @@ async def _run_research_turn(
 @router.post("/query/stream")
 async def ai_query_stream(
     body: QueryRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),   # see ai_query
 ):
     from app.ai.llm import get_llm
     messages = _build_messages(body)

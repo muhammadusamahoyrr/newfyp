@@ -294,6 +294,10 @@ const ModChatbot = () => {
     // Fires if no answer arrives at all. Deliberately longer than the server's
     // own turn timeout, so the server's honest message wins when it can.
     const deadlineRef = useRef(null);
+    // Re-asks "is my answer ready?" while a recovered turn is still running.
+    // The server replies to `resume` once and never pushes the answer to the
+    // new socket by itself, so without asking again the answer is never seen.
+    const resumePollRef = useRef(null);
     // Walking BACKWARDS through history. `olderCursor` is the sequence of the
     // oldest message on screen; the next request asks for what precedes it.
     const [olderCursor, setOlderCursor] = useState(null);
@@ -397,8 +401,20 @@ const ModChatbot = () => {
 
             } else if (msg.type === "pending") {
                 // The turn we asked about is still running. Keep waiting; do
-                // NOT re-send, or the wait becomes a second question.
+                // NOT re-send the question, or the wait becomes a second one.
+                // Ask about the SAME id again shortly: `resume` only reads the
+                // ledger, so it can never start a second run, and it is the
+                // only way the finished answer reaches this socket.
                 setTyping(true);
+                const pendingId = msg.client_message_id;
+                clearTimeout(resumePollRef.current);
+                resumePollRef.current = setTimeout(() => {
+                    if (!pendingId || attemptRef.current?.id !== pendingId) return;   // it landed or was abandoned
+                    if (!socket.isCurrent(ws) || ws.readyState !== WebSocket.OPEN) return;   // a reconnect will ask again
+                    try {
+                        ws.send(JSON.stringify({ action: "resume", client_message_id: pendingId }));
+                    } catch { /* socket died; onopen of the next one resumes */ }
+                }, 4000);
 
             } else if (msg.type === "resume_unknown"
                        || msg.type === "resume_dead") {
@@ -439,14 +455,22 @@ const ModChatbot = () => {
 
             } else if (msg.type === "final") {
                 clearTimeout(deadlineRef.current);
+                clearTimeout(resumePollRef.current);
                 attemptRef.current = null;
                 setTyping(false);
                 setStage(null);
+                // A resume asked while the turn was finishing replays the SAME
+                // stored answer the live socket just delivered. Same audit id
+                // means same answer: show it once.
+
                 // Keep the objects: `status` says whether the answer actually
                 // cited a source or whether it was merely consulted, and the two
                 // must not be presented as the same thing.
                 const citations = normaliseCitations(msg.citations);
-                setMsgs(m => [...m, {
+                // Checked INSIDE the update, against the latest list: two frames
+                // landing in one tick both saw a stale ref when this was a
+                // separate read.
+                setMsgs(m => (msg.request_id && m.some(x => x.role === "ai" && x.requestId === msg.request_id)) ? m : [...m, {
                     role: "ai",
                     text: msg.content || "",
                     time: now,
@@ -744,6 +768,7 @@ const ModChatbot = () => {
             clearTimeout(retryRef.current);
             clearTimeout(stableRef.current);
             clearTimeout(deadlineRef.current);
+            clearTimeout(resumePollRef.current);
             retryCount.current = 99;
             listeningRef.current = false;
             socket.close();

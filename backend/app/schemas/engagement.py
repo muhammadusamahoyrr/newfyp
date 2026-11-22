@@ -87,6 +87,12 @@ class EngagementOut(BaseModel):
     scope_note: str | None = None
     decline_reason: str | None = None
     declined_by: str | None = None
+    # True when the lawyer withdrew terms they had already sent, rather than
+    # declining a bare request; the client's history words the two differently.
+    terms_withdrawn: bool | None = None
+    # "client" when the client withdrew; "system" when the case was taken by
+    # someone else and the request could not go on. Legacy rows: None.
+    cancelled_by: str | None = None
     agreement_id: str | None = None
     # Two-step flow + exits. All optional: an engagement only ever holds the
     # fields for the transitions it has actually been through.

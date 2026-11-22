@@ -623,9 +623,11 @@ const ModLawyers = () => {
         () => hireable(myCases, pendingByCase),
         [myCases, pendingByCase]);
 
-    // Engagement state for one lawyer: "requested" | "accepted" | null
+    // Engagement state for one lawyer: "terms_proposed" | "requested" | "accepted" | null
     const engagementWith = (lawyerId) => {
         if (!lawyerId) return null;
+        // Terms waiting outrank everything: the next step is the client's.
+        if (myEngagements.some(e => e.lawyer_id === lawyerId && e.status === "terms_proposed")) return "terms_proposed";
         if (myEngagements.some(e => e.lawyer_id === lawyerId && e.status === "requested")) return "requested";
         if (myEngagements.some(e => e.lawyer_id === lawyerId && e.status === "accepted")) return "accepted";
         return null;
@@ -2117,6 +2119,12 @@ const ModLawyers = () => {
                                     if (engState === "requested") return (
                                         <button type="button" className="mlp-btn mlp-primary" disabled>Request Pending…</button>
                                     );
+                                    if (engState === "terms_proposed") return (
+                                        <button type="button" className="mlp-btn mlp-primary" disabled
+                                            title="This lawyer sent you terms. Review them under My Hire Requests on the Lawyers page.">
+                                            Terms Received — Review in Hire Requests
+                                        </button>
+                                    );
                                     return (
                                         <button type="button" className="mlp-btn mlp-primary"
                                             disabled={l._id?.startsWith("api-")}
@@ -2503,7 +2511,11 @@ const ModLawyers = () => {
                     ? `${e.lawyer_name || "The lawyer"} withdrew the terms they proposed.${why(e.decline_reason)}`
                     : `${e.lawyer_name || "The lawyer"} declined this request.${why(e.decline_reason)}`;
         }
-        if (e.status === "cancelled") return "You withdrew this request.";
+        if (e.status === "cancelled") {
+            return e.cancelled_by === "system"
+                ? "This request closed because the case was taken up elsewhere."
+                : "You withdrew this request.";
+        }
         if (e.status === "completed") return "The engagement was completed.";
         return `The engagement was ended.${why(e.termination_reason)}`;
     };

@@ -7,16 +7,22 @@ import { adminListLawyers } from "@/lib/api.js";
 export const LawyerMonitoring = ({ T }) => {
   const [lawyers, setLawyers]   = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [modal, setModal]       = useState(null);
   const [sort, setSort]         = useState({ field: "full_name", dir: "asc" });
   const handleSort = (field) => setSort(p => ({ field, dir: p.field === field && p.dir === "asc" ? "desc" : "asc" }));
 
-  useEffect(() => {
+  // A failed load is not "no lawyers registered": say so and offer a retry.
+  const load = () => {
+    setLoading(true);
+    setLoadError(null);
     adminListLawyers().then(({ data, error }) => {
       if (!error && Array.isArray(data)) setLawyers(data);
+      else setLoadError(error?.message || "Could not load lawyers.");
       setLoading(false);
     });
-  }, []);
+  };
+  useEffect(() => { load(); }, []);
 
   const sorted = useMemo(() => {
     return [...lawyers].sort((a, b) => {
@@ -58,6 +64,8 @@ export const LawyerMonitoring = ({ T }) => {
 
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: T.textMuted, fontSize: 14 }}>Loading lawyers…</div>
+        ) : loadError ? (
+          <div role="alert"><EmptyState T={T} icon={IC.balance} title="Could not load lawyers" sub={loadError} actionLabel="Retry" onAction={load} /></div>
         ) : sorted.length === 0 ? (
           <EmptyState T={T} icon={IC.balance} title="No lawyers registered" sub="Lawyers will appear here once they register." />
         ) : (

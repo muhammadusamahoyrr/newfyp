@@ -436,7 +436,11 @@ function SettingsPage() {
     const docCount = KYC_DOCS.filter(([k]) => kyc.docs?.[k]).length;
     const [kycTone, kycLabel] = KYC_STATE[kyc.status === "pending" && docCount === 0 ? "none" : kyc.status] || KYC_STATE.none;
     const tier = sub?.tier || "free";
-    const paid = sub && tier !== "free" && sub.status === "active";
+    // A cancelled plan stays paid until the period it was paid for ends; the
+    // server's get_tier() applies the same rule.
+    const subCancelled = sub?.status === "cancelled";
+    const paid = !!sub && tier !== "free" && (sub.status === "active"
+        || (subCancelled && !!sub.current_period_end && new Date(sub.current_period_end) > new Date()));
     const dark = t.mode === "dark";
     const nSessions = sessions ? sessions.length : null;
     const profileFields = [me?.phone, lp.bar_number, lp.experience_years, lp.hourly_rate, province, lp.address, (lp.bio || "").trim().length >= 40, (lp.specializations || []).length];
@@ -646,12 +650,12 @@ function SettingsPage() {
     const allPlans = [{ tier: "free", name: "Free", price: { monthly: 0, annual: 0 }, blurb: "Try the platform.", features: [] }, ...plans.filter(p => p.tier !== "free")];
     const plan = (
         <section className="st-sec" aria-label="Subscription">
-            {head("Plan & usage", paid ? `You're on the ${sub.tier} plan.${sub.current_period_end ? ` It renews on ${fmtDay(sub.current_period_end)}.` : ""}` : "You're on the Free plan. Upgrade when you need more; you can cancel any time.")}
+            {head("Plan & usage", paid ? `You're on the ${sub.tier} plan.${sub.current_period_end ? (subCancelled ? ` It ends on ${fmtDay(sub.current_period_end)}.` : ` It renews on ${fmtDay(sub.current_period_end)}.`) : ""}` : "You're on the Free plan. Upgrade when you need more; you can cancel any time.")}
             {paid && (
                 <div className="st-card">
                     <div className="st-row">
-                        <span className="tx"><b style={{ textTransform: "capitalize" }}>{sub.tier} · {sub.cycle || "monthly"}</b><small>{sub.status === "cancelled" ? "Cancelled — access continues until the period ends." : "Unlimited cause-list watches, AI research and case-law are unlocked."}</small></span>
-                        <button type="button" className="st-btn ghost" onClick={doCancel} disabled={subBusy}>Cancel plan</button>
+                        <span className="tx"><b style={{ textTransform: "capitalize" }}>{sub.tier} · {sub.cycle || "monthly"}</b><small>{subCancelled ? "Cancelled — access continues until the period ends." : "Unlimited cause-list watches, AI research and case-law are unlocked."}</small></span>
+                        {!subCancelled && <button type="button" className="st-btn ghost" onClick={doCancel} disabled={subBusy}>Cancel plan</button>}
                     </div>
                 </div>
             )}

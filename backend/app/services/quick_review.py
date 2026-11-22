@@ -81,9 +81,17 @@ async def _ensure_indexes() -> None:
 
 
 async def _notify(user_id: str, ntype: NotificationType, title: str, body: str, data: dict) -> None:
+    """Best-effort. Every caller has ALREADY committed its state change; a
+    failed notification write used to turn that success into an error, and the
+    client's retry then met a 409 for something that had worked."""
     # Lazy: the notification service pulls in the websocket layer.
     from app.services.notification_service import create_notification
-    await create_notification(user_id, ntype, title, body, data)
+    try:
+        await create_notification(user_id, ntype, title, body, data)
+    except Exception:  # noqa: BLE001 -- the action stands; the notice is lost
+        import logging
+        logging.getLogger(__name__).exception(
+            "quick review notification %s to %s failed", ntype, user_id)
 
 
 # ── the lawyer's offer ───────────────────────────────────────────────────────
@@ -169,12 +177,51 @@ def _public(req: dict) -> dict:
     }
 
 
+# An `accepting` claim older than this was left by an accept() that never
+# finished (process restart, cancelled request). accept() itself takes seconds.
+_ACCEPTING_STUCK_AFTER = timedelta(minutes=2)
+
+
+async def _recover_stuck_accepting(match: dict) -> None:
+    """Settle `accepting` claims abandoned mid-accept.
+
+    The unique index treats `accepting` as open, and cancel() only matches
+    `requested`, so an abandoned claim used to block the document from every
+    new review request forever. Whether the submission landed is read from the
+    document itself: if it carries this request's id, the lawyer has it and the
+    request is accepted; otherwise nothing was sent and it is waiting again.
+    """
+    now = _now()
+    cutoff = now - _ACCEPTING_STUCK_AFTER
+    async for req in _col().find({**match, "status": _ACCEPTING,
+                                  "$or": [{"accepting_since": {"$lte": cutoff}},
+                                          {"accepting_since": {"$exists": False}}]}):
+        doc = await get_documents_col().find_one({"_id": req["doc_id"]})
+        # "Was it sent?" is answered by the submission's own idempotency
+        # receipt (accept() submits with key quick-review.<id>), which a later
+        # submission cannot overwrite the way it overwrites quick_review_id.
+        from app.services import document_transitions as tx
+        sent = bool(doc) and (
+            doc.get("quick_review_id") == req["_id"]
+            or await tx._find_receipt(doc, req["doc_id"], f"quick-review.{req['_id']}") is not None)
+        if sent:
+            due = now + timedelta(hours=int(req.get("turnaround_hours") or TURNAROUNDS[0]))
+            update = {"$set": {"status": ACCEPTED, "decided_at": now, "due_at": due}}
+        elif doc is None:
+            update = _closing(DOCUMENT_DELETED, "system", now)
+        else:
+            update = {"$set": {"status": OPEN}}
+        await _col().update_one({"_id": req["_id"], "status": _ACCEPTING}, update)
+
+
 async def _expire_due(match: dict) -> None:
     """Close open requests whose window has passed, telling the client.
 
     Lazy, on read: no scheduler is needed for a request nobody is looking at.
     Each one is claimed with a guarded update, so two readers never both notify.
+    Abandoned `accepting` claims are settled first (_recover_stuck_accepting).
     """
+    await _recover_stuck_accepting(match)
     now = _now()
     async for req in _col().find({**match, "status": OPEN, "expires_at": {"$lte": now}}):
         res = await _col().update_one({"_id": req["_id"], "status": OPEN},
@@ -334,7 +381,7 @@ async def accept(*, lawyer_id: str, request_id: str) -> dict:
         raise ConflictError("This request has expired.")
     claimed = await _col().find_one_and_update(
         {"_id": request_id, "lawyer_id": lawyer_id, "status": OPEN},
-        {"$set": {"status": _ACCEPTING}}, return_document=True)
+        {"$set": {"status": _ACCEPTING, "accepting_since": now}}, return_document=True)
     if not claimed:
         raise ConflictError("This request is no longer waiting.")
 

@@ -1,6 +1,7 @@
 'use client';
 // Lawyer AI Legal Page — paste your code here
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { pktToday } from "@/lib/bookingTime.js";
 import VoiceButton, { SendArrow } from "@/components/shared/VoiceButton.jsx";
 import { useToast as useLawyerToast } from "@/components/lawyer/Toast.jsx";
 import { useTheme, ThemeCtx } from "./theme.js";
@@ -584,6 +585,22 @@ function AILegalScreen() {
     // An answer this conversation is still owed after a refresh.
     const [recovering, setRecovering] = useState(false);
     const recoverRef = useRef(null);
+    /* True once the lawyer has left this page. Every background loop here (the
+       stage poll, the retry and busy-wait after a dropped send, the recovery
+       watch) checks it, so leaving stops their requests at once instead of
+       after up to 2.5 minutes. The question itself is NOT cancelled: the server
+       still answers and files it, and reopening the thread shows it.
+       A flag of its own, reset on every mount, rather than bumping
+       openGeneration: dev StrictMode unmounts and remounts once on load, and
+       that must not make a mount-time open look stale. */
+    const leftRef = useRef(false);
+    useEffect(() => {
+        leftRef.current = false;
+        return () => {
+            leftRef.current = true;
+            clearInterval(stagePollRef.current);
+        };
+    }, []);
     const bottomRef = useRef(null);
     useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
 
@@ -791,7 +808,7 @@ function AILegalScreen() {
             await new Promise(r => {
                 recoverRef.current = setTimeout(r, RECOVER_INTERVAL_MS);
             });
-            if (!openGeneration.isCurrent(ticket)) return;      // moved on
+            if (leftRef.current || !openGeneration.isCurrent(ticket)) return;   // moved on
             const { data } = await getResearchConversation(id, { pageSize: 1 });
             if (!openGeneration.isCurrent(ticket)) return;
             if (!data) continue;
@@ -945,7 +962,7 @@ function AILegalScreen() {
         if (!sid || !attemptId) return;
         stagePollRef.current = setInterval(async () => {
             // The attempt moved on, or ended. Either way this poll is stale.
-            if (attemptRef.current?.id !== attemptId) {
+            if (leftRef.current || attemptRef.current?.id !== attemptId) {
                 clearInterval(stagePollRef.current);
                 return;
             }
@@ -1063,14 +1080,34 @@ function AILegalScreen() {
             // failures worth retrying, and exactly the ones a new id would turn
             // into a duplicate charge. A 4xx is a decision; repeating it
             // changes nothing.
+            // A 503 the SERVER sent with `turn_timeout` is not ambiguous: it
+            // stopped the turn itself, and resending would run it again.
             if ((error || !data) && isAmbiguousFailure(status)
-                    && !cancelledRef.current) {
+                    && error?.code !== "turn_timeout"
+                    && !cancelledRef.current && !leftRef.current) {
                 attempt = retryAttempt(attempt);
                 attemptRef.current = attempt;
                 // Same id, so the same turn — but re-armed, because the
                 // previous poll stopped when the attempt object changed.
                 watchStage(sid, attempt.id);
                 ({ data, error, status } = await send(attempt));
+                // 409 on the SAME id means the first send is still being
+                // answered (the connection dropped, the work did not). Ask
+                // again with that id until it lands: a finished turn replays
+                // its stored answer, and asking can never start a second run.
+                const waitUntil = Date.now() + RESEARCH_TIMEOUT_MS;
+                // Only the BUSY 409 clears by waiting (conversation_turns
+                // _BUSY_MESSAGE). The other 409 -- the id reused for different
+                // content -- never clears, so it fails at once.
+                const isBusy = (st, err) => st === 409
+                    && String(err?.message || "").startsWith("Another message is still being answered");
+                while ((error || !data) && isBusy(status, error)
+                        && !cancelledRef.current && !leftRef.current
+                        && Date.now() < waitUntil) {
+                    await new Promise(r => setTimeout(r, 5000));
+                    if (cancelledRef.current || leftRef.current) break;
+                    ({ data, error, status } = await send(attempt));
+                }
             }
 
             if (cancelledRef.current) {
@@ -1160,14 +1197,18 @@ function AILegalScreen() {
         const waiting = attemptRef.current;
         const sid = sessionIdRef.current;
         if (!waiting || !sid) return;
-        cancelledRef.current = true;
-        try { waiting.controller?.abort(); } catch { /* already settled */ }
         // The server says what actually happened — stopped, already answered,
         // already ended. Displaying "Stopped." regardless is a claim the next
         // reload contradicts: the answer it says was discarded is sitting in
-        // the thread.
+        // the thread. So ASK FIRST and abort after: aborting first landed in
+        // the catch, which showed the default "Stopped." before the server's
+        // answer arrived.
         const { data } = await cancelResearchTurn(sid, waiting.id);
+        // The answer landed while we asked: it is on screen, nothing to stop.
+        if (attemptRef.current !== waiting) return;
         stopNoticeRef.current = data?.message || "Stopped.";
+        cancelledRef.current = true;
+        try { waiting.controller?.abort(); } catch { /* already settled */ }
     }, []);
 
     const hasMessages = msgs.length > 0;
@@ -1195,8 +1236,9 @@ function AILegalScreen() {
     }, [rowMenu]);
     // Cases with a hearing coming up, soonest first: the "From your cases"
     // cards. Dates are the case's own next unheard hearing, nothing invented.
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const weekKey = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+    // Pakistan calendar days: UTC keys were a day behind from 00:00 to 05:00 PKT.
+    const todayKey = pktToday();
+    const weekKey = pktToday(new Date(Date.now() + 7 * 864e5));
     const upcoming = apiCases
         .filter(c => c.nextHearing !== "TBD" && c.nextHearing >= todayKey)
         .sort((a, b) => a.nextHearing.localeCompare(b.nextHearing));

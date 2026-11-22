@@ -889,8 +889,8 @@ async def get_document(doc_id: str, requester_id: str, role: str = "client") -> 
     doc = await doc_repo.find_by_id(doc_id)
     if not doc:
         raise NotFoundError("Document")
-    if role == "admin":
-        return await _compat(doc)
+    # No admin pass-through (see case_service._assert_access): document
+    # contents are for the creator and the lawyer on the matter only.
     # The creator can always access their own document (incl. standalone docs with no case)
     if doc.get("client_id") == requester_id:
         return await _compat(doc)
@@ -906,9 +906,7 @@ async def get_document(doc_id: str, requester_id: str, role: str = "client") -> 
 
 
 async def list_documents(case_id: str, requester_id: str, role: str = "client") -> list[dict]:
-    if role == "admin":
-        docs = await doc_repo.find_by_case(case_id)
-    elif role == "lawyer":
+    if role == "lawyer":
         case = await case_repo.find_by_id(case_id)
         if not case or case.get("lawyer_id") != requester_id:
             raise ForbiddenError()

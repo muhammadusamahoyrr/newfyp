@@ -374,10 +374,21 @@ async def submit(
         # the client's instruction was lost and the lawyer's own note came back
         # labelled as the client's. `review_note` now holds only a lawyer's
         # note, so it is cleared for the new cycle.
-        "client_note": note, "review_note": None,
+        # $literal: this runs in an update PIPELINE, where a string starting
+        # with "$" is read as a field path, not as the text the client typed.
+        "client_note": {"$literal": note}, "review_note": None,
         # Which quick review this submission came from, if any -- the lawyer's
         # inbox marks it, since there is no engagement behind it.
         "quick_review_id": quick_review_id,
+        # What the document was before this submission, so a WITHDRAWAL can
+        # put it back: withdrawing a second-opinion request on an approved
+        # document must not erase the approval its unchanged bytes still hold.
+        "pre_submit_status": doc.get("review_status") or "none",
+        # And its notes, read from the document BEFORE this $set (a pipeline
+        # stage sees input values), so that restoring an approval restores
+        # the approver's note and the client's own note too.
+        "pre_submit_notes": {"review_note": "$review_note",
+                             "client_note": "$client_note"},
         "approval_history": {"$concatArrays": [
             {"$ifNull": ["$approval_history", []]},
             {"$cond": [{"$eq": ["$review_status", "approved"]},
@@ -490,7 +501,7 @@ def _cycle(*, reviewer_id: str, action: str, new_status: str,
         # the most recent one, so a second reviewer's note would otherwise be
         # displayed under the first reviewer's decision — complete with the
         # second reviewer's name in it.
-        "note": note,
+        "note": {"$literal": note},   # user text in a pipeline: never a field path
         # The tie back to review_events, once the reconciler gets there.
         "logical_event_id": logical_event_id,
     }
@@ -582,7 +593,7 @@ async def review(
     if action == "approve":
         set_fields = {
             **stamp,
-            "review_status": "approved", "reviewed_at": now, "review_note": note,
+            "review_status": "approved", "reviewed_at": now, "review_note": {"$literal": note},
             "approved_revision_id": "$submitted_revision_id",
             "approved_pdf_sha256": "$submitted_pdf_sha256",
             "approval_binding": "bound_exact", "approved_by": reviewer_id,
@@ -590,7 +601,7 @@ async def review(
     else:  # return / reject clear the submission; approved_* preserved
         set_fields = {
             **stamp,
-            "review_status": new_status, "reviewed_at": now, "review_note": note,
+            "review_status": new_status, "reviewed_at": now, "review_note": {"$literal": note},
             "submitted_to": None, "submitted_revision_id": None,
             "submitted_version": None, "submitted_pdf_sha256": None,
         }
@@ -638,11 +649,35 @@ async def withdraw(*, document_id: str, actor_id: str, idempotency_key: str) -> 
 
     reviewer_id = doc.get("submitted_to")
     submitted_rev = doc.get("submitted_revision_id")
+    # Back to "approved" only when this submission started from an approval of
+    # these exact bytes: same revision submitted as was approved, and still the
+    # client's current revision. Anything else returns to a plain draft.
+    restore_approval = (
+        doc.get("pre_submit_status") == "approved"
+        and submitted_rev is not None
+        and doc.get("approved_revision_id") == submitted_rev
+        and doc.get("current_revision_id") == submitted_rev
+    )
+    new_status = "approved" if restore_approval else "none"
     set_fields = {
-        "review_status": "none", "submitted_to": None,
+        "review_status": new_status, "submitted_to": None,
         "submitted_revision_id": None, "submitted_version": None,
-        "submitted_pdf_sha256": None,
+        "submitted_pdf_sha256": None, "pre_submit_status": None,
+        "pre_submit_notes": None,
     }
+    if restore_approval:
+        history = {"$ifNull": ["$approval_history", []]}
+        set_fields.update({
+            # The notes the approved document carried before this request.
+            "review_note": "$pre_submit_notes.review_note",
+            "client_note": "$pre_submit_notes.client_note",
+            # submit() moved the live approval into approval_history; it is
+            # live again, so that last entry comes back out (no duplicates
+            # from repeated request-then-withdraw).
+            "approval_history": {"$cond": [
+                {"$lte": [{"$size": history}, 1]}, [],
+                {"$slice": [history, {"$subtract": [{"$size": history}, 1]}]}]},
+        })
     notif = _notif(reviewer_id, NotificationType.DOCUMENT_WITHDRAWN,
                    "Document withdrawn",
                    f'A client withdrew "{doc.get("title","a document")}" from review.',
@@ -650,8 +685,10 @@ async def withdraw(*, document_id: str, actor_id: str, idempotency_key: str) -> 
     return await _apply(
         document_id=document_id, actor_id=actor_id, actor_role="client",
         action="withdraw", idempotency_key=idempotency_key, request_body={},
-        guard={"client_id": actor_id, "review_status": "submitted"},
-        set_fields=set_fields, new_status="none",
+        guard={"client_id": actor_id, "review_status": "submitted",
+               "submitted_revision_id": submitted_rev,
+               "current_revision_id": doc.get("current_revision_id")},
+        set_fields=set_fields, new_status=new_status,
         intent_core={"revision_id": submitted_rev, "pdf_sha256": None, "note": None},
         notif=notif)
 
