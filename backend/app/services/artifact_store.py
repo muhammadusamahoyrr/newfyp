@@ -470,6 +470,15 @@ async def sweep_unreferenced_finals(*, referenced, older_than_seconds: int = 360
             "sweep_unreferenced_finals needs the set of referenced artifact "
             "keys; None would delete every published artifact")
 
+    # The directory walk (one stat per file) runs in a worker thread: done
+    # inline it blocked the event loop for the whole walk on every sweep.
+    import asyncio
+    return await asyncio.to_thread(
+        _sweep_unreferenced_finals_sync, referenced, older_than_seconds, limit)
+
+
+def _sweep_unreferenced_finals_sync(referenced, older_than_seconds: int,
+                                    limit: int) -> int:
     docs = _docs_dir()
     if not docs.exists():
         return 0

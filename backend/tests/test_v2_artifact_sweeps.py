@@ -157,3 +157,22 @@ async def _referenced_keys():
             {"artifact_key": {"$ne": None}}, {"artifact_key": 1}):
         keys.add(row["artifact_key"])
     return keys
+
+
+async def test_the_fast_tick_leaves_the_filesystem_alone(mongo, monkeypatch):
+    """The 15-second loop skips the file half on most ticks: no folder walk, no
+    full read of every revision's artifact key."""
+    monkeypatch.setattr(settings, "documents_v2", True)
+    abandoned = _tmp() / "rev-y.0.cafebabe.staging.pdf"
+    abandoned.write_bytes(A[:5])
+    import os
+    old_time = time.time() - 7200
+    os.utime(abandoned, (old_time, old_time))
+
+    out = await v2.sweep(include_files=False)
+    assert "staging_swept" not in out and "finals_swept" not in out
+    assert abandoned.exists()
+
+    out = await v2.sweep()
+    assert out.get("staging_swept", 0) >= 1
+    assert not abandoned.exists()

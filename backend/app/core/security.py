@@ -40,6 +40,20 @@ def verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
+# bcrypt at 12 rounds is ~250 ms of CPU. Called directly from an async route it
+# froze the whole event loop for that long: every other request, websocket and
+# timer waited behind each login. bcrypt releases the GIL while hashing, so a
+# worker thread really does run it alongside the loop. Async code uses these.
+async def hash_password_async(plain: str) -> str:
+    import asyncio
+    return await asyncio.to_thread(hash_password, plain)
+
+
+async def verify_password_async(plain: str, hashed: str) -> bool:
+    import asyncio
+    return await asyncio.to_thread(verify_password, plain, hashed)
+
+
 # A real bcrypt hash of a value nobody holds, compared against when the account
 # does not exist. Without it, an unknown address skipped bcrypt entirely and
 # returned in microseconds while a known address took ~250ms — a timing oracle

@@ -10,7 +10,7 @@ from app.core.constants import (
     NotificationType,
 )
 from app.core.exceptions import AppValidationError, ConflictError, NotFoundError
-from app.core.security import TOKENS_VALID_FROM, hash_password, password_change_cutoff
+from app.core.security import TOKENS_VALID_FROM, hash_password_async, password_change_cutoff
 from app.db.collections import (
     get_admin_audit_col,
     get_agreements_col,
@@ -320,7 +320,7 @@ async def create_user(full_name: str, email: str, role: str,
         "_id": user_id,
         "role": role,
         "email": email.lower(),
-        "password_hash": hash_password(password),
+        "password_hash": await hash_password_async(password),
         "full_name": full_name,
         "phone": None,
         "province": None,
@@ -435,7 +435,7 @@ async def reset_user_password(user_id: str, actor: dict | None = None) -> bool:
     await user_repo.update_one(
         {"_id": user_id},
         {"$set": {
-            "password_hash": hash_password(secrets.token_urlsafe(32)),
+            "password_hash": await hash_password_async(secrets.token_urlsafe(32)),
             # The THIRD password-change path, and the one most likely to be
             # incident response: an admin resets a password precisely when an
             # account is suspected compromised. Without this the attacker's

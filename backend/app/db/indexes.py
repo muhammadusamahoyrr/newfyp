@@ -520,6 +520,46 @@ async def create_all_indexes() -> None:
     await _document_folder_indexes()
     await _meeting_proposal_indexes()
     await _appointment_message_indexes()
+    await _causelist_indexes()
+
+
+async def _causelist_indexes() -> None:
+    """Cause-list watches and the hearings found for them.
+
+    Queries: a lawyer's watches newest first, the scheduler's active watches, a
+    lawyer's upcoming hearings by date, and a deleted watch's entries.
+
+    Guards, both enforced here because the service only reads first:
+    - one watch per (lawyer, case number, court): a double click created two;
+    - one FREE-plan watch per lawyer: a free watch carries `free_slot` =
+      lawyer id, so two quick submits of different cases cannot both pass the
+      count check and both insert;
+    - one entry per (lawyer, case, hearing date, source): a manual check racing
+      the scheduler stored (and notified) the same hearing twice.
+    """
+    from app.db.collections import get_causelist_entries_col, get_causelist_watches_col
+    watches = get_causelist_watches_col()
+    entries = get_causelist_entries_col()
+    await watches.create_indexes([
+        IndexModel([("lawyer_id", ASCENDING), ("created_at", DESCENDING)],
+                   name="causelist_watch_by_lawyer"),
+        IndexModel([("active", ASCENDING)], name="causelist_watch_active"),
+    ])
+    await entries.create_indexes([
+        IndexModel([("lawyer_id", ASCENDING), ("hearing_date", ASCENDING)],
+                   name="causelist_entry_by_lawyer_date"),
+        IndexModel([("watch_id", ASCENDING)], name="causelist_entry_by_watch"),
+    ])
+    await _try_unique_partial(
+        watches, [("lawyer_id", ASCENDING), ("case_no", ASCENDING), ("court", ASCENDING)],
+        "uniq_causelist_watch")
+    await _try_unique_partial(
+        watches, [("free_slot", ASCENDING)], "uniq_causelist_free_slot",
+        filter_expression={"free_slot": {"$type": "string"}})
+    await _try_unique_partial(
+        entries, [("lawyer_id", ASCENDING), ("case_no", ASCENDING),
+                  ("hearing_date", ASCENDING), ("source", ASCENDING)],
+        "uniq_causelist_entry")
 
 
 async def _meeting_proposal_indexes() -> None:

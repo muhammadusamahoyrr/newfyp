@@ -111,7 +111,9 @@ async def test_without_smtp_a_new_account_is_not_locked_out(env, monkeypatch):
 async def test_unconfirmed_login_is_refused_only_after_the_password_is_right(env, monkeypatch):
     svc, users, *_ = env
     await svc.register(_req())
-    monkeypatch.setattr(svc, "verify_password", lambda pw, h: pw == "Str0ngPass")
+    async def _verify(pw, h):
+        return pw == "Str0ngPass"
+    monkeypatch.setattr(svc, "verify_password_async", _verify)
 
     with pytest.raises(AuthError):         # wrong password: says nothing about the account
         await svc.login("ayesha@example.com", "nope")

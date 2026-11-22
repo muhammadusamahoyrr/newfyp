@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authForgotPassword, authResetPassword } from '@/lib/api.js';
 import {
@@ -23,16 +23,21 @@ function ForgotPw({ goBack }) {
   // removed from the address bar, so it does not stay in history.
   const [token, setToken] = useState('');
   const [stage, setStage] = useState('loading');
+  // Dev StrictMode runs effects twice; the first run scrubs the URL, so the
+  // token is read once into this ref and the second run reuses it.
+  const foundToken = useRef(null);
 
   useEffect(() => {
-    const fromHash = new URLSearchParams(window.location.hash.slice(1)).get('token') || '';
-    const fromQuery = params?.get('token') || '';
-    const found = fromHash || fromQuery;
-    if (window.location.hash || fromQuery) {
-      window.history.replaceState(null, '', window.location.pathname);
+    if (foundToken.current === null) {
+      const fromHash = new URLSearchParams(window.location.hash.slice(1)).get('token') || '';
+      const fromQuery = params?.get('token') || '';
+      foundToken.current = fromHash || fromQuery;
+      if (window.location.hash || fromQuery) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
     }
-    setToken(found);
-    setStage(found ? 'reset' : 'request');
+    setToken(foundToken.current);
+    setStage(foundToken.current ? 'reset' : 'request');
   }, []);
 
   const [email, setEmail] = useState('');

@@ -97,3 +97,53 @@ class RateLimitStateDefault:
         if scope["type"] in ("http", "websocket"):
             scope.setdefault("state", {}).setdefault("view_rate_limit", None)
         await self.app(scope, receive, send)
+
+
+# ── Keyed limits (per account, per token) ────────────────────────────────────
+#
+# Every browser request reaches this server through the Next rewrite proxy, and
+# that proxy does not add X-Forwarded-For (router-server proxies external
+# rewrites itself; base-server, which sets the header, never sees them). So
+# get_remote_address() is 127.0.0.1 for EVERY visitor, and an IP-keyed
+# "5/minute" on /auth/login is one bucket shared by everyone: one script making
+# five attempts a minute locked every user out.
+#
+# The pre-auth routes therefore key their real limit on what the request is
+# ABOUT (the email being logged into, the reset token being spent). The
+# decorator's IP limit stays as a loose global ceiling. Same storage as the
+# decorators, so Redis-backed limits stay shared across workers.
+
+class KeyedRateLimited(Exception):
+    """Raised when a keyed limit is exhausted; rendered as the app's usual 429."""
+
+
+def _hit_sync(limit: str, scope: str, key: str) -> bool:
+    """`limit` may combine windows ("10/minute;200/day"); every one must allow."""
+    from limits import parse_many
+    allowed = True
+    for item in parse_many(limit):
+        allowed = limiter.limiter.hit(item, scope, key) and allowed
+    return allowed
+
+
+async def enforce_keyed_limit(limit: str, scope: str, key: str) -> None:
+    """Count one attempt against `scope:key`; raise KeyedRateLimited when over.
+
+    Fails OPEN on a storage error, matching swallow_errors on the decorators:
+    a Redis outage must not lock every user out of login. The hit runs in a
+    thread because the limits storage is synchronous (a Redis round trip
+    would otherwise block the event loop)."""
+    import asyncio
+    import logging
+    norm = (key or "").strip().lower()
+    if not norm:
+        return
+    try:
+        allowed = await asyncio.to_thread(_hit_sync, limit, scope, norm)
+    except Exception as exc:  # noqa: BLE001 - fail open, as the decorators do
+        logging.getLogger(__name__).warning(
+            "keyed rate limit check failed; failing open; scope=%s error_type=%s",
+            scope, type(exc).__name__)
+        return
+    if not allowed:
+        raise KeyedRateLimited(scope)

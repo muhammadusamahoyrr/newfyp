@@ -337,14 +337,21 @@ async def _documents_v2_relay():
     from app.services.document_v2_service import sweep
 
     interval = 15
+    # The filesystem half (orphaned staging files and artifacts, TTLs of 1 h and
+    # 6 h) runs every 40th tick, i.e. every 10 minutes. Every 15 s it re-read
+    # every revision's artifact key and walked both folders for nothing.
+    files_every = 40
+    tick = 0
     while True:
         try:
             await asyncio.sleep(interval)
-            await sweep()
+            await sweep(include_files=(tick % files_every == 0))
         except asyncio.CancelledError:
             raise
         except Exception:
             logging.getLogger(__name__).exception("DOCUMENTS_V2 relay sweep failed")
+        finally:
+            tick += 1
 
 
 async def _analyzer_housekeeping():
@@ -654,6 +661,8 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 # A 422 used to leave nothing in the log but the status code.
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+from app.core.rate_limit import KeyedRateLimited  # noqa: E402
+app.add_exception_handler(KeyedRateLimited, rate_limit_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
 API_PREFIX = "/api/v1"

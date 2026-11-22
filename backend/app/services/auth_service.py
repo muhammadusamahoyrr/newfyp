@@ -21,10 +21,10 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    hash_password,
+    hash_password_async,
     token_storage_key,
     token_predates_password_change,
-    verify_password,
+    verify_password_async,
 )
 from app.db.collections import (
     get_email_verification_col,
@@ -157,7 +157,7 @@ async def register(data: RegisterRequest) -> dict:
         "terms_consent": {"terms_version": TERMS_VERSION,
                           "privacy_version": PRIVACY_VERSION, "accepted_at": now},
         "email": data.email.lower(),
-        "password_hash": hash_password(data.password),
+        "password_hash": await hash_password_async(data.password),
         "full_name": data.full_name,
         "phone": data.phone,
         "province": None,
@@ -186,7 +186,7 @@ async def login(email: str, password: str, *, user_agent: str = "") -> dict:
     # `if user` skipped bcrypt entirely for an unknown address, so the response
     # came back in microseconds instead of ~250ms and the timing said what the
     # message no longer does. Always exactly one checkpw, against a real hash.
-    password_ok = verify_password(
+    password_ok = await verify_password_async(
         password, user["password_hash"] if user else DUMMY_PASSWORD_HASH
     )
 
@@ -484,7 +484,7 @@ async def _apply_password_reset(record: dict, new_password: str) -> None:
         {"_id": user["_id"]},
         {
             "$set": {
-                "password_hash": hash_password(new_password),
+                "password_hash": await hash_password_async(new_password),
                 # End every existing session. A reset is very often triggered
                 # BY a compromise, and without this the attacker's refresh
                 # token stayed valid for up to 7 days afterwards.

@@ -7,9 +7,9 @@ from app.core.constants import KycStatus
 from app.core.exceptions import AppValidationError, ConflictError, ForbiddenError, NotFoundError
 from app.core.security import (
     TOKENS_VALID_FROM,
-    hash_password,
+    hash_password_async,
     password_change_cutoff,
-    verify_password,
+    verify_password_async,
 )
 from app.repositories.user_repo import UserRepository
 from app.services import auth_sessions
@@ -68,14 +68,14 @@ async def change_password(user_id: str, current_password: str, new_password: str
     user = await user_repo.find_by_id(user_id)
     if not user:
         raise NotFoundError("User")
-    if not verify_password(current_password, user["password_hash"]):
+    if not await verify_password_async(current_password, user["password_hash"]):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     if not validate_password_strength(new_password):
         raise AppValidationError(PASSWORD_POLICY)
     changed = await user_repo.update_one(
         {"_id": user_id, "password_hash": user["password_hash"], "is_active": True},
         {"$set": {
-            "password_hash": hash_password(new_password),
+            "password_hash": await hash_password_async(new_password),
             # Same revocation as the reset path. A self-service change is just
             # as likely to be a response to a suspected compromise, and leaving
             # only one of the two paths revoking would be the worse trap.
@@ -255,7 +255,7 @@ async def close_account(user_id: str, password: str) -> dict:
     user = await user_repo.find_by_id(user_id)
     if not user:
         raise NotFoundError("User")
-    if not verify_password(password, user.get("password_hash", "")):
+    if not await verify_password_async(password, user.get("password_hash", "")):
         raise ForbiddenError("Password is incorrect")
 
     return await _close_account_record(user, reason="self_service")
