@@ -208,7 +208,10 @@ async def test_a_research_turn_that_hangs_is_stopped_and_released(
         await ai_routes.ai_research(
             Body(client_message_id="m-hang"), current_user=LAWYER)
 
-    assert "longer than expected" in caught.value.detail
+    # A machine code as well as the words (2026-11-17 audit): the page reads
+    # the code so its automatic retry does not resend a turn the SERVER stopped.
+    assert caught.value.detail["code"] == "turn_timeout"
+    assert "longer than expected" in caught.value.detail["message"]
     # The turn is settled and the conversation is free, so the next question is
     # not refused as busy for the rest of the lease.
     turns = http["turns"]
