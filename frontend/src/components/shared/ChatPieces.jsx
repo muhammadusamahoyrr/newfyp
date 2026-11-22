@@ -63,6 +63,12 @@ export function MessageActions({ text, canRate, rated, onRate, onRegenerate = nu
  * colour with a rounded foot, and one in the page colour (--bub-page) that
  * rounds the outer side back in. Colours follow the theme. */
 export const BUBBLE_CSS = `[data-bubble]{position:relative;background:var(--bub);border-radius:20px}
+/* While a checked answer is typing out (RevealText), what sits under the bubble -- statement checks,
+   sources, lawyer suggestions, copy/rate -- waits until the text is complete, as in a live reply. */
+[data-revealing]>:not([data-bubble]){display:none!important}
+/* ...and inside the bubble too: the lawyer page renders its evidence check and citations there. */
+[data-revealing-text]~*{display:none!important}
+@keyframes aiBlink{50%{opacity:0}}
 [data-bubble]::before,[data-bubble]::after{content:"";position:absolute;bottom:0;height:20px;pointer-events:none}
 [data-bubble]::before{z-index:0;width:20px;background:var(--bub-tail,var(--bub))}
 [data-bubble]::after{z-index:1;width:10px;background:var(--bub-page,var(--bg,#403E42))}

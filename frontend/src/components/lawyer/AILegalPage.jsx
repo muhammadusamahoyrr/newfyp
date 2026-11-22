@@ -26,6 +26,7 @@ import { useAuth } from "@/context/AuthContext.jsx";
 /* The answer actions, bubbles and avatar, as on the client chat (2026-10-19). */
 import { MessageActions, BUBBLE_CSS } from "@/components/shared/ChatPieces.jsx";
 import RichText from "@/components/shared/RichText.jsx";
+import RevealText from "@/components/shared/RevealText.jsx";
 /* Shared with the client chatbot and the case-workspace AI tab. Each of the
    three used to map `citations` itself and they had already drifted — the
    workspace tab dropped `url` and `source`, so a judgment that linked to a
@@ -1136,6 +1137,9 @@ function AILegalScreen() {
                 setPendingQuestion(null);
                 fill({
                     content: data.answer || "No response received.",
+                    // Typed out on screen (RevealText): the final, already
+                    // checked answer. Restored threads are shown at once.
+                    fresh: !!data.answer,
                     // matched | unresolved | retrieved, repeal currency, and a
                     // source link where the document is actually held.
                     citations: normaliseCitations(data.citations),
@@ -1609,7 +1613,7 @@ function AILegalScreen() {
                                             <span data-ai-avatar role="img" aria-label="Attorney.AI"><span /></span>
                                         </div>
                                     )}
-                                    <div style={{ maxWidth: m.role === "user" ? "75%" : "calc(100% - 44px)", minWidth: 0 }}>
+                                    <div data-revealing={m.fresh ? "" : undefined} style={{ maxWidth: m.role === "user" ? "75%" : "calc(100% - 44px)", minWidth: 0 }}>
                                         <div data-bubble={m.role === "user" ? "user" : "ai"} style={{
                                             // Round, with a tail, as on the client chat (2026-10-19).
                                             "--bub": m.role === "user" ? (t.mode === "light" ? "#0B7A8C" : "#2EC4D6") : t.surface,
@@ -1633,7 +1637,12 @@ function AILegalScreen() {
                                                 </div>
                                             )}
                                             {m.role === "assistant" && !m.streaming && m.content
-                                                ? <RichText text={m.convergenceStatus === "general_guidance" ? m.content.replace(/^General guidance — [^\n]*\n+/, "") : m.content} />
+                                                ? <RevealText
+                                                    text={m.convergenceStatus === "general_guidance" ? m.content.replace(/^General guidance — [^\n]*\n+/, "") : m.content}
+                                                    animate={!!m.fresh}
+                                                    render={txt => <RichText text={txt} />}
+                                                    onProgress={() => bottomRef.current?.scrollIntoView({ block: "end" })}
+                                                    onDone={() => m.fresh && setMsgs(ms => ms.map(x => (x === m ? { ...x, fresh: false } : x)))} />
                                                 : (m.content || (m.streaming ? "" : "No response received."))}
                                             {m.streaming && m.content && <span style={{ display: "inline-block", width: 2, height: "1em", background: t.primary, marginLeft: 2, verticalAlign: "text-bottom", animation: "aiBlink 1s step-end infinite" }} />}
                                             {/* A way out of a long wait. Stops

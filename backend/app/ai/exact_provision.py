@@ -165,6 +165,7 @@ def fetch(citations: list[ParsedCitation], research: bool = False,
     be read raises CorpusUnavailable instead -- there "not found" would be
     reported as a checked result when nothing was checked."""
     from app.ai.contextual_index import strip_context
+    from app.ai.source_text_clean import clean_statute_text  # footnote markers (2026-11-22)
     from app.db.chroma import get_chroma
     found: dict[str, list[dict]] = {}
     try:
@@ -191,7 +192,7 @@ def fetch(citations: list[ParsedCitation], research: bool = False,
                 failed += 1
                 continue
             for doc, meta in zip(res.get("documents") or [], res.get("metadatas") or []):
-                chunk = {"content": strip_context(doc, meta), "statute": meta.get("statute", ""),
+                chunk = {"content": clean_statute_text(strip_context(doc, meta)), "statute": meta.get("statute", ""),
                          "section_number": cit.section, "source_file": meta.get("source_file", ""),
                          "chunk_id": meta.get("chunk_id", ""), "province": meta.get("province", "federal"),
                          "law_type": meta.get("law_type", ""), "exact_provision": label(cit),
@@ -219,7 +220,7 @@ def fetch(citations: list[ParsedCitation], research: bool = False,
                                     or meta.get("source_file", "") != anchor.get("source_file", "")):
                                 continue
                             continuations.append((int(other.group(2)), {
-                                "content": strip_context(doc, meta), "statute": meta.get("statute", ""),
+                                "content": clean_statute_text(strip_context(doc, meta)), "statute": meta.get("statute", ""),
                                 "section_number": cit.section, "source_file": meta.get("source_file", ""),
                                 "chunk_id": chunk_id, "province": meta.get("province", "federal"),
                                 "law_type": meta.get("law_type", ""), "exact_provision": label(cit),

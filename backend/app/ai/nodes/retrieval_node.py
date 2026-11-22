@@ -5,6 +5,7 @@ import re
 from langchain_core.documents import Document
 
 from app.ai.contextual_index import strip_context
+from app.ai.source_text_clean import clean_statute_text  # footnote markers (2026-11-22)
 from app.ai.graph.state import AgentState
 from app.ai.llm import get_fast_llm
 from app.ai.provider_health import PURPOSE_QUERY_EXPANSION
@@ -401,7 +402,7 @@ def _docs_to_chunks(docs: list[Document], province: str = "",
             continue
         chunks.append({
             # A contextual index stores prefix + raw text; generation gets the raw text.
-            "content":        strip_context(doc.page_content, meta),
+            "content":        clean_statute_text(strip_context(doc.page_content, meta)),
             "statute":        meta.get("statute", ""),
             # A misattributed chunk carries the section number of whatever
             # heading happened to precede it in the PDF, not its own. Passing

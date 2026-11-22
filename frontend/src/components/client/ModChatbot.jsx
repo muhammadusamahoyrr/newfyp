@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import VoiceButton, { SendArrow } from "@/components/shared/VoiceButton.jsx";
 import RichText from "@/components/shared/RichText.jsx";
+import RevealText from "@/components/shared/RevealText.jsx";
 import { useClientRouter as useRouter } from "./clientNav.js";
 import { useT } from "./theme.js";
 import { useToast } from "@/components/shared/Toast.jsx";
@@ -473,6 +474,10 @@ const ModChatbot = () => {
                 setMsgs(m => (msg.request_id && m.some(x => x.role === "ai" && x.requestId === msg.request_id)) ? m : [...m, {
                     role: "ai",
                     text: msg.content || "",
+                    // Typed out on screen (RevealText). Only a LIVE answer: one
+                    // restored from history is shown at once. The text is the
+                    // final, already-checked answer; nothing unchecked is shown.
+                    fresh: true,
                     time: now,
                     refs: citations,
                     claims: msg.claims || [],
@@ -1283,7 +1288,7 @@ const ModChatbot = () => {
                                             }
                                         </div>
                                     )}
-                                    <div style={{ maxWidth: m.role === "user" ? "75%" : "calc(100% - 44px)", minWidth: 0 }}>
+                                    <div data-revealing={m.fresh ? "" : undefined} style={{ maxWidth: m.role === "user" ? "75%" : "calc(100% - 44px)", minWidth: 0 }}>
                                         <div data-bubble={m.role === "user" ? "user" : "ai"} dir="auto" style={{
                                             // Solid, so the tail is the same colour as the bubble (2026-10-19;
                                             // a gradient left a seam where they meet). The theme is set later.
@@ -1298,7 +1303,12 @@ const ModChatbot = () => {
                                                     Clarification needed
                                                 </div>
                                             )}
-                                            {m.role === "user" ? m.text : <RichText text={m.text} />}
+                                            {m.role === "user" ? m.text : (
+                                                <RevealText text={m.text} animate={!!m.fresh}
+                                                    render={txt => <RichText text={txt} />}
+                                                    onProgress={() => bottomRef.current?.scrollIntoView({ block: "end" })}
+                                                    onDone={() => m.fresh && setMsgs(ms => ms.map(x => (x === m ? { ...x, fresh: false } : x)))} />
+                                            )}
                                         </div>
                                         {/* Statement checks. Surfaced ABOVE the sources panel and
                                             with a always-visible warning line, because the finding
