@@ -171,7 +171,22 @@ async def test_next_action_priority_and_targets():
     assert by["lc-c3"]["next_action"] == {"kind": "open_case", "target_id": "lc-k3"}
 
 
-async def test_a_request_past_its_answer_time_is_not_work():
+async def test_a_request_past_its_answer_time_is_not_work_when_expiry_is_on(monkeypatch):
+    # Expiry ON: the sweep retires it and confirm refuses it, so it is not work.
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "appointment_expiry_enabled", True)
     await _appt("lc-a1", "lc-c1", "pending", 30, expires_hours=-1)
     out, _ = await _by_id()
     assert out["items"] == [], "a lapsed request made a client"
+
+
+async def test_with_expiry_off_a_lapsed_request_is_still_answerable(monkeypatch):
+    """Expiry off (the default, 2026-11-17 audit): the request is still on the
+    Appointments page and can still be accepted, so Clients must agree with
+    the counts in lawyer_actions rather than hide it."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "appointment_expiry_enabled", False)
+    await _appt("lc-a1", "lc-c1", "pending", 30, expires_hours=-1)
+    out, by = await _by_id()
+    assert [i["client_id"] for i in out["items"]] == ["lc-c1"]
+    assert by["lc-c1"]["next_action"] == {"kind": "answer_request", "target_id": "lc-a1"}
