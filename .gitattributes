@@ -5,3 +5,7 @@ backend/analyzer_eval/hypotheses/** -text
 backend/analyzer_eval/pii/** -text
 # Frozen analyzer benchmark results are hashed byte-for-byte (ai_evaluation_record.yaml).
 backend/analyzer_eval/results/** -text
+
+# cmd.exe can fail to find goto/call labels in a batch file with LF-only line
+# endings, so .bat files always check out with CRLF.
+*.bat text eol=crlf

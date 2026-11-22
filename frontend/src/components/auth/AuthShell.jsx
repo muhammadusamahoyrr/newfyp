@@ -17,7 +17,7 @@ const CSS = `${FONTS}
   --glow:rgba(62,224,161,.09);--shadow:0 1px 0 rgba(255,255,255,.05) inset,0 20px 36px -18px rgba(0,0,0,.7);
   --body:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;--display:'Literata',Georgia,serif;
   height:100vh;height:100dvh;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
-  display:grid;grid-template-columns:minmax(0,1fr) clamp(440px,40vw,580px);gap:28px;padding:20px;box-sizing:border-box}
+  display:grid;grid-template-columns:minmax(0,1fr) clamp(420px,36vw,540px);gap:28px;padding:20px;box-sizing:border-box}
 .aai-auth[data-mode="light"]{--bg:#EEF3F1;--card:#FFFFFF;--input:#FFFFFF;--line:#DFDCE3;--line-strong:#C9C5CE;--ink:#1E1C21;--muted:#5A5660;--faint:#625E68;
   --brand:linear-gradient(135deg,#0E8A5F,#0B7A8C);--on-brand:#FFFFFF;--brand-text:#0E7A55;--brand-soft:rgba(14,138,95,.10);--focus:rgba(14,138,95,.22);
   --danger:#B42318;--danger-soft:rgba(180,35,24,.07);--warn:#8A5A00;--warn-soft:rgba(196,140,20,.12);--glow:rgba(14,138,95,.07);
@@ -34,7 +34,7 @@ const CSS = `${FONTS}
 .aa-card::-webkit-scrollbar-track{background:transparent}
 /* The corner glow is part of the background: as an overhanging ::after it would make the scrolling card scroll for nothing. */
 .aa-card{background:radial-gradient(260px 240px at 0% 100%,var(--glow),transparent 70%) no-repeat,var(--card)}
-.aa-form{position:relative;z-index:1;width:100%;max-width:440px;margin:auto;display:grid;gap:11px;text-align:center}
+.aa-form{position:relative;z-index:1;width:100%;max-width:350px;margin:auto;display:grid;gap:11px;text-align:center}
 .aa-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px}
 .aa-brand img{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(0,0,0,.3))}
 .aa-brand b{font-family:var(--display);font-weight:600;font-size:27px;letter-spacing:-.01em}
