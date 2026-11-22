@@ -160,8 +160,58 @@ async def sweep_expired(batch_size: int = EXPIRY_BATCH) -> dict:
 
 
 async def _expire_stale(query: dict) -> None:
-    """The lazy path used by reads and actions (kept name)."""
+    """The lazy path used by reads and actions (kept name). Abandoned
+    `accepting` claims are settled first, so one that goes back to `open` can
+    then expire like any other."""
+    await _recover_stuck_accepting(query)
     await expire_stale(query)
+
+
+# An `accepting` claim older than this was left by an accept() that never
+# finished (process restart, dropped request). accept() itself takes seconds.
+_ACCEPTING_STUCK_AFTER = timedelta(minutes=2)
+
+
+async def _recover_stuck_accepting(query: dict) -> int:
+    """Settle `accepting` claims abandoned mid-accept (audit 2026-11-22, #12).
+
+    The unique index treats `accepting` as open, and withdraw, decline, accept
+    and expiry all match only `open`, so an abandoned claim blocked the case
+    from every new proposal forever. The same fix as Quick Review
+    (quick_review._recover_stuck_accepting): whether the appointment was
+    written is read from the appointments themselves -- one carrying this
+    proposal's id means the client's choice landed, so the proposal is
+    accepted and linked to it; otherwise nothing was booked and it is open
+    again, for the client to choose, the lawyer to withdraw, or expiry.
+    Each move is a compare-and-set on `accepting`, so a slow accept() that
+    finishes after all simply finds nothing left to change.
+    """
+    from app.db.collections import get_appointments_col
+
+    col = get_meeting_proposals_col()
+    now = datetime.now(timezone.utc)
+    cutoff = now - _ACCEPTING_STUCK_AFTER
+    settled = 0
+    async for p in col.find({**query, "status": ACCEPTING,
+                             "$or": [{"accepting_since": {"$lte": cutoff}},
+                                     {"accepting_since": {"$exists": False}}]}):
+        appt = await get_appointments_col().find_one(
+            {"proposal_id": p["_id"], "lawyer_id": p["lawyer_id"]}, {"_id": 1, "scheduled_at": 1})
+        if appt is not None:
+            at = _as_utc(appt["scheduled_at"]) if appt.get("scheduled_at") else None
+            options = [_as_utc(o) for o in p.get("options", [])]
+            update = {"$set": {"status": ACCEPTED, "appointment_id": appt["_id"],
+                               "chosen_index": options.index(at) if at in options else None,
+                               "updated_at": now},
+                      "$unset": {"accepting_since": ""}}
+        else:
+            update = {"$set": {"status": OPEN, "updated_at": now}, "$unset": {"accepting_since": ""}}
+        moved = await col.update_one({"_id": p["_id"], "status": ACCEPTING}, update)
+        if moved.modified_count:
+            settled += 1
+            logger.warning("meeting_proposal_recovered_stuck_accepting proposal_id=%s to=%s",
+                           p["_id"], update["$set"]["status"])
+    return settled
 
 
 async def _diary_clash(lawyer_id: str, at: datetime, minutes: int) -> bool:
@@ -367,9 +417,12 @@ async def accept(proposal_id: str, client_id: str, option_index: int) -> dict:
 
     col = get_meeting_proposals_col()
     # THE CLAIM: only one choice may proceed to write an appointment.
+    # `accepting_since` dates the claim, so an abandoned one can be told apart
+    # from one in progress (_recover_stuck_accepting).
+    claim_at = datetime.now(timezone.utc)
     claimed = await col.update_one(
         {"_id": proposal_id, "client_id": client_id, "status": OPEN},
-        {"$set": {"status": ACCEPTING, "updated_at": datetime.now(timezone.utc)}})
+        {"$set": {"status": ACCEPTING, "accepting_since": claim_at, "updated_at": claim_at}})
     if claimed.modified_count != 1:
         raise ConflictError("This meeting proposal is no longer open.")
     try:
@@ -381,12 +434,13 @@ async def accept(proposal_id: str, client_id: str, option_index: int) -> dict:
     except Exception:
         # Released, so the client can choose another of the times.
         await col.update_one({"_id": proposal_id, "status": ACCEPTING},
-                             {"$set": {"status": OPEN, "updated_at": datetime.now(timezone.utc)}})
+                             {"$set": {"status": OPEN, "updated_at": datetime.now(timezone.utc)},
+                              "$unset": {"accepting_since": ""}})
         raise
     now = datetime.now(timezone.utc)
     await col.update_one({"_id": proposal_id, "status": ACCEPTING}, {"$set": {
         "status": ACCEPTED, "appointment_id": appt["id"], "chosen_index": option_index,
-        "updated_at": now}})
+        "updated_at": now}, "$unset": {"accepting_since": ""}})
     doc.update(status=ACCEPTED, appointment_id=appt["id"], chosen_index=option_index, updated_at=now)
     await _notify(
         proposal_id,
@@ -402,6 +456,7 @@ async def accept(proposal_id: str, client_id: str, option_index: int) -> dict:
 
 async def decline(proposal_id: str, client_id: str, reason: str | None) -> dict:
     reason = (reason or "").strip() or None
+    await _recover_stuck_accepting({"_id": proposal_id, "client_id": client_id})
     now = datetime.now(timezone.utc)
     res = await get_meeting_proposals_col().find_one_and_update(
         {"_id": proposal_id, "client_id": client_id, "status": OPEN},
@@ -423,6 +478,9 @@ async def decline(proposal_id: str, client_id: str, reason: str | None) -> dict:
 
 
 async def withdraw(proposal_id: str, lawyer_id: str) -> dict:
+    # A stuck claim is settled first, so the lawyer can withdraw a proposal an
+    # abandoned accept left behind (or is told it was in fact accepted).
+    await _recover_stuck_accepting({"_id": proposal_id, "lawyer_id": lawyer_id})
     now = datetime.now(timezone.utc)
     res = await get_meeting_proposals_col().find_one_and_update(
         {"_id": proposal_id, "lawyer_id": lawyer_id, "status": OPEN},

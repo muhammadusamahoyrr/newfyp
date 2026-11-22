@@ -347,3 +347,103 @@ async def test_rows_expired_before_the_marker_are_not_notified(world):
     await _stale(world, status="expired")   # an old row: no expiry_notice field
     await svc.sweep_expired()
     assert await _expiry_notices(world["lawyer"]) == []
+
+
+# ── an accept that never finished (audit 2026-11-22, #12) ───────────────────
+#
+# accept() claims the proposal (`accepting`), writes the appointment, then
+# marks it accepted. A crash in between used to leave it `accepting` forever:
+# the unique index counts that as open, and withdraw/decline/accept/expiry all
+# match only `open`, so the case could never get another proposal. A cancelled
+# request is the realistic crash: CancelledError is not an Exception, so the
+# release in accept()'s `except` never runs.
+
+import asyncio  # noqa: E402
+
+
+async def _crash_accept(svc, monkeypatch, proposal_id, client, *, after_write):
+    from app.services import appointment_service
+    real = appointment_service.create_confirmed_from_proposal
+
+    async def dying(**kw):
+        if after_write:
+            await real(**kw)
+        raise asyncio.CancelledError()
+
+    monkeypatch.setattr(appointment_service, "create_confirmed_from_proposal", dying)
+    with pytest.raises(asyncio.CancelledError):
+        await svc.accept(proposal_id, client, 0)
+    monkeypatch.setattr(appointment_service, "create_confirmed_from_proposal", real)
+
+
+async def _age_claim(proposal_id, minutes=3):
+    from app.db.collections import get_meeting_proposals_col
+    await get_meeting_proposals_col().update_one(
+        {"_id": proposal_id},
+        {"$set": {"accepting_since": datetime.now(timezone.utc) - timedelta(minutes=minutes)}})
+
+
+async def _raw(proposal_id):
+    from app.db.collections import get_meeting_proposals_col
+    return await get_meeting_proposals_col().find_one({"_id": proposal_id})
+
+
+async def test_a_crash_before_the_booking_reopens_the_proposal(world, monkeypatch):
+    from app.services import meeting_proposal_service as svc
+    p = await svc.propose(world["lawyer"], _body(world))
+    await _crash_accept(svc, monkeypatch, p["id"], world["client"], after_write=False)
+    assert (await _raw(p["id"]))["status"] == "accepting"          # the stuck state
+
+    # While fresh it is left alone: an accept may genuinely still be running.
+    await svc.list_for(world["client"], "client")
+    assert (await _raw(p["id"]))["status"] == "accepting"
+
+    await _age_claim(p["id"])
+    await svc.list_for(world["client"], "client")
+    raw = await _raw(p["id"])
+    assert raw["status"] == "open" and "accepting_since" not in raw
+    # Open again: the client can choose a time, and nothing was booked twice.
+    res = await svc.accept(p["id"], world["client"], 1)
+    assert res["proposal"]["status"] == "accepted"
+    from app.db.collections import get_appointments_col
+    assert await get_appointments_col().count_documents({"proposal_id": p["id"]}) == 1
+
+
+async def test_the_lawyer_can_withdraw_a_stuck_proposal_and_propose_again(world, monkeypatch):
+    from app.services import meeting_proposal_service as svc
+    p = await svc.propose(world["lawyer"], _body(world))
+    await _crash_accept(svc, monkeypatch, p["id"], world["client"], after_write=False)
+    with pytest.raises(ConflictError):                              # blocked while stuck
+        await svc.propose(world["lawyer"], _body(world))
+    await _age_claim(p["id"])
+    out = await svc.withdraw(p["id"], world["lawyer"])
+    assert out["status"] == "withdrawn"
+    again = await svc.propose(world["lawyer"], _body(world))
+    assert again["status"] == "open"
+
+
+async def test_a_crash_after_the_booking_settles_as_accepted(world, monkeypatch):
+    from app.services import meeting_proposal_service as svc
+    p = await svc.propose(world["lawyer"], _body(world))
+    await _crash_accept(svc, monkeypatch, p["id"], world["client"], after_write=True)
+    from app.db.collections import get_appointments_col
+    appt = await get_appointments_col().find_one({"proposal_id": p["id"]})
+    assert appt is not None and (await _raw(p["id"]))["status"] == "accepting"
+
+    await _age_claim(p["id"])
+    rows = await svc.list_for(world["lawyer"], "lawyer")
+    mine = [r for r in rows if r["id"] == p["id"]][0]
+    assert mine["status"] == "accepted" and mine["appointment_id"] == appt["_id"]
+    assert (await _raw(p["id"]))["chosen_index"] == 0
+    # The case is free again for a new proposal.
+    assert (await svc.propose(world["lawyer"], _body(world, options=[_aligned(6)])))["status"] == "open"
+
+
+async def test_a_claim_from_before_this_fix_is_recovered(world):
+    """Rows stuck before `accepting_since` existed carry no timestamp."""
+    from app.db.collections import get_meeting_proposals_col
+    from app.services import meeting_proposal_service as svc
+    p = await svc.propose(world["lawyer"], _body(world))
+    await get_meeting_proposals_col().update_one({"_id": p["id"]}, {"$set": {"status": "accepting"}})
+    await svc.list_for(world["lawyer"], "lawyer")
+    assert (await _raw(p["id"]))["status"] == "open"
