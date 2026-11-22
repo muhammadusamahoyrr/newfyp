@@ -39,6 +39,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
+from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
 from app.core.config import settings
@@ -237,16 +238,37 @@ async def restore_document(*, client_id: str, document_id: str) -> dict:
         if live is not None:
             return {"id": document_id, "title": live.get("title"), "restored": True}
         raise _not_found()
-    if entry.get("purge_started_at") is not None or _aware(entry["purge_after"]) <= _now():
+    # CLAIM THE ENTRY FIRST (audit 2026-11-22, #11). Restore is two writes -- put
+    # the document back, then drop its trash entry -- and the purge reads only
+    # the trash. A crash between the two left a live document beside a trash
+    # entry, and the purge later destroyed the revisions of a document the
+    # client could still see. The claim and the purge's claim exclude each
+    # other: whichever sets its marker first wins, atomically, and the purge
+    # also refuses to destroy anything whose document is live again.
+    # A retry may claim again (a marker left by a crashed restore is no bar).
+    now = _now()
+    claimed = await trash.find_one_and_update(
+        {"_id": document_id, "client_id": client_id, "purge_started_at": None, "purge_after": {"$gt": now}},
+        {"$set": {"restore_started_at": now}}, return_document=ReturnDocument.AFTER)
+    if claimed is None:
         raise VaultDeletionError(409, "recovery_expired",
                                  "This document can no longer be restored: its recovery period has ended.")
-    doc = {k: v for k, v in entry.items() if k not in ("deleted_at", "deleted_by", "purge_after", "purge_started_at")}
+    doc = {k: v for k, v in claimed.items() if k not in _TRASH_ONLY_FIELDS}
     try:
         await documents.insert_one(doc)
     except DuplicateKeyError:
         pass                                   # a retry already put it back
     await trash.delete_one({"_id": document_id, "client_id": client_id})
     return {"id": document_id, "title": doc.get("title"), "restored": True}
+
+
+# Fields that exist only on the trash entry, never on the live document.
+_TRASH_ONLY_FIELDS = ("deleted_at", "deleted_by", "purge_after", "purge_started_at", "restore_started_at")
+
+# A restore marker older than this belongs to a restore that crashed before it
+# put the document back. The purge clears it so the entry can be purged (its
+# recovery period is over by then); until then the client can simply retry.
+RESTORE_STALE_AFTER = timedelta(minutes=10)
 
 
 async def list_trash(*, client_id: str, limit: int = 50) -> dict:
@@ -263,10 +285,11 @@ async def purge_due(*, limit: int = PURGE_BATCH, now: datetime | None = None) ->
     from app.services import document_deletion, legal_holds
 
     now = now or _now()
-    trash = get_deleted_documents_col()
+    trash, documents = get_deleted_documents_col(), get_documents_col()
     due = await trash.find({"purge_after": {"$lte": now}}).sort("purge_after", 1).limit(limit).to_list(limit)
     totals = {"enabled": settings.documents_v2_deletion_enabled, "due": len(due), "purged": 0,
-              "held": 0, "legal_hold": 0, "revisions_deleted": 0}
+              "held": 0, "legal_hold": 0, "revisions_deleted": 0,
+              "restore_finished": 0, "restore_in_progress": 0}
     if not due:
         return totals
     holds = await legal_holds.active()
@@ -276,9 +299,37 @@ async def purge_due(*, limit: int = PURGE_BATCH, now: datetime | None = None) ->
             continue
         if not settings.documents_v2_deletion_enabled:
             continue                                                    # report-only
-        # From here the document can no longer be restored.
-        await trash.update_one({"_id": entry["_id"], "purge_started_at": None},
-                               {"$set": {"purge_started_at": now}})
+        # THE DOCUMENT IS BACK (audit 2026-11-22, #11): a restore put it in the
+        # Vault and stopped before removing this entry. The entry is a leftover;
+        # finishing that restore is the only safe move. Its revisions belong to
+        # a document the client can see, so nothing is destroyed.
+        if await documents.find_one({"_id": entry["_id"]}, {"_id": 1}) is not None:
+            await trash.delete_one({"_id": entry["_id"]})
+            totals["restore_finished"] += 1
+            continue
+        restoring = _aware(entry.get("restore_started_at"))
+        if restoring is not None:
+            if now - restoring < RESTORE_STALE_AFTER:
+                totals["restore_in_progress"] += 1                      # leave it to the restore
+                continue
+            # A restore claimed it and crashed before putting it back. Release
+            # the marker; the next run purges it (its recovery period is over).
+            await trash.update_one({"_id": entry["_id"], "restore_started_at": entry["restore_started_at"]},
+                                   {"$unset": {"restore_started_at": ""}})
+            continue
+        # From here the document can no longer be restored. The claim excludes
+        # a restore that claimed first; a purge that already started (and was
+        # held) resumes, since its own marker is the one already there.
+        claim = await trash.update_one(
+            {"_id": entry["_id"], "purge_started_at": None, "restore_started_at": None},
+            {"$set": {"purge_started_at": now}})
+        if claim.modified_count == 0:
+            current = await trash.find_one({"_id": entry["_id"]},
+                                           {"purge_started_at": 1, "restore_started_at": 1})
+            if (current is None or current.get("restore_started_at") is not None
+                    or current.get("purge_started_at") is None):
+                totals["restore_in_progress"] += int(bool(current and current.get("restore_started_at")))
+                continue
         held = False
         async for rev in get_document_revisions_col().find({"document_id": entry["_id"]}, {"_id": 1}):
             outcome = await document_deletion.delete_revision(rev["_id"], reason="vault_deleted")

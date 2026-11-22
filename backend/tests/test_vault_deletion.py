@@ -321,3 +321,111 @@ async def test_a_failing_hook_rolls_the_delete_back(rr_on, monkeypatch):
         await vd.delete_document(client_id=CLIENT, document_id=doc_id)
     assert await get_documents_col().find_one({"_id": doc_id}) is not None
     assert await get_deleted_documents_col().find_one({"_id": doc_id}) is None
+
+
+# ── restore vs purge (audit 2026-11-22, #11) ────────────────────────────────
+#
+# Restore is two writes: put the document back, then drop its trash entry. The
+# purge reads only the trash. A crash between the two left a live document
+# beside its trash entry, and the purge later destroyed the revisions of a
+# document the client could still see.
+
+class _CrashOnTrashDelete:
+    """The trash collection, except that removing an entry 'crashes'."""
+
+    def __init__(self, col):
+        self._col = col
+
+    def __getattr__(self, name):
+        return getattr(self._col, name)
+
+    async def delete_one(self, *a, **k):
+        raise RuntimeError("worker died between the two writes of a restore")
+
+
+async def test_a_restore_that_crashed_halfway_is_finished_not_destroyed(db, monkeypatch):
+    doc_id, rev = await seed()
+    await vd.delete_document(client_id=CLIENT, document_id=doc_id)
+
+    real = vd.get_deleted_documents_col
+    monkeypatch.setattr(vd, "get_deleted_documents_col", lambda: _CrashOnTrashDelete(real()))
+    with pytest.raises(RuntimeError):
+        await vd.restore_document(client_id=CLIENT, document_id=doc_id)
+    monkeypatch.setattr(vd, "get_deleted_documents_col", real)
+
+    # The crash state: the document is back AND its trash entry is still there.
+    assert await get_documents_col().find_one({"_id": doc_id}) is not None
+    assert await get_deleted_documents_col().find_one({"_id": doc_id}) is not None
+
+    monkeypatch.setattr(settings, "documents_v2_deletion_enabled", True)
+    await _due(doc_id)
+    report = await vd.purge_due()
+
+    assert (report["restore_finished"], report["purged"], report["revisions_deleted"]) == (1, 0, 0)
+    assert artifact_store.final_exists(rev["artifact_key"]), "the live document's PDF was destroyed"
+    assert await get_document_revisions_col().find_one({"_id": rev["_id"]}) is not None
+    assert await get_documents_col().find_one({"_id": doc_id}) is not None
+    assert await get_deleted_documents_col().find_one({"_id": doc_id}) is None   # leftover cleared
+
+
+async def test_a_leftover_from_before_this_fix_is_also_safe(db, monkeypatch):
+    """Entries left by the old restore carry no marker at all: the purge still
+    sees the live document and destroys nothing."""
+    doc_id, rev = await seed()
+    await vd.delete_document(client_id=CLIENT, document_id=doc_id)
+    entry = await get_deleted_documents_col().find_one({"_id": doc_id})
+    await get_documents_col().insert_one({k: v for k, v in entry.items() if k not in vd._TRASH_ONLY_FIELDS})
+
+    monkeypatch.setattr(settings, "documents_v2_deletion_enabled", True)
+    await _due(doc_id)
+    report = await vd.purge_due()
+    assert (report["restore_finished"], report["revisions_deleted"]) == (1, 0)
+    assert artifact_store.final_exists(rev["artifact_key"])
+
+
+async def test_a_restore_in_progress_is_left_alone_by_the_purge(db, monkeypatch):
+    doc_id, rev = await seed()
+    await vd.delete_document(client_id=CLIENT, document_id=doc_id)
+    await get_deleted_documents_col().update_one(
+        {"_id": doc_id}, {"$set": {"restore_started_at": datetime.now(timezone.utc)}})
+    monkeypatch.setattr(settings, "documents_v2_deletion_enabled", True)
+    await _due(doc_id)
+    report = await vd.purge_due()
+    assert (report["restore_in_progress"], report["purged"], report["revisions_deleted"]) == (1, 0, 0)
+    assert artifact_store.final_exists(rev["artifact_key"])
+    assert (await get_deleted_documents_col().find_one({"_id": doc_id}))["purge_started_at"] is None
+
+
+async def test_an_abandoned_restore_marker_is_released_then_purged(db, monkeypatch):
+    """A restore that crashed BEFORE putting the document back: the document
+    is not live, so after the stale window the purge proceeds as normal."""
+    doc_id, rev = await seed()
+    await vd.delete_document(client_id=CLIENT, document_id=doc_id)
+    old = datetime.now(timezone.utc) - vd.RESTORE_STALE_AFTER - timedelta(minutes=1)
+    await get_deleted_documents_col().update_one({"_id": doc_id}, {"$set": {"restore_started_at": old}})
+    monkeypatch.setattr(settings, "documents_v2_deletion_enabled", True)
+    await _due(doc_id)
+
+    first = await vd.purge_due()
+    assert first["purged"] == 0 and artifact_store.final_exists(rev["artifact_key"])
+    assert "restore_started_at" not in await get_deleted_documents_col().find_one({"_id": doc_id})
+
+    second = await vd.purge_due()
+    assert (second["purged"], second["revisions_deleted"]) == (1, 1)
+    assert not artifact_store.final_exists(rev["artifact_key"])
+
+
+async def test_a_retry_after_a_crashed_restore_completes_it(db, monkeypatch):
+    doc_id, _ = await seed()
+    await vd.delete_document(client_id=CLIENT, document_id=doc_id)
+    real = vd.get_deleted_documents_col
+    monkeypatch.setattr(vd, "get_deleted_documents_col", lambda: _CrashOnTrashDelete(real()))
+    with pytest.raises(RuntimeError):
+        await vd.restore_document(client_id=CLIENT, document_id=doc_id)
+    monkeypatch.setattr(vd, "get_deleted_documents_col", real)
+
+    again = await vd.restore_document(client_id=CLIENT, document_id=doc_id)
+    assert again["restored"] is True
+    assert await get_deleted_documents_col().find_one({"_id": doc_id}) is None
+    restored = await get_documents_col().find_one({"_id": doc_id})
+    assert "restore_started_at" not in restored and "deleted_at" not in restored
