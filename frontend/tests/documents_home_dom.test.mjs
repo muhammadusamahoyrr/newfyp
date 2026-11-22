@@ -195,16 +195,20 @@ test("a failed Create draft keeps the editor open and says why", async () => {
     await p.unmount();
 });
 
-test("the preview lists the details and requirements, and starts in one call", async () => {
+test("the preview is the name, the template text and one button, and starts in one call", async () => {
+    // Cleaned 2026-11-22 (user-approved preview): no category / mode tags,
+    // no "Use this when", no detail chips, no requirements panel.
     const p = await mountHome();
     await click(byLabel(p.container, "Preview Affidavit"));
     const dialog = document.querySelector('[role="dialog"]');
     assert.ok(dialog, "preview did not open");
     assert.equal(p.calls.use.length, 0, "opening the preview started drafting");
-    assert.match(dialog.textContent, /Deponent name/);
-    assert.match(dialog.textContent, /cause of action is stated/);
-    assert.match(dialog.textContent, /not checked automatically/);
+    assert.equal(dialog.querySelector("h2").textContent, "Affidavit");
     assert.match(dialog.textContent, /2 of 3/);
+    assert.doesNotMatch(dialog.textContent, /Use this when|You'll fill|AI reads your case|You fill the details/);
+    assert.doesNotMatch(dialog.textContent, /What the law expects|not checked automatically/);
+    assert.equal(dialog.querySelector("aside"), null, "the side panel is back");
+    assert.equal(buttons(dialog, "Use this template").length, 1);
 
     await click(buttons(dialog, "Use this template")[0]);
     assert.equal(document.querySelector('[aria-label="Template preview"]'), null, "the preview stayed open");
@@ -220,7 +224,7 @@ test("popups render over the whole screen, outside the page", async () => {
     // overlay to the scrolled content: it opened far down and left the sidebar
     // uncovered.
     const p = await mountHome();
-    await click(byLabel(p.container, "Edit Legal Notice"));
+    await click(buttons(p.container.querySelector('[data-template="legal_notice"]'), "Use template")[0]);
     const dialog = document.querySelector('[aria-label="Customize template"]');
     assert.ok(dialog, "the editor did not open");
     assert.ok(!p.container.contains(dialog), "the editor rendered inside the page again");
@@ -246,7 +250,7 @@ test("the preview pages through templates and Escape closes it", async () => {
 test("without the template text the editor opens on an outline, fills details, saves locally and carries them on", async () => {
     dom.window.localStorage.clear();
     const p = await mountHome();
-    await click(byLabel(p.container, "Edit Legal Notice"));
+    await click(buttons(p.container.querySelector('[data-template="legal_notice"]'), "Use template")[0]);
     const dialog = document.querySelector('[aria-label="Customize template"]');
     assert.ok(dialog, "the editor did not open");
     const page = dialog.querySelector('[aria-label="Document text"]');
@@ -305,12 +309,12 @@ test("the templates page replaces the drafting composer with real catalogue tota
     const p = await mountHome();
     assert.equal(p.container.querySelector("#docs-need"), null);
     assert.equal(buttons(p.container, "Plan my draft").length, 0);
-    const overview = p.container.querySelector('[aria-label="Template overview"]');
-    assert.ok(overview);
-    assert.match(overview.textContent, /Total templates3/);
-    assert.match(overview.textContent, /AI-assisted1/);
-    assert.match(overview.textContent, /Categories2/);
-    assert.match(overview.textContent, /Available3/);
+    // The totals are one line now (2026-11-22). The four stat tiles are gone:
+    // "Total templates" and "Available" showed the same number.
+    assert.equal(p.container.querySelector('[aria-label="Template overview"]'), null, "the stat tiles are back");
+    const summary = p.container.querySelector("[data-template-summary]");
+    assert.ok(summary);
+    assert.match(summary.textContent, /3 reviewed templates · 2 areas of law/);
     assert.deepEqual(p.calls.plan, []);
     await p.unmount();
 });
@@ -608,7 +612,7 @@ test("the start screen greets the user and explains what exists", async () => {
 test("the editor opens in its light teal look", async () => {
     const { EDITOR_LIGHT } = await import("../src/components/client/documents/TemplateEditor.jsx");
     const p = await mountHome();
-    await click(byLabel(p.container, "Edit Legal Notice"));
+    await click(buttons(p.container.querySelector('[data-template="legal_notice"]'), "Use template")[0]);
     const dialog = document.querySelector('[aria-label="Customize template"]');
     // jsdom normalises colours to rgb(); compare against the palette's surface.
     const probe = document.createElement("div");
@@ -823,12 +827,18 @@ test("the vault header, stats and sort follow the lawyer Vault (2026-10-10)", as
     await p.unmount();
 });
 
-test("a template card is balanced: name and facts, no description paragraph (2026-10-08)", async () => {
+test("a template card: category, name, what it is for, facts, one action (2026-11-22)", async () => {
     const p = await mountHome();
     const card = p.container.querySelector('[data-template="legal_notice"]');
-    assert.doesNotMatch(card.textContent, /A formal demand before suing/, "the description is not repeated on the card");
-    assert.equal(card.getAttribute("title"), "A formal demand before suing.", "it is the card's tooltip");
-    assert.match(card.textContent, /Civil.*Legal Notice.*2 details to fill.*PDF.*Use template/s);
+    // The description is on the card now, so templates can be told apart.
+    assert.match(card.querySelector("[data-template-description]").textContent, /A formal demand before suing/);
+    assert.match(card.textContent, /Civil.*Legal Notice.*A formal demand before suing.*2 details to fill.*Use template/s);
+    // Removed: "PDF" (every template is one) and the Edit button (it did what Use template does).
+    assert.doesNotMatch(card.textContent, /PDF/);
+    assert.equal(byLabel(card, "Edit Legal Notice"), undefined, "the duplicate Edit button is back");
+    // The mode marker shows only where the mode changes what happens.
+    const mode = card.querySelector("[data-template-mode]");
+    if (mode) assert.match(mode.textContent, /AI-assisted|Calculator/);
     await p.unmount();
 });
 
@@ -875,7 +885,7 @@ test("the editor opens on the template's wording and fills it live", async () =>
     api.__respond("templateText", t => (t === "legal_notice"
         ? { data: { template_type: t, text_html: NOTICE_TEXT } } : undefined));
     const p = await mountHome();
-    await click(byLabel(p.container, "Edit Legal Notice"));
+    await click(buttons(p.container.querySelector('[data-template="legal_notice"]'), "Use template")[0]);
     const dialog = document.querySelector('[aria-label="Customize template"]');
     const page = dialog.querySelector('[aria-label="Document text"]');
     assert.match(page.textContent, /called upon to pay within fifteen days/);

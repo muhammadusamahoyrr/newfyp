@@ -578,7 +578,9 @@ function EditorWindow({ spec, onClose, onUse, cases = [] }) {
 
                 {/* Page + details */}
                 <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-                    <div data-lenis-prevent style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "#EEF3F1", padding: "clamp(10px, 3vw, 28px)" }}>
+                    {/* Thin edge and thin scrollbar: the grey gutter beside the
+                        paper was wasted width (2026-11-22). */}
+                    <div data-lenis-prevent className="thin-scrollbar" style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "#EEF3F1", padding: "14px 10px" }}>
                         <div
                             ref={editorRef}
                             contentEditable={canEdit}
@@ -594,7 +596,7 @@ function EditorWindow({ spec, onClose, onUse, cases = [] }) {
                             onClick={onPageClick}
                             className="doc-editor-page"
                             style={{
-                                maxWidth: 820, minHeight: "100%", margin: "0 auto", background: "#fff", color: "#1d2a2e",
+                                minHeight: "100%", margin: "0 auto", background: "#fff", color: "#1d2a2e",
                                 borderRadius: 6, boxShadow: "0 1px 2px rgba(10,40,50,.06), 0 12px 32px -14px rgba(10,40,50,.25)", boxSizing: "border-box",
                                 padding: "clamp(24px, 6vw, 72px) clamp(20px, 7vw, 80px)", outline: "none",
                                 fontFamily: `Arial, ${PAPER_FONT}`, fontSize: 15, lineHeight: 1.75,
@@ -654,10 +656,16 @@ function EditorWindow({ spec, onClose, onUse, cases = [] }) {
 
                 {/* Footer: one main step; save and download beside it. */}
                 <footer style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "12px 20px", borderTop: `1px solid ${LINE}`, background: "#FAFDFC" }}>
-                    <span style={{ fontSize: 12.5, color: MUTED, marginRight: "auto" }}>
-                        {counts.chars.toLocaleString()} characters · {counts.words.toLocaleString()} words · Saves in this browser only
-                        {!canEdit && " · editing isn't supported in this browser"}
-                    </span>
+                    {/* A create problem takes the counts' place on the same row, so
+                        the footer never grows a second line (2026-11-22). */}
+                    {createIssue ? (
+                        <span role="alert" style={{ fontSize: 13, color: "#B42318", marginRight: "auto" }}>{createIssue}</span>
+                    ) : (
+                        <span style={{ fontSize: 12.5, color: MUTED, marginRight: "auto" }}>
+                            {counts.chars.toLocaleString()} characters · {counts.words.toLocaleString()} words · Saves in this browser only
+                            {!canEdit && " · editing isn't supported in this browser"}
+                        </span>
+                    )}
                     {savedAt && <button type="button" className="te-btn danger" onClick={resetToOutline}>Reset to original</button>}
                     <button type="button" className="te-btn" onClick={save} disabled={!dirty && Boolean(savedAt)}>
                         <Svg d={I.save} s={16} />{dirty || !savedAt ? "Save changes" : "Saved ✓"}
@@ -681,7 +689,6 @@ function EditorWindow({ spec, onClose, onUse, cases = [] }) {
                             </div>
                         )}
                     </span>
-                    {createIssue && <span role="alert" style={{ flexBasis: "100%", order: -1, fontSize: 13, color: "#B42318" }}>{createIssue}</span>}
                     <button type="button" className="te-btn primary" data-create-draft onClick={useTemplate} disabled={creating}
                         title="Create the draft and open it in your drafting workspace">
                         {creating ? "Creating draft…" : "Create draft"}<Svg d={I.arrow} s={16} w={2.4} />

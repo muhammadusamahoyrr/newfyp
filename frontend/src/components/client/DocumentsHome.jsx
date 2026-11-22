@@ -8,43 +8,23 @@
  * an entry, a risk level or a clause.
  *
  * The preview shows the template's own wording, as its PDF builder writes it
- * (`GET /documents/templates/{type}/text`), each detail as a marked blank, and
- * what the law expects of it. Until 2026-10-19 it showed only the field names,
- * which made every template look empty. A PDF-only template still shows that
- * outline, and says why.
- *
- * The requirements list is `GET /documents/requirements/{type}` — what the
- * Code requires, for the user to CONFIRM. The server marks every item
- * `to_confirm`, and so does this screen. It is never shown as a pass.
+ * (`GET /documents/templates/{type}/text`), each detail as a marked blank.
+ * Until 2026-10-19 it showed only the field names, which made every template
+ * look empty. A PDF-only template still shows that outline, and says why.
+ * Since 2026-11-22 (user-approved clean-up) the preview is only the name, the
+ * template text and one button: no tags, detail chips or side panel.
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "./theme.js";
 import { tint } from "./clientTheme.js";
 import { humanise } from "@/lib/fieldReview.js";
-import { pleadingRequirements } from "@/lib/api.js";
 import TemplateEditor, { loadTemplateText, realTextHtml } from "./documents/TemplateEditor.jsx";
 import { LIcon } from "./documents/icons.jsx";
 import {
-    Btn, IconBtn, Chip, Pill, Label, Card, Paper, Icon, ModalPortal, BACKDROP,
+    Btn, IconBtn, Chip, Card, Paper, Icon, ModalPortal, BACKDROP,
     SERIF, TOKEN_STYLE, VALUE_STYLE, fieldStyle, onPrimary,
 } from "./documents/ui.jsx";
-
-/* What each drafting mode means to the person choosing, in their words. */
-const MODE_VIEW = {
-    ai: { pill: "AI reads your case", tone: "info", explain: "Fill the details on the template's own text, or fill them from a linked case and check each one. The draft then opens in your drafting workspace." },
-    manual: { pill: "You fill the details", tone: "muted", explain: "You fill the details on the template's own text. Nothing is guessed for you. The draft then opens in your drafting workspace." },
-    dedicated: { pill: "Calculator", tone: "medium", explain: "Built by a dedicated calculator, because it needs exact figures and tables rather than free text." },
-};
-
-const COURT_CATEGORIES = ["Civil", "Criminal", "Court", "Family"];
-
-function tileFor(spec) {
-    // `ink`: the same kind of tile on the dashboard palette (clientTheme.js).
-    if (/notice/i.test(spec.label || "")) return { icon: Icon.mail, bg: "#1d3f5a", fg: "#9fd0f5", ink: "var(--c-contract)" };
-    if (COURT_CATEGORIES.includes(spec.category)) return { icon: Icon.court, bg: "#2f2a4a", fg: "#c9bff5", ink: "var(--teal-ink)" };
-    return { icon: Icon.contract, bg: "#1f4a4f", fg: "#3fd6c6", ink: "var(--brand-text)" };
-}
 
 const TRY_PROMPTS = [
     "Notice to a tenant for unpaid rent",
@@ -73,42 +53,6 @@ export function templateMatches(spec, query) {
 
 function textFields(spec) {
     return (spec.fields || []).filter(f => !(spec.structured_fields || []).includes(f));
-}
-
-function useRequirements(templateType) {
-    const [state, setState] = useState({ loading: true, report: null });
-    useEffect(() => {
-        let live = true;
-        setState({ loading: true, report: null });
-        pleadingRequirements(templateType).then(res => {
-            if (live) setState({ loading: false, report: res?.error ? null : (res?.data || null) });
-        });
-        return () => { live = false; };
-    }, [templateType]);
-    return state;
-}
-
-function RequirementsList({ t, templateType }) {
-    const { loading, report } = useRequirements(templateType);
-    if (loading) return <div style={{ fontSize: 12.5, color: t.textMuted }}>Checking what this document must contain…</div>;
-    const items = report?.covered ? (report.items || []) : [];
-    if (!items.length) return null;
-    return (
-        <div data-requirements-preview>
-            <Label>What the law expects in it</Label>
-            <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
-                {items.map(item => (
-                    <li key={item.clause + item.requirement} style={{ display: "flex", gap: 8, fontSize: 12.5, color: t.text, lineHeight: 1.5 }}>
-                        <span aria-hidden="true" style={{ color: t.textMuted }}>○</span>
-                        <span>{item.requirement}{item.clause ? <span style={{ color: t.textMuted }}> — {item.clause}</span> : null}</span>
-                    </li>
-                ))}
-            </ul>
-            <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 8 }}>
-                A checklist to confirm against your draft — not checked automatically.
-            </div>
-        </div>
-    );
 }
 
 /* Escape closes, focus starts on the close button. */
@@ -163,7 +107,8 @@ function useTemplateText(type) {
 function TemplatePaper({ spec, values = {} }) {
     const fields = textFields(spec);
     const [text, retry] = useTemplateText(spec.template_type);
-    const paperStyle = { padding: "30px 40px", lineHeight: 1.6, minHeight: "100%" };
+    // The paper fills the whole preview window now, so the text sits further in.
+    const paperStyle = { padding: "40px 72px", lineHeight: 1.6, minHeight: "100%" };
     if (text === undefined) {
         return <Paper width={2000} style={paperStyle}><p style={{ color: "#5b6b6f", margin: 0 }}>Loading the template…</p></Paper>;
     }
@@ -223,26 +168,22 @@ const PREVIEW_CSS = `[data-tpl-preview] .tp-nav{display:inline-flex;align-items:
 [data-tpl-preview] .tp-nav button:hover,[data-tpl-preview] .tp-close:hover{background:var(--hover-tint,rgba(255,255,255,.08));color:var(--brand-text,inherit)}
 [data-tpl-preview] .tp-nav button:focus-visible,[data-tpl-preview] .tp-close:focus-visible{outline:2px solid var(--brand-text,#3fd6c6);outline-offset:-2px}`;
 
-function PreviewDialog({ t, list, index, onIndex, onClose, onUse, onCustomize, dedicatedHref }) {
+function PreviewDialog({ t, list, index, onIndex, onClose, onUse, dedicatedHref }) {
     const closeRef = useDialog(onClose);
     const spec = list[index];
-    const mode = MODE_VIEW[spec.drafting_mode] || MODE_VIEW.manual;
-    const fields = textFields(spec);
     const go = d => onIndex((index + d + list.length) % list.length);
     const dedicated = spec.drafting_mode === "dedicated";
     return (
         <Overlay onClose={onClose} pad={24}>
-            {/* Layout (2026-10-19): the paper fills its column (no empty band
-                beside it) and scrolls inside; the side panel's actions are a
-                footer pinned to its bottom, never floating mid-panel. */}
+            {/* Layout (2026-11-22, approved preview): the name, the template
+                text and one button. The paper fills the window (a thin edge,
+                no empty band) and scrolls inside; the button is a footer. */}
             <style>{PREVIEW_CSS}</style>
             <div role="dialog" aria-modal="true" aria-label="Template preview" data-tpl-preview onClick={e => e.stopPropagation()}
                 style={{ width: "min(1080px, 100%)", height: "min(780px, calc(100vh - 48px))", margin: "auto 0", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 18, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 30px 80px rgba(0,0,0,.5)" }}>
                 <header style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px 12px 22px", borderBottom: `1px solid ${t.border}` }}>
                     <div style={{ minWidth: 0, flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
                         <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 20, fontWeight: 600, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{spec.label}</h2>
-                        <Pill tone="info">{spec.category}</Pill>
-                        <Pill tone={mode.tone}>{mode.pill}</Pill>
                     </div>
                     <div className="tp-nav" style={{ borderColor: t.border }}>
                         <button type="button" aria-label="Previous template" title="Previous template" onClick={() => go(-1)}><LIcon name="chevronLeft" size={18} stroke={2.2} /></button>
@@ -251,36 +192,16 @@ function PreviewDialog({ t, list, index, onIndex, onClose, onUse, onCustomize, d
                     </div>
                     <button type="button" className="tp-close" aria-label="Close preview" title="Close preview" onClick={onClose} ref={closeRef}><LIcon name="x" size={19} stroke={2.2} /></button>
                 </header>
-                <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "minmax(0, 1fr) 350px" }}>
-                    <div data-lenis-prevent className="hide-scrollbar" style={{ minHeight: 0, overflowY: "auto", padding: 18 }}>
-                        <TemplatePaper spec={spec} />
-                    </div>
-                    <aside style={{ minHeight: 0, display: "flex", flexDirection: "column", borderLeft: `1px solid ${t.border}` }}>
-                        <div data-lenis-prevent className="hide-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 18 }}>
-                            <div><Label>Use this when</Label><div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 6, color: t.text }}>{spec.description}</div></div>
-                            {!dedicated && fields.length > 0 && (
-                                <div>
-                                    <Label>You'll fill {fields.length} details</Label>
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
-                                        {fields.map(f => <Pill key={f} tone="medium" style={{ fontSize: 12, fontWeight: 500, padding: "3px 9px" }}>{humanise(f)}</Pill>)}
-                                    </div>
-                                </div>
-                            )}
-                            <RequirementsList t={t} templateType={spec.template_type} />
-                        </div>
-                        <footer style={{ flex: "none", padding: "14px 20px 18px", borderTop: `1px solid ${t.border}`, display: "flex", flexDirection: "column", gap: 12 }}>
-                            <div style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: t.textMuted }}>
-                                <LIcon name="info" size={15} style={{ marginTop: 2 }} />
-                                <span>{mode.explain}</span>
-                            </div>
-                            {dedicated ? (
-                                <Btn kind="primary" href={dedicatedHref(spec)}>Open dedicated calculator</Btn>
-                            ) : (
-                                <Btn kind="primary" onClick={() => onUse(spec)}>Use this template <LIcon name="arrowRight" size={16} stroke={2.2} /></Btn>
-                            )}
-                        </footer>
-                    </aside>
+                <div data-lenis-prevent className="hide-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "12px 12px 0" }}>
+                    <TemplatePaper spec={spec} />
                 </div>
+                <footer style={{ flex: "none", padding: "14px 20px", borderTop: `1px solid ${t.border}`, display: "flex", justifyContent: "flex-end" }}>
+                    {dedicated ? (
+                        <Btn kind="primary" href={dedicatedHref(spec)}>Open dedicated calculator</Btn>
+                    ) : (
+                        <Btn kind="primary" onClick={() => onUse(spec)}>Use this template <LIcon name="arrowRight" size={16} stroke={2.2} /></Btn>
+                    )}
+                </footer>
             </div>
         </Overlay>
     );
@@ -540,15 +461,11 @@ export default function DocumentsHome({
     }, [list]);
     const shown = list.filter(spec =>
         (category === "All" || spec.category === category) && templateMatches(spec, query));
-    const availableCount = templates === null ? "—" : list.length;
-    const aiCount = templates === null ? "—" : list.filter(spec => spec.drafting_mode === "ai").length;
-    const categoryCount = templates === null ? "—" : new Set(list.map(spec => spec.category).filter(Boolean)).size;
-    const overview = [
-        { label: "Total templates", value: availableCount, color: "#4d7df3", bg: "#edf3ff", ink: "var(--teal-ink)", sub: "Reviewed legal builders", icon: Icon.contract },
-        { label: "AI-assisted", value: aiCount, color: "#16a45b", bg: "#eaf9f0", ink: "var(--brand-text)", sub: "AI fills them from your case", icon: Icon.spark },
-        { label: "Categories", value: categoryCount, color: "#9333ea", bg: "#f7efff", ink: "var(--c-contract)", sub: "Areas of law covered", icon: Icon.folder },
-        { label: "Available", value: availableCount, color: "#e85d04", bg: "#fff4e8", ink: "var(--gold)", sub: "Ready to draft as PDF", icon: Icon.download },
-    ];
+    // The counts sit in the section's subtitle (2026-11-22). Four stat tiles
+    // used to show them -- "Total templates" and "Available" were the same
+    // number, and the block pushed the templates below the fold.
+    const templateCount = templates === null ? null : list.length;
+    const categoryCount = templates === null ? null : new Set(list.map(spec => spec.category).filter(Boolean)).size;
     // On the dashboard's palette (clientTheme.js) the cards and icons take its
     // surface and soft accents; otherwise the original colours stay.
     const onTokens = !!t.onTokens;
@@ -585,42 +502,16 @@ export default function DocumentsHome({
                 )}
             </div>
 
-            {onTokens ? (
-                /* The lawyer review inbox's stat cards, as the client's own copy
-                   (clientTheme.js .ch-stat): icon and label, the figure, a line
-                   saying what it counts, each in its own accent. */
-                <section aria-label="Template overview" className="ch-stats">
-                    {overview.map(item => (
-                        <div key={item.label} className="ch-stat" style={{ "--c": item.ink }}>
-                            <span className="ic" aria-hidden="true">{item.icon}</span>
-                            <span className="l">{item.label}</span>
-                            <span className="v" data-keep-font>{item.value}</span>
-                            <span className="s">{item.sub}</span>
-                        </div>
-                    ))}
-                </section>
-            ) : (
-            <section aria-label="Template overview" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16 }}>
-                {overview.map(item => (
-                    <Card key={item.label} style={{ minHeight: 112, padding: "20px 22px", display: "flex", alignItems: "center", gap: 16, boxSizing: "border-box", background: t.mode === "dark" ? (t.cardHi || t.card) : "#ffffff", boxShadow: t.mode === "dark" ? "none" : "0 2px 8px rgba(24, 42, 48, 0.06)" }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ color: t.textDim || t.text, fontSize: 14, fontWeight: 500 }}>{item.label}</div>
-                            <div style={{ marginTop: 8, color: t.text, fontSize: 28, lineHeight: 1, fontWeight: 700 }}>{item.value}</div>
-                        </div>
-                        <span style={{ width: 52, height: 52, flexShrink: 0, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: t.mode === "dark" ? `${item.color}22` : item.bg, color: item.color }}>
-                            {item.icon}
-                        </span>
-                    </Card>
-                ))}
-            </section>
-            )}
-
             <section id="templates" aria-label="Document templates" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {/* Row 1: the heading, and search on the far right. Row 2: the
                     category filters on a line of their own (2026-10-08). */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                     <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 20, fontWeight: 600, color: onTokens ? "var(--brand-text)" : t.text }}>Start from a template</h2>
-                    <span style={{ fontSize: 13, color: t.textMuted }}>Reviewed builders · you only fill the details</span>
+                    <span data-template-summary style={{ fontSize: 13, color: t.textMuted }}>
+                        {templateCount !== null
+                            ? `${templateCount} reviewed templates · ${categoryCount} areas of law · you only fill the details`
+                            : "Reviewed builders · you only fill the details"}
+                    </span>
                     <div style={{ flex: 1 }} />
                     {/* `.ch-search`: the lawyer Cases search's hover and focus ring. */}
                     <div data-template-search className={onTokens ? "ch-search" : undefined} style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 12px", borderRadius: 10, border: `1px solid ${query ? t.primary : (t.inputBorder || t.border)}`, background: t.inputBg, width: "min(280px, 100%)", marginLeft: "auto" }}>
@@ -656,32 +547,39 @@ export default function DocumentsHome({
                 ) : (
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(290px, 100%), 1fr))", gap: 16 }}>
                         {shown.map((spec, i) => {
-                            const mode = MODE_VIEW[spec.drafting_mode] || MODE_VIEW.manual;
-                            const tile = tileFor(spec);
                             const dedicated = spec.drafting_mode === "dedicated";
+                            const ai = spec.drafting_mode === "ai";
                             const n = textFields(spec).length;
+                            // A small marker only where the mode changes what happens
+                            // (AI fills from the case; a calculator works out figures).
+                            // "You fill the details" is the default and needs none.
+                            const markInk = ai ? (onTokens ? "var(--brand-text)" : t.primary) : t.textMuted;
                             return (
-                                /* Balanced card (2026-10-08): icon and mode on top, the
-                                   name, the facts, the actions. The
-                                   description is not repeated here -- it is the
-                                   card's tooltip and the first line of Preview. */
+                                /* Cleaned card (2026-11-22): category and mode marker,
+                                   the name, what it is for, the facts, the actions.
+                                   Removed: the icon tile (the same scales icon on
+                                   almost every card), the mode pill on every card,
+                                   "PDF" (every template is one), and the Edit button
+                                   (it did exactly what "Use template" does). */
                                 <Card key={spec.template_type} data-template={spec.template_type} title={spec.description} className={onTokens ? "ch-tcard" : undefined}
-                                    style={{ display: "flex", flexDirection: "column", gap: 12, padding: 18, minHeight: 0, boxSizing: "border-box" }}>
-                                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-                                        <span style={{ width: 44, height: 44, borderRadius: 12, ...(onTokens ? tint(tile.ink) : { background: tile.bg, color: tile.fg }), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{tile.icon}</span>
-                                        <Pill tone={mode.tone} style={onTokens ? (mode.tone === "info" ? tint("var(--teal-ink)") : { background: "var(--chip-n)", color: "var(--muted)" }) : undefined}>{mode.pill}</Pill>
+                                    style={{ display: "flex", flexDirection: "column", gap: 10, padding: 18, minHeight: 0, boxSizing: "border-box" }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, minHeight: 20 }}>
+                                        <span data-template-category style={{ fontSize: 12, fontWeight: 600, color: t.textMuted }}>{spec.category}</span>
+                                        {(ai || dedicated) && (
+                                            <span data-template-mode={spec.drafting_mode} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: markInk }}>
+                                                <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: ai ? 999 : 2, background: ai ? markInk : "transparent", border: ai ? "none" : `1.5px solid ${markInk}` }} />
+                                                {ai ? "AI-assisted" : "Calculator"}
+                                            </span>
+                                        )}
                                     </div>
-                                    <div style={{ minHeight: 64 }}>
-                                        <div data-template-category style={{ fontSize: 12, fontWeight: 600, color: t.textMuted }}>{spec.category}</div>
-                                        <h3 style={{ margin: "3px 0 0", fontSize: 16.5, fontWeight: 600, color: t.text, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{spec.label}</h3>
+                                    <h3 style={{ margin: 0, fontSize: 16.5, fontWeight: 600, color: t.text, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{spec.label}</h3>
+                                    {spec.description && (
+                                        <p data-template-description style={{ margin: 0, fontSize: 13.5, lineHeight: 1.45, color: t.textMuted, minHeight: 39, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{spec.description}</p>
+                                    )}
+                                    <div style={{ fontSize: 13, color: t.textMuted, marginTop: "auto", paddingTop: 4 }}>
+                                        {dedicated ? "Calculated figures" : n > 0 ? `${n} details to fill` : "No details needed"}
                                     </div>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: t.textMuted }}>
-                                        <span>{dedicated ? "Calculated figures" : n > 0 ? `${n} details to fill` : "No details needed"}</span>
-                                        <span>PDF</span>
-                                    </div>
-                                    <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
-                                        {/* Round Edit and Preview, in that order (2026-10-08). */}
-                                        {!dedicated && <IconBtn label={`Edit ${spec.label}`} onClick={() => setCustomize(spec)} style={roundBtn} className={onTokens ? "ch-ib" : undefined}><LIcon name="squarePen" size={18} /></IconBtn>}
+                                    <div style={{ display: "flex", gap: 8 }}>
                                         <IconBtn label={`Preview ${spec.label}`} onClick={() => setPreview(i)} style={roundBtn} className={onTokens ? "ch-ib" : undefined}><LIcon name="eye" size={18} /></IconBtn>
                                         {dedicated ? (
                                             <Btn href={dedicatedToolHref(spec)} style={{ flex: 1, minHeight: 38, color: t.primary }}>Open dedicated calculator</Btn>
@@ -701,7 +599,6 @@ export default function DocumentsHome({
             {preview !== null && shown[preview] && (
                 <PreviewDialog t={t} list={shown} index={preview} onIndex={setPreview}
                     onClose={() => setPreview(null)} onUse={spec => use(spec)}
-                    onCustomize={spec => { setPreview(null); setCustomize(spec); }}
                     dedicatedHref={dedicatedToolHref} />
             )}
             {customize && (

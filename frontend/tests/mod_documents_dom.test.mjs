@@ -349,7 +349,8 @@ test("wording changed in the template editor becomes the drafted document's text
         revision_id: "rev-2", pdf_sha256: "b".repeat(64), version: 2, template_type: "edited_document" } });
 
     const p = await mountDocuments();
-    await press(p, byLabel(p.container, "Edit Bail Application"));
+    await press(p, [...p.container.querySelector('[data-template="bail_application"]').querySelectorAll("button")]
+        .find(b => b.textContent.trim() === "Use template"));   // the Edit button is gone (2026-11-22)
     const page = editor().querySelector('[aria-label="Document text"]');
     assert.match(page.textContent, /prays for bail/);
     // The client rewrites a sentence, keeping the detail's placeholder.
