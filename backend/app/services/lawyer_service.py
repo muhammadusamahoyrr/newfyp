@@ -43,7 +43,17 @@ def _sanitize(user: dict) -> dict:
     """
     from app.services.user_service import _sanitize as _shared_sanitize
 
-    return _shared_sanitize(user)
+    out = _shared_sanitize(user)
+    # NO KYC IN THE PUBLIC VIEW (audit 2026-11-22, low #1). Every caller of this
+    # function serves clients (directory, matching), and the shared helper keeps
+    # `lawyer_profile.kyc_*` because a lawyer's OWN profile needs it. Here it
+    # leaked uploaded KYC file names, an admin's rejection reason and the
+    # erasure bookkeeping to anyone browsing lawyers. No client screen reads any
+    # kyc_ field.
+    lp = out.get("lawyer_profile")
+    if isinstance(lp, dict) and any(k.startswith("kyc_") for k in lp):
+        out["lawyer_profile"] = {k: v for k, v in lp.items() if not k.startswith("kyc_")}
+    return out
 
 
 def _inject_coords(user: dict) -> dict:

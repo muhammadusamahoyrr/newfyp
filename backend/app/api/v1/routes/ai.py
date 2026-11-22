@@ -1612,6 +1612,25 @@ class ModelCompareResult(BaseModel):
     fastest: str = ""
 
 
+def _safe_provider_error(exc: Exception) -> str:
+    """What a failed provider call may tell the caller: the exception type and
+    a fixed category, never the provider's own text (audit 2026-11-22, low #3).
+    That text can quote request URLs, account or organisation ids, or key
+    prefixes, and it went to the browser verbatim."""
+    text = str(exc).lower()
+    if "429" in text or "rate limit" in text or "rate_limit" in text or "tokens per" in text:
+        kind = "rate limited (429)"
+    elif "timeout" in text or "timed out" in text or isinstance(exc, TimeoutError):
+        kind = "timed out"
+    elif any(s in text for s in ("401", "403", "unauthorized", "forbidden", "api key", "api_key")):
+        kind = "the provider rejected the credentials"
+    elif any(s in text for s in ("500", "502", "503", "504", "unavailable", "overloaded")):
+        kind = "the provider is unavailable"
+    else:
+        kind = "the request failed"
+    return f"{type(exc).__name__}: {kind}"
+
+
 async def _ask_one(provider: str, model: str, llm, system: str, query: str,
                    max_chars: int) -> ModelAnswer:
     """Run one provider. Never raises — a dead provider is a RESULT, not a 500.
@@ -1632,7 +1651,7 @@ async def _ask_one(provider: str, model: str, llm, system: str, query: str,
     except Exception as exc:
         return ModelAnswer(
             provider=provider, model=model, ok=False,
-            error=f"{type(exc).__name__}: {exc}"[:400],
+            error=_safe_provider_error(exc),
             latency_ms=round((time.perf_counter() - started) * 1000, 1),
         )
 

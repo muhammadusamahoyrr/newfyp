@@ -521,6 +521,38 @@ async def create_all_indexes() -> None:
     await _meeting_proposal_indexes()
     await _appointment_message_indexes()
     await _causelist_indexes()
+    await _lookup_indexes()
+
+
+async def _lookup_indexes() -> None:
+    """Plain lookup indexes for collections that had none (audit 2026-11-22,
+    low #8). Each matches the query its service actually runs, so a lookup is
+    an index walk instead of a scan of the whole collection.
+
+      property_disputes         a client's disputes; a lawyer's assigned ones
+      case_files                a lawyer's private files on a case, newest first
+      appointment_files         an appointment's files, oldest first (+ count)
+      appointment_thread_reads  one user's read marks across many appointments
+    """
+    from app.db.collections import get_disputes_col
+    from app.db.mongodb import get_database
+    db = get_database()
+    await get_disputes_col().create_indexes([
+        IndexModel([("client_id", ASCENDING)], name="property_dispute_by_client"),
+        IndexModel([("assigned_lawyer_id", ASCENDING)], name="property_dispute_by_lawyer"),
+    ])
+    await db["case_files"].create_indexes([
+        IndexModel([("case_id", ASCENDING), ("owner_id", ASCENDING), ("created_at", DESCENDING)],
+                   name="case_files_by_case_owner"),
+    ])
+    await db["appointment_files"].create_indexes([
+        IndexModel([("appointment_id", ASCENDING), ("created_at", ASCENDING)],
+                   name="appointment_files_by_appointment"),
+    ])
+    await db["appointment_thread_reads"].create_indexes([
+        IndexModel([("user_id", ASCENDING), ("appointment_id", ASCENDING)],
+                   name="appointment_thread_reads_by_user"),
+    ])
 
 
 async def _causelist_indexes() -> None:

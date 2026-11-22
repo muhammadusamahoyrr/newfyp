@@ -3173,7 +3173,14 @@ function AppointmentsScreen() {
             const out = [];
             for (const c of res.data.items) {
                 (c.hearing_dates || []).forEach((h, i) => {
-                    const day = typeof h.date === "string" ? h.date.slice(0, 10) : new Date(h.date).toISOString().slice(0, 10);
+                    // One bad date must cost only its own entry. toISOString()
+                    // throws on an invalid date, and the throw reached the
+                    // .catch below, so the calendar showed NO hearings at all
+                    // (audit 2026-11-22, low #4).
+                    let day;
+                    try {
+                        day = typeof h?.date === "string" ? h.date.slice(0, 10) : new Date(h?.date).toISOString().slice(0, 10);
+                    } catch { return; }
                     const iso = pktSlotToUtcISO(day, h.time || "10:00");
                     if (!iso) return;
                     out.push({ key: `${c._id}-${h._id || i}`, at: new Date(iso), title: c.title || "Case",

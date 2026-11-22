@@ -684,3 +684,29 @@ test("a day off is closed on the grid and says so; the chosen range is remembere
     try { localStorage.removeItem(RANGE_KEY); } catch {}
     await ui.unmount();
 });
+
+/* ── one bad hearing date (audit 2026-11-22, low #4) ──────────────────────
+ * toISOString() throws on an invalid date; the throw reached the read's
+ * .catch, so ONE malformed hearing left the calendar with no hearings at all. */
+test("one malformed hearing date does not hide every other hearing", async (t) => {
+    const pinned = new Date(`${TODAY}T10:30:00+05:00`).getTime();
+    t.mock.method(Date, "now", () => pinned);
+    api.__respond("listAppointments", ok({ items: [], total: 0, pages: 1 }));
+    api.__respond("listCases", ok({ items: [
+        { _id: "bad", title: "Broken record", hearing_dates: [{ _id: "hb", date: { not: "a date" }, time: "11:00" }, { _id: "hn" }] },
+        { _id: "c1", title: "Rent arrears: Gulberg flat",
+          hearing_dates: [{ _id: "h1", date: `${TODAY}T00:00:00Z`, time: "12:00", court: "Rent Tribunal Lahore", purpose: "Arguments" }] },
+    ], pages: 1, total: 2 }));
+    api.__respond("getMyWorkingHours", ok({ configured: true, enforced: true,
+        working_hours: [0, 1, 2, 3, 4, 5, 6].map(weekday => ({ weekday, start: "09:00", end: "17:00" })), exceptions: [] }));
+    const ui = await mountCalendar();
+    await openCalendar(ui);
+    const doc = dom.window.document;
+    await ui.press(doc.querySelector('[aria-label^="Calendar range:"]'));
+    await ui.press([...doc.querySelectorAll('[role="option"]')].find(o => o.textContent === "Weekly"));
+    const column = doc.querySelector(`[data-slot-column="${TODAY}"]`);
+    const chips = [...column.querySelectorAll(".rb-chip")];
+    assert.ok(chips.some(c => /Rent arrears/.test(c.textContent)), "a bad hearing elsewhere hid this one");
+    assert.ok(!chips.some(c => /Broken record/.test(c.textContent)));
+    await ui.unmount();
+});

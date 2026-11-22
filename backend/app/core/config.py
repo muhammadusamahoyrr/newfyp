@@ -220,6 +220,11 @@ class Settings(BaseSettings):
     # App
     app_env: str = "development"
     frontend_url: str = "http://localhost:3001"
+    # Optional contact sent in the User-Agent of OpenStreetMap (Nominatim)
+    # geocoding requests. Nominatim asks for an identifying User-Agent, which
+    # the app name already is; a contact is optional. Empty by default so no
+    # personal address leaves the server (it was hard-coded before 2026-11-22).
+    geocoding_contact: str = ""
     cors_origins: str = ""            # extra allowed origins, comma-separated
     run_schedulers: bool = True       # in-process schedulers; disable on all but one worker
     # How often each worker checks the provenance outbox. Cheap when idle:

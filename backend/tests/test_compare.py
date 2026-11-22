@@ -157,3 +157,15 @@ async def test_compare_requires_a_lawyer(monkeypatch):
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         r = await c.post(f"{API}/ai/compare", json={"query": "q"})
     assert r.status_code in (401, 403)
+
+
+async def test_a_providers_raw_error_text_never_reaches_the_caller(client, monkeypatch):
+    """Audit 2026-11-22, low #3: the exception text went out verbatim, and a
+    provider's error can quote URLs, organisation ids or key prefixes."""
+    secret = "Invalid API key gsk_live_ABC123 for org org-9f2e at https://api.example.com/v1?k=1"
+    _fake_providers(monkeypatch, [("groq", "m1", FakeLLM(boom=RuntimeError(secret)))])
+    r = await client.post(f"{API}/ai/compare", json={"query": "q"})
+    err = r.json()["answers"][0]["error"]
+    assert err == "RuntimeError: the provider rejected the credentials"
+    for leaked in ("gsk_", "org-9f2e", "https://", "ABC123"):
+        assert leaked not in err

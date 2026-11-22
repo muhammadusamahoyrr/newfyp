@@ -15,6 +15,15 @@ _PROVINCE_COORDS: dict[str, tuple[float, float]] = {
 }
 
 
+def _user_agent() -> str:
+    """Identifies the app to Nominatim, as its usage policy asks. A contact is
+    added only when GEOCODING_CONTACT is configured: a personal email used to be
+    hard-coded here and was sent with every lookup (audit 2026-11-22, low #7)."""
+    from app.core.config import settings
+    contact = (getattr(settings, "geocoding_contact", "") or "").strip()
+    return f"AttorneyAI/1.0 ({contact})" if contact else "AttorneyAI/1.0"
+
+
 async def geocode_address(address: str) -> tuple[float, float] | None:
     """Return (lat, lng) for a free-text address via Nominatim, or None on failure."""
     try:
@@ -22,7 +31,7 @@ async def geocode_address(address: str) -> tuple[float, float] | None:
             resp = await client.get(
                 _NOMINATIM_URL,
                 params={"q": address, "format": "json", "limit": 1, "countrycodes": "pk"},
-                headers={"User-Agent": "AttorneyAI/1.0 (muhammadusamahoyrr@gmail.com)"},
+                headers={"User-Agent": _user_agent()},
             )
             hits = resp.json()
             if hits:

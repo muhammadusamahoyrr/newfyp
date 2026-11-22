@@ -95,9 +95,20 @@ export default function App({ initialPage = "dashboard" }) {
 
         (async () => {
             const { data, error } = await getMe();
+            if (cancelled) return;
             // Fail OPEN. A network blip must never lock a lawyer out of the app —
-            // that was the whole failure mode this gate used to have.
-            if (cancelled || error || !data) return;
+            // that was the whole failure mode this gate used to have. Returning
+            // here was not enough: with no cache (a new browser, cleared site
+            // data) the wizard was already shown optimistically above, and a
+            // failed read left the lawyer on it (audit 2026-11-22, low #5). Only
+            // a cache that says "not onboarded" keeps the wizard up.
+            if (error || !data) {
+                if (cached !== "0") {
+                    setPage(prev => (prev !== "onboarding" ? prev
+                        : initialPage === "onboarding" ? "dashboard" : initialPage));
+                }
+                return;
+            }
 
             const onboarded = isLawyerOnboarded(data);
             try { localStorage.setItem(ONBOARDED_KEY, onboarded ? "1" : "0"); } catch {}

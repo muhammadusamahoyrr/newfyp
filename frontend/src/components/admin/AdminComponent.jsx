@@ -11,8 +11,11 @@ export const Ic = ({ d, size = 18, color = "currentColor", sw = 1.8, fill = "non
 );
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-export const Avatar = ({ name, size = 38, bg }) => {
-  const initials = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+export const Avatar = ({ name: rawName, size = 38, bg }) => {
+  // A user with no name (or a deleted account) used to crash the whole admin
+  // table here: name.split on undefined (audit 2026-11-22, low #6).
+  const name = String(rawName ?? "").trim() || "?";
+  const initials = name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "?";
   const palette = ["#2C606E", "#1A3A42", "#3A7A8A", "#4A6B5A", "#3D5A6D"];
   const c = bg || palette[name.charCodeAt(0) % palette.length];
   return (
