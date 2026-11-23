@@ -41,7 +41,8 @@ const click = (el) => act(async () => { el.dispatchEvent(new MouseEvent("click",
 
 test("the refinement is on, scoped, and readable", () => {
     assert.equal(theme.CLIENT_THEME_REFINED, true);
-    assert.match(theme.CLIENT_REFINED_CSS, /\[data-client-theme\]\[data-refined\]:not\(\[data-mode="light"\]\)\{--bg:#0B1B1F/);
+    // Dark = the approved chat preview's colours (2026-11-23); System is untouched.
+    assert.match(theme.CLIENT_REFINED_CSS, /\[data-client-theme\]\[data-refined\]:not\(\[data-mode="light"\]\)\{--bg:#0E2024;--bg-a:#0E2024F5;--surface:#16343A;--input:#17353B/);
     assert.match(theme.CLIENT_REFINED_CSS, /\[data-client-theme\]\[data-refined\]\[data-mode="light"\]\{--bg:#EEF3F1/);
     // the old palette is still there, untouched, for the off-switch
     assert.match(theme.CLIENT_TOKENS_CSS, /--bg:#403E42/);

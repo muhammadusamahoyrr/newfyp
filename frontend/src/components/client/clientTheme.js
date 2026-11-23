@@ -66,7 +66,10 @@ export const CLIENT_TOKENS_CSS = `@import url('https://fonts.googleapis.com/css2
  * What it fixes (WCAG contrast measured):
  *  - dark: the page (#403E42 grey) was LIGHTER than its cards (#183840) and a
  *    different hue, so cards sank into it (1.18:1). The page is now a deeper
- *    shade of the cards' own teal, and cards sit above it (1.41:1).
+ *    shade of the cards' own teal, and cards sit above it. Since 2026-11-23
+ *    (user chose "preview jesa") the Dark choice uses the approved chat
+ *    preview's colours: page #0E2024, sidebar/cards #16343A, inputs #17353B.
+ *    Buttons and the System look are unchanged.
  *  - faint text: dark 4.1 -> 8.4:1, light 3.65 -> 5.6:1 (minimum 4.5).
  *  - light page: lavender-grey -> a light tint of the brand green.
  *  - light primary: white on #0E8A5F was 4.36:1 -> #0E7A55, 5.34:1.
@@ -82,7 +85,7 @@ export const CLIENT_THEME_REFINED =
     (typeof process === "undefined" || process.env?.NEXT_PUBLIC_CLIENT_THEME_REFINED !== "0");
 
 export const CLIENT_REFINED_CSS = `
-[data-client-theme][data-refined]:not([data-mode="light"]){--bg:#0B1B1F;--bg-a:#0B1B1FF5;--faint:#A7B6BA}
+[data-client-theme][data-refined]:not([data-mode="light"]){--bg:#0E2024;--bg-a:#0E2024F5;--surface:#16343A;--input:#17353B;--faint:#A7B6BA}
 [data-client-theme][data-refined][data-mode="light"]{--bg:#EEF3F1;--bg-a:#EEF3F1F5;--faint:#625E68;--brand-text:#0E7A55}
 [data-client-theme][data-refined] .ch-pill-solid{background:linear-gradient(135deg,#0E7468 0%,#137A52 100%)!important}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
