@@ -20,8 +20,10 @@ import { requestNewMatter } from "./newMatter.js";
  *
  * Scoped by [data-overview]; colours are the client tokens (clientTheme.js). */
 const OVERVIEW_CSS = `[data-overview]{display:flex;flex-direction:column;gap:18px}
-[data-overview] .ov-card{position:relative;border-radius:20px;border:1px solid color-mix(in srgb,var(--brand-text) 14%,var(--line));background:radial-gradient(120% 110% at 100% 0%,color-mix(in srgb,var(--c,var(--brand-text)) 9%,transparent) 0%,transparent 55%),linear-gradient(180deg,color-mix(in srgb,var(--surface) 88%,#fff 12%),var(--surface));box-shadow:inset 0 1px 0 rgba(255,255,255,.1),inset 0 -3px 0 rgba(0,0,0,.2),0 14px 28px -16px rgba(0,0,0,.7)}
-[data-overview] .ov-well{border-radius:14px;background:radial-gradient(120% 120% at 100% 0%,color-mix(in srgb,var(--c,var(--brand-text)) 9%,transparent) 0%,transparent 60%),linear-gradient(180deg,color-mix(in srgb,var(--surface-2) 88%,#fff 4%),var(--surface-2));border:1px solid color-mix(in srgb,var(--c,var(--brand-text)) 16%,var(--line));box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+[data-overview]{--ov-line:var(--line);--ov-well:var(--surface-2)}
+[data-client-theme][data-mode="light"] [data-overview]{--ov-line:#D9E2DE;--ov-well:#F3F7F5}
+[data-overview] .ov-card{position:relative;border-radius:20px;border:1px solid var(--ov-line);background:var(--surface);box-shadow:var(--shadow-rest)}
+[data-overview] .ov-well{border-radius:14px;background:var(--ov-well);border:1px solid var(--ov-line)}
 [data-overview] .ov-lbl{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
 [data-overview] .ov-h{margin:0;font-size:16px;font-weight:700;color:var(--ink)}
 [data-overview] .ov-link{border:0;background:none;padding:4px 6px;border-radius:8px;color:var(--brand-text);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
@@ -51,10 +53,10 @@ const OVERVIEW_CSS = `[data-overview]{display:flex;flex-direction:column;gap:18p
 [data-overview] .ov-bell:hover svg{animation:ovRing .6s ease}
 @keyframes ovRing{0%,100%{transform:rotate(0)}20%{transform:rotate(16deg)}40%{transform:rotate(-14deg)}60%{transform:rotate(9deg)}80%{transform:rotate(-5deg)}}
 [data-overview] .ov-bell i{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#f28b80}
-[data-overview] .ov-hero{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;padding:24px 26px;background:radial-gradient(80% 140% at 100% 0%,color-mix(in srgb,var(--brand-text) 16%,transparent) 0%,transparent 60%),linear-gradient(180deg,color-mix(in srgb,var(--surface) 85%,#fff 15%),var(--surface))}
+[data-overview] .ov-hero{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;padding:24px 26px;background:var(--surface)}
 [data-overview] .ov-hello{margin:4px 0 0;font-size:34px;font-weight:600;line-height:1.15;color:var(--ink);letter-spacing:-.2px}
-[data-overview] .ov-need{--nb:#1c9c66;display:flex;align-items:center;gap:14px;padding:14px 16px;color:var(--ink);border-color:color-mix(in srgb,var(--nb) 40%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--nb) 16%,var(--surface-2)),var(--surface-2) 65%)}
-[data-overview] .ov-need.calm{border-color:color-mix(in srgb,var(--brand-text) 30%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--brand-text) 12%,var(--surface-2)),var(--surface-2) 65%)}
+[data-overview] .ov-need{--nb:#1c9c66;display:flex;align-items:center;gap:14px;padding:14px 16px;color:var(--ink);border-color:color-mix(in srgb,var(--nb) 40%,var(--ov-line));background:color-mix(in srgb,var(--nb) 7%,var(--ov-well))}
+[data-overview] .ov-need.calm{border-color:var(--ov-line);background:var(--ov-well)}
 [data-overview] .ov-ic{width:40px;height:40px;flex:none;border-radius:12px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 17%,transparent)}
 [data-overview] .ov-need .ov-btn{height:38px;padding:0 18px;border:0;background:linear-gradient(135deg,#12897f,#1c9c66);color:#fff;box-shadow:0 8px 20px -10px rgba(28,156,102,.85)}
 [data-overview] .ov-need .ov-btn:hover{filter:brightness(1.08);background:linear-gradient(135deg,#12897f,#1c9c66)}
@@ -80,7 +82,7 @@ const OVERVIEW_CSS = `[data-overview]{display:flex;flex-direction:column;gap:18p
 [data-overview] .ov-seg button{height:26px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:600;cursor:pointer}
 [data-overview] .ov-seg button[aria-pressed="true"]{background:color-mix(in srgb,var(--brand-text) 16%,transparent);color:var(--brand-text);font-weight:700}
 [data-overview] .ov-case{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;width:100%;margin-bottom:10px;padding:14px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s}
-[data-overview] .ov-case:hover{border-color:color-mix(in srgb,var(--c) 50%,transparent);background:radial-gradient(120% 120% at 100% 0%,color-mix(in srgb,var(--c) 16%,transparent) 0%,transparent 60%),linear-gradient(180deg,color-mix(in srgb,var(--surface-2) 84%,#fff 6%),var(--surface-2))}
+[data-overview] .ov-case:hover{border-color:color-mix(in srgb,var(--c) 50%,transparent);background:color-mix(in srgb,var(--c) 6%,var(--ov-well))}
 [data-overview] .ov-av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13.5px;color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
 [data-overview] .ov-pill{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);white-space:nowrap}
 [data-overview] .ov-stages{display:flex;gap:4px}
