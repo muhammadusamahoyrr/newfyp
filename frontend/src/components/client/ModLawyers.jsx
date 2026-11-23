@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { onPrimaryInk } from "./clientTheme.js";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
@@ -12,7 +11,7 @@ import Ic from "./Ic.jsx";
 import { readProblem, PROBLEM_MAX_LENGTH } from "@/lib/problemFilters";
 import { DOCS_FONT } from "./documents/ui.jsx";
 import { Card, BtnPrimary, BtnOutline, ThemedInput, Badge } from "@/components/shared/shared.jsx";
-import { searchLawyers, lawyerDirectoryCounts, matchLawyers, submitReview, getLawyerReviews, getReviewEligibility, bookAppointment, getBookableSlots, listCases, listHireConsultations, listEngagements, requestEngagement, createCase, confirmCase, cancelEngagement, acceptEngagementTerms, declineEngagementTerms, completeEngagement, terminateEngagement } from "@/lib/api.js";
+import { searchLawyers, lawyerDirectoryCounts, matchLawyers, submitReview, getLawyerReviews, getReviewEligibility, bookAppointment, getBookableSlots, listCases, listHireConsultations, listEngagements, requestEngagement, createCase, confirmCase } from "@/lib/api.js";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { hireableCases as hireable, isDraftCase } from "@/lib/caseStatus.js";
 import { onNotification } from "@/lib/notificationTarget.js";
@@ -301,22 +300,21 @@ const LAWYERS_CARD_CSS = `[data-lawyers-grid] .lc-card{display:flex;flex-directi
 @media (prefers-reduced-motion:reduce){[data-lawyers-grid] .lc-card,[data-lawyers-grid] .lc-av{transition:none}[data-lawyers-grid] .lc-card:hover{transform:none}}`;
 
 /* The directory hero (2026-10-10), scoped by [data-lawyers-hero]. */
-const LAWYERS_HERO_CSS = `[data-lawyers-hero]{margin-bottom:22px;border-radius:22px;border:1px solid var(--line);background:radial-gradient(70% 120% at 100% 0%,color-mix(in srgb,var(--brand-text) 10%,transparent) 0%,transparent 60%),var(--surface);box-shadow:var(--shadow-rest);overflow:hidden}
+const LAWYERS_HERO_CSS = `[data-lawyers-hero]{margin-bottom:22px;border-radius:22px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-rest);overflow:hidden}
 [data-lawyers-hero] .lh-main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;padding:24px 26px}
-[data-lawyers-hero] .lh-tag{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-text)}
-[data-lawyers-hero] .lh-tag i{width:7px;height:7px;border-radius:50%;background:var(--brand-text);box-shadow:0 0 8px var(--brand-text)}
 [data-lawyers-hero] .lh-title{margin:10px 0 0;font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.2px}
 [data-lawyers-hero] .lh-text{margin:6px 0 16px;font-size:14px;color:var(--muted)}
 [data-lawyers-hero] .lh-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-[data-lawyers-hero] .lh-stat{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ic v" "l l" "s s";align-items:center;column-gap:10px;padding:12px 14px;border-radius:16px;text-align:left;cursor:pointer;font:inherit;color:inherit;border:1px solid color-mix(in srgb,var(--c) 18%,var(--line));background:radial-gradient(120% 100% at 100% 0%,color-mix(in srgb,var(--c) 13%,transparent) 0%,transparent 55%),var(--surface-2);transition:transform .2s ease,border-color .2s,box-shadow .2s}
-[data-lawyers-hero] .lh-stat:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 50%,var(--line));box-shadow:0 14px 26px -18px color-mix(in srgb,var(--c) 70%,#000)}
+[data-lawyers-hero] .lh-stat{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ic v" "l l" "s s";align-items:center;column-gap:10px;padding:12px 14px;border-radius:16px;text-align:left;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--line);background:var(--surface-2);transition:transform .2s ease,border-color .2s,background .2s}
+[data-lawyers-hero] .lh-stat[aria-pressed="true"]{border-color:color-mix(in srgb,var(--brand-text) 55%,transparent);background:color-mix(in srgb,var(--brand-text) 10%,var(--surface-2))}
+[data-lawyers-hero] .lh-stat[aria-pressed="true"] .s{color:var(--brand-text);font-weight:600}
+[data-lawyers-hero] .lh-stat:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--brand-text) 40%,var(--line))}
 [data-lawyers-hero] .lh-stat .ic{grid-area:ic;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
-[data-lawyers-hero] .lh-stat .v{grid-area:v;font:600 28px/1 "Literata",Georgia,serif;color:var(--ink);text-align:right}
+[data-lawyers-hero] .lh-stat .v{grid-area:v;font-size:28px;font-weight:600;line-height:1;color:var(--ink);text-align:right}
 [data-lawyers-hero] .lh-stat .l{grid-area:l;margin-top:10px;font-size:13px;font-weight:600;color:var(--ink)}
 [data-lawyers-hero] .lh-stat .s{grid-area:s;font-size:11.5px;color:var(--faint);margin-top:2px}
-[data-lawyers-hero] .lh-ai{display:flex;flex-direction:column;gap:10px;padding:20px 22px;border-radius:18px;border:1px solid color-mix(in srgb,var(--brand-text) 30%,transparent);background:radial-gradient(120% 120% at 100% 0%,color-mix(in srgb,var(--brand-text) 16%,transparent) 0%,transparent 55%),linear-gradient(180deg,var(--hover),var(--surface))}
+[data-lawyers-hero] .lh-ai{display:flex;flex-direction:column;gap:10px;padding:20px 22px;border-radius:18px;border:1px solid var(--line);background:var(--surface-2)}
 [data-lawyers-hero] .lh-ai-tag{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--brand-text)}
-[data-lawyers-hero] .lh-ai-tag span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--brand-text) 16%,transparent)}
 [data-lawyers-hero] .lh-ai-title{margin:0;font-size:20px;font-weight:700;color:var(--ink)}
 [data-lawyers-hero] .lh-ai-text{margin:0;font-size:13.5px;line-height:1.55;color:var(--muted)}
 [data-lawyers-hero] .lh-ai-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
@@ -325,15 +323,8 @@ const LAWYERS_HERO_CSS = `[data-lawyers-hero]{margin-bottom:22px;border-radius:2
 [data-lawyers-hero] .lh-ai-btn:hover:not(:disabled) svg{animation:lhTwinkle .6s ease}
 [data-lawyers-hero] .lh-ai-btn:disabled{opacity:.7;cursor:wait}
 [data-lawyers-hero] .lh-ai-note{font-size:12px;color:var(--faint)}
-[data-lawyers-hero] .lh-running{display:flex;align-items:center;gap:12px;margin:0 26px 14px;padding:10px 14px;border-radius:14px;font-size:13.5px;color:var(--ink);background:color-mix(in srgb,var(--teal-ink) 10%,var(--surface-2));border:1px solid color-mix(in srgb,var(--teal-ink) 28%,transparent)}
-[data-lawyers-hero] .lh-running .dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--teal-ink)}
-[data-lawyers-hero] .lh-running[data-due]{background:color-mix(in srgb,var(--gold) 12%,var(--surface-2));border-color:color-mix(in srgb,var(--gold) 40%,transparent)}
-[data-lawyers-hero] .lh-running[data-due] .dot{background:var(--gold);box-shadow:0 0 8px var(--gold)}
-[data-lawyers-hero] .lh-running button{flex:none;height:32px;padding:0 14px;border-radius:999px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
-[data-lawyers-hero] .lh-running button:hover{background:var(--hover-tint);color:var(--hover-ink)}
-[data-lawyers-hero] .lh-trust{display:flex;flex-wrap:wrap;gap:8px 22px;padding:12px 26px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface-2) 55%,transparent);font-size:12.5px;color:var(--muted)}
-[data-lawyers-hero] .lh-trust span{display:inline-flex;align-items:center;gap:6px}
-[data-lawyers-hero] .lh-trust svg{color:var(--brand-text)}
+[data-lawyers-hero] .lh-ai-ask{align-self:flex-start;border:0;background:none;padding:0;color:var(--brand-text);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+[data-lawyers-hero] .lh-ai-ask:hover{text-decoration:underline}
 @keyframes lhTwinkle{0%,100%{transform:none}50%{transform:scale(1.25) rotate(20deg)}}`;
 
 /* The Filters panel's look (2026-10-10), scoped by [data-lawyers-panel]. */
@@ -1618,87 +1609,8 @@ const ModLawyers = () => {
         refreshEngagements();
     };
 
-    const withdrawRequest = async (engagementId) => {
-        const { error } = await cancelEngagement(engagementId);
-        if (error) {
-            toast.show(error.message || "Could not withdraw the request.", "error", 3500);
-        } else {
-            toast.show("Request withdrawn.", "success", 2500);
-            refreshEngagements();
-        }
-    };
-
-    // ── Responding to proposed terms ──────────────────────────────
-    // This is the decision the client never used to get: the lawyer set a fee
-    // and took the case in the same action, so the price arrived attached to a
-    // relationship that had already started and could not be ended.
-    const [engBusy, setEngBusy] = useState(null);
-
-    const acceptTerms = async (e) => {
-        setEngBusy(e.id);
-        const { error } = await acceptEngagementTerms(e.id);
-        setEngBusy(null);
-        if (error) {
-            toast.show(error.message || "Could not accept the terms.", "error", 4000);
-            return;
-        }
-        toast.show(`${e.lawyer_name || "Your lawyer"} is now engaged on your case.`, "success", 5000);
-        refreshEngagements();
-    };
-
-    const declineTerms = async (e) => {
-        const reason = window.prompt("Optional: tell the lawyer why these terms don't work (leave blank to skip)");
-        if (reason === null) return;
-        setEngBusy(e.id);
-        const { error } = await declineEngagementTerms(e.id, reason.trim() || null);
-        setEngBusy(null);
-        if (error) {
-            toast.show(error.message || "Could not decline the terms.", "error", 3500);
-            return;
-        }
-        toast.show("Terms declined. Your case is open again — you can approach another lawyer.", "success", 4000);
-        refreshEngagements();
-    };
-
-    const endEngagement = async (e) => {
-        const reason = window.prompt(
-            "Ending this engagement releases your case so you can engage someone else.\n\n" +
-            "Give a reason (required — it is recorded and shown to your lawyer):"
-        );
-        if (reason === null) return;
-        if (!reason.trim()) {
-            toast.show("A reason is required to end an engagement.", "warn", 3500);
-            return;
-        }
-        setEngBusy(e.id);
-        const { error } = await terminateEngagement(e.id, reason.trim());
-        setEngBusy(null);
-        if (error) {
-            toast.show(error.message || "Could not end the engagement.", "error", 4000);
-            return;
-        }
-        toast.show("Engagement ended. Your case is open again.", "success", 4000);
-        refreshEngagements();
-    };
-
-    const markComplete = async (e) => {
-        const note = window.prompt("Optional: add a note about how the matter concluded");
-        if (note === null) return;
-        setEngBusy(e.id);
-        const { data, error } = await completeEngagement(e.id, { note: note.trim() || null });
-        setEngBusy(null);
-        if (error) {
-            toast.show(error.message || "Could not mark this complete.", "error", 4000);
-            return;
-        }
-        toast.show(
-            data?.status === "completed"
-                ? "Engagement completed."
-                : "Completion proposed — your lawyer needs to confirm it.",
-            "success", 4000,
-        );
-        refreshEngagements();
-    };
+    // Withdraw / accept / decline / complete / end now live in HireRequests
+    // (Tracking page) since 2026-11-23.
 
     // ── HIRE MODAL ────────────────────────────────────────────────
     // Called as functions, NOT rendered as <HireModal />: a component declared
@@ -2121,7 +2033,7 @@ const ModLawyers = () => {
                                     );
                                     if (engState === "terms_proposed") return (
                                         <button type="button" className="mlp-btn mlp-primary" disabled
-                                            title="This lawyer sent you terms. Review them under My Hire Requests on the Lawyers page.">
+                                            title="This lawyer sent you terms. Review them under My Hire Requests on the Tracking page.">
                                             Terms Received — Review in Hire Requests
                                         </button>
                                     );
@@ -2490,56 +2402,6 @@ const ModLawyers = () => {
     }
 
     // ── LIST VIEW (default) ───────────────────────────────────────
-    // `terms_proposed` is the one a client must not miss — it is the only
-    // screen where they see a price before agreeing to it.
-    const VISIBLE_ENG = ["requested", "terms_proposed", "accepted"];
-    const visibleEngagements = myEngagements.filter(e => VISIBLE_ENG.includes(e.status));
-    // Ended ones stay visible as a short history. They used to vanish the
-    // moment a lawyer declined or an engagement ended, so the client could not
-    // see what happened to a request, or why.
-    const ENDED_ENG = ["declined", "cancelled", "completed", "terminated"];
-    const endedEngagements = myEngagements
-        .filter(e => ENDED_ENG.includes(e.status))
-        .sort((a, b) => new Date(b.updated_at || b.responded_at || b.created_at || 0) - new Date(a.updated_at || a.responded_at || a.created_at || 0))
-        .slice(0, 5);
-    const endedText = (e) => {
-        const why = (r) => (r ? ` Reason: ${r}` : "");
-        if (e.status === "declined") {
-            return e.declined_by === "client"
-                ? `You declined the terms.${why(e.decline_reason)}`
-                : e.terms_withdrawn
-                    ? `${e.lawyer_name || "The lawyer"} withdrew the terms they proposed.${why(e.decline_reason)}`
-                    : `${e.lawyer_name || "The lawyer"} declined this request.${why(e.decline_reason)}`;
-        }
-        if (e.status === "cancelled") {
-            return e.cancelled_by === "system"
-                ? "This request closed because the case was taken up elsewhere."
-                : "You withdrew this request.";
-        }
-        if (e.status === "completed") return "The engagement was completed.";
-        return `The engagement was ended.${why(e.termination_reason)}`;
-    };
-    const FEE_SUFFIX = { hourly: "/hr", per_hearing: "/hearing" };
-    const feeLabel = (e) =>
-        e.fee_amount
-            ? `PKR ${Number(e.fee_amount).toLocaleString()}${FEE_SUFFIX[e.fee_type] || ""}`
-            : "";
-
-    const engBtn = (t) => ({
-        fontSize: 11, fontWeight: 600, color: t.textMuted, background: "none",
-        border: `1px solid ${t.border}`, borderRadius: 8, padding: "4px 10px",
-        cursor: "pointer", flexShrink: 0,
-    });
-
-    const ENG_BADGE = {
-        requested:      { label: "Pending",       color: "#EF9F27" },
-        terms_proposed: { label: "Terms received", color: "#3B82F6" },
-        accepted:       { label: "Engaged",       color: "#1D9E75" },
-        completed:      { label: "Completed",     color: "#6B7280" },
-        terminated:     { label: "Ended",         color: "#9CA3AF" },
-        declined:       { label: "Declined",      color: "#9CA3AF" },
-        cancelled:      { label: "Withdrawn",     color: "#9CA3AF" },
-    };
     return (
         <div style={{ position: "relative" }}>
             {showApptModal && renderAppointmentModal()}
@@ -2586,21 +2448,31 @@ const ModLawyers = () => {
             <section data-lawyers-hero aria-label="Legal directory">
                 <div className="lh-main">
                     <div className="lh-left">
-                        <div className="lh-tag"><i aria-hidden="true" />Legal directory</div>
-                        <h2 className="lh-title">Find Expert Legal Counsel</h2>
+                        {/* Approved clean-up (2026-11-23): no eyebrow label, a plain title. */}
+                        <h2 className="lh-title" style={{ marginTop: 0 }}>Find the right lawyer</h2>
                         <p className="lh-text">Browse listed lawyers and request a consultation time.</p>
                         <div className="lh-stats">
-                            {[
-                                ["Lawyers listed", dirTotals.all, "All verified", "var(--brand-text)",
-                                    "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
-                                    () => { setFilter("All"); setFilters({ specialization: "All", city: "All", rating: 0, availability: "All" }); }],
-                                ["Accepting requests", dirTotals.accepting, "Show only these", "var(--teal-ink)", "M20 6L9 17l-5-5",
-                                    () => { setFilter("Available"); setFilters(f => ({ ...f, availability: "Available" })); }],
-                                ["Areas of law", AREA_CHIPS.filter(([, v]) => areaCounts[v] > 0).length || null, "With listed lawyers", "var(--gold)",
-                                    "M12 3v18M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z",
-                                    () => document.querySelector("[data-area-chips]")?.scrollIntoView({ behavior: "smooth", block: "center" })],
-                            ].map(([label, value, sub, c, d, go]) => (
-                                <button key={label} type="button" className="lh-stat" style={{ "--c": c }} onClick={go}>
+                            {/* Lawyers are REGISTERED, not verified (the cards say so too);
+                                each tile says what it does, and "Accepting requests"
+                                shows when its filter is on, and clears it (2026-11-23). */}
+                            {(() => {
+                                const acceptingOn = filters.availability === "Available";
+                                const showAll = () => { setFilter("All"); setFilters({ specialization: "All", city: "All", rating: 0, availability: "All" }); };
+                                return [
+                                    ["Lawyers listed", dirTotals.all, "All registered · Show all →", false,
+                                        "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
+                                        showAll],
+                                    ["Accepting requests", dirTotals.accepting, acceptingOn ? "Showing only these · Clear" : "Show only these →", acceptingOn,
+                                        "M20 6L9 17l-5-5",
+                                        acceptingOn
+                                            ? () => { setFilter("All"); setFilters(f => ({ ...f, availability: "All" })); }
+                                            : () => { setFilter("Available"); setFilters(f => ({ ...f, availability: "Available" })); }],
+                                    ["Areas of law", AREA_CHIPS.filter(([, v]) => areaCounts[v] > 0).length || null, "Browse areas →", false,
+                                        "M12 3v18M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z",
+                                        () => document.querySelector("[data-area-chips]")?.scrollIntoView({ behavior: "smooth", block: "center" })],
+                                ];
+                            })().map(([label, value, sub, on, d, go]) => (
+                                <button key={label} type="button" className="lh-stat" style={{ "--c": "var(--brand-text)" }} onClick={go} aria-pressed={on}>
                                     <span className="ic" aria-hidden="true">
                                         <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
                                     </span>
@@ -2614,12 +2486,8 @@ const ModLawyers = () => {
 
                     {/* The AI match: the same states and wording as before, here. */}
                     <div className="lh-ai">
-                        <div className="lh-ai-tag">
-                            <span aria-hidden="true">
-                                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg>
-                            </span>
-                            AI match
-                        </div>
+                        {/* Plain label, no sparkle (2026-11-23). */}
+                        <div className="lh-ai-tag">Match to your case</div>
                         {/* A listing is not a recommendation, so it does not get the
                             recommendation heading. */}
                         <h3 className="lh-ai-title">
@@ -2659,34 +2527,23 @@ const ModLawyers = () => {
                             )}
                             <span className="lh-ai-note">Uses your case type, city and details.</span>
                         </div>
+                        {/* The dashed "AI-Recommended Match" banner, merged in (2026-11-23):
+                            the describe-your-problem box opens only from here. */}
+                        <button type="button" className="lh-ai-ask" data-open-ask onClick={() => {
+                            setAskOpen(true);
+                            setTimeout(() => {
+                                document.querySelector("[data-ai-ask]")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                                askRef.current?.focus();
+                            }, 0);
+                        }}>or describe your problem to filter the list →</button>
                     </div>
                 </div>
 
-                {/* A running hire request, so the next step is one click away. */}
-                {(() => {
-                    const due = visibleEngagements.find(e => e.status === "terms_proposed");
-                    const e = due || visibleEngagements.find(x => x.status === "requested") || visibleEngagements.find(x => x.status === "accepted");
-                    if (!e) return null;
-                    const more = visibleEngagements.length - 1;
-                    const text = e.status === "terms_proposed" ? `${e.lawyer_name || "A lawyer"} sent you terms for ${e.case_title || "your case"}`
-                        : e.status === "requested" ? `Waiting for ${e.lawyer_name || "the lawyer"} to answer your request`
-                            : `${e.lawyer_name || "Your lawyer"} is engaged on ${e.case_title || "your case"}`;
-                    return (
-                        <div className="lh-running" data-due={due ? "true" : undefined}>
-                            <span className="dot" aria-hidden="true" />
-                            <span style={{ flex: 1, minWidth: 0 }}>{text}{more > 0 ? ` · +${more} more` : ""}</span>
-                            <button type="button" onClick={() => document.getElementById("my-hire-requests")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-                                {due ? "Review terms" : "View requests"}
-                            </button>
-                        </div>
-                    );
-                })()}
-
-                <div className="lh-trust">
-                    <span><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>Bar number on every profile</span>
-                    <span><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>Fees shown before you book</span>
-                    <span><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>Hire only after a consultation</span>
-                </div>
+                {/* Removed 2026-11-23 at the user's request: the running-request
+                    line ("Waiting for … to answer your request") and the trust-tick
+                    row ("Bar number on every profile" / "Fees shown…" / "Hire only
+                    after a consultation"). Terms waiting on the client still show
+                    on Overview. */}
             </section>
 
             {/* Toolbar (2026-10-10, the approved redesign): search, the
@@ -2832,104 +2689,14 @@ const ModLawyers = () => {
                 </section>
             )}
 
-            {/* My hire requests */}
-            {(visibleEngagements.length > 0 || endedEngagements.length > 0) && (
-                <div id="my-hire-requests" style={{ scrollMarginTop: 16, background: t.card, border: `1.5px solid ${t.border}`, borderRadius: 16, padding: "14px 18px", marginBottom: 20 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: t.text, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                        <Ic n="shield" s={14} c={t.primary} /> My Hire Requests
-                    </div>
-                    {visibleEngagements.map(e => {
-                        const badge = ENG_BADGE[e.status];
-                        return (
-                            <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: `1px solid ${t.border}` }}>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                        {e.lawyer_name || "Lawyer"} · {e.case_title || e.case_number}
-                                    </div>
-                                    <div style={{ fontSize: 11, color: t.textMuted }}>
-                                        {e.status === "accepted"
-                                            ? `Engaged${feeLabel(e) ? ` — ${feeLabel(e)}` : ""}. Track progress on the Tracking page.`
-                                            : e.status === "terms_proposed"
-                                                ? `${e.lawyer_name || "The lawyer"} proposed ${feeLabel(e) || "terms"}. Nothing is agreed until you accept.`
-                                                : "Waiting for the lawyer to respond…"}
-                                    </div>
-                                    {e.status === "terms_proposed" && e.scope_note && (
-                                        <div style={{ fontSize: 11, color: t.textDim, marginTop: 4, fontStyle: "italic" }}>
-                                            Scope: {e.scope_note}
-                                        </div>
-                                    )}
-                                    {e.status === "accepted" && e.completion_proposed_by && (
-                                        <div style={{ fontSize: 11, color: t.primary, marginTop: 4 }}>
-                                            {e.completion_proposed_by === "lawyer"
-                                                ? "Your lawyer says the work is finished — confirm to close this engagement."
-                                                : "You proposed completion; waiting for your lawyer to confirm."}
-                                        </div>
-                                    )}
-                                </div>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: badge.color, background: `${badge.color}18`, borderRadius: 20, padding: "3px 10px", flexShrink: 0 }}>{badge.label}</span>
-
-                                {e.status === "requested" && (
-                                    <button onClick={() => withdrawRequest(e.id)} disabled={engBusy === e.id}
-                                        style={engBtn(t)}>
-                                        Withdraw
-                                    </button>
-                                )}
-
-                                {e.status === "terms_proposed" && (
-                                    <>
-                                        <button onClick={() => declineTerms(e)} disabled={engBusy === e.id}
-                                            style={engBtn(t)}>
-                                            Decline
-                                        </button>
-                                        <button onClick={() => acceptTerms(e)} disabled={engBusy === e.id}
-                                            style={{ ...engBtn(t), color: onPrimaryInk(t), background: t.primary, border: `1px solid ${t.primary}` }}>
-                                            {engBusy === e.id ? "Accepting…" : "Accept terms"}
-                                        </button>
-                                    </>
-                                )}
-
-                                {e.status === "accepted" && (
-                                    <>
-                                        <button onClick={() => markComplete(e)} disabled={engBusy === e.id}
-                                            style={engBtn(t)}>
-                                            {e.completion_proposed_by === "lawyer" ? "Confirm complete" : "Mark complete"}
-                                        </button>
-                                        <button onClick={() => endEngagement(e)} disabled={engBusy === e.id}
-                                            style={{ ...engBtn(t), color: "#B91C1C", borderColor: "#FCA5A5" }}>
-                                            End engagement
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        );
-                    })}
-                    {endedEngagements.length > 0 && (
-                        <div data-ended-engagements style={{ marginTop: visibleEngagements.length ? 12 : 0 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", margin: "4px 0 2px" }}>Past requests</div>
-                            {endedEngagements.map(e => {
-                                const badge = ENG_BADGE[e.status];
-                                return (
-                                    <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: `1px solid ${t.border}` }}>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: 12.5, fontWeight: 600, color: t.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                                {e.lawyer_name || "Lawyer"} · {e.case_title || e.case_number}
-                                            </div>
-                                            <div style={{ fontSize: 11, color: t.textMuted, overflowWrap: "anywhere" }}>{endedText(e)}</div>
-                                        </div>
-                                        <span style={{ fontSize: 11, fontWeight: 700, color: badge.color, background: `${badge.color}18`, borderRadius: 20, padding: "3px 10px", flexShrink: 0 }}>{badge.label}</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
+            {/* My hire requests moved to Tracking (2026-11-23): components/client/HireRequests.jsx. */}
 
             {/* AI Match box (2026-10-10). "Find My Match" turns the text into a
                 message box; what the client writes is read in the browser into
                 the list's own filters (area of law, province), which they can
                 see and clear. Nothing typed here is sent to the server. */}
-            <section data-ai-ask data-open={askOpen ? "" : undefined} aria-label="AI match">
+            {askOpen && (
+            <section data-ai-ask data-open={askOpen ? "" : undefined} aria-label="Describe your problem">
                 <style>{AI_ASK_CSS}</style>
                 {!askOpen ? (
                 <div className="aa-row">
@@ -3046,6 +2813,7 @@ const ModLawyers = () => {
                     </div>
                 )}
             </section>
+            )}
 
             {/* Results count.
                 Reports the page AND the total, because `filtered.length` alone

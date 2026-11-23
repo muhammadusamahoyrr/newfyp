@@ -116,6 +116,26 @@ async function mountLawyers() {
     };
 }
 
+/* My Hire Requests moved to Tracking (2026-11-23) as its own component. */
+async function mountHireRequests() {
+    const { default: HireRequests } = await import("../src/components/client/HireRequests.jsx");
+    const { ToastContainer } = await import("../src/components/shared/Toast.jsx");
+    const { DARK } = await import("../src/components/admin/themes.js");
+    const { ThemeCtx } = await import("../src/components/client/theme.js");
+    const container = dom.window.document.createElement("div");
+    dom.window.document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+        root.render(h(ThemeCtx.Provider, { value: DARK },
+            h(ToastContainer, { theme: DARK }, h(HireRequests))));
+    });
+    await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+    return {
+        container,
+        unmount: async () => { await act(async () => root.unmount()); },
+    };
+}
+
 /* Click through to a lawyer's profile.
  *
  * Several fields the fabrication bugs lived in — office hours, bar number,
@@ -1118,7 +1138,8 @@ test("declined and ended engagements stay visible, with the reason", async () =>
           lawyer_name: "Adv Bilal", case_title: "Land case", updated_at: "2026-10-03T05:00:00Z" },
         { id: "E3", status: "requested", lawyer_name: "Adv Omar", case_title: "Fee case" },
     ] });
-    const ui = await mountLawyers();
+    // The list lives on Tracking now (2026-11-23).
+    const ui = await mountHireRequests();
     const past = ui.container.querySelector("[data-ended-engagements]");
     assert.ok(past, "ended engagements are not shown");
     const text = past.textContent;
@@ -1126,6 +1147,65 @@ test("declined and ended engagements stay visible, with the reason", async () =>
     assert.match(text, /The engagement was ended\. Reason: Moved to another city/);
     assert.ok(text.indexOf("Adv Bilal") < text.indexOf("Adv Sana"), "newest first");
     assert.doesNotMatch(text, /Adv Omar/, "a live request is not history");
+    await ui.unmount();
+});
+
+test("the Lawyers page no longer carries hire requests, the trust ticks or the waiting line (2026-11-23)", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    api.__respond("listEngagements", { data: [
+        { id: "E3", status: "requested", lawyer_name: "Adv Omar", case_title: "Fee case" },
+    ] });
+    const ui = await mountLawyers();
+    const text = ui.text();
+    assert.equal(ui.container.querySelector("#my-hire-requests"), null, "hire requests are still on Lawyers");
+    assert.doesNotMatch(text, /My Hire Requests/);
+    assert.doesNotMatch(text, /Bar number on every profile|Fees shown before you book|Hire only after a consultation/);
+    assert.doesNotMatch(text, /to answer your request/);
+    await ui.unmount();
+});
+
+test("the top container: registered not verified, a working tile filter, one match card (2026-11-23)", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    const ui = await mountLawyers();
+    await ui.settle();
+    const hero = ui.container.querySelector("[data-lawyers-hero]");
+    assert.ok(hero, "the container is gone");
+    const text = hero.textContent;
+    assert.doesNotMatch(text, /All verified/, "lawyers are registered, not verified");
+    assert.match(text, /All registered/);
+    assert.match(text, /Find the right lawyer/);
+    assert.doesNotMatch(text, /Legal directory|Find Expert Legal Counsel/i);
+    assert.doesNotMatch(text, /AI match\b/i, "the sparkle 'AI match' label is back");
+    // The Accepting tile shows when its filter is on, and the same tile clears it.
+    const tile = [...hero.querySelectorAll("button.lh-stat")].find(b => /Accepting requests/.test(b.textContent));
+    assert.equal(tile.getAttribute("aria-pressed"), "false");
+    await act(async () => { tile.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle();
+    assert.equal(tile.getAttribute("aria-pressed"), "true");
+    assert.match(tile.textContent, /Showing only these · Clear/);
+    await act(async () => { tile.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle();
+    assert.equal(tile.getAttribute("aria-pressed"), "false");
+    // The separate dashed banner is gone; its box opens from the card's link.
+    assert.equal(ui.container.querySelector("[data-ai-ask]"), null, "the duplicate banner is back");
+    await act(async () => { hero.querySelector("[data-open-ask]").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+    await ui.settle();
+    assert.ok(ui.container.querySelector("[data-ai-ask] input"), "the describe-your-problem box did not open");
+    await ui.unmount();
+});
+
+test("hire requests keep every action on their new page", async () => {
+    api.__respond("listEngagements", { data: [
+        { id: "R1", status: "requested", lawyer_name: "Adv Omar", case_title: "Fee case" },
+        { id: "T1", status: "terms_proposed", lawyer_name: "Adv Sana", case_title: "Rent", fee_amount: 5000, fee_type: "per_hearing" },
+        { id: "A1", status: "accepted", lawyer_name: "Adv Bilal", case_title: "Land" },
+    ] });
+    const ui = await mountHireRequests();
+    const labels = [...ui.container.querySelectorAll("button")].map(b => b.textContent.trim());
+    for (const want of ["Withdraw", "Decline", "Accept terms", "Mark complete", "End engagement"]) {
+        assert.ok(labels.includes(want), `${want} is missing`);
+    }
+    assert.match(ui.container.textContent, /Adv Sana proposed PKR 5,000\/hearing\. Nothing is agreed until you accept\./);
     await ui.unmount();
 });
 

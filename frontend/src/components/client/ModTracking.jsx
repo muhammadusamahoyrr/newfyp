@@ -9,6 +9,7 @@ import VideoJoin, { useVideoConfigured } from "@/components/shared/VideoJoin.jsx
 import { PreJoinModal } from "@/components/shared/PreJoin.jsx";
 import ReviewLawyerDialog from "./ReviewLawyerDialog.jsx";
 import HireDialog from "./HireDialog.jsx";
+import HireRequests from "./HireRequests.jsx";
 import { getReviewEligibility } from "@/lib/api.js";
 
 // The hire steps that open on this page (2026-10-20) instead of the Lawyers page.
@@ -4584,7 +4585,9 @@ export default function Module7({ isDark, standalone = null }) {
     const unreadCount = feed.filter(f => !f.done).length;
 
     const pages = {
-        overview: (props) => <PageOverview      {...props} activeCase={activeCase} feed={feed} hearings={apiHearings} milestones={allMilestones} casesState={casesState} onRetryCases={loadCases} />,
+        // My hire requests sit on top of the overview (moved here from the
+        // Lawyers page, 2026-11-23): with or without a case selected.
+        overview: (props) => <><HireRequests /><PageOverview      {...props} activeCase={activeCase} feed={feed} hearings={apiHearings} milestones={allMilestones} casesState={casesState} onRetryCases={loadCases} /></>,
         appointments: (props) => <AppointmentsPage standalone={Boolean(standalone)} {...props} appointments={apiAppointments} loading={apptLoading} onReload={reloadAppointments} cancelErrors={cancelErrors} setCancelError={setCancelError}
             refreshError={apptRefreshError}
             onLoadMore={loadMoreAppointments} loadingMore={apptLoadingMore}
