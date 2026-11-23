@@ -36,6 +36,9 @@ import {
     repealNote, auditNotice,
 } from "@/lib/trust.js";
 
+/* About eight lines of 15px text; longer questions scroll inside the box. */
+const MAX_QUERY_HEIGHT = 200;
+
 /* Calibrated-confidence bands from the server (ai/answer_confidence.py).
    The lawyer surface shows the band AND the raw figure AND which evidence source
    produced it — a research user needs the number; a client does not. */
@@ -346,7 +349,7 @@ export const AI_THEME_CSS = `[data-ai-ws]{height:100%;min-height:0;display:flex;
 [data-ai-ws] .ai-welcome h2 span{color:var(--mint)}
 [data-ai-ws] .ai-box{width:100%;max-width:1000px;box-sizing:border-box;padding:10px 12px 8px 16px;border-radius:18px;border:1px solid var(--line-strong);background:var(--surface);box-shadow:0 30px 60px -30px rgba(0,0,0,.8)}
 [data-ai-ws] .ai-box:focus-within{border-color:color-mix(in srgb,var(--mint) 55%,transparent)}
-[data-ai-ws] .ai-box input::placeholder{color:var(--faint)}
+[data-ai-ws] .ai-box input::placeholder,[data-ai-ws] .ai-box textarea::placeholder{color:var(--faint)}
 [data-ai-ws] .ai-chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;background:var(--well);border:1px solid var(--teal-line);color:var(--ink);font-size:13px;font-weight:600}
 [data-ai-ws] .lang{display:flex;padding:3px;border-radius:9px;background:var(--well);border:1px solid var(--teal-line)}
 [data-ai-ws] .lang button{height:26px;padding:0 9px;border:0;border-radius:6px;background:none;font-size:12px;font-weight:700;color:var(--faint);cursor:pointer}
@@ -514,6 +517,19 @@ function AILegalScreen() {
     const apiCasesRef = useRef(apiCases);
     apiCasesRef.current = apiCases;
     const [query, setQuery] = useState("");
+    const queryRef = useRef(null);
+    // The box fits its text on every change (typing, a prefill, the clear
+    // after sending) up to MAX_QUERY_HEIGHT, then scrolls (2026-11-23).
+    useEffect(() => {
+        const el = queryRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        const full = el.scrollHeight;
+        el.style.height = `${Math.min(full, MAX_QUERY_HEIGHT)}px`;
+        el.style.overflowY = full > MAX_QUERY_HEIGHT ? "auto" : "hidden";
+        if (full > MAX_QUERY_HEIGHT && document.activeElement === el
+            && el.selectionStart === el.value.length) el.scrollTop = el.scrollHeight;
+    }, [query]);
     // A question typed on the dashboard arrives once, ready to send.
     useEffect(() => {
         try {
@@ -2004,13 +2020,25 @@ function AILegalScreen() {
                 <div style={{ padding: "0 24px 10px", display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
                     <div className="ai-box">
 
-                        {/* Text input */}
-                        <input value={query} onChange={e => setQuery(e.target.value)}
-                            onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
+                        {/* Grows with the question, like the client chat (2026-11-23):
+                            Enter sends, Shift+Enter makes a new line; past
+                            MAX_QUERY_HEIGHT it scrolls inside. Enter during an Urdu IME
+                            composition does not send. */}
+                        <textarea ref={queryRef} value={query} onChange={e => setQuery(e.target.value)}
+                            rows={1} dir="auto" aria-label="Ask Attorney AI"
+                            onKeyDown={e => {
+                                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                                    e.preventDefault();
+                                    send();
+                                }
+                            }}
                             placeholder="Ask Attorney AI..."
+                            className="thin-scrollbar"
                             style={{
-                                width: "100%", background: "transparent", border: "none", outline: "none",
-                                color: t.text, fontSize: 15, padding: "2px 2px 8px", lineHeight: 1.5
+                                display: "block", width: "100%", boxSizing: "border-box", resize: "none",
+                                background: "transparent", border: "none", outline: "none",
+                                color: t.text, fontSize: 15, padding: "2px 2px 8px", lineHeight: 1.5,
+                                fontFamily: "inherit", overflowY: "hidden", maxHeight: MAX_QUERY_HEIGHT,
                             }} />
 
                         {/* Toolbar row */}

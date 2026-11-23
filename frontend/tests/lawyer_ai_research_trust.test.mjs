@@ -82,10 +82,10 @@ async function mount() {
     return { container, unmount: async () => { await act(async () => root.unmount()); container.remove(); } };
 }
 
-const box = (c) => c.querySelector('input[placeholder="Ask Attorney AI..."]');
+const box = (c) => c.querySelector('textarea[placeholder="Ask Attorney AI..."]');
 
 async function type(container, text) {
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    const setter = { call: (el, v) => Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), "value").set.call(el, v) };
     await act(async () => { setter.call(box(container), text); box(container).dispatchEvent(new Event("input", { bubbles: true })); });
 }
 

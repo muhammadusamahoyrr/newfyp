@@ -63,8 +63,8 @@ async function mount() {
 }
 
 async function ask(container, question = "What applies?") {
-    const box = container.querySelector('input[placeholder="Ask Attorney AI..."]');
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    const box = container.querySelector('textarea[placeholder="Ask Attorney AI..."]');
+    const setter = { call: (el, v) => Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), "value").set.call(el, v) };
     await act(async () => { setter.call(box, question); box.dispatchEvent(new Event("input", { bubbles: true })); });
     await act(async () => { box.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
     await settle(100);

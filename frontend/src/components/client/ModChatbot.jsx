@@ -25,7 +25,7 @@ import { createSocketOwner } from "@/lib/socket.js";
 import { useAuth } from "@/context/AuthContext.jsx";
 import Ic from "./Ic.jsx";
 import LawyerMatchPanel from "./LawyerMatchPanel.jsx";
-import { Badge, Tooltip } from "@/components/shared/shared.jsx";
+import { Badge } from "@/components/shared/shared.jsx";
 import { MessageActions, BUBBLE_CSS } from "@/components/shared/ChatPieces.jsx";
 export { MessageActions };
 /* Shared with both lawyer AI surfaces so the three cannot describe the same
@@ -81,7 +81,7 @@ const repealNote = (c) => {
 const CHAT_BOX_CSS = `
 [data-chat-box]{width:100%;max-width:980px;box-sizing:border-box;padding:10px 12px 8px 16px;border-radius:18px;border:1px solid var(--line-strong);background:var(--surface);box-shadow:0 30px 60px -30px rgba(0,0,0,.8)}
 [data-chat-box]:focus-within{border-color:color-mix(in srgb,var(--brand-text) 55%,transparent)}
-[data-chat-box] input::placeholder{color:var(--faint)}
+[data-chat-box] input::placeholder,[data-chat-box] textarea::placeholder{color:var(--faint)}
 [data-chat-box] .cb-chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 [data-chat-box] .cb-chip:hover{border-color:var(--hover-line);color:var(--hover-ink)}
 [data-chat-box] .cb-chip[aria-pressed="true"]{border-color:var(--hover-line);color:var(--brand-text);background:var(--brand-soft)}
@@ -119,6 +119,31 @@ const CHAT_HIST_CSS = `
 [data-chat-hist] .ch-foot>span:last-child{flex-shrink:0}
 `;
 
+/* The empty chat (Version C, approved 2026-11-23): the logo mark, a plain
+ * greeting, the input right under it, four specific starter questions and
+ * one line on what this chat can and cannot do. Theme vars only. */
+const STARTER_QUESTIONS = [
+    { area: "Criminal", text: "How do I get bail after an FIR is registered?" },
+    { area: "Property", text: "My landlord wants me out without notice. What are my rights?" },
+    { area: "Family", text: "What is the process for khula in Punjab?" },
+    { area: "Money", text: "A cheque given to me bounced. What can I do?" },
+];
+
+/* About eight lines of 15px text; longer questions scroll inside the box. */
+const MAX_INPUT_HEIGHT = 200;
+
+const CHAT_WELCOME_CSS = `
+[data-chat-welcome]{width:100%;max-width:760px;display:flex;flex-direction:column;gap:22px}
+[data-chat-welcome] [data-chat-box]{max-width:none}
+[data-chat-welcome] .cw-q{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr;gap:8px}
+[data-chat-welcome] .cw-q button{display:flex;flex-direction:column;justify-content:flex-start;min-height:72px;box-sizing:border-box;text-align:left;padding:11px 14px;border-radius:12px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;font-size:13.5px;line-height:1.4;cursor:pointer;transition:border-color .15s,background .15s}
+[data-chat-welcome] .cw-q button:hover{border-color:var(--hover-line);background:var(--hover-tint)}
+[data-chat-welcome] .cw-q button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+[data-chat-welcome] .cw-q b{display:block;font-size:11.5px;font-weight:600;color:var(--faint);margin-bottom:2px}
+[data-chat-welcome] .cw-links a{color:var(--brand-text);font-weight:600;text-decoration:none}
+[data-chat-welcome] .cw-links a:hover{text-decoration:underline}
+`;
+
 const ModChatbot = () => {
     const t = useT();
     const toast = useToast();
@@ -129,6 +154,19 @@ const ModChatbot = () => {
     /* ── UI state ─────────────────────────────────────────────────────── */
     const [msgs, setMsgs] = useState([]);
     const [inp, setInp] = useState("");
+    const inpRef = useRef(null);
+    // The box fits its text on every change — typing, a starter question,
+    // voice, or the clear after sending — up to MAX_INPUT_HEIGHT, then scrolls.
+    useEffect(() => {
+        const el = inpRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        const full = el.scrollHeight;
+        el.style.height = `${Math.min(full, MAX_INPUT_HEIGHT)}px`;
+        el.style.overflowY = full > MAX_INPUT_HEIGHT ? "auto" : "hidden";
+        if (full > MAX_INPUT_HEIGHT && document.activeElement === el
+            && el.selectionStart === el.value.length) el.scrollTop = el.scrollHeight;
+    }, [inp]);
     const [typing, setTyping] = useState(false);
     // No EN/UR switch on the composer (2026-10-19). Voice (2026-10-20) writes
     // Urdu speech in Urdu script; the backend answers in the question's language.
@@ -217,7 +255,10 @@ const ModChatbot = () => {
                 seen.add(r.session_id);
                 return true;
             });
-            setHistory(groupConversations(unique));
+            // A chat with no message yet is not history: listing it showed a
+            // row of "New conversation" copies. The open one stays (2026-11-23).
+            setHistory(groupConversations(unique.filter(r =>
+                (r.message_count ?? 1) > 0 || r.session_id === sessionIdRef.current)));
             return unique;
         });
 
@@ -698,6 +739,13 @@ const ModChatbot = () => {
        to be a client-side array reset with a browser-minted id, so a chat
        abandoned before its first reply left no trace at all. */
     const newChat = useCallback(async () => {
+        // Already on an empty chat: use it. Each click used to make another
+        // empty conversation, and the history filled with "New conversation"
+        // copies (2026-11-23).
+        if (sessionReady && sessionIdRef.current && msgs.length === 0 && !typing) {
+            inpRef.current?.focus();
+            return;
+        }
         clearTimeout(retryRef.current);
         clearTimeout(deadlineRef.current);
         retryCount.current = 0;
@@ -717,7 +765,7 @@ const ModChatbot = () => {
         setSessionReady(true);
         connect();
         refreshHistory();
-    }, [connect, refreshHistory, toast, user?._id]);
+    }, [connect, refreshHistory, toast, user?._id, sessionReady, msgs.length, typing]);
 
     /* Rename / delete, on the user's own conversations only — the server scopes
        every one of these to the caller. */
@@ -912,16 +960,104 @@ const ModChatbot = () => {
         transition: "background 0.15s, color 0.15s", ...extra,
     });
 
-    /* ── WS status dot ────────────────────────────────────────────────── */
-    const dotColor = { connected: "#22c55e", connecting: "#f59e0b", disconnected: "#ef4444" }[wsStatus];
-
-    /* ── Greeting ─────────────────────────────────────────────────────── */
+    /* ── Greeting (Version C, approved 2026-11-23) ────────────────────────
+       Plain words in the app's own font. The old emoji and the "Dark mode is
+       on" joke read wrong in light mode and looked template-made. */
     const h = new Date().getHours();
-    const greetingText = h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : "Good Evening";
-    const greetingEmoji = h < 12 ? "🌅" : h < 17 ? "⛅" : "🌙";
-    const greetingSub = h >= 20 || h < 5
-        ? "Dark mode is on. What are we researching?"
-        : "The details are in the dark. Let's find them.";
+    const greetingText = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    const firstName = user?.full_name?.split(" ")[0];
+
+    /* Starter questions: real, specific uses. A click only FILLS the box —
+       the client still reads it, can change it, and presses send. */
+    const fillQuestion = q => { setInp(q); setTimeout(() => inpRef.current?.focus(), 0); };
+
+    /* The input box, built once: under the greeting on an empty chat, at the
+       bottom once the chat has messages (2026-11-23). */
+    const composer = (
+        <>
+            <style>{CHAT_BOX_CSS}</style>
+                    <div data-chat-box>
+                        {/* Grows with the question, like ChatGPT (2026-11-23): Enter
+                            sends, Shift+Enter makes a new line; past MAX_INPUT_HEIGHT
+                            it scrolls inside, so earlier lines move up out of view.
+                            Enter during an Urdu IME composition does not send. */}
+                        <textarea
+                            ref={inpRef}
+                            value={inp}
+                            dir="auto"
+                            rows={1}
+                            aria-label="Ask Attorney AI"
+                            onChange={e => setInp(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                                    e.preventDefault();
+                                    send();
+                                }
+                            }}
+                            placeholder={wsStatus === "connected" ? "Ask Attorney AI..." : wsStatus === "connecting" ? "Connecting..." : "Offline — reconnecting..."}
+                            className="thin-scrollbar"
+                            style={{
+                                display: "block", width: "100%", boxSizing: "border-box", resize: "none",
+                                background: "transparent", border: "none", outline: "none",
+                                color: t.text, fontSize: 15, padding: "2px 2px 8px", lineHeight: 1.5,
+                                fontFamily: "inherit", overflowY: "hidden", maxHeight: MAX_INPUT_HEIGHT,
+                            }}
+                        />
+
+                        {/* Toolbar: the options on the left, voice and send on the right. */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", minWidth: 0 }}>
+                                {/* History and Web chips removed (2026-10-19): the
+                                    sidebar has its own collapse / open control. */}
+                                {/* Jurisdiction selector.
+                                    Province materially changes the governing
+                                    law — a shop-eviction question is answered
+                                    by the Punjab Rented Premises Act 2009 in
+                                    Punjab and by nothing equivalent federally.
+                                    "All Pakistan" is honest about searching
+                                    every jurisdiction; it is NOT "federal". */}
+                                <select
+                                    className={`cb-chip${province ? " on" : ""}`}
+                                    value={province}
+                                    onChange={e => setProvince(e.target.value)}
+                                    title="Jurisdiction — which province's law applies to your question"
+                                    aria-label="Jurisdiction">
+                                    <option value="">No jurisdiction filter</option>
+                                    <option value="punjab">Punjab</option>
+                                    <option value="sindh">Sindh</option>
+                                    <option value="kpk">KPK</option>
+                                    <option value="balochistan">Balochistan</option>
+                                    <option value="federal">Federal only</option>
+                                </select>
+
+                            </div>
+
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
+                                {/* Speak Urdu or English (2026-10-20): our server tells them
+                                    apart and writes Urdu in Urdu script; the answer follows the
+                                    language of the question. Click to start, click to finish. */}
+                                <VoiceButton value={inp} onText={setInp} className="cb-mic" onListening={onListening}
+                                    mode="server" serverLanguage="auto"
+                                    onError={msg => toast.show(msg, "warn", 4000)}
+                                    onNotice={msg => toast.show(msg, "info", 6000)} />
+
+                                <button type="button" onClick={send} aria-label="Send"
+                                    disabled={!(inp.trim() && wsStatus === "connected")}
+                                    className={`cb-send${inp.trim() ? " typed" : ""}${inp.trim() && wsStatus === "connected" ? " on" : ""}`}>
+                                    {/* An upward arrow (2026-10-20), in place of the turned logo mark. */}
+                                    <SendArrow />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+        </>
+    );
+    const disclaimer = (
+        <div style={{ marginTop: 8, fontSize: 11, color: t.textFaint, textAlign: "center" }}>
+            Informational only — not legal advice. Verify with a qualified Pakistani lawyer.
+        </div>
+    );
+
 
     return (
         <div style={{
@@ -1098,7 +1234,7 @@ const ModChatbot = () => {
                             {listLoading ? "Loading…" : "Load older conversations"}
                         </button>
                     )}
-                    {!listMore && !listLoading && rows.length === 0 && (
+                    {!listMore && !listLoading && history.every(g => g.items.length === 0) && (
                         <div style={{
                             padding: "10px 6px", fontSize: 12, color: t.textFaint,
                         }}>
@@ -1127,7 +1263,10 @@ const ModChatbot = () => {
                         </button>
                     </div>
                 )}
-                <div className="ch-foot"><span>Private to you</span><span>{rows.length}{listMore ? "+" : ""} chat{rows.length === 1 ? "" : "s"}</span></div>
+                {(() => {
+                    const shown = history.reduce((n, g) => n + g.items.length, 0);
+                    return <div className="ch-foot"><span>Private to you</span><span>{shown}{listMore ? "+" : ""} chat{shown === 1 ? "" : "s"}</span></div>;
+                })()}
 
                 {/* Sidebar footer */}
                 <div style={{ padding: "10px 14px 14px", borderTop: `1px solid ${t.border}` }}>
@@ -1178,32 +1317,10 @@ const ModChatbot = () => {
                             </svg>
                         </button>
                     )}
-                    <span style={{
-                        fontSize: 17, fontWeight: 700, color: t.text,
-                        fontFamily: "'Playfair Display',serif",
-                    }}>Chat</span>
-                    {/* WS status dot */}
-                    <Tooltip text={wsStatus}>
-                        <span style={{
-                            width: 8, height: 8, borderRadius: "50%",
-                            background: dotColor, display: "inline-block",
-                            pointerEvents: "auto",
-                        }} />
-                    </Tooltip>
-                </div>
-
-                {/* Top-right: Upgrade pill */}
-                <div style={{ position: "absolute", top: 12, right: 18, zIndex: 10 }}>
-                    <button style={{
-                        background: "var(--brand-solid)", color: "var(--on-brand)",
-                        border: "none", borderRadius: 50, padding: "10px 22px",
-                        fontSize: 13, fontWeight: 700, cursor: "pointer",
-                        fontFamily: "'Inter',sans-serif",
-                        boxShadow: `0 4px 16px ${t.primaryGlow}`, transition: "opacity 0.2s",
-                    }}
-                        onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
-                        onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                    >Upgrade Plan</button>
+                    {/* Plain title in the app's font (2026-11-23). The status dot and
+                        the upgrade button (which had no action) are gone; the
+                        connection state still shows in the input's placeholder. */}
+                    <span style={{ fontSize: 16, fontWeight: 600, color: t.text }}>Chat</span>
                 </div>
 
                 {/* ── Messages / Welcome ── */}
@@ -1211,38 +1328,52 @@ const ModChatbot = () => {
                     flex: 1, overflowY: "auto",
                     display: "flex", flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: hasMessages ? "flex-start" : "center",
-                    padding: hasMessages ? "68px 28px 16px" : "0 28px",
+                    // Empty chat: centred with auto margins on the welcome block,
+                    // not justify-content, so on a short or zoomed screen it
+                    // scrolls from the top instead of cutting the logo off; the
+                    // top padding clears the "Chat" title (2026-11-23).
+                    justifyContent: "flex-start",
+                    padding: hasMessages ? "68px 28px 16px" : "64px 28px 24px",
                 }}>
                     {!hasMessages ? (
-                        <div style={{ textAlign: "center", maxWidth: 600, width: "100%", padding: "0 20px" }}>
-                            {/* Robot mascot */}
-                            <div style={{ marginBottom: 24, display: "flex", justifyContent: "center" }}>
-                                <div style={{
-                                    width: 160, height: 160, borderRadius: "50%",
-                                    background: `radial-gradient(circle at 50% 60%, ${t.primary}25, ${t.primary}08 70%)`,
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    boxShadow: `0 0 50px ${t.primary}20`,
-                                }}>
-                                    <img src="/chatbot.gif" alt="AI Assistant" style={{ width: 130, height: 130, objectFit: "contain" }} />
+                        <div data-chat-welcome style={{ margin: "auto 0", padding: "0 0 40px" }}>
+                            <style>{CHAT_WELCOME_CSS}</style>
+                            {/* Logo mark, greeting, then the input right under it. No
+                                mascot, glow or emoji (Version C, 2026-11-23). */}
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" }}>
+                                <img src="/logo-mark.png" alt="" aria-hidden="true" width={52} height={52}
+                                    style={{ objectFit: "contain", display: "block", marginBottom: 10 }} />
+                                <h2 style={{ margin: 0, fontSize: 28, fontWeight: 600, color: t.text, letterSpacing: "-0.01em" }}>
+                                    {greetingText}{firstName ? `, ${firstName}` : ""}
+                                </h2>
+                                <p style={{ margin: 0, fontSize: 15, color: t.textMuted }}>What legal question can I help with?</p>
+                                {wsStatus === "disconnected" && (
+                                    <p style={{ margin: "4px 0 0", fontSize: 13, color: t.textMuted }}>
+                                        AI chat unavailable — please sign in again.
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                {composer}
+                                {disclaimer}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: t.textFaint }}>
+                                    Try one of these, or type your own — English, Urdu or Roman Urdu
+                                </div>
+                                <div className="cw-q" role="group" aria-label="Example questions">
+                                    {STARTER_QUESTIONS.map(q => (
+                                        <button key={q.text} type="button" onClick={() => fillQuestion(q.text)}>
+                                            <b>{q.area}</b>{q.text}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="cw-links" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "6px 14px", marginTop: 6, fontSize: 12.5, color: t.textMuted }}>
+                                    <span>I explain Pakistani law and show the sources. I can't act for you in court.</span>
+                                    <a href="/lawyers" onClick={e => { e.preventDefault(); router.push("/lawyers"); }}>Find a lawyer</a>
+                                    <a href="/intake" onClick={e => { e.preventDefault(); router.push("/intake"); }}>Describe your case</a>
                                 </div>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 10 }}>
-                                <span style={{ fontSize: 26 }}>{greetingEmoji}</span>
-                                <h2 style={{
-                                    fontFamily: "'Playfair Display',serif", fontSize: 24, fontWeight: 700,
-                                    color: t.text, margin: 0, letterSpacing: "-0.4px",
-                                }}>{greetingText}, {user?.full_name?.split(" ")[0] || "there"}!</h2>
-                            </div>
-                            <p style={{
-                                fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700,
-                                color: t.text, marginBottom: 44, lineHeight: 1.35, letterSpacing: "-0.6px",
-                            }}>{greetingSub}</p>
-                            {wsStatus === "disconnected" && (
-                                <p style={{ fontSize: 13, color: t.textMuted, marginTop: 8 }}>
-                                    AI chat unavailable — please sign in again.
-                                </p>
-                            )}
                         </div>
                     ) : (
                         <div style={{ width: "100%", maxWidth: 980, display: "flex", flexDirection: "column", gap: 18 }}>
@@ -1655,77 +1786,17 @@ const ModChatbot = () => {
                     )}
                 </div>
 
-                {/* ── Input box ── */}
+                {/* ── Input box: at the bottom once a chat has messages; on an
+                    empty chat it sits under the greeting instead. ── */}
+                {hasMessages && (
                 <div style={{
                     padding: "0 28px 20px",
                     display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0,
                 }}>
-                    <style>{CHAT_BOX_CSS}</style>
-                    <div data-chat-box>
-                        <input
-                            value={inp}
-                            dir="auto"
-                            onChange={e => setInp(e.target.value)}
-                            onKeyDown={e => e.key === "Enter" && !e.shiftKey && send()}
-                            placeholder={wsStatus === "connected" ? "Ask Attorney AI..." : wsStatus === "connecting" ? "Connecting..." : "Offline — reconnecting..."}
-                            style={{
-                                width: "100%", background: "transparent", border: "none", outline: "none",
-                                color: t.text, fontSize: 15, padding: "2px 2px 8px", lineHeight: 1.5,
-                            }}
-                        />
-
-                        {/* Toolbar: the options on the left, voice and send on the right. */}
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", minWidth: 0 }}>
-                                {/* History and Web chips removed (2026-10-19): the
-                                    sidebar has its own collapse / open control. */}
-                                {/* Jurisdiction selector.
-                                    Province materially changes the governing
-                                    law — a shop-eviction question is answered
-                                    by the Punjab Rented Premises Act 2009 in
-                                    Punjab and by nothing equivalent federally.
-                                    "All Pakistan" is honest about searching
-                                    every jurisdiction; it is NOT "federal". */}
-                                <select
-                                    className={`cb-chip${province ? " on" : ""}`}
-                                    value={province}
-                                    onChange={e => setProvince(e.target.value)}
-                                    title="Jurisdiction — which province's law applies to your question"
-                                    aria-label="Jurisdiction">
-                                    <option value="">No jurisdiction filter</option>
-                                    <option value="punjab">Punjab</option>
-                                    <option value="sindh">Sindh</option>
-                                    <option value="kpk">KPK</option>
-                                    <option value="balochistan">Balochistan</option>
-                                    <option value="federal">Federal only</option>
-                                </select>
-
-                            </div>
-
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
-                                {/* Speak Urdu or English (2026-10-20): our server tells them
-                                    apart and writes Urdu in Urdu script; the answer follows the
-                                    language of the question. Click to start, click to finish. */}
-                                <VoiceButton value={inp} onText={setInp} className="cb-mic" onListening={onListening}
-                                    mode="server" serverLanguage="auto"
-                                    onError={msg => toast.show(msg, "warn", 4000)}
-                                    onNotice={msg => toast.show(msg, "info", 6000)} />
-
-                                <button type="button" onClick={send} aria-label="Send"
-                                    disabled={!(inp.trim() && wsStatus === "connected")}
-                                    className={`cb-send${inp.trim() ? " typed" : ""}${inp.trim() && wsStatus === "connected" ? " on" : ""}`}>
-                                    {/* An upward arrow (2026-10-20), in place of the turned logo mark. */}
-                                    <SendArrow />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Disclaimer */}
-                    <div style={{ marginTop: 8, fontSize: 11, color: t.textFaint, textAlign: "center" }}>
-                        Informational only — not legal advice. Verify with a qualified Pakistani lawyer.
-                    </div>
+                    {composer}
+                    {disclaimer}
                 </div>
+                )}
 
             </div>
         </div>

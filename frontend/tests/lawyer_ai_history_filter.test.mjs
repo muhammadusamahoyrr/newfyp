@@ -79,9 +79,9 @@ async function mountAndAsk(question) {
     });
     await settle(250);   // auth, the mount bootstrap and the (delayed) case list all resolve
 
-    const box = container.querySelector('input[placeholder="Ask Attorney AI..."]');
+    const box = container.querySelector('textarea[placeholder="Ask Attorney AI..."]');
     assert.ok(box, "no question box");
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    const setter = { call: (el, v) => Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), "value").set.call(el, v) };
     await act(async () => {
         setter.call(box, question);
         box.dispatchEvent(new Event("input", { bubbles: true }));
@@ -127,7 +127,7 @@ async function mountWithCaseState(initialCase) {
 }
 
 async function typeInto(input, value) {
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    const setter = { call: (el, v) => Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), "value").set.call(el, v) };
     await act(async () => {
         setter.call(input, value);
         input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -135,7 +135,7 @@ async function typeInto(input, value) {
 }
 
 async function ask(container, question) {
-    const box = container.querySelector('input[placeholder="Ask Attorney AI..."]');
+    const box = container.querySelector('textarea[placeholder="Ask Attorney AI..."]');
     await typeInto(box, question);
     await act(async () => {
         box.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
