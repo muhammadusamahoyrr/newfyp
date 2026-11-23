@@ -159,6 +159,9 @@ def cache_block_reason(state: AgentState) -> Optional[str]:
 
 
 async def cache_lookup_node(state: AgentState) -> dict:
+    if state.get("regenerate"):
+        return {"cache_hit": False}
+
     blocked = cache_block_reason(state)
     if blocked:
         logger.debug("cache: lookup declined (%s)", blocked)

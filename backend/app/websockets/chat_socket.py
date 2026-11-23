@@ -69,54 +69,6 @@ def allows_canned_reply(query: str | None) -> bool:
     return len(q.split()) <= _MAX_CANNED_WORDS and not _ASKS_SOMETHING.search(q)
 
 
-_REPEAT_FILLER_WORDS = frozenset({
-    "a", "an", "the", "please", "kindly", "tell", "explain", "describe",
-    "what", "whats", "is", "are", "does", "do", "mean", "meaning", "of",
-    "about", "me", "can", "could", "you", "would", "your",
-    "kya", "kia", "hai", "hay", "hain", "he", "batayein", "batao",
-    "samjhayen", "samjhao", "mujhe", "zara",
-})
-_REPEAT_PROTECTED_WORDS = frozenset({
-    "not", "no", "never", "without", "except", "only", "before", "after",
-    "for", "against", "under", "from", "with", "between",
-    "within", "days", "day", "month", "months", "year", "years", "section",
-    "article", "act", "ordinance", "procedure", "process", "steps", "file",
-    "apply", "appeal", "punishment", "penalty", "deadline", "limitation",
-    "punjab", "sindh", "balochistan", "kpk", "khyber", "pakhtunkhwa",
-    "islamabad", "territory", "pakistan",
-})
-
-
-def _repeat_query_tokens(query: str | None) -> frozenset[str]:
-    """Normalize question wrappers, not legal meaning, for same-chat reuse.
-
-    This intentionally stays lexical and conservative: it catches forms like
-    “What is khula?”, “Explain khula”, and “khula kya hai” without an embedding
-    model, network call, or cross-user semantic cache.
-    """
-    words = re.findall(r"[\w]+", (query or "").casefold(), flags=re.UNICODE)
-    return frozenset(w for w in words if w not in _REPEAT_FILLER_WORDS)
-
-
-def _same_demo_question(current: str, previous: str) -> bool:
-    current_tokens = _repeat_query_tokens(current)
-    previous_tokens = _repeat_query_tokens(previous)
-    if not current_tokens or not previous_tokens:
-        return False
-    # Do not let a near-match erase a changed jurisdiction, statutory reference,
-    # negation, deadline, or requested legal action.
-    current_protected = current_tokens & _REPEAT_PROTECTED_WORDS
-    previous_protected = previous_tokens & _REPEAT_PROTECTED_WORDS
-    if current_protected != previous_protected:
-        return False
-    if current_tokens == previous_tokens:
-        return True
-    overlap = len(current_tokens & previous_tokens)
-    union = len(current_tokens | previous_tokens)
-    # One shared topic word is not enough to infer equivalent legal questions.
-    return overlap >= 2 and union > 0 and overlap / union >= 0.82
-
-
 def _reusable_session_answer(query: str, current_state: dict,
                              previous_state: dict | None) -> dict | None:
     """Return a safe prior answer from this chat's graph checkpoint, if any.
@@ -138,7 +90,8 @@ def _reusable_session_answer(query: str, current_state: dict,
             or previous.get("language_mismatch")
             or previous.get("routing_mode") == "hybrid"):
         return None
-    if current_state.get("web_search_enabled") or current_state.get("case_id"):
+    if (current_state.get("regenerate") or current_state.get("web_search_enabled")
+            or current_state.get("case_id")):
         return None
     if str(current_state.get("language") or "en") != str(previous.get("language") or "en"):
         return None
@@ -150,7 +103,7 @@ def _reusable_session_answer(query: str, current_state: dict,
         return None
     if str(current_state.get("province") or "") != str(previous.get("province") or ""):
         return None
-    if not _same_demo_question(query, prior_query):
+    if query.strip() != prior_query:
         return None
     return previous
 
@@ -1280,13 +1233,15 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                     source="turn:bad_message_id")
                 continue
 
+            regenerate = data.get("regenerate") is True
             fingerprint = turns.request_fingerprint(
                 message=query,
                 language=data.get("language") or "",
                 province=data.get("province") or session.get("province") or "",
                 case_id=None,      # the client surface has no case binding
                 extra={"surface": conversations.SURFACE_CLIENT,
-                       "web_search": str(bool(data.get("web_search")))},
+                       "web_search": str(bool(data.get("web_search"))),
+                       **({"regenerate": "true"} if regenerate else {})},
             )
             owner_token = turns.new_owner_token()
             try:
@@ -1499,7 +1454,7 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                         # graph — gatekeeper, triage, retrieval, grounding — for
                         # substantive text. triage_node guards its own follow-up
                         # detection the same way, for the same reason.
-                        intent_name = intent.intent
+                        intent_name = "new_query" if regenerate else intent.intent
                         if (intent_name in _SHORTCUT_INTENTS
                                 and len(query.split()) > _MAX_SHORTCUT_WORDS):
                             logger.info(
@@ -1556,6 +1511,7 @@ async def chat_endpoint(websocket: WebSocket, session_id: str, ticket: str = "")
                             # Set by THIS route, never by the browser: the
                             # response-length policy applies to client chat only.
                             state["surface"] = "client"
+                            state["regenerate"] = regenerate
                             state.update(client_turn_overrides(
                                 intent_name, turn_history, last_ai_content,
                                 previous_state=getattr(pre_snap, "values", None),

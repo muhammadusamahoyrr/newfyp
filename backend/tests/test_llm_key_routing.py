@@ -51,6 +51,15 @@ def test_no_purpose_keeps_the_default_order():
     assert L._provider_order() == L._FALLBACK_ORDER
 
 
+@pytest.mark.parametrize("preferred", ["gemini", "openrouter", "cerebras", "ollama"])
+def test_explicit_provider_runs_first_with_default_fallbacks(monkeypatch, preferred):
+    default_order = L._provider_order("direct_chat")
+    monkeypatch.setattr(L.settings, "llm_provider", preferred)
+    assert L._provider_order("direct_chat") == [
+        preferred, *[provider for provider in default_order if provider != preferred],
+    ]
+
+
 def test_local_only_still_never_touches_the_cloud(monkeypatch):
     monkeypatch.setattr(L.settings, "llm_local_only", True)
     assert L._provider_order("direct_chat") == ["ollama"]

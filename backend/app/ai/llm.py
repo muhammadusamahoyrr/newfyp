@@ -9,9 +9,8 @@ API key is configured. This means a missing package (e.g. langchain-google-genai
 not installed) or an unset key transparently falls through to the next provider
 instead of crashing the request.
 
-Set LLM_PROVIDER=ollama to prefer a local Ollama server first (it still falls
-back to the cloud chain if Ollama is unavailable). Any other LLM_PROVIDER value
-just uses the standard Groq → Gemini → OpenRouter chain.
+Set LLM_PROVIDER to prefer Ollama, Gemini, OpenRouter, or Cerebras.
+The remaining providers stay in their usual fallback order.
 
 Set LLM_LOCAL_ONLY=true to drop the cloud chain altogether. Use this for
 anything that must not spend money — bulk runs, warmup traffic, offline work.
@@ -298,8 +297,12 @@ def _provider_order(purpose: str | None = None) -> list[str]:
         groq = [primary, *[p for p in _GROQ_POOL if p != primary]]
         it = iter(groq)
         order = [next(it) if p in _GROQ_POOL else p for p in order]
-    if (settings.llm_provider or "").lower() == "ollama":
-        order = ["ollama", *order]
+    preferred = (settings.llm_provider or "").strip().lower()
+    if preferred == "ollama":
+        order.insert(0, preferred)
+    elif preferred in ("gemini", "openrouter", "cerebras"):
+        order.remove(preferred)
+        order.insert(0, preferred)
     return order
 
 

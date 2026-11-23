@@ -877,7 +877,7 @@ const ModChatbot = () => {
     /* ── Send message ─────────────────────────────────────────────────── */
     // `override`: the text to send instead of the box's (Regenerate). A click
     // hands an event, which is not text, so the box is used then.
-    const send = (override) => {
+    const send = (override, regenerate = false) => {
         const fromBox = typeof override !== "string";
         const txt = (fromBox ? inp : override).trim();
         if (!txt) return;
@@ -925,6 +925,7 @@ const ModChatbot = () => {
             province: province || null,
             language: "en",
             web_search: webSearch,
+            ...(regenerate && { regenerate: true }),
         }));
     };
 
@@ -1704,7 +1705,7 @@ const ModChatbot = () => {
                                             answer can still be found (the visible id was removed). */}
                                         {m.role === "ai" && !m.isError && !m.isNotice && m.text && (
                                             <MessageActions t={t} text={m.text} rated={m.rated}
-                                                onRegenerate={i === lastAiIndex && questionFor(i) ? () => send(questionFor(i)) : null}
+                                                onRegenerate={i === lastAiIndex && questionFor(i) ? () => send(questionFor(i), true) : null}
                                                 canRate={!m.isClarification && Boolean(m.requestId) && m.auditSaved !== false && !m.auditPending}
                                                 onRate={r => {
                                                     rateAnswer({

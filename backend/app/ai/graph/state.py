@@ -98,6 +98,7 @@ class AgentState(TypedDict):
     clarification_depth:    int
 
     # ── Retrieval ─────────────────────────────────────────────────────────────
+    regenerate: bool
     web_search_enabled: bool
     retrieved_chunks: list[dict]
     reranked_chunks:  list[dict]
