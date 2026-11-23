@@ -59,3 +59,11 @@ test("a fee notice opens that payment on its case (2026-11-23)", () => {
     assert.equal(to("payment_failed", { payment_id: "P3" }), "/tracking?view=payments&payment=P3");
     assert.equal(to("payment_failed", {}), "/tracking?view=payments");
 });
+
+test("the notification drawer has no 'View all in Tracking' button (2026-11-23)", async () => {
+    // Tracking has no notifications page any more, so the button only opened
+    // My matters under a label that promised a list. The drawer is the list.
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(new URL("../src/components/client/Dashboard.jsx", import.meta.url), "utf8");
+    assert.doesNotMatch(src, />\s*View all in Tracking|onGoTracking=/);
+});

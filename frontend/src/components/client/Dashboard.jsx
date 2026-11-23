@@ -137,7 +137,7 @@ const SUB_ITEMS = {
 };
 
 /* ─── Notification Drawer ───────────────────────────────────── */
-const NotifDrawer = ({ open, onClose, onGoTracking, onOpenDocument, onOpenReviewRequest, onNavigate, t }) => {
+const NotifDrawer = ({ open, onClose, onOpenDocument, onOpenReviewRequest, onNavigate, t }) => {
     const { notifications, markNotificationDone, markAllNotificationsDone, unreadCount } = useCase();
     const drawerRef = useRef(null);
 
@@ -288,20 +288,9 @@ const NotifDrawer = ({ open, onClose, onGoTracking, onOpenDocument, onOpenReview
                     ))}
                 </div>
 
-                {/* Footer */}
-                <div style={{ padding: "14px 20px", borderTop: `1.5px solid ${t.border}` }}>
-                    <button
-                        onClick={() => { onGoTracking(); onClose(); }}
-                        style={{
-                            width: "100%", padding: "11px", borderRadius: 12,
-                            background: t.primaryGlow2, border: `1.5px solid ${t.primary}40`,
-                            color: t.primary, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                        }}
-                    >
-                        <Ic n="clock" s={14} c={t.primary} /> View all in Tracking
-                    </button>
-                </div>
+                {/* "View all in Tracking" was removed (2026-11-23): Tracking's own
+                    notifications page is gone, so the button only opened My
+                    matters. This drawer is the full list. */}
             </div>
             <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
         </div>
@@ -563,7 +552,6 @@ const DashboardInner = ({ go, isDark, toggleTheme, themePref, setThemePref, refi
                 <NotifDrawer
                     open={drawerOpen}
                     onClose={() => setDrawerOpen(false)}
-                    onGoTracking={() => goTo("/tracking")}
                     onOpenDocument={id => { requestOpenDocument(id); if (tab !== "documents") goTo("/documents"); }}
                     onOpenReviewRequest={id => goTo(reviewRequestDeepLink(id))}
                     onNavigate={to => goTo(to)}
