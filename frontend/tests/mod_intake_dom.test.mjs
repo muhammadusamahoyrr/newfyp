@@ -399,6 +399,50 @@ test("confirmation calls the server exactly once per press", async () => {
     await unmount();
 });
 
+// ── the client names the case (2026-11-23) ────────────────────────────────
+// Cases were titled with the first 80 characters of the story ("My name is
+// Imran Ali and I live in…"). The confirm step now asks for a short name.
+
+test("the case name starts as a suggestion from the category, and is sent on confirm", async () => {
+    reset();
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Continue to category"));
+    const input = container.querySelector("[data-case-name]");
+    assert.ok(input, "no Case name field");
+    assert.match(input.value, /^Civil matter/, "the suggestion does not follow the category");
+    await click(findButton(container, "Confirm & open case"));
+    assert.equal(api.__calls("confirmCase")[0].args[2], input.value.trim(), "the name was not sent");
+    await unmount();
+});
+
+test("a name the client types is the one sent", async () => {
+    reset();
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Continue to category"));
+    const input = container.querySelector("[data-case-name]");
+    const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value").set;
+    await act(async () => { setter.call(input, "  Rent deposit dispute  "); input.dispatchEvent(new dom.window.Event("input", { bubbles: true })); });
+    await click(findButton(container, "Confirm & open case"));
+    assert.equal(api.__calls("confirmCase")[0].args[2], "Rent deposit dispute");
+    await unmount();
+});
+
+test("a name that is too short cannot be confirmed", async () => {
+    reset();
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    await click(findButton(container, "Continue to category"));
+    const input = container.querySelector("[data-case-name]");
+    const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value").set;
+    await act(async () => { setter.call(input, "ab"); input.dispatchEvent(new dom.window.Event("input", { bubbles: true })); });
+    assert.ok(findButton(container, "Confirm & open case").disabled, "a 2-character name could be confirmed");
+    assert.match(container.textContent, /Use 3 to 80 characters/);
+    assert.equal(api.__calls("confirmCase").length, 0);
+    await unmount();
+});
+
 test("confirming re-reads the shared case list, so the draft stops showing as one (2026-11-23)", async () => {
     // Without this, Overview kept saying "Confirm your draft case" and the
     // Intake badge stayed until a full reload.

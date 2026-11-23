@@ -259,6 +259,7 @@ async def confirm_case(
     case_id: str,
     client_id: str,
     case_type: str | None = None,
+    title: str | None = None,
 ) -> dict:
     """Promote a draft to open. The client's confirmation, made real.
 
@@ -286,6 +287,10 @@ async def confirm_case(
             raise ConflictError(
                 "This case is already confirmed with a different category."
             )
+        if title is not None and title != case.get("title"):
+            raise ConflictError(
+                "This case is already confirmed with a different name."
+            )
         return _public_case(case)
 
     if not is_draft(case):
@@ -302,6 +307,9 @@ async def confirm_case(
         "confirmed_at": now,
         "updated_at": now,
     }
+    if title is not None:
+        # The client's own name for the case, chosen at confirmation.
+        updates["title"] = title
     if case_type is not None:
         updates.update({
             "case_type": case_type,
@@ -328,6 +336,10 @@ async def confirm_case(
         if case_type is not None and case_type != current.get("case_type"):
             raise ConflictError(
                 "This case was concurrently confirmed with a different category."
+            )
+        if title is not None and title != current.get("title"):
+            raise ConflictError(
+                "This case was concurrently confirmed with a different name."
             )
         return _public_case(current)
 

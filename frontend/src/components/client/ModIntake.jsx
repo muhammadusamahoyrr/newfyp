@@ -572,6 +572,10 @@ const ModIntake = () => {
     const [role, setRole] = useState("");
     const [province, setProvince] = useState("");
     const [caseTypeInput, setCaseTypeInput] = useState("");
+    // The client's own short name for the case (2026-11-23). Cases were titled
+    // with the first 80 characters of the story ("My name is Imran Ali and I
+    // live in…"). Until the client types, the suggestion follows the category.
+    const [caseName, setCaseName] = useState(null);   // null = untouched
     const [urgency, setUrgency] = useState("medium");
     const [description, setDescription] = useState("");
 
@@ -660,6 +664,10 @@ const ModIntake = () => {
     // The rail (2026-10-10): each step's name, and a line saying what was
     // chosen once it is done. The case file shows the same answers.
     const caseTypeName = CASE_TYPES.find(c => c.value === caseTypeInput)?.label?.replace(" Law", "") || "";
+    const caseNameSuggestion = [caseTypeName ? `${caseTypeName} matter` : "My matter",
+        PROVINCES.find(p => p.value === province)?.label || ""].filter(Boolean).join(" · ");
+    const caseNameValue = caseName ?? caseNameSuggestion;
+    const caseNameOk = caseNameValue.trim().length >= 3 && caseNameValue.trim().length <= 80;
     const answeredCount = [clarifyA1, clarifyA2, clarifyA3, clarifyA4].filter(a => (a || "").trim()).length;
     const readyFiles = evidenceFiles.filter(f => f.file_id && !f.uploading && !f.error).length;
     const filesText = readyFiles ? `${readyFiles} ${readyFiles === 1 ? T("file", "فائل") : T("files", "فائلیں")}` : "";
@@ -1620,10 +1628,17 @@ ${!aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSES
             setIntakeSubmitting(false);
             return;
         }
+        const name = caseNameValue.trim();
+        if (name.length < 3 || name.length > 80) {
+            toast.show("Give your case a short name (3 to 80 characters).", "warn", 3000);
+            setIntakeSubmitting(false);
+            return;
+        }
 
-        // One backend CAS stores the category and opens the case. There is no
-        // interval in which an open case still carries the superseded type.
-        const { error } = await confirmCase(caseId, caseTypeInput);
+        // One backend CAS stores the category and the name and opens the case.
+        // There is no interval in which an open case still carries the
+        // superseded type.
+        const { error } = await confirmCase(caseId, caseTypeInput, name);
         if (error) {
             toast.show(error.message || "Could not confirm your case. Please try again.", "error", 4000);
             setIntakeSubmitting(false);
@@ -2800,6 +2815,14 @@ ${!aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSES
                         ))}
                     </div>
 
+                    <label className="in-label" htmlFor="in-case-name" style={{ marginTop: 22 }}>{T("Case name", "کیس کا نام")} <span className="req">*</span></label>
+                    <input id="in-case-name" className="in-input" data-case-name value={caseNameValue} maxLength={80} disabled={caseConfirmed}
+                        onChange={e => setCaseName(e.target.value)} aria-invalid={!caseNameOk || undefined} aria-describedby="in-case-name-hint" />
+                    <div id="in-case-name-hint" style={{ fontSize: 12.5, color: caseNameOk ? "var(--muted)" : "var(--danger)", margin: "6px 0 18px" }}>
+                        {caseNameOk ? T("A short name you will recognise, e.g. “Rent deposit dispute”. Your lawyer sees it too.", "ایک مختصر نام جو آپ پہچان سکیں، مثلاً “کرایہ کی رقم کا تنازع”۔ آپ کا وکیل بھی یہی نام دیکھے گا۔")
+                            : T("Use 3 to 80 characters.", "3 سے 80 حروف استعمال کریں۔")}
+                    </div>
+
                     {!caseConfirmed ? (
                         <div className="in-note" data-next-locked>
                             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
@@ -2831,7 +2854,7 @@ ${!aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSES
                         {!caseConfirmed && <button type="button" className="in-back" onClick={() => setStep(4)}>← {T("Back", "واپس")}</button>}
                         <span className="why" />
                         {!caseConfirmed && (
-                            <button type="button" className="in-next" data-confirm-case disabled={intakeSubmitting || !caseTypeInput}
+                            <button type="button" className="in-next" data-confirm-case disabled={intakeSubmitting || !caseTypeInput || !caseNameOk}
                                 onClick={() => { if (!intakeSubmitting) handleSubmit(); }}>
                                 {intakeSubmitting ? T("Confirming…", "تصدیق ہو رہی ہے…") : T("Confirm & open case", "تصدیق کریں اور کیس کھولیں")}
                                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>

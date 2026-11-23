@@ -138,6 +138,10 @@ class CaseConfirm(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     case_type: CaseType | None = None
+    # The client's own short name for the case (2026-11-23). Until now a case
+    # was titled with the first 80 characters of the incident description
+    # ("My name is Imran Ali and I live in…"). None keeps that title.
+    title: _text(80, 3) | None = None
 
 
 class MessageAdd(BaseModel):

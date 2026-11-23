@@ -17,8 +17,7 @@ import {
     listEngagements, cancelEngagement, acceptEngagementTerms, declineEngagementTerms,
     completeEngagement, terminateEngagement,
 } from "@/lib/api.js";
-import { onNotification, matterHref } from "@/lib/notificationTarget.js";
-import { useClientRouter } from "./clientNav.js";
+import { onNotification } from "@/lib/notificationTarget.js";
 import { ModalPortal, BACKDROP } from "@/components/client/documents/ui.jsx";
 
 const VISIBLE_ENG = ["requested", "terms_proposed", "accepted"];
@@ -156,20 +155,15 @@ function NoteDialog({ t, kind, engagement, busy, onCancel, onConfirm }) {
     );
 }
 
-/* What only the CLIENT can unblock: proposed terms, and a completion the
- * lawyer is waiting on. Everything else is history, not an action. */
-const needsClient = e => e.status === "terms_proposed"
-    || (e.status === "accepted" && e.completion_proposed_by === "lawyer");
-
 /** `caseId` scopes the list to ONE case (2026-11-23): the Tracking page shows
  *  a selected case, and a request for another case under it read as if it
- *  belonged to this one. Requests on OTHER cases that need the client are
- *  still named, as links, so nothing that waits on them is hidden.
- *  `focusEngagementId` highlights the request a link pointed at. */
+ *  belonged to this one. One case means one case (review item 4): requests
+ *  on OTHER cases are not named here at all; My matters shows what waits on
+ *  the client across every case. `focusEngagementId` highlights the request
+ *  a link pointed at. */
 export default function HireRequests({ caseId = null, focusEngagementId = null } = {}) {
     const t = useT();
     const toast = useToast();
-    const router = useClientRouter();
     const [engagements, setEngagements] = useState([]);
     // loading | ready | error -- a failed read is never shown as "no requests"
     // (it could hide terms that are waiting on the client).
@@ -238,7 +232,6 @@ export default function HireRequests({ caseId = null, focusEngagementId = null }
         .filter(e => ENDED_ENG.includes(e.status))
         .sort((a, b) => new Date(b.updated_at || b.responded_at || b.created_at || 0) - new Date(a.updated_at || a.responded_at || a.created_at || 0))
         .slice(0, 5);
-    const elsewhere = caseId ? engagements.filter(e => String(e.case_id || "") !== String(caseId) && needsClient(e)) : [];
 
     // The request a link pointed at: scrolled to once it is on screen.
     useEffect(() => {
@@ -257,7 +250,7 @@ export default function HireRequests({ caseId = null, focusEngagementId = null }
             </div>
         );
     }
-    if (!visible.length && !ended.length && !elsewhere.length && loadState !== "stale") return null;
+    if (!visible.length && !ended.length && loadState !== "stale") return null;
 
     return (
         <div id="my-hire-requests" data-hire-requests style={{ scrollMarginTop: 16, background: t.card, border: `1.5px solid ${t.border}`, borderRadius: 16, padding: "14px 18px", marginBottom: 20 }}>
@@ -326,21 +319,6 @@ export default function HireRequests({ caseId = null, focusEngagementId = null }
                     </div>
                 );
             })}
-            {elsewhere.length > 0 && (
-                <div data-elsewhere-actions style={{ marginTop: visible.length ? 12 : 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", margin: "4px 0 2px" }}>Needs you on another case</div>
-                    {elsewhere.map(e => (
-                        <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: `1px solid ${t.border}` }}>
-                            <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {e.status === "terms_proposed"
-                                    ? `${e.lawyer_name || "A lawyer"} proposed terms for ${e.case_title || e.case_number || "another case"}`
-                                    : `${e.lawyer_name || "Your lawyer"} says the work on ${e.case_title || e.case_number || "another case"} is finished`}
-                            </div>
-                            <button type="button" onClick={() => router.push(matterHref(e.case_id, { engagement: e.id }))} style={engBtn(t)}>Open case →</button>
-                        </div>
-                    ))}
-                </div>
-            )}
             {ended.length > 0 && (
                 <div data-ended-engagements style={{ marginTop: visible.length ? 12 : 0 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", margin: "4px 0 2px" }}>Past requests</div>

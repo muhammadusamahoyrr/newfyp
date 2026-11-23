@@ -100,19 +100,22 @@ test("a draft case named in a link points to the intake", async () => {
     await ui.unmount();
 });
 
-test("hire requests belong to the open case; another case's terms are a link, not a row", async () => {
+test("hire requests belong to the open case only; another case's terms wait on My matters", async () => {
     const ui = await mountTracking({ case: "C1", tab: "summary" });
     const box = ui.container.querySelector("[data-hire-requests]");
     assert.ok(box, "hire requests missing");
     assert.match(box.textContent, /Hire requests for this case/);
     assert.ok(box.querySelector('[data-engagement="E1"]'), "this case's request is missing");
     assert.equal(box.querySelector('[data-engagement="E2"]'), null, "Case B's terms were listed as Case A's");
-    const other = box.querySelector("[data-elsewhere-actions]");
-    assert.ok(other, "terms waiting on another case were hidden");
-    assert.match(other.textContent, /Adv Sana proposed terms for Rent dispute/);
-    const open = [...other.querySelectorAll("button")].find(b => /Open case/.test(b.textContent));
-    await act(async () => { open.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
-    assert.equal(nav().pushed.at(-1), "/tracking?case=C2&tab=summary&engagement=E2");
+    // One case means one case (review item 4): nothing about other cases here.
+    assert.equal(ui.container.querySelector("[data-elsewhere-actions]"), null);
+    assert.doesNotMatch(ui.container.querySelector("[data-hire-requests]").textContent, /Rent dispute|another case/);
+    // ...and nothing is hidden: My matters shows Case B's terms as waiting.
+    await click(ui.container.querySelector("[data-to-matters]"));
+    const b = ui.container.querySelector('[data-matter="C2"]');
+    assert.ok(b, "Case B is missing from My matters");
+    assert.match(b.textContent, /Waiting on you/);
+    assert.match(b.textContent, /Answer Adv Sana's terms/);
     await ui.unmount();
 });
 

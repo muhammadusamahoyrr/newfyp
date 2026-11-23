@@ -103,6 +103,7 @@ async def confirm_case(
         case_id,
         current_user["_id"],
         body.case_type.value if body.case_type is not None else None,
+        title=body.title,
     )
 
 

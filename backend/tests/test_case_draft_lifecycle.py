@@ -260,6 +260,43 @@ async def test_confirm_replay_cannot_rewrite_an_open_cases_category(party):
     assert (await _case(case_id))["case_type"] == "criminal"
 
 
+async def test_confirmation_stores_the_clients_own_case_name(party):
+    """The case was titled with the first 80 characters of the description
+    ("My name is Imran Ali and I live in…"); the client now names it (2026-11-23)."""
+    case_id = await _draft(party)
+    before = (await _case(case_id))["title"]
+    result = await case_service.confirm_case(case_id, party["client_id"], title="Rent deposit dispute")
+    assert result["title"] == "Rent deposit dispute"
+    assert (await _case(case_id))["title"] == "Rent deposit dispute"
+    # No name given: the existing title stays.
+    other = await _draft(party)
+    kept = (await _case(other))["title"]
+    await case_service.confirm_case(other, party["client_id"])
+    assert (await _case(other))["title"] == kept
+    assert before  # the draft had a title to begin with
+
+
+async def test_confirm_replay_cannot_rename_an_open_case(party):
+    case_id = await _draft(party)
+    await case_service.confirm_case(case_id, party["client_id"], title="Rent deposit dispute")
+    # The same name again is the idempotent replay.
+    await case_service.confirm_case(case_id, party["client_id"], title="Rent deposit dispute")
+    with pytest.raises(ConflictError):
+        await case_service.confirm_case(case_id, party["client_id"], title="Something else")
+    assert (await _case(case_id))["title"] == "Rent deposit dispute"
+
+
+def test_the_case_name_is_trimmed_and_bounded():
+    from pydantic import ValidationError
+    from app.schemas.case import CaseConfirm
+    assert CaseConfirm(title="  Rent deposit  ").title == "Rent deposit"
+    with pytest.raises(ValidationError):
+        CaseConfirm(title="ab")
+    with pytest.raises(ValidationError):
+        CaseConfirm(title="x" * 81)
+    assert CaseConfirm().title is None
+
+
 async def test_confirmation_is_idempotent(party):
     """A second press is the client asking for something already true."""
     case_id = await _draft(party)

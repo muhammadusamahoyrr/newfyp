@@ -683,10 +683,14 @@ export async function updateCase(caseId, updates) {
 
 // Promote the client's draft case to open. The end of the intake.
 // Idempotent: a second press returns the same already-open case.
-export async function confirmCase(caseId, caseType = null) {
+export async function confirmCase(caseId, caseType = null, title = null) {
+  // `title`: the client's own short name for the case (2026-11-23); omitted,
+  // the case keeps the title it was created with.
+  const body = { case_type: caseType };
+  if (title) body.title = title;
   return apiFetch(`/cases/${caseId}/confirm`, {
     method: 'PATCH',
-    body: JSON.stringify({ case_type: caseType }),
+    body: JSON.stringify(body),
   });
 }
 
