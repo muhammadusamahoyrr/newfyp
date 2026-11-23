@@ -231,15 +231,6 @@ test("a message notification's link opens the appointment ON its thread", async 
     await ui.unmount();
 });
 
-test("Tracking's card uses the same entry and the same thread", async () => {
-    nav().params = new Map();
-    api.__respond("listAppointments", { data: { items: [appt()] } });
-    api.__respond("listAppointmentMessages", page([msg("m1", "From Tracking")]));
-    const ui = await mountPage({ standalone: null });
-    // Tracking's own navigation (a div), as the other Tracking tests open it.
-    await click([...ui.container.querySelectorAll("div")].find(el => el.textContent.trim() === "Appointments"));
-    await click(ui.button("Message Kamran"));
-    assert.equal(ui.thread()?.getAttribute("data-appointment-thread"), "a-up");
-    assert.match(ui.thread().textContent, /From Tracking/);
-    await ui.unmount();
-});
+// "Tracking's card uses the same entry and the same thread" was removed
+// (2026-11-23) with the Tracking Appointments tab it tested: appointments
+// live on /appointments only, whose thread is tested above.

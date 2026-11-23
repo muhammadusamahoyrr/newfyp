@@ -119,6 +119,13 @@ async function mountTracking() {
         root.render(h(CaseCtx.Provider, { value: ctx }, h(Module7, { isDark: true })));
     });
     await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
+    // /tracking with no case opens My matters (2026-11-23, v2): open the
+    // newest case from it, as a client does.
+    const openFirst = container.querySelector("[data-open-matter]");
+    if (openFirst) {
+        await act(async () => { openFirst.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+        await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
+    }
 
     const buttons = () => [...container.querySelectorAll("button")];
     const byText = (label) => buttons().find(b => b.textContent.trim() === label);
@@ -141,25 +148,13 @@ async function mountTracking() {
     const ui = {
         container, buttons, byText, click,
         text: () => container.textContent,
-        /** Open the Appointments page through the real navigation.
-         *
-         * The sidebar entries are `<div onClick>` rather than buttons — a
-         * pre-existing accessibility gap in the navigation, untouched here
-         * because this change is about the cancel action. It is why this looks
-         * for a div and not a button; if the nav is ever made keyboard-usable,
-         * this helper is the thing that should start failing.
-         */
+        /** Open a section of the case through its tab (2026-11-23: the case's
+         *  sections are real buttons in one row, not a second sidebar of divs). */
         openPage: async (label) => {
-            const nav = [...container.querySelectorAll("div")].find(el => el.textContent.trim() === label);
-            assert.ok(nav, `no ${label} nav control`);
+            const nav = [...container.querySelectorAll("[data-case-tab]")].find(el => el.textContent.trim() === label);
+            assert.ok(nav, `no ${label} tab`);
             await click(nav);
             await act(async () => { await new Promise(r => realSetTimeout(r, 60)); });
-        },
-        openAppointments: async () => {
-            const nav = [...container.querySelectorAll("div")]
-                .find(el => el.textContent.trim() === "Appointments");
-            assert.ok(nav, "no Appointments nav control");
-            await click(nav);
         },
         settle: async (ms = 30) => {
             await act(async () => { await new Promise(r => realSetTimeout(r, ms)); });
@@ -211,7 +206,7 @@ test("Communication renders the real conversation, with no invented names or que
     console.error = (...a) => errors.push(a.map(String).join(" "));
     try {
         const ui = await mountTracking();
-        await ui.openPage("Communication");
+        await ui.openPage("Messages");
         const text = ui.text();
         assert.ok(!errors.some(e => /documents is not defined|ReferenceError/.test(e)), errors.join("\n"));
         assert.match(text, /Adv Sana Malik/);
@@ -227,7 +222,7 @@ test("Communication renders the real conversation, with no invented names or que
 test("a message that fails to send is not shown as sent, and the text is kept", async () => {
     api.__respond("sendMessage", { data: null, error: { message: "This case is closed, so it can no longer be changed." }, status: 409 });
     const ui = await mountTracking();
-    await ui.openPage("Communication");
+    await ui.openPage("Messages");
     const input = ui.container.querySelector('input[placeholder^="Ask your lawyer"]');
     assert.ok(input, "no message box");
     const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value").set;
@@ -255,7 +250,7 @@ test("the next hearing is the next upcoming one, not the first ever added", asyn
 test("a lawyer's reply arriving live is shown on Communication; another case's is not", async () => {
     const { broadcastNotification } = await import("../src/lib/notificationTarget.js");
     const ui = await mountTracking();
-    await ui.openPage("Communication");
+    await ui.openPage("Messages");
     const reads = () => api.__calls("listMessages").length;
     const before = reads();
     await act(async () => { broadcastNotification({ type: "case_message", payload: { case_id: "other-case" } }); });
@@ -360,9 +355,9 @@ test("switching case while the first case is still loading never shows the first
         ] }, error: null };
     });
     const ui = await mountTracking();
-    const switcher = ui.buttons().find(b => b.textContent.includes("Case Alpha"));
-    await ui.click(switcher);
-    const beta = [...ui.container.querySelectorAll("div")].find(d => d.style.cursor === "pointer" && d.textContent.includes("Case Beta"));
+    // The case bar's Switch menu (2026-11-23, v2): real buttons, by title.
+    await ui.click(ui.container.querySelector("[data-case-switch]"));
+    const beta = [...ui.container.querySelectorAll("[data-case-option]")].find(b => b.textContent.includes("Case Beta"));
     await ui.click(beta);
     await ui.settle(400);
     assert.match(ui.text(), /Beta Court/);

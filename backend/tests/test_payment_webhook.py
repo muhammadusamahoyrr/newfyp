@@ -109,7 +109,7 @@ async def payable(app_indexes):
     )
 
     yield {"payment_id": pid, "provider_ref": provider_ref,
-           "payer_id": client_id, "payee_id": lawyer_id}
+           "payer_id": client_id, "payee_id": lawyer_id, "case_id": case_id}
 
     await get_payments_col().delete_one({"_id": pid})
     await get_payment_events_col().delete_many({"payment_id": pid})
@@ -162,6 +162,26 @@ async def test_a_failed_status_marks_the_payment_failed(payable):
 
     assert out == {"status": "failed"}
     assert await _status(payable["payment_id"]) == "failed"
+
+
+async def test_the_failed_payment_notice_names_its_case(payable, monkeypatch):
+    """The client app opens a fee notice ON its case. "Payment did not go
+    through" carried only the payment id, so the app put whichever case it
+    chose in the header over another case's fee (2026-11-23)."""
+    from app.services import payment_service as ps
+    sent = []
+
+    async def capture(user_id, ntype, title, body, payload):
+        sent.append((user_id, str(getattr(ntype, "value", ntype)), payload))
+    monkeypatch.setattr(ps, "_notify", capture)
+
+    await ps.handle_webhook({}, _body(payable["provider_ref"], "evt-fc", status="failed"))
+
+    failed = [x for x in sent if x[1] == "payment_failed"]
+    assert len(failed) == 1
+    user_id, _, payload = failed[0]
+    assert user_id == payable["payer_id"]
+    assert payload == {"payment_id": payable["payment_id"], "case_id": payable["case_id"]}
 
 
 async def test_a_malformed_body_is_refused(payable):

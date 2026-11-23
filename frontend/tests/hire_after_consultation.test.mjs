@@ -101,25 +101,27 @@ async function mountTracking(appts) {
         appointmentMilestones: [],
     };
     await act(async () => {
-        root.render(h(CaseCtx.Provider, { value: ctx }, h(ModTracking, { isDark: true })));
+        root.render(h(CaseCtx.Provider, { value: ctx }, h(ModTracking, { isDark: true, standalone: "appointments" })));
     });
     await settle();
 
-    // Open the Appointments page through the real navigation. The sidebar
-    // entries are `<div onClick>`, a pre-existing gap this test does not touch.
-    const navTo = [...container.querySelectorAll("div")]
-        .find(el => el.textContent.trim() === "Appointments");
-    assert.ok(navTo, "no Appointments nav control");
-    await act(async () => {
-        navTo.dispatchEvent(new dom.window.MouseEvent(
-            "click", { bubbles: true, cancelable: true }));
-    });
-    await settle();
+    // The /appointments page (2026-11-23: the Tracking tab that used to show
+    // these cards was a duplicate, removed). A finished consultation sits
+    // under Past; its hire opens a dialog on this page (2026-10-20), not a
+    // link to the Lawyers page.
+    const past = container.querySelector('[data-hub-tab="past"]');
+    if (past) {
+        await act(async () => { past.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+        await settle();
+    }
 
     return {
         container,
-        hireLink: () => [...container.querySelectorAll("a")]
-            .find(a => a.textContent.includes("Hire this lawyer")),
+        hireEntry: () => container.querySelector("[data-row-hire], [data-next-hire]") || undefined,
+        click: async (el) => {
+            await act(async () => { el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+            await settle();
+        },
         unmount: async () => { await act(async () => root.unmount()); },
     };
 }
@@ -142,22 +144,20 @@ test.after(() => {
 test("a completed consultation offers the hire, carrying the lawyer and itself",
      async () => {
     const ui = await mountTracking([appointment()]);
-    const link = ui.hireLink();
+    const entry = ui.hireEntry();
 
-    assert.ok(link, "no hire entry on a completed consultation");
-    assert.match(link.getAttribute("href"), /^\/lawyers\?/);
-    const q = new dom.window.URLSearchParams(
-        link.getAttribute("href").split("?")[1]);
-    assert.equal(q.get("hire"), "L1");
-    assert.equal(q.get("appointment"), "apt-1");
-    assert.equal(q.get("hire_name"), "Adv Ayesha Khan");
+    assert.ok(entry, "no hire entry on a completed consultation");
+    await ui.click(entry);
+    const dialog = dom.window.document.querySelector("[data-hire-dialog]");
+    assert.ok(dialog, "the hire did not open");
+    assert.match(dialog.textContent, /Ayesha/, "the hire is not for this consultation's lawyer");
     await ui.unmount();
 });
 
 test("a consultation that has not completed offers nothing", async () => {
     for (const status of ["pending", "confirmed", "cancelled", "no_show", "expired"]) {
         const ui = await mountTracking([appointment({ status })]);
-        assert.equal(ui.hireLink(), undefined,
+        assert.equal(ui.hireEntry(), undefined,
                      `the hire entry appeared on a ${status} consultation`);
         await ui.unmount();
     }
@@ -415,10 +415,19 @@ test("a lawyer no longer listed is said so, and nothing opens", async () => {
 test("after a hire request, Tracking shows where it stands, not 'Hire' again (2026-10-12)", async () => {
     api.__respond("listEngagements", { data: [{ id: "E1", appointment_id: "apt-1", status: "requested", lawyer_id: "L1" }] });
     const ui = await mountTracking([appointment()]);
-    assert.equal(ui.hireLink(), undefined, "Tracking still offers the hire");
+    assert.equal(ui.container.querySelector("[data-row-hire]"), null, "the page still offers the hire");
     const box = ui.container.querySelector('[data-hire-state="requested"]');
     assert.ok(box, "no hire state on the card");
-    assert.match(box.textContent, /View request →.*Hire request sent/s);
+    assert.match(box.textContent, /Hire requested/);
+    await ui.unmount();
+});
+
+test("an accepted hire's 'Open case' opens that case (2026-11-23)", async () => {
+    api.__respond("listEngagements", { data: [{ id: "E7", appointment_id: "apt-1", case_id: "C9", status: "accepted", lawyer_id: "L1" }] });
+    const ui = await mountTracking([appointment()]);
+    const open = ui.container.querySelector('[data-hire-state="accepted"]');
+    assert.ok(open, "no Open case on the card");
+    assert.equal(open.getAttribute("href"), "/tracking?case=C9&tab=summary&engagement=E7");
     await ui.unmount();
 });
 

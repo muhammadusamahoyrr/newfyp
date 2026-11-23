@@ -69,6 +69,20 @@ export function lawyerNotificationTarget(type, payload = {}) {
     return null;
 }
 
+/** One case in My Matters (the /tracking page): `/tracking?case=…&tab=…`,
+ *  plus `&engagement=…` to open and highlight one hire request. With no case
+ *  id it opens My Matters without choosing one. Tabs: summary, timeline,
+ *  documents, messages, payments; `&payment=…` opens and highlights one fee. */
+export function matterHref(caseId, { tab = "summary", engagement = null, payment = null } = {}) {
+    const q = new URLSearchParams();
+    if (caseId) q.set("case", String(caseId));
+    if (tab) q.set("tab", tab);
+    if (engagement) q.set("engagement", String(engagement));
+    if (payment) q.set("payment", String(payment));
+    const s = q.toString();
+    return s ? `/tracking?${s}` : "/tracking";
+}
+
 /** The CLIENT page a notification opens (2026-10-12), or null for none.
  *  Clicking one used to only mark it read: "Meeting proposed", "Appointment
  *  confirmed", "Request declined" or "Terms received" led nowhere. */
@@ -87,11 +101,25 @@ export function clientNotificationTarget(type, payload = {}) {
     if (t.startsWith("appointment_")) {
         return apptId ? `/appointments?appointment=${encodeURIComponent(apptId)}` : "/appointments";
     }
-    // Hiring is answered on the Lawyers page (requests and proposed terms);
-    // once the lawyer is engaged, the case is followed on Tracking.
-    if (t === "engagement_accepted" || t === "lawyer_assigned") return "/tracking";
-    if (t.startsWith("engagement_")) return "/lawyers";
-    if (t === "case_message" || t === "case_update" || t.startsWith("hearing_")) return "/tracking";
+    // Hire requests and proposed terms live on the case in My Matters
+    // (2026-11-23; they used to be on the Lawyers page). Every link carries
+    // the case AND the request, so the exact one opens and is highlighted.
+    const caseId = payload?.case_id || null;
+    if (t.startsWith("engagement_") || t === "lawyer_assigned") {
+        return matterHref(caseId, { tab: "summary", engagement: payload?.engagement_id || null });
+    }
+    if (t === "case_message") return matterHref(caseId, { tab: "messages" });
+    if (t.startsWith("hearing_")) return matterHref(caseId, { tab: "timeline" });
+    if (t === "case_update") return matterHref(caseId, { tab: "summary" });
+    // A fee requested, paid or failed opens THAT payment on its case (2026-11-23;
+    // it used to open nothing). A notice with no case id (sent before
+    // "failed" carried one) opens All my payments, a view with NO case
+    // header: opening it under a case put one case's name over another's fee.
+    if (t.startsWith("payment_")) {
+        const pay = payload?.payment_id || null;
+        if (caseId) return matterHref(caseId, { tab: "payments", payment: pay });
+        return pay ? `/tracking?view=payments&payment=${encodeURIComponent(pay)}` : "/tracking?view=payments";
+    }
     if (t.startsWith("agreement_")) return "/agreements";
     return null;
 }

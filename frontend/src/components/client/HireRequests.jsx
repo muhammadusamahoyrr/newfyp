@@ -8,7 +8,7 @@
  * `terms_proposed` is the one a client must not miss — it is the only place
  * they see a price before agreeing to it. Nothing is agreed until they accept.
  */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { onPrimaryInk } from "./clientTheme.js";
 import { useT } from "./theme.js";
 import { useToast } from "@/components/shared/Toast.jsx";
@@ -17,7 +17,9 @@ import {
     listEngagements, cancelEngagement, acceptEngagementTerms, declineEngagementTerms,
     completeEngagement, terminateEngagement,
 } from "@/lib/api.js";
-import { onNotification } from "@/lib/notificationTarget.js";
+import { onNotification, matterHref } from "@/lib/notificationTarget.js";
+import { useClientRouter } from "./clientNav.js";
+import { ModalPortal, BACKDROP } from "@/components/client/documents/ui.jsx";
 
 const VISIBLE_ENG = ["requested", "terms_proposed", "accepted"];
 // Ended ones stay visible as a short history, so the client can see what
@@ -55,21 +57,132 @@ export const endedText = (e) => {
     return `The engagement was ended.${why(e.termination_reason)}`;
 };
 
+// Readable, finger-sized actions (2026-11-23: they were 11px chips).
 const engBtn = (t) => ({
-    fontSize: 11, fontWeight: 600, color: t.textMuted, background: "none",
-    border: `1px solid ${t.border}`, borderRadius: 8, padding: "4px 10px",
-    cursor: "pointer", flexShrink: 0,
+    fontSize: 13, fontWeight: 700, color: t.textMuted, background: "none",
+    border: `1px solid ${t.border}`, borderRadius: 999, height: 34, padding: "0 14px",
+    cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
 });
 
-export default function HireRequests() {
+/* The note asked for before declining terms, ending or completing an
+ * engagement (2026-11-23). These used to be browser prompts: unstyled, easy
+ * to dismiss by accident, and an empty "required" reason only failed AFTER
+ * the prompt had closed. */
+const NOTE_DIALOG = {
+    decline: {
+        title: "Decline these terms?",
+        body: e => `${e.lawyer_name || "The lawyer"} will be told you declined. Your case opens again, so you can approach another lawyer.`,
+        label: "Reason for the lawyer", hint: "optional",
+        placeholder: "e.g. The fee is more than I can pay right now",
+        confirm: "Decline terms", danger: true, required: false,
+    },
+    end: {
+        title: "End this engagement?",
+        body: e => `${e.lawyer_name || "Your lawyer"} will no longer act on ${e.case_title || "this case"}. The case is released so you can engage someone else. The reason is recorded and shown to your lawyer.`,
+        label: "Reason", hint: "required",
+        placeholder: "Why are you ending this engagement?",
+        confirm: "End engagement", danger: true, required: true,
+    },
+    complete: {
+        title: "Mark this matter complete?",
+        body: () => "Your lawyer has to confirm before the engagement closes.",
+        label: "How did the matter conclude?", hint: "optional",
+        placeholder: "e.g. Settled out of court",
+        confirm: "Mark complete", danger: false, required: false,
+    },
+    confirmComplete: {
+        title: "Confirm the work is finished?",
+        body: e => `${e.lawyer_name || "Your lawyer"} says the work is finished. Confirming closes this engagement.`,
+        label: "Note", hint: "optional",
+        placeholder: "Anything you want on record",
+        confirm: "Confirm complete", danger: false, required: false,
+    },
+};
+
+function NoteDialog({ t, kind, engagement, busy, onCancel, onConfirm }) {
+    const cfg = NOTE_DIALOG[kind];
+    const [text, setText] = useState("");
+    const box = useRef(null);
+    useEffect(() => {
+        box.current?.focus();
+        const esc = (ev) => { if (ev.key === "Escape" && !busy) onCancel(); };
+        window.addEventListener("keydown", esc);
+        return () => window.removeEventListener("keydown", esc);
+    }, [busy, onCancel]);
+    const missing = cfg.required && !text.trim();
+    const danger = t.danger || "#B42318";
+    const btn = (look) => {
+        const off = busy || (look !== "ghost" && missing);
+        return {
+            height: 40, padding: "0 18px", borderRadius: 10, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700,
+            cursor: off ? "default" : "pointer", opacity: off ? .55 : 1,
+            border: look === "prim" ? `1px solid ${t.primary}` : `1px solid ${look === "danger" ? danger : t.border}`,
+            background: look === "prim" ? t.primary : "transparent",
+            color: look === "prim" ? onPrimaryInk(t) : look === "danger" ? danger : t.text,
+        };
+    };
+    const submit = () => { if (!busy && !missing) onConfirm(text.trim() || null); };
+    return (
+        <ModalPortal>
+            <div data-lenis-prevent style={{ ...BACKDROP, display: "grid", placeItems: "center", padding: 20 }}
+                onClick={() => { if (!busy) onCancel(); }}>
+                <div role="dialog" aria-modal="true" aria-label={cfg.title} data-note-dialog={kind}
+                    onClick={ev => ev.stopPropagation()}
+                    style={{ width: "min(460px, 100%)", borderRadius: 16, background: t.card, border: `1px solid ${t.border}`,
+                        boxShadow: "0 30px 80px rgba(0,0,0,.45)", padding: "22px 24px", display: "flex", flexDirection: "column", gap: 14, color: t.text }}>
+                    <div>
+                        <div style={{ fontSize: 17, fontWeight: 800 }}>{cfg.title}</div>
+                        <div style={{ fontSize: 13, color: t.textMuted, marginTop: 6, lineHeight: 1.55 }}>{cfg.body(engagement)}</div>
+                    </div>
+                    <label style={{ display: "block" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, marginBottom: 6 }}>
+                            {cfg.label} <span style={{ fontWeight: 500 }}>({cfg.hint})</span>
+                        </div>
+                        <textarea ref={box} value={text} onChange={ev => setText(ev.target.value)} rows={3} maxLength={1000}
+                            placeholder={cfg.placeholder} disabled={busy} aria-required={cfg.required || undefined}
+                            onKeyDown={ev => { if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) submit(); }}
+                            style={{ width: "100%", boxSizing: "border-box", resize: "vertical", minHeight: 76, borderRadius: 10,
+                                border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13.5,
+                                fontFamily: "inherit", lineHeight: 1.5, outline: "none", padding: "9px 11px" }} />
+                    </label>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                        <button type="button" data-note-cancel onClick={onCancel} disabled={busy} style={btn("ghost")}>Cancel</button>
+                        <button type="button" data-note-confirm onClick={submit} disabled={busy || missing}
+                            style={btn(cfg.danger ? "danger" : "prim")}>{busy ? "Working…" : cfg.confirm}</button>
+                    </div>
+                </div>
+            </div>
+        </ModalPortal>
+    );
+}
+
+/* What only the CLIENT can unblock: proposed terms, and a completion the
+ * lawyer is waiting on. Everything else is history, not an action. */
+const needsClient = e => e.status === "terms_proposed"
+    || (e.status === "accepted" && e.completion_proposed_by === "lawyer");
+
+/** `caseId` scopes the list to ONE case (2026-11-23): the Tracking page shows
+ *  a selected case, and a request for another case under it read as if it
+ *  belonged to this one. Requests on OTHER cases that need the client are
+ *  still named, as links, so nothing that waits on them is hidden.
+ *  `focusEngagementId` highlights the request a link pointed at. */
+export default function HireRequests({ caseId = null, focusEngagementId = null } = {}) {
     const t = useT();
     const toast = useToast();
+    const router = useClientRouter();
     const [engagements, setEngagements] = useState([]);
+    // loading | ready | error -- a failed read is never shown as "no requests"
+    // (it could hide terms that are waiting on the client).
+    const [loadState, setLoadState] = useState("loading");
     const [engBusy, setEngBusy] = useState(null);
+    const focusedOnce = useRef(null);
+    const [note, setNote] = useState(null);   // { kind, engagement } while a dialog is open
 
     const refresh = async () => {
-        const res = await listEngagements().catch(() => ({}));
-        if (Array.isArray(res?.data)) setEngagements(res.data);
+        const res = await listEngagements().catch(e => ({ error: e }));
+        if (Array.isArray(res?.data)) { setEngagements(res.data); setLoadState("ready"); }
+        // A failed RE-read keeps the list but says it may be out of date.
+        else setLoadState(s => (s === "ready" || s === "stale" ? "stale" : "error"));
     };
     useEffect(() => { refresh(); }, []);
     // A lawyer proposing terms, or an engagement ending, arrives live.
@@ -92,62 +205,83 @@ export default function HireRequests() {
         toast.show(`${e.lawyer_name || "Your lawyer"} is now engaged on your case.`, "success", 5000);
         refresh();
     };
-    const declineTerms = async (e) => {
-        const reason = window.prompt("Optional: tell the lawyer why these terms don't work (leave blank to skip)");
-        if (reason === null) return;
+    // Decline / end / complete ask for a note first (NoteDialog). The dialog
+    // stays open and busy until the server answers, and closes only on success.
+    const runNote = async (text) => {
+        const { kind, engagement: e } = note;
         setEngBusy(e.id);
-        const { error } = await declineEngagementTerms(e.id, reason.trim() || null);
+        let res;
+        if (kind === "decline") res = await declineEngagementTerms(e.id, text);
+        else if (kind === "end") res = await terminateEngagement(e.id, text);
+        else res = await completeEngagement(e.id, { note: text });
         setEngBusy(null);
-        if (error) { toast.show(error.message || "Could not decline the terms.", "error", 3500); return; }
-        toast.show("Terms declined. Your case is open again — you can approach another lawyer.", "success", 4000);
+        const { data, error } = res || {};
+        if (error) {
+            const what = kind === "decline" ? "decline the terms" : kind === "end" ? "end the engagement" : "mark this complete";
+            toast.show(error.message || `Could not ${what}.`, "error", 4000);
+            return;
+        }
+        setNote(null);
+        toast.show(kind === "decline" ? "Terms declined. Your case is open again — you can approach another lawyer."
+            : kind === "end" ? "Engagement ended. Your case is open again."
+            : data?.status === "completed" ? "Engagement completed." : "Completion proposed — your lawyer needs to confirm it.",
+            "success", 4000);
         refresh();
     };
-    const endEngagement = async (e) => {
-        const reason = window.prompt(
-            "Ending this engagement releases your case so you can engage someone else.\n\n" +
-            "Give a reason (required — it is recorded and shown to your lawyer):"
-        );
-        if (reason === null) return;
-        if (!reason.trim()) { toast.show("A reason is required to end an engagement.", "warn", 3500); return; }
-        setEngBusy(e.id);
-        const { error } = await terminateEngagement(e.id, reason.trim());
-        setEngBusy(null);
-        if (error) { toast.show(error.message || "Could not end the engagement.", "error", 4000); return; }
-        toast.show("Engagement ended. Your case is open again.", "success", 4000);
-        refresh();
-    };
-    const markComplete = async (e) => {
-        const note = window.prompt("Optional: add a note about how the matter concluded");
-        if (note === null) return;
-        setEngBusy(e.id);
-        const { data, error } = await completeEngagement(e.id, { note: note.trim() || null });
-        setEngBusy(null);
-        if (error) { toast.show(error.message || "Could not mark this complete.", "error", 4000); return; }
-        toast.show(data?.status === "completed" ? "Engagement completed." : "Completion proposed — your lawyer needs to confirm it.", "success", 4000);
-        refresh();
-    };
+    const declineTerms = e => setNote({ kind: "decline", engagement: e });
+    const endEngagement = e => setNote({ kind: "end", engagement: e });
+    const markComplete = e => setNote({ kind: e.completion_proposed_by === "lawyer" ? "confirmComplete" : "complete", engagement: e });
 
-    const visible = engagements.filter(e => VISIBLE_ENG.includes(e.status));
-    const ended = engagements
+    const inScope = caseId ? engagements.filter(e => String(e.case_id || "") === String(caseId)) : engagements;
+    const visible = inScope.filter(e => VISIBLE_ENG.includes(e.status));
+    const ended = inScope
         .filter(e => ENDED_ENG.includes(e.status))
         .sort((a, b) => new Date(b.updated_at || b.responded_at || b.created_at || 0) - new Date(a.updated_at || a.responded_at || a.created_at || 0))
         .slice(0, 5);
-    if (!visible.length && !ended.length) return null;
+    const elsewhere = caseId ? engagements.filter(e => String(e.case_id || "") !== String(caseId) && needsClient(e)) : [];
+
+    // The request a link pointed at: scrolled to once it is on screen.
+    useEffect(() => {
+        if (!focusEngagementId || focusedOnce.current === focusEngagementId) return;
+        const el = typeof document !== "undefined"
+            && [...document.querySelectorAll("[data-engagement]")].find(n => n.getAttribute("data-engagement") === String(focusEngagementId));
+        if (el) { focusedOnce.current = focusEngagementId; el.scrollIntoView?.({ behavior: "smooth", block: "center" }); }
+    });
+
+    if (loadState === "loading") return null;
+    if (loadState === "error") {
+        return (
+            <div role="alert" data-hire-requests-error style={{ background: t.card, border: `1.5px solid ${t.border}`, borderRadius: 16, padding: "14px 18px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ flex: 1, fontSize: 14.5, color: t.text }}>Couldn't load your hire requests. Proposed terms may be waiting for you.</span>
+                <button type="button" onClick={() => { setLoadState("loading"); refresh(); }} style={engBtn(t)}>Try again</button>
+            </div>
+        );
+    }
+    if (!visible.length && !ended.length && !elsewhere.length && loadState !== "stale") return null;
 
     return (
         <div id="my-hire-requests" data-hire-requests style={{ scrollMarginTop: 16, background: t.card, border: `1.5px solid ${t.border}`, borderRadius: 16, padding: "14px 18px", marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: t.text, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                <Ic n="shield" s={14} c={t.primary} /> My Hire Requests
+            {loadState === "stale" && (
+                <div role="alert" data-hire-requests-stale style={{ fontSize: 13.5, color: t.warn, marginBottom: 8 }}>
+                    Couldn't refresh your hire requests; this list may be out of date.{" "}
+                    <button type="button" onClick={refresh} style={{ background: "none", border: 0, padding: 0, cursor: "pointer", color: t.primary, fontWeight: 700, fontSize: 13.5 }}>Try again</button>
+                </div>
+            )}
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: t.text, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                <Ic n="shield" s={14} c={t.primary} /> {caseId ? "Hire requests for this case" : "My Hire Requests"}
             </div>
             {visible.map(e => {
                 const badge = ENG_BADGE[e.status];
+                const focused = focusEngagementId && String(e.id) === String(focusEngagementId);
                 return (
-                    <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: `1px solid ${t.border}` }}>
+                    <div key={e.id} data-engagement={e.id} data-focused={focused ? "" : undefined}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: focused ? "8px 10px" : "8px 0", borderBottom: `1px solid ${t.border}`,
+                            ...(focused ? { borderRadius: 10, outline: `2px solid ${t.primary}`, outlineOffset: -2, background: `${t.primary}12` } : null) }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ fontSize: 14.5, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {e.lawyer_name || "Lawyer"} · {e.case_title || e.case_number}
                             </div>
-                            <div style={{ fontSize: 11, color: t.textMuted }}>
+                            <div style={{ fontSize: 13.5, color: t.textMuted }}>
                                 {e.status === "accepted"
                                     ? `Engaged${feeLabel(e) ? ` — ${feeLabel(e)}` : ""}.`
                                     : e.status === "terms_proposed"
@@ -155,17 +289,17 @@ export default function HireRequests() {
                                         : "Waiting for the lawyer to respond…"}
                             </div>
                             {e.status === "terms_proposed" && e.scope_note && (
-                                <div style={{ fontSize: 11, color: t.textDim, marginTop: 4, fontStyle: "italic" }}>Scope: {e.scope_note}</div>
+                                <div style={{ fontSize: 13.5, color: t.textDim, marginTop: 4, fontStyle: "italic" }}>Scope: {e.scope_note}</div>
                             )}
                             {e.status === "accepted" && e.completion_proposed_by && (
-                                <div style={{ fontSize: 11, color: t.primary, marginTop: 4 }}>
+                                <div style={{ fontSize: 13.5, color: t.primary, marginTop: 4 }}>
                                     {e.completion_proposed_by === "lawyer"
                                         ? "Your lawyer says the work is finished — confirm to close this engagement."
                                         : "You proposed completion; waiting for your lawyer to confirm."}
                                 </div>
                             )}
                         </div>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: badge.color, background: `${badge.color}18`, borderRadius: 20, padding: "3px 10px", flexShrink: 0 }}>{badge.label}</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 700, color: badge.color, background: `${badge.color}18`, borderRadius: 20, padding: "4px 12px", flexShrink: 0 }}>{badge.label}</span>
                         {e.status === "requested" && (
                             <button onClick={() => withdrawRequest(e.id)} disabled={engBusy === e.id} style={engBtn(t)}>Withdraw</button>
                         )}
@@ -192,24 +326,43 @@ export default function HireRequests() {
                     </div>
                 );
             })}
+            {elsewhere.length > 0 && (
+                <div data-elsewhere-actions style={{ marginTop: visible.length ? 12 : 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", margin: "4px 0 2px" }}>Needs you on another case</div>
+                    {elsewhere.map(e => (
+                        <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: `1px solid ${t.border}` }}>
+                            <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {e.status === "terms_proposed"
+                                    ? `${e.lawyer_name || "A lawyer"} proposed terms for ${e.case_title || e.case_number || "another case"}`
+                                    : `${e.lawyer_name || "Your lawyer"} says the work on ${e.case_title || e.case_number || "another case"} is finished`}
+                            </div>
+                            <button type="button" onClick={() => router.push(matterHref(e.case_id, { engagement: e.id }))} style={engBtn(t)}>Open case →</button>
+                        </div>
+                    ))}
+                </div>
+            )}
             {ended.length > 0 && (
                 <div data-ended-engagements style={{ marginTop: visible.length ? 12 : 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", margin: "4px 0 2px" }}>Past requests</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", margin: "4px 0 2px" }}>Past requests</div>
                     {ended.map(e => {
                         const badge = ENG_BADGE[e.status];
                         return (
                             <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: `1px solid ${t.border}` }}>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 12.5, fontWeight: 600, color: t.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    <div style={{ fontSize: 13.5, fontWeight: 600, color: t.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                         {e.lawyer_name || "Lawyer"} · {e.case_title || e.case_number}
                                     </div>
-                                    <div style={{ fontSize: 11, color: t.textMuted, overflowWrap: "anywhere" }}>{endedText(e)}</div>
+                                    <div style={{ fontSize: 13.5, color: t.textMuted, overflowWrap: "anywhere" }}>{endedText(e)}</div>
                                 </div>
-                                <span style={{ fontSize: 11, fontWeight: 700, color: badge.color, background: `${badge.color}18`, borderRadius: 20, padding: "3px 10px", flexShrink: 0 }}>{badge.label}</span>
+                                <span style={{ fontSize: 13.5, fontWeight: 700, color: badge.color, background: `${badge.color}18`, borderRadius: 20, padding: "4px 12px", flexShrink: 0 }}>{badge.label}</span>
                             </div>
                         );
                     })}
                 </div>
+            )}
+            {note && (
+                <NoteDialog t={t} kind={note.kind} engagement={note.engagement} busy={engBusy === note.engagement.id}
+                    onCancel={() => setNote(null)} onConfirm={runNote} />
             )}
         </div>
     );

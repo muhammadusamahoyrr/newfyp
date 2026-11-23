@@ -6,7 +6,7 @@ import { useCase } from "@/components/shared/CaseContext.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { activeCases, isDraftCase, isEndedCase } from "@/lib/caseStatus.js";
 import { listEngagements, myDocumentsV2, listMeetingProposals } from "@/lib/api.js";
-import { onNotification } from "@/lib/notificationTarget.js";
+import { onNotification, matterHref } from "@/lib/notificationTarget.js";
 import { DOCS_FONT } from "./documents/ui.jsx";
 import { requestNewMatter } from "./newMatter.js";
 
@@ -31,10 +31,13 @@ const OVERVIEW_CSS = `[data-overview]{display:flex;flex-direction:column;gap:18p
 [data-overview] .ov-link:hover{background-size:calc(100% - 12px) 1.5px}
 [data-overview] .ov-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;border-radius:999px;border:1px solid color-mix(in srgb,var(--brand-text) 22%,var(--line));background:color-mix(in srgb,var(--brand-text) 7%,var(--surface));color:var(--ink);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .15s,transform .15s}
 [data-overview] .ov-btn{transition:background .2s,color .2s,border-color .2s,transform .12s}
-[data-overview] .ov-btn[style*="--a"]{background:color-mix(in srgb,var(--a) 13%,var(--surface));border-color:color-mix(in srgb,var(--a) 38%,transparent);color:var(--a)}
-[data-overview] .ov-btn:hover{background:var(--a,var(--brand-text));border-color:transparent;color:#04262c}
+/* Two button styles only (2026-11-23): the green-gradient main button
+   (.go, and the "needs you" action) and this brand outline. One accent
+   for every outline button; hover tints, it never fills solid. */
+[data-overview] .ov-btn:not(.go){background:transparent;border-color:color-mix(in srgb,var(--brand-text) 40%,var(--line));color:var(--brand-text)}
+[data-overview] .ov-btn:not(.go):hover{background:color-mix(in srgb,var(--brand-text) 12%,transparent);border-color:color-mix(in srgb,var(--brand-text) 65%,transparent);color:var(--brand-text)}
 [data-overview] .ov-btn:hover span{color:inherit!important}
-[data-overview] .ov-btn:active{transform:scale(.95);background:var(--a,var(--brand-text));border-color:transparent;color:#04262c;filter:brightness(.9)}
+[data-overview] .ov-btn:not(.go):active{background:color-mix(in srgb,var(--brand-text) 18%,transparent)}
 [data-overview] .ov-btn svg{transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
 [data-overview] .ov-btn:hover svg{transform:rotate(90deg)}
 [data-overview] .ov-btn.chat:hover svg{transform:rotate(-12deg) scale(1.12)}
@@ -265,7 +268,8 @@ const ModOverview = ({ onOpenNotifications }) => {
         })),
         ...engagements.filter(e => e.status === "terms_proposed").map(e => ({
             key: `terms-${e.id}`, label: `${e.lawyer_name || "A lawyer"} proposed terms for ${e.case_title || "your case"}`,
-            action: "Review", go: "/lawyers",
+            // The exact request on its case (2026-11-23), not the Lawyers page.
+            action: "Review", go: matterHref(e.case_id, { engagement: e.id }),
         })),
     ];
 
@@ -328,7 +332,7 @@ const ModOverview = ({ onOpenNotifications }) => {
                                 <div className="ov-clip" style={{ fontWeight: 700, fontSize: 14.5, marginTop: 2, color: "var(--ink)" }}>{needs[0].label}</div>
                                 {needs[0].sub && <div className="ov-clip" data-need-sub style={{ fontSize: 12.5, marginTop: 2, color: "var(--muted)" }}>{needs[0].sub}</div>}
                             </div>
-                            <button type="button" className="ov-btn" onClick={() => router.push(needs[0].go)}>{needs[0].action} <span className="arr" aria-hidden="true">→</span></button>
+                            <button type="button" className="ov-btn go" onClick={() => router.push(needs[0].go)}>{needs[0].action} <span className="arr" aria-hidden="true">→</span></button>
                         </div>
                     ) : proposals.state === "error" ? (
                         <div className="ov-well ov-need calm" data-need="unknown" role="alert">
@@ -352,10 +356,10 @@ const ModOverview = ({ onOpenNotifications }) => {
                         </div>
                     )}
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                        <button type="button" className={needs.length ? "ov-btn" : "ov-btn go"} style={{ "--a": "var(--brand-text)" }} onClick={() => { requestNewMatter(); router.push("/intake"); }}>
-                            <span style={{ color: needs.length ? "var(--brand-text)" : "inherit", display: "inline-flex" }}><Svg d={I.plus} s={15} w={2.4} /></span>Start a new matter
+                        <button type="button" className="ov-btn go" onClick={() => { requestNewMatter(); router.push("/intake"); }}>
+                            <span style={{ display: "inline-flex" }}><Svg d={I.plus} s={15} w={2.4} /></span>Start a new matter
                         </button>
-                        <button type="button" className="ov-btn chat" style={{ "--a": "#b9a6f2" }} onClick={() => router.push("/chat")}><span style={{ color: "#b9a6f2", display: "inline-flex" }}><Svg d={I.chat} s={15} /></span>Ask AI</button>
+                        <button type="button" className="ov-btn chat" onClick={() => router.push("/chat")}><span style={{ display: "inline-flex" }}><Svg d={I.chat} s={15} /></span>Ask AI</button>
                     </div>
                 </div>
 
@@ -385,7 +389,7 @@ const ModOverview = ({ onOpenNotifications }) => {
                     <div style={{ display: "flex", gap: 8 }}>
                         {/* Theme colours only (2026-10-19): the cyan and gold pair
                             here matched nothing else in the hero. */}
-                        <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "var(--brand-text)" }} onClick={() => router.push("/tracking")}>{next ? "Details" : "See all"}</button>
+                        <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "var(--brand-text)" }} onClick={() => router.push(next ? `/appointments?appointment=${encodeURIComponent(next._id || next.id)}` : "/appointments")}>{next ? "Details" : "See all"}</button>
                         <button type="button" className="ov-btn sm go" style={{ flex: 1 }} onClick={() => router.push("/lawyers")}>Book a meeting</button>
                     </div>
                     {upcoming.length > 1 && <div style={{ fontSize: 12, color: "var(--faint)" }}>{upcoming.length - 1} more upcoming</div>}
@@ -448,7 +452,7 @@ const ModOverview = ({ onOpenNotifications }) => {
                                 : "No lawyer yet — find one";
                             return (
                                 <button key={c._id} type="button" className="ov-well ov-case" style={{ "--c": colour }}
-                                    onClick={() => router.push(isDraftCase(c) ? "/intake" : "/tracking")}>
+                                    onClick={() => router.push(isDraftCase(c) ? "/intake" : matterHref(c._id || c.id))}>
                                     <span className="ov-av">{initials(c.title)}</span>
                                     <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                                         <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -519,13 +523,13 @@ const ModOverview = ({ onOpenNotifications }) => {
                                 </div>
                             </div>
                             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                                <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "var(--brand-text)" }} onClick={() => router.push("/tracking")}>Open case</button>
-                                <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "var(--gold)" }} onClick={() => router.push("/lawyers")}>Book a meeting</button>
+                                <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "var(--brand-text)" }} onClick={() => router.push(matterHref(lawyer.c._id || lawyer.c.id))}>Open case</button>
+                                <button type="button" className="ov-btn sm" style={{ flex: 1 }} onClick={() => router.push("/lawyers")}>Book a meeting</button>
                             </div>
                             {working.length > 1 && <div style={{ marginTop: 8, fontSize: 12, color: "var(--faint)" }}>+ {working.length - 1} more lawyer{working.length > 2 ? "s" : ""} on your cases</div>}
                         </>) : (<>
                             <div className="ov-empty" style={{ paddingTop: 0 }}>No lawyer is working with you yet.</div>
-                            <button type="button" className="ov-btn sm" style={{ "--a": "#6addeb" }} onClick={() => router.push("/lawyers")}>Find a lawyer →</button>
+                            <button type="button" className="ov-btn sm"  onClick={() => router.push("/lawyers")}>Find a lawyer →</button>
                         </>)}
                     </section>
 

@@ -301,10 +301,11 @@ const LAWYERS_CARD_CSS = `[data-lawyers-grid] .lc-card{display:flex;flex-directi
 
 /* The directory hero (2026-10-10), scoped by [data-lawyers-hero]. */
 const LAWYERS_HERO_CSS = `[data-lawyers-hero]{margin-bottom:22px;border-radius:22px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-rest);overflow:hidden}
-[data-lawyers-hero] .lh-main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;padding:24px 26px}
+[data-lawyers-hero] .lh-main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;padding:20px 22px;align-items:stretch}
+[data-lawyers-hero] .lh-left{display:flex;flex-direction:column;min-width:0}
 [data-lawyers-hero] .lh-title{margin:10px 0 0;font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.2px}
-[data-lawyers-hero] .lh-text{margin:6px 0 16px;font-size:14px;color:var(--muted)}
-[data-lawyers-hero] .lh-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+[data-lawyers-hero] .lh-text{margin:4px 0 14px;font-size:14px;color:var(--muted)}
+[data-lawyers-hero] .lh-stats{flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:stretch}
 [data-lawyers-hero] .lh-stat{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ic v" "l l" "s s";align-items:center;column-gap:10px;padding:12px 14px;border-radius:16px;text-align:left;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--line);background:var(--surface-2);transition:transform .2s ease,border-color .2s,background .2s}
 [data-lawyers-hero] .lh-stat[aria-pressed="true"]{border-color:color-mix(in srgb,var(--brand-text) 55%,transparent);background:color-mix(in srgb,var(--brand-text) 10%,var(--surface-2))}
 [data-lawyers-hero] .lh-stat[aria-pressed="true"] .s{color:var(--brand-text);font-weight:600}
@@ -313,17 +314,17 @@ const LAWYERS_HERO_CSS = `[data-lawyers-hero]{margin-bottom:22px;border-radius:2
 [data-lawyers-hero] .lh-stat .v{grid-area:v;font-size:28px;font-weight:600;line-height:1;color:var(--ink);text-align:right}
 [data-lawyers-hero] .lh-stat .l{grid-area:l;margin-top:10px;font-size:13px;font-weight:600;color:var(--ink)}
 [data-lawyers-hero] .lh-stat .s{grid-area:s;font-size:11.5px;color:var(--faint);margin-top:2px}
-[data-lawyers-hero] .lh-ai{display:flex;flex-direction:column;gap:10px;padding:20px 22px;border-radius:18px;border:1px solid var(--line);background:var(--surface-2)}
+[data-lawyers-hero] .lh-ai{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:var(--surface-2)}
 [data-lawyers-hero] .lh-ai-tag{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--brand-text)}
-[data-lawyers-hero] .lh-ai-title{margin:0;font-size:20px;font-weight:700;color:var(--ink)}
-[data-lawyers-hero] .lh-ai-text{margin:0;font-size:13.5px;line-height:1.55;color:var(--muted)}
-[data-lawyers-hero] .lh-ai-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+[data-lawyers-hero] .lh-ai-title{margin:0;font-size:18px;font-weight:700;color:var(--ink)}
+[data-lawyers-hero] .lh-ai-text{margin:0;font-size:13px;line-height:1.5;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-lawyers-hero] .lh-ai-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
 [data-lawyers-hero] .lh-ai-btn{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 18px;border:0;border-radius:999px;background:var(--brand-solid);color:var(--on-brand);font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 10px 22px -12px rgba(46,196,214,.8);transition:filter .15s,transform .15s}
 [data-lawyers-hero] .lh-ai-btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
 [data-lawyers-hero] .lh-ai-btn:hover:not(:disabled) svg{animation:lhTwinkle .6s ease}
 [data-lawyers-hero] .lh-ai-btn:disabled{opacity:.7;cursor:wait}
 [data-lawyers-hero] .lh-ai-note{font-size:12px;color:var(--faint)}
-[data-lawyers-hero] .lh-ai-ask{align-self:flex-start;border:0;background:none;padding:0;color:var(--brand-text);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+[data-lawyers-hero] .lh-ai-ask{align-self:center;line-height:1.2;border:0;background:none;padding:0;color:var(--brand-text);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 [data-lawyers-hero] .lh-ai-ask:hover{text-decoration:underline}
 @keyframes lhTwinkle{0%,100%{transform:none}50%{transform:scale(1.25) rotate(20deg)}}`;
 
@@ -2459,7 +2460,7 @@ const ModLawyers = () => {
                                 const acceptingOn = filters.availability === "Available";
                                 const showAll = () => { setFilter("All"); setFilters({ specialization: "All", city: "All", rating: 0, availability: "All" }); };
                                 return [
-                                    ["Lawyers listed", dirTotals.all, "All registered · Show all →", false,
+                                    ["Lawyers listed", dirTotals.all, "Registered · Show all →", false,
                                         "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
                                         showAll],
                                     ["Accepting requests", dirTotals.accepting, acceptingOn ? "Showing only these · Clear" : "Show only these →", acceptingOn,
@@ -2525,17 +2526,16 @@ const ModLawyers = () => {
                                     {loadingMatch ? "Matching…" : aiMatch ? "View Match" : "Find My Match"}
                                 </button>
                             )}
-                            <span className="lh-ai-note">Uses your case type, city and details.</span>
+                            {/* The dashed "AI-Recommended Match" banner, merged in (2026-11-23):
+                                the describe-your-problem box opens only from here. */}
+                            <button type="button" className="lh-ai-ask" data-open-ask onClick={() => {
+                                setAskOpen(true);
+                                setTimeout(() => {
+                                    document.querySelector("[data-ai-ask]")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                                    askRef.current?.focus();
+                                }, 0);
+                            }}>or describe your problem →</button>
                         </div>
-                        {/* The dashed "AI-Recommended Match" banner, merged in (2026-11-23):
-                            the describe-your-problem box opens only from here. */}
-                        <button type="button" className="lh-ai-ask" data-open-ask onClick={() => {
-                            setAskOpen(true);
-                            setTimeout(() => {
-                                document.querySelector("[data-ai-ask]")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
-                                askRef.current?.focus();
-                            }, 0);
-                        }}>or describe your problem to filter the list →</button>
                     </div>
                 </div>
 

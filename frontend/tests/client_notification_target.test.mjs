@@ -16,12 +16,27 @@ test("a meeting proposal opens Appointments, and once accepted its appointment",
     assert.equal(to("appointment_proposal_accepted", { appointment_id: "a9" }), "/appointments?appointment=a9");
 });
 
-test("hiring opens where it is answered, then the case", () => {
-    assert.equal(to("engagement_terms_proposed", { engagement_id: "E1" }), "/lawyers");
-    assert.equal(to("engagement_declined", {}), "/lawyers");
-    assert.equal(to("engagement_accepted", {}), "/tracking");
-    assert.equal(to("lawyer_assigned", {}), "/tracking");
-    assert.equal(to("hearing_scheduled", {}), "/tracking");
+test("hiring opens the exact request on its case in My Matters (2026-11-23)", () => {
+    // Proposed terms are the only place a client sees a price before agreeing:
+    // the link carries the case AND the request, never just /lawyers.
+    assert.equal(to("engagement_terms_proposed", { engagement_id: "E1", case_id: "C1" }),
+        "/tracking?case=C1&tab=summary&engagement=E1");
+    assert.equal(to("engagement_declined", { engagement_id: "E2", case_id: "C 2" }),
+        "/tracking?case=C+2&tab=summary&engagement=E2");
+    assert.equal(to("engagement_accepted", { engagement_id: "E3", case_id: "C3" }),
+        "/tracking?case=C3&tab=summary&engagement=E3");
+    assert.equal(to("lawyer_assigned", { case_id: "C4" }), "/tracking?case=C4&tab=summary");
+    // No case id in an old notification: My Matters, never a wrong case.
+    assert.equal(to("engagement_declined", {}), "/tracking?tab=summary");
+    for (const t of ["engagement_terms_proposed", "engagement_declined", "engagement_accepted"]) {
+        assert.doesNotMatch(to(t, { engagement_id: "E", case_id: "C" }), /^\/lawyers/);
+    }
+});
+
+test("case notices open their tab on the exact case", () => {
+    assert.equal(to("hearing_scheduled", { case_id: "C1" }), "/tracking?case=C1&tab=timeline");
+    assert.equal(to("case_message", { case_id: "C1" }), "/tracking?case=C1&tab=messages");
+    assert.equal(to("case_update", { case_id: "C1" }), "/tracking?case=C1&tab=summary");
 });
 
 test("anything else opens nothing", () => {
@@ -31,4 +46,16 @@ test("anything else opens nothing", () => {
 test("a message opens the appointment ON its thread; no id falls back to the page (2026-10-12)", () => {
     assert.equal(to("appointment_message", { appointment_id: "a1" }), "/appointments?appointment=a1&thread=open");
     assert.equal(to("appointment_message", {}), "/appointments");
+});
+
+test("a fee notice opens that payment on its case (2026-11-23)", () => {
+    assert.equal(to("payment_requested", { payment_id: "P1", case_id: "C1", amount: 5000 }),
+        "/tracking?case=C1&tab=payments&payment=P1");
+    assert.equal(to("payment_received", { payment_id: "P2", case_id: "C1" }),
+        "/tracking?case=C1&tab=payments&payment=P2");
+    // "Failed" now names its case too; an older notice without one opens
+    // All my payments, never a case page (no case header over another case's fee).
+    assert.equal(to("payment_failed", { payment_id: "P3", case_id: "C2" }), "/tracking?case=C2&tab=payments&payment=P3");
+    assert.equal(to("payment_failed", { payment_id: "P3" }), "/tracking?view=payments&payment=P3");
+    assert.equal(to("payment_failed", {}), "/tracking?view=payments");
 });

@@ -399,6 +399,30 @@ test("confirmation calls the server exactly once per press", async () => {
     await unmount();
 });
 
+test("confirming re-reads the shared case list, so the draft stops showing as one (2026-11-23)", async () => {
+    // Without this, Overview kept saying "Confirm your draft case" and the
+    // Intake badge stayed until a full reload.
+    reset();
+    seedToken();
+    const { container, unmount } = await mountIntake();
+    const before = api.__calls("listCases").length;
+    await confirmFinalCategory(container);
+    assert.equal(api.__calls("confirmCase").length, 1);
+    assert.ok(api.__calls("listCases").length > before, "the case list was not re-read after confirming");
+    await unmount();
+});
+
+test("a refused confirmation does not re-read the case list", async () => {
+    reset();
+    seedToken();
+    api.__respond("confirmCase", { error: { message: "server said no" } });
+    const { container, unmount } = await mountIntake();
+    const before = api.__calls("listCases").length;
+    await confirmFinalCategory(container);
+    assert.equal(api.__calls("listCases").length, before);
+    await unmount();
+});
+
 test("a restored authoritative category is what confirmation submits", async () => {
     reset();
     seedToken();

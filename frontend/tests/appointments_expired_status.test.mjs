@@ -283,7 +283,7 @@ async function mountClient(items) {
     };
     await act(async () => {
         root.render(h(CaseCtx.Provider, { value: ctx },
-                      h(Module7, { isDark: true })));
+                      h(Module7, { isDark: true, standalone: "appointments" })));
     });
     await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
 
@@ -294,15 +294,25 @@ async function mountClient(items) {
         container,
         text: () => container.textContent,
         byText,
-        openAppointments: async () => {
-            const nav = [...container.querySelectorAll("div")]
-                .find(el => el.textContent.trim() === "Appointments");
-            assert.ok(nav, "no Appointments nav control");
-            await act(async () => {
-                nav.dispatchEvent(new dom.window.MouseEvent(
-                    "click", { bubbles: true, cancelable: true }));
-            });
-            await act(async () => { await new Promise(r => realSetTimeout(r, 20)); });
+        /** Open an appointment on the /appointments page (2026-11-23: the
+         *  Tracking tab it used to be opened from was a duplicate, removed).
+         *  Its actions live in its detail view: find its row under Upcoming,
+         *  Past or Cancelled and open it. With no id, the first one found. */
+        openAppointments: async (id = null) => {
+            const press = async el => {
+                await act(async () => { el.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, cancelable: true })); });
+                await act(async () => { await new Promise(r => realSetTimeout(r, 20)); });
+            };
+            if (container.querySelector("[data-appointment-detail]")) return;
+            for (const k of ["upcoming", "past", "cancelled"]) {
+                const tabBtn = container.querySelector(`[data-hub-tab="${k}"]`);
+                if (tabBtn) await press(tabBtn);
+                const row = [...container.querySelectorAll("[data-hub-row]")]
+                    .find(r => !id || r.getAttribute("data-hub-row") === String(id));
+                if (row) { await press(row.querySelector("[data-open-appt]")); return; }
+            }
+            const first = container.querySelector('[data-hub-tab="upcoming"]');
+            if (first) await press(first);
         },
         unmount: async () => { await act(async () => root.unmount()); },
     };

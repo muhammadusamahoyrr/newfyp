@@ -23,7 +23,7 @@ import TemplateEditor, { loadTemplateText, realTextHtml } from "./documents/Temp
 import { LIcon } from "./documents/icons.jsx";
 import {
     Btn, IconBtn, Chip, Card, Paper, Icon, ModalPortal, BACKDROP,
-    SERIF, TOKEN_STYLE, VALUE_STYLE, fieldStyle, onPrimary,
+    SERIF, TOKEN_STYLE, VALUE_STYLE, fieldStyle,
 } from "./documents/ui.jsx";
 
 const TRY_PROMPTS = [
@@ -359,7 +359,10 @@ export function PromptCard({ t, templates, cases, onPlan, workspace = false, onV
                     <LIcon name="paperclip" size={15} />Attach
                 </button>
                 <button type="button" disabled={!ready} onClick={plan} data-plan-draft title="Plan my draft (Ctrl + Enter)"
-                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, height: 38, padding: "0 14px", marginLeft: "auto", borderRadius: 10, border: "none", background: t.primary, color: onPrimary(t), fontSize: 14, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap", cursor: ready ? "pointer" : "not-allowed", opacity: ready ? 1 : 0.6, boxShadow: ready ? `0 4px 14px ${t.primary}40` : "none", flexShrink: 0 }}>
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, height: 38, padding: "0 14px", marginLeft: "auto", borderRadius: 999, border: "none",
+                        // The app's main-button gradient, as on Overview (2026-11-23).
+                        background: "linear-gradient(135deg,#12897f,#1c9c66)", color: "#fff",
+                        fontSize: 14, fontWeight: 700, lineHeight: 1, whiteSpace: "nowrap", cursor: ready ? "pointer" : "not-allowed", opacity: ready ? 1 : 0.6, boxShadow: ready ? "0 8px 20px -10px rgba(28,156,102,.8)" : "none", flexShrink: 0 }}>
                     <LIcon name="sparkles" size={15} />Plan my draft
                 </button>
             </div>

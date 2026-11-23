@@ -9,8 +9,11 @@ import VideoJoin, { useVideoConfigured } from "@/components/shared/VideoJoin.jsx
 import { PreJoinModal } from "@/components/shared/PreJoin.jsx";
 import ReviewLawyerDialog from "./ReviewLawyerDialog.jsx";
 import HireDialog from "./HireDialog.jsx";
-import HireRequests from "./HireRequests.jsx";
-import { getReviewEligibility } from "@/lib/api.js";
+import HireRequests, { feeLabel } from "./HireRequests.jsx";
+import { caseHero, pickEngagement, stageWindow } from "@/lib/caseHero.js";
+import { caseTodos } from "@/lib/caseTodos.js";
+import { caseUpdates, groupByDay, caseDetails } from "@/lib/caseUpdates.js";
+import { getReviewEligibility, errorCode } from "@/lib/api.js";
 
 // The hire steps that open on this page (2026-10-20) instead of the Lawyers page.
 const HIRE_HERE = new Set(["none", "requested", "terms_proposed"]);
@@ -24,11 +27,11 @@ const NEXT_STEP_STATES = new Set(["none", "terms_proposed"]);
 const isRecentCompleted = (a, now = Date.now()) => a.status === "completed"
     && a.scheduled_at && now - new Date(a.scheduled_at).getTime() <= NEXT_STEP_DAYS * 864e5;
 import { confirmedCases, caseStatusLabel } from "@/lib/caseStatus.js";
-import { listCases, getCaseTimeline, listAppointments, cancelAppointment as apiCancelAppointment, getAppointment as apiGetAppointment, rescheduleAppointment as apiRescheduleAppointment, listMessages as apiListMessages, sendMessage as apiSendMessage, listDocuments as apiListDocuments, downloadDocument as apiDownloadDocument, fetchDocumentPreviewUrl, myDocumentsV2, fetchRevisionPreview, downloadDocumentFile, listPayments, startCheckout, mockPay, downloadReceipt, openAppointmentDispute, listAppointmentDisputes, getBookableSlots, listMeetingProposals, acceptMeetingProposal, declineMeetingProposal, listEngagements, listAppointmentFiles as apiListAppointmentFiles, uploadAppointmentFile as apiUploadAppointmentFile, openAppointmentFile as apiOpenAppointmentFile, deleteAppointmentFile as apiDeleteAppointmentFile, acceptAppointmentSuggestion as apiAcceptAppointmentSuggestion, proposeNewTime as apiProposeNewTime, withdrawNewTime as apiWithdrawNewTime, declineNewTime as apiDeclineNewTime, acceptNewTime as apiAcceptNewTime, getSummaryDraft as apiGetSummaryDraft, readSharedSummary as apiReadSharedSummary, shareSummary as apiShareSummary, revokeSummary as apiRevokeSummary } from "@/lib/api.js";
+import { listCases, getCase, getCaseTimeline, listAppointments, cancelAppointment as apiCancelAppointment, getAppointment as apiGetAppointment, rescheduleAppointment as apiRescheduleAppointment, listMessages as apiListMessages, sendMessage as apiSendMessage, listDocuments as apiListDocuments, downloadDocument as apiDownloadDocument, fetchDocumentPreviewUrl, myDocumentsV2, fetchRevisionPreview, downloadDocumentFile, listPayments, startCheckout, mockPay, downloadReceipt, openAppointmentDispute, listAppointmentDisputes, getBookableSlots, listMeetingProposals, acceptMeetingProposal, declineMeetingProposal, listEngagements, listAppointmentFiles as apiListAppointmentFiles, uploadAppointmentFile as apiUploadAppointmentFile, openAppointmentFile as apiOpenAppointmentFile, deleteAppointmentFile as apiDeleteAppointmentFile, acceptAppointmentSuggestion as apiAcceptAppointmentSuggestion, proposeNewTime as apiProposeNewTime, withdrawNewTime as apiWithdrawNewTime, declineNewTime as apiDeclineNewTime, acceptNewTime as apiAcceptNewTime, getSummaryDraft as apiGetSummaryDraft, readSharedSummary as apiReadSharedSummary, shareSummary as apiShareSummary, revokeSummary as apiRevokeSummary } from "@/lib/api.js";
 import { formatPkt, pktToday, pktDayKey, pktHourMinute, pktSlotToUtcISO, isPktSlotPast } from "@/lib/bookingTime.js";
-import { onNotification } from "@/lib/notificationTarget.js";
+import { onNotification, matterHref } from "@/lib/notificationTarget.js";
+import { useClientRouter } from "./clientNav.js";
 import { AppointmentThread } from "@/components/shared/AppointmentThread.jsx";
-import { useAuth } from "@/context/AuthContext.jsx";
 import { documentStatusView } from "@/lib/documentStatus.js";
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
@@ -72,6 +75,7 @@ function mapApiCase(c) {
     return {
         id: c._id || c.id,
         title: c.title || "Case",
+        caseNumber: c.case_number || null,
         status: c.status || "pending",
         type: c.case_type || "civil",
         filed: c.created_at ? formatPkt(c.created_at, { month: "short", day: "numeric", year: "numeric" }) : "—",
@@ -82,6 +86,7 @@ function mapApiCase(c) {
         progress: completedCount,
         total,
         nextHearing: hearingLabel(next),
+        nextHearingRaw: next,
         pct,
     };
 }
@@ -90,6 +95,7 @@ function mapApiMilestone(m, idx) {
     const date = new Date(m.date);
     return {
         id: idx + 1,
+        at: new Date(m.date).getTime() || 0,
         status: m.completed ? "done" : "pending",
         event: m.title,
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -123,21 +129,14 @@ export function mapApiHearing(h, idx) {
 }
 
 // ─── PRIMITIVES ───────────────────────────────────────────────────────────────
-const DotGrid = ({ t }) => (
-    <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-        backgroundImage: `radial-gradient(circle,${t.mode === "dark" ? "rgba(64,240,220,0.06)" : "rgba(44,96,110,0.05)"} 1px,transparent 1px)`,
-        backgroundSize: "22px 22px"
-    }} />
-);
 
 const Badge = ({ variant = "primary", children, t, sm }) => {
     const map = { primary: t.badgePrimary, success: t.badgeSuccess, danger: t.badgeDanger, warn: t.badgeWarn, info: t.badgeInfo, gray: t.badgeGray };
     const b = map[variant] || map.primary;
     return (
         <span style={{
-            display: "inline-flex", alignItems: "center", gap: 4, fontSize: sm ? 10 : 11, fontWeight: 700,
-            padding: sm ? "2px 7px" : "3px 10px", borderRadius: 20, background: b.bg, color: b.color, border: `1px solid ${b.border}`, whiteSpace: "nowrap"
+            display: "inline-flex", alignItems: "center", gap: 4, fontSize: sm ? 11.5 : 12.5, fontWeight: 700,
+            padding: sm ? "3px 9px" : "4px 11px", borderRadius: 20, background: b.bg, color: b.color, border: `1px solid ${b.border}`, whiteSpace: "nowrap"
         }}>
             {children}
         </span>
@@ -151,7 +150,6 @@ const Card = ({ children, t, style = {}, onClick, ...rest }) => (
     }}
         onMouseEnter={onClick ? e => { e.currentTarget.style.boxShadow = t.shadowHover; e.currentTarget.style.borderColor = t.borderHi; } : undefined}
         onMouseLeave={onClick ? e => { e.currentTarget.style.boxShadow = t.shadowCard; e.currentTarget.style.borderColor = t.border; } : undefined}>
-        <DotGrid t={t} />
         <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
     </div>
 );
@@ -164,21 +162,18 @@ const Empty = ({ icon = "—", title, desc, t }) => (
         padding: "26px 20px", textAlign: "center",
         display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
     }}>
-        <div style={{ fontSize: 22, opacity: 0.5 }}>{icon}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: t.textDim }}>{title}</div>
-        {desc && <div style={{ fontSize: 11.5, color: t.textMuted, lineHeight: 1.6, maxWidth: 320 }}>{desc}</div>}
+        <div style={{ fontSize: 15, fontWeight: 700, color: t.textDim }}>{title}</div>
+        {desc && <div style={{ fontSize: 13.5, color: t.textMuted, lineHeight: 1.6, maxWidth: 420 }}>{desc}</div>}
     </div>
 );
 
-const SH = ({ icon, title, desc, badge, t }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: `1px solid ${t.border}` }}>
-        <div style={{
-            width: 36, height: 36, borderRadius: 10, background: t.primaryGlow2, border: `1px solid ${t.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0
-        }}>{icon}</div>
+// Section heading. It used to lead with an emoji in a tinted tile (🕐 📊 📋 📁),
+// which read as generated; the title carries the meaning (2026-11-23).
+const SH = ({ title, desc, badge, t }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 22px", borderBottom: `1px solid ${t.border}` }}>
         <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{title}</div>
-            {desc && <div style={{ fontSize: 11, color: t.textMuted, marginTop: 1 }}>{desc}</div>}
+            <div style={{ fontSize: 16.5, fontWeight: 800, color: t.text }}>{title}</div>
+            {desc && <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 2 }}>{desc}</div>}
         </div>
         {badge}
     </div>
@@ -194,27 +189,14 @@ const Btn = ({ children, variant = "ghost", onClick, style = {}, t, full, disabl
     return (
         <button onClick={disabled ? undefined : onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} disabled={disabled}
             style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 16px",
-                borderRadius: 10, cursor: disabled ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 700, transition: "all 0.18s",
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 18px",
+                borderRadius: 10, cursor: disabled ? "not-allowed" : "pointer", fontSize: 13.5, fontWeight: 700, transition: "all 0.18s",
                 width: full ? "100%" : undefined, opacity: disabled ? 0.6 : 1, ...(vs[variant] || vs.ghost), ...style
             }}>
             {children}
         </button>
     );
 };
-
-const Toggle = ({ value, onChange, t }) => (
-    <div onClick={() => onChange(!value)} style={{
-        width: 42, height: 24, borderRadius: 12, cursor: "pointer",
-        background: value ? t.primary : t.accent, position: "relative", transition: "background 0.2s",
-        border: `1px solid ${value ? t.primary : t.border}`, flexShrink: 0
-    }}>
-        <div style={{
-            position: "absolute", width: 18, height: 18, background: "#fff", borderRadius: "50%",
-            top: 2, left: value ? 20 : 2, transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.3)"
-        }} />
-    </div>
-);
 
 const Inp = ({ placeholder, value, onChange, type = "text", t, style = {} }) => {
     const [f, setF] = useState(false);
@@ -233,8 +215,8 @@ const Tabs = ({ tabs, active, onChange, t }) => (
     <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${t.border}`, padding: "0 20px" }}>
         {tabs.map(tab => (
             <button key={tab.key} onClick={() => onChange(tab.key)} style={{
-                padding: "10px 14px", border: "none",
-                background: "transparent", cursor: "pointer", fontSize: 12, fontWeight: 700, transition: "all 0.15s",
+                padding: "12px 16px", border: "none",
+                background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 700, transition: "all 0.15s",
                 borderBottom: `2px solid ${active === tab.key ? t.primary : "transparent"}`, marginBottom: -1,
                 color: active === tab.key ? t.primary : t.textMuted
             }}>
@@ -243,252 +225,528 @@ const Tabs = ({ tabs, active, onChange, t }) => (
     </div>
 );
 
-const Ring = ({ pct, t, size = 88 }) => {
-    const r = 32, c = 2 * Math.PI * r, fill = c - (pct / 100) * c;
-    return (
-        <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-            <svg width={size} height={size} viewBox="0 0 80 80" style={{ transform: "rotate(-90deg)" }}>
-                <circle cx="40" cy="40" r={r} fill="none" stroke={t.accent} strokeWidth="5" />
-                <circle cx="40" cy="40" r={r} fill="none" stroke={t.primary} strokeWidth="5"
-                    strokeDasharray={c} strokeDashoffset={fill} strokeLinecap="round" style={{ transition: "stroke-dashoffset 1.2s ease" }} />
-            </svg>
-            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 18, fontWeight: 800, color: t.text }}>{pct}%</span>
-                <span style={{ fontSize: 9, color: t.textMuted, fontWeight: 600 }}>done</span>
-            </div>
-        </div>
-    );
-};
+const TAB_TO_PAGE = { summary: "overview", timeline: "timeline", documents: "documents", messages: "communication", payments: "payments" };
+const PAGE_TO_TAB = { overview: "summary", timeline: "timeline", documents: "documents", communication: "messages", payments: "payments" };
 
-// ─── NAV ICONS ────────────────────────────────────────────────────────────────
-const TrackIc = ({ name, s = 18, c = "currentColor" }) => {
-    const icons = {
-        overview: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>,
-        timeline: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
-        documents: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14,2 14,8 20,8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="13" y2="17" /></svg>,
-        notifications: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>,
-        communication: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>,
-        reminders: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
-        appointments: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><circle cx="12" cy="16" r="2" /></svg>,
-    };
-    return icons[name] || null;
-};
+const BackToMatters = ({ t, onClick }) => (
+    <button type="button" data-to-matters onClick={onClick || undefined}
+        style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "none", border: "none", padding: 0, cursor: "pointer",
+            color: t.primary, fontSize: 14, fontWeight: 700 }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
+        My matters
+    </button>
+);
 
-// ─── URGENCY CONFIG ───────────────────────────────────────────────────────────
-const urgencyConfig = (t) => ({
-    critical: { color: t.danger, bg: "rgba(255,107,122,0.10)", border: "rgba(255,107,122,0.30)", label: "Critical", dot: t.danger },
-    overdue: { color: t.danger, bg: "rgba(255,107,122,0.08)", border: "rgba(255,107,122,0.20)", label: "Overdue", dot: t.danger },
-    urgent: { color: t.warn, bg: `${t.warn}18`, border: `${t.warn}33`, label: "Soon", dot: t.warn },
-    upcoming: { color: t.info, bg: `${t.info}14`, border: `${t.info}28`, label: "Upcoming", dot: t.info },
-    normal: { color: t.primary, bg: t.primaryGlow2, border: `${t.primary}33`, label: "Reminder", dot: t.primary },
-    info: { color: t.textMuted, bg: t.cardHi, border: t.border, label: "Info", dot: t.textFaint },
-});
-
-const typeIcon = { hearing: "⚖️", deadline: "📅", reminder: "⏰", document: "📄", status: "🔄", response: "💬" };
-const priorityOrder = { critical: 0, overdue: 1, urgent: 2, upcoming: 3, normal: 4, info: 5 };
-
-// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
-const TRACKING_PAGES = [
-    { key: "overview", label: "Overview", ur: "جائزہ", ico: "overview", badge: null },
-    { key: "appointments", label: "Appointments", ur: "ملاقاتیں", ico: "appointments", badge: null },
-    { key: "timeline", label: "Case Timeline", ur: "کیس ٹائم لائن", ico: "timeline", badge: null },
-    { key: "documents", label: "Documents", ur: "دستاویزات", ico: "documents", badge: null },
-    { key: "payments", label: "Payments", ur: "ادائیگیاں", ico: "documents", badge: null },
-    { key: "notifications", label: "Notifications", ur: "اطلاعات", ico: "notifications", badge: null },
-    { key: "communication", label: "Communication", ur: "رابطہ", ico: "communication", badge: null },
-    { key: "reminders", label: "Reminders", ur: "یاد دہانیاں", ico: "reminders", badge: null },
+// ─── CASE BAR (2026-11-23, Tracking v2) ──────────────────────────────────────
+// One quiet line instead of a second "CaseTrack" sidebar and a top bar (which
+// showed the raw case id, a second bell and an avatar the app sidebar already
+// has): where you are on the left, the case's sections as tabs on the right.
+const CASE_TABS = [
+    { key: "overview", label: "Overview" },
+    { key: "timeline", label: "Timeline" },
+    { key: "documents", label: "Documents" },
+    { key: "communication", label: "Messages" },
+    { key: "payments", label: "Payments" },
 ];
 
-const Sidebar = ({ page, onNavigate, collapsed, onToggle }) => {
-    const t = useT();
-    const { T } = useLang();
+const caseLabel = c => (c?.caseNumber ? `${c.title} · ${c.caseNumber}` : c?.title || "Case");
+
+function CaseBar({ t, page, onNavigate, activeCase, cases, onCaseSwitch, onMatters = null }) {
+    const [open, setOpen] = useState(false);
+    const box = useRef(null);
+    useEffect(() => {
+        if (!open) return undefined;
+        const away = e => { if (box.current && !box.current.contains(e.target)) setOpen(false); };
+        const esc = e => { if (e.key === "Escape") setOpen(false); };
+        document.addEventListener("mousedown", away);
+        document.addEventListener("keydown", esc);
+        return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc); };
+    }, [open]);
+    const others = cases.filter(c => c.id !== activeCase?.id);
     return (
-        <div style={{
-            width: collapsed ? 56 : 200, flexShrink: 0, background: t.surface, borderRight: `1px solid ${t.border}`,
-            display: "flex", flexDirection: "column", transition: "width 0.25s cubic-bezier(0.4,0,0.2,1)", overflow: "hidden", height: "100%"
-        }}>
-            <div style={{
-                height: 67, padding: collapsed ? "0 14px" : "0 16px", borderBottom: `1px solid ${t.border}`,
-                display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "space-between", gap: 10, flexShrink: 0
-            }}>
-                {!collapsed && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{
-                            width: 32, height: 32, borderRadius: 10, background: `linear-gradient(135deg,${t.primary},${t.secondary})`,
-                            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: `0 4px 12px ${t.primaryGlow}`
-                        }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.mode === "dark" ? "#1A2E35" : "#fff"} strokeWidth="2.5">
-                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                            </svg>
-                        </div>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: t.text, fontFamily: "'Sora','Inter',sans-serif", letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>
-                            Case<span style={{ color: t.primary }}>Track</span>
-                        </span>
-                    </div>
+        <div data-case-bar style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", minHeight: 40, marginBottom: 18 }}>
+            <nav aria-label="Breadcrumb" ref={box} style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, minWidth: 0, fontSize: 13.5, color: t.textMuted }}>
+                <BackToMatters t={t} onClick={onMatters} />
+                {activeCase && (<>
+                    <span aria-hidden="true">/</span>
+                    <b data-case-bar-title style={{ color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 420 }}>{activeCase.title}</b>
+                </>)}
+                {others.length > 0 && (
+                    <button type="button" aria-haspopup="menu" aria-expanded={open} data-case-switch onClick={() => setOpen(v => !v)}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 28, padding: "0 10px", borderRadius: 999,
+                            border: `1px solid ${t.border}`, background: "transparent", color: t.textMuted, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                        Switch
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                    </button>
                 )}
-                <button onClick={onToggle} style={{
-                    width: 32, height: 32, borderRadius: 8, background: "transparent",
-                    border: `1px solid ${t.border}`, display: "flex", flexDirection: "column", alignItems: "center",
-                    justifyContent: "center", gap: 4, cursor: "pointer", flexShrink: 0, transition: "all 0.15s"
-                }}
-                    onMouseEnter={e => { e.currentTarget.style.background = t.cardHi; e.currentTarget.style.borderColor = t.borderHi; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = t.border; }}>
-                    <span style={{ display: "block", width: 14, height: 1.5, background: t.textMuted, borderRadius: 1 }} />
-                    <span style={{ display: "block", width: 14, height: 1.5, background: t.textMuted, borderRadius: 1 }} />
-                    <span style={{ display: "block", width: 14, height: 1.5, background: t.textMuted, borderRadius: 1 }} />
-                </button>
-            </div>
-            <div style={{ padding: "10px 8px", flex: 1, overflow: "auto" }}>
-                {TRACKING_PAGES.map(l => {
-                    const active = page === l.key;
-                    return (
-                        <div key={l.key} onClick={() => onNavigate(l.key)} style={{
-                            display: "flex", alignItems: "center",
-                            gap: collapsed ? 0 : 12, justifyContent: collapsed ? "center" : "flex-start",
-                            padding: collapsed ? "12px 0" : "9px 12px", borderRadius: 10, marginBottom: 2, cursor: "pointer",
-                            transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)", background: active ? t.primaryGlow : "transparent",
-                            color: active ? t.primary : t.textMuted, position: "relative"
-                        }}
-                            onMouseEnter={e => { if (!active) { e.currentTarget.style.background = t.inputBg; e.currentTarget.style.color = t.text; } }}
-                            onMouseLeave={e => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.textMuted; } }}>
-                            <div style={{ position: "relative", flexShrink: 0 }}>
-                                <TrackIc name={l.ico} s={18} c={active ? t.primary : "currentColor"} />
-                                {collapsed && l.badge != null && (
-                                    <span style={{
-                                        position: "absolute", top: -4, right: -4, minWidth: 14, height: 14, borderRadius: 7,
-                                        background: t[l.bv || "primary"] || t.primary, color: t.mode === "dark" ? "#1A2E35" : "#fff",
-                                        fontSize: 8, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center",
-                                        padding: "0 3px", lineHeight: 1, border: `2px solid ${t.surface}`
-                                    }}>{l.badge}</span>
-                                )}
-                            </div>
-                            {!collapsed && (
-                                <>
-                                    <span style={{ fontSize: 13, fontWeight: active ? 700 : 500, whiteSpace: "nowrap", flex: 1, color: "inherit" }}>{T(l.label, l.ur)}</span>
-                                    {l.badge != null && (
-                                        <span style={{
-                                            minWidth: 18, padding: "2px 6px", borderRadius: 999, fontSize: 10, fontWeight: 700, textAlign: "center",
-                                            background: active ? t.primary : t.cardHi, color: active ? (t.mode === "dark" ? "#1A2E35" : "#fff") : t.textDim,
-                                            border: `1px solid ${active ? t.primary : t.border}`
-                                        }}>{l.badge}</span>
-                                    )}
-                                </>
-                            )}
-                            {active && !collapsed && (
-                                <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.primary, boxShadow: `0 0 8px ${t.primaryGlow}`, flexShrink: 0 }} />
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-// ─── TOP HEADER ───────────────────────────────────────────────────────────────
-const TopHeader = ({ t, onBack, activeCaseId, cases, onCaseSwitch, unreadCount, onBell = null }) => {
-    // The signed-in client, not a hardcoded "MU" (2026-10-19).
-    // Outside an AuthProvider (a test, a preview) there is no user: fall back.
-    let user = null;
-    try { user = useAuth()?.user || null; } catch { user = null; }
-    const { T } = useLang();
-    const [caseOpen, setCaseOpen] = useState(false);
-    const activeCase = cases.find(c => c.id === activeCaseId) || cases[0];
-    return (
-        <div style={{
-            height: 67, background: t.surface, borderBottom: `1px solid ${t.border}`,
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 20px", flexShrink: 0, gap: 12, position: "relative", zIndex: 20
-        }}>
-            <button onClick={onBack} style={{
-                display: "flex", alignItems: "center", gap: 8, background: "transparent",
-                border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 12px", cursor: "pointer",
-                color: t.textMuted, fontSize: 12, fontWeight: 600, transition: "all 0.15s"
-            }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = t.borderHi; e.currentTarget.style.color = t.text; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.textMuted; }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6" />
-                </svg>
-                Overview
-            </button>
-
-            {/* Multi-case switcher */}
-            <div style={{ position: "relative" }}>
-                <button onClick={() => setCaseOpen(p => !p)} style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    background: t.cardHi, border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 14px",
-                    cursor: "pointer", color: t.text, fontSize: 12, fontWeight: 700, transition: "all 0.15s"
-                }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = t.borderHi; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: activeCase ? t.success : t.textFaint, flexShrink: 0 }} />
-                    {activeCase
-                        ? `${activeCase.id} — ${activeCase.title.length > 22 ? activeCase.title.slice(0, 22) + "…" : activeCase.title}`
-                        : T("No case selected", "کوئی کیس منتخب نہیں")}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                </button>
-                {caseOpen && (
-                    <div style={{
-                        position: "absolute", top: "calc(100% + 6px)", left: 0, minWidth: 260,
-                        background: t.card, border: `1px solid ${t.border}`, borderRadius: 12,
-                        boxShadow: t.shadowHover, zIndex: 100, overflow: "hidden"
-                    }}>
-                        <div style={{
-                            padding: "8px 14px", fontSize: 10, fontWeight: 700, color: t.textMuted,
-                            letterSpacing: "0.1em", textTransform: "uppercase", borderBottom: `1px solid ${t.border}`
-                        }}>{T("Switch Case", "کیس تبدیل کریں")}</div>
-                        {cases.map(cs => (
-                            <div key={cs.id} onClick={() => { onCaseSwitch(cs.id); setCaseOpen(false); }}
-                                style={{
-                                    padding: "10px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
-                                    background: cs.id === activeCaseId ? t.primaryGlow : "transparent", transition: "background 0.15s"
-                                }}
-                                onMouseEnter={e => { if (cs.id !== activeCaseId) e.currentTarget.style.background = t.cardHi; }}
-                                onMouseLeave={e => { if (cs.id !== activeCaseId) e.currentTarget.style.background = "transparent"; }}>
-                                <span style={{ width: 7, height: 7, borderRadius: "50%", background: cs.id === activeCaseId ? t.primary : t.textFaint, flexShrink: 0 }} />
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: cs.id === activeCaseId ? t.primary : t.text }}>{cs.id} — {cs.title}</div>
-                                    <div style={{ fontSize: 10, color: t.textMuted }}>{cs.type} · {cs.court}</div>
-                                </div>
-                                {cs.id === activeCaseId && <span style={{ fontSize: 10, color: t.primary, fontWeight: 700 }}>{T("Active", "فعال")}</span>}
-                            </div>
+                {open && (
+                    <div role="menu" aria-label="Your other cases" style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, minWidth: 300, zIndex: 50,
+                        background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, boxShadow: t.shadowHover, padding: 6 }}>
+                        {others.map(c => (
+                            <button key={c.id} type="button" role="menuitem" data-case-option={c.id}
+                                onClick={() => { setOpen(false); onCaseSwitch(c.id); }}
+                                style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", borderRadius: 10, border: 0,
+                                    background: "transparent", color: t.text, cursor: "pointer", fontSize: 13.5, fontWeight: 600 }}
+                                onMouseEnter={e => { e.currentTarget.style.background = t.cardHi; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                                {caseLabel(c)}
+                            </button>
                         ))}
                     </div>
                 )}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ position: "relative" }}>
-                    <button type="button" aria-label="Notifications" title="Notifications" onClick={onBell || undefined} style={{
-                        width: 34, height: 34, borderRadius: 8, background: "transparent", border: `1px solid ${t.border}`,
-                        display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: t.textMuted, transition: "all 0.15s"
-                    }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = t.borderHi; e.currentTarget.style.color = t.text; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.textMuted; }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" />
-                        </svg>
-                    </button>
-                    {unreadCount > 0 && (
-                        <span style={{
-                            position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%",
-                            background: t.danger || "#ff6b7a", color: "#fff", fontSize: 9, fontWeight: 800,
-                            display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${t.surface}`
-                        }}>{unreadCount}</span>
-                    )}
-                </div>
-                <div style={{
-                    width: 34, height: 34, borderRadius: "50%", background: `linear-gradient(135deg,${t.primary},${t.secondary})`,
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800,
-                    color: t.mode === "dark" ? "#1A2E35" : "#fff", cursor: "pointer", flexShrink: 0, boxShadow: `0 2px 8px ${t.primaryGlow}`
-                }} title={user?.full_name || undefined}>{initialsOf(user?.full_name || "You")}</div>
-            </div>
+            </nav>
+            <nav aria-label="Case sections" style={{ marginLeft: "auto", display: "flex", gap: 2, padding: 4, borderRadius: 999, background: t.cardHi }}>
+                {CASE_TABS.map(tab => {
+                    const on = page === tab.key;
+                    return (
+                        <button key={tab.key} type="button" data-case-tab={tab.key} aria-current={on ? "page" : undefined}
+                            onClick={() => onNavigate(tab.key)}
+                            style={{ height: 32, padding: "0 14px", borderRadius: 999, border: 0, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                                background: on ? "var(--chip-on-bg, #F3F2F4)" : "transparent", color: on ? "var(--chip-on-ink, #2A282C)" : t.textMuted }}>
+                            {tab.label}
+                        </button>
+                    );
+                })}
+            </nav>
         </div>
     );
-};
+}
+
+// ─── STATUS CARD (Tracking v2, 2026-11-23) ───────────────────────────────────
+// The answer first, like an order-tracking page: one sentence for where the
+// case is, the next date, the stage line, and who is handling it. It replaced
+// a card that showed the same progress three times (a ring, a bar and "2/3
+// steps") and named the case by its database id.
+/** One read with an honest state (2026-11-23): "loading" until it answers,
+ *  "error" when it fails, "ready" only with real data. An empty list is shown
+ *  as "nothing" ONLY when its read is ready: a failed read used to look like
+ *  "Nothing is waiting on you" and could hide terms or a fee.
+ *  `read` returns the data or throws. A failed RE-read keeps what was shown
+ *  but is still "error": the old data may be out of date (a fee requested
+ *  since), so it can never back a "Nothing is waiting". */
+function useSource(read, deps) {
+    const [src, setSrc] = useState({ state: "loading", data: [] });
+    const tick = useRef(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const load = useCallback(() => {
+        const mine = ++tick.current;
+        Promise.resolve().then(read).then(
+            data => { if (mine === tick.current) setSrc({ state: "ready", data }); },
+            () => { if (mine === tick.current) setSrc(p => ({ state: "error", data: p.data })); });
+    }, deps);
+    useEffect(() => {
+        setSrc({ state: "loading", data: [] });
+        load();
+        return () => { tick.current++; };
+    }, [load]);
+    return { ...src, reload: load };
+}
+
+const listOf = r => { if (!r || r.error || !Array.isArray(r.data)) throw new Error("read failed"); return r.data; };
+
+/** The client's hire requests, read once for the page and re-read when one
+ *  changes. `{ data, state, reload }`. */
+function useEngagements() {
+    const src = useSource(() => Promise.resolve(listEngagements()).then(listOf), []);
+    const { reload } = src;
+    useEffect(() => onNotification(n => {
+        const type = String(n?.type || "");
+        if (type.startsWith("engagement_") || type === "lawyer_assigned") reload();
+    }), [reload]);
+    return src;
+}
+
+/** What could not be checked, in words: ["fees", "documents"] → "fees and documents". */
+const andList = xs => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+
+function CheckFailed({ t, what, onRetry, children }) {
+    return (
+        <span role="alert" data-check-failed style={{ fontSize: 13, color: t.warn }}>
+            {children || <>Couldn't check your {what}. Something may be waiting on you.</>}{" "}
+            <button type="button" onClick={onRetry} style={{ background: "none", border: 0, padding: 0, cursor: "pointer", color: t.primary, fontWeight: 700, fontSize: 13 }}>Try again</button>
+        </span>
+    );
+}
+
+function CaseStatusHero({ t, activeCase, hearings = [], steps = [], engagements = [], engagementState = "ready", onAction }) {
+    const engagement = pickEngagement(engagements, activeCase.id);
+    const hero = caseHero({ caseInfo: activeCase, nextHearing: nextHearingOf(hearings), engagement, feeText: engagement ? feeLabel(engagement) : "", engagementState });
+    const stages = stageWindow(steps);
+    const warn = hero.tone === "warn";
+    const pill = warn ? { bg: `${t.warn}22`, ink: t.warn } : hero.tone === "muted" ? { bg: t.cardHi, ink: t.textMuted } : { bg: t.primaryGlow2, ink: t.primary };
+    const meta = [activeCase.type && activeCase.type.charAt(0).toUpperCase() + activeCase.type.slice(1), activeCase.caseNumber].filter(Boolean).join(" · ");
+    const outline = { display: "inline-flex", alignItems: "center", justifyContent: "center", height: 36, padding: "0 16px", borderRadius: 999,
+        border: `1px solid ${t.primary}73`, background: "transparent", color: t.primary, fontWeight: 700, fontSize: 13, cursor: "pointer", textDecoration: "none" };
+    const solid = { ...outline, border: 0, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" };
+    const act = (a, primary = false) => (
+        <button key={a.label} type="button" data-hero-action={a.action} onClick={() => onAction(a.action, engagement)} style={primary ? solid : outline}>{a.label}</button>
+    );
+    const p = hero.person;
+    return (
+        <section aria-label="Case status" data-case-hero={hero.tone}
+            style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 250px", borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, overflow: "hidden", marginBottom: 18 }}>
+            <div style={{ padding: "18px 22px 16px", display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 12.5, fontWeight: 700, color: t.textMuted }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 10px", borderRadius: 999, background: pill.bg, color: pill.ink }}>
+                        <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor" }} />{caseStatusLabel(activeCase.status)}
+                    </span>
+                    {meta && <span>{meta}</span>}
+                </div>
+                <div>
+                    <h1 data-hero-headline style={{ margin: 0, font: "800 26px/1.15 Nunito, 'Hanken Grotesk', sans-serif", letterSpacing: "-.01em", color: t.text }}>{hero.headline}</h1>
+                    {hero.sub && <p style={{ margin: "5px 0 0", fontSize: 14, color: t.textMuted }}>{hero.sub}</p>}
+                    {hero.warning && (
+                        <div data-hero-warning style={{ marginTop: 8 }}>
+                            <CheckFailed t={t} what="" onRetry={() => onAction("retry-engagements", engagement)}>{hero.warning}</CheckFailed>
+                        </div>
+                    )}
+                </div>
+                {hero.primary && (
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        {act(hero.primary, true)}
+                        {hero.secondary && act(hero.secondary)}
+                    </div>
+                )}
+                {stages.length > 0 ? (
+                    <ol aria-label="Stages" data-hero-stages style={{ listStyle: "none", margin: "4px 0 0", padding: 0, display: "grid", gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }}>
+                        {stages.map((st, i) => (
+                            <li key={i} aria-current={st.state === "now" ? "step" : undefined} data-stage={st.state} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <div style={{ display: "flex", alignItems: "center" }}>
+                                    <span aria-hidden="true" style={{ width: 22, height: 22, flexShrink: 0, borderRadius: "50%", boxSizing: "border-box", display: "grid", placeItems: "center",
+                                        fontSize: 11, fontWeight: 800, color: "var(--on-brand, #04212A)",
+                                        background: st.state === "done" ? t.primary : st.state === "now" ? t.card : "transparent",
+                                        border: `2px solid ${st.state === "next" ? t.border : t.primary}`,
+                                        boxShadow: st.state === "now" ? `0 0 0 4px ${t.primaryGlow2}` : "none" }}>{st.state === "done" ? "✓" : ""}</span>
+                                    <span aria-hidden="true" style={{ flex: 1, height: 3, borderRadius: 2, background: i === stages.length - 1 ? "transparent" : st.state === "done" ? t.primary : t.border }} />
+                                </div>
+                                <div style={{ paddingRight: 10, lineHeight: 1.3 }}>
+                                    <b style={{ display: "block", fontSize: 13, color: st.state === "next" ? t.textMuted : t.text }}>{st.title}</b>
+                                    <span style={{ fontSize: 12, color: t.textMuted }}>{st.when}</span>
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
+                ) : (
+                    <div data-hero-no-stages style={{ fontSize: 13, color: t.textMuted }}>The steps of this case appear here once your lawyer adds them.</div>
+                )}
+            </div>
+            <aside aria-label={p.label} data-hero-person style={{ padding: "18px 18px", borderLeft: `1px solid ${t.border}`,
+                // The theme's own soft brand tint over the card: right in Light, System and Dark alike.
+                background: "var(--brand-soft, rgba(62,224,161,.13))", display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: t.textMuted }}>{p.label}</div>
+                {p.name && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span aria-hidden="true" style={{ width: 40, height: 40, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14,
+                            background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" }}>{initialsOf(p.name)}</span>
+                        <b style={{ fontSize: 15, color: t.text, lineHeight: 1.3 }}>{p.name}</b>
+                    </div>
+                )}
+                <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.45 }}>{p.sub}</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+                    {p.actions.map(a => (
+                        <button key={a.label} type="button" data-person-action={a.action} onClick={() => onAction(a.action, engagement)} style={{ ...outline, flex: "1 1 auto", height: 34, fontSize: 12.5, padding: "0 12px", whiteSpace: "nowrap" }}>{a.label}</button>
+                    ))}
+                </div>
+            </aside>
+        </section>
+    );
+}
+
+// ─── OVERVIEW DATA (Tracking v2, 2026-11-23) ─────────────────────────────────
+// Read once for the Overview and shared by the to-do, the updates feed and the
+// details: the client's fees, meeting proposals, this case's documents and
+// its messages. Each re-reads when a matching notification arrives.
+function useCaseOverviewData(caseId) {
+    const payments = useSource(() => (caseId ? Promise.resolve(listPayments()).then(listOf) : []), [caseId]);
+    const proposals = useSource(() => (caseId ? Promise.resolve(listMeetingProposals({ status: "open" })).then(listOf) : []), [caseId]);
+    // V2 documents switched off answer 404 feature_disabled: that is "none", not a failure.
+    const v2Docs = useSource(() => (caseId ? Promise.resolve(myDocumentsV2({ caseId, limit: 100 })).then(r => {
+        if (r?.status === 404 && errorCode(r.error) === "feature_disabled") return [];
+        if (!r || r.error || !Array.isArray(r.data?.items)) throw new Error("read failed");
+        return r.data.items;
+    }) : []), [caseId]);
+    const legacyDocs = useSource(() => (caseId ? Promise.resolve(apiListDocuments(caseId)).then(listOf) : []), [caseId]);
+    const messages = useSource(() => (caseId ? Promise.resolve(apiListMessages(caseId)).then(listOf) : []), [caseId]);
+    const reloads = { payments: payments.reload, proposals: proposals.reload, v2: v2Docs.reload, legacy: legacyDocs.reload, messages: messages.reload };
+    useEffect(() => onNotification(n => {
+        const type = String(n?.type || "");
+        if (type.startsWith("payment_")) reloads.payments();
+        if (type.startsWith("appointment_propos")) reloads.proposals();
+        if (type.startsWith("document_") || type.startsWith("review_request_")) { reloads.v2(); reloads.legacy(); }
+        if (type === "case_message" && String(n.payload?.case_id || "") === String(caseId)) reloads.messages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [caseId, payments.reload, proposals.reload, v2Docs.reload, legacyDocs.reload, messages.reload]);
+    // One row per document: V2 first, the legacy listing without the V2 ids.
+    const v2Rows = (v2Docs.data || []).map(_mapV2Doc);
+    const seen = new Set(v2Rows.map(d => d.id));
+    const docRows = [...v2Rows, ...(legacyDocs.data || []).map(_mapApiDoc).filter(d => !seen.has(d.id))];
+    const casePayments = (payments.data || []).filter(p => String(p.case_id || "") === String(caseId));
+    const docsState = v2Docs.state === "error" || legacyDocs.state === "error" ? "error"
+        : v2Docs.state === "ready" && legacyDocs.state === "ready" ? "ready" : "loading";
+    return { payments, proposals, v2Docs, legacyDocs, messages, docRows, casePayments, docsState,
+        reloadDocs: () => { v2Docs.reload(); legacyDocs.reload(); } };
+}
+
+// ─── YOUR TO-DO (Tracking v2, 2026-11-23) ────────────────────────────────────
+// Only what the client can move on this case, each with one button: fees due,
+// terms to answer, documents back from the lawyer, meeting times to choose.
+function CaseTodos({ t, caseId, sources, onAction }) {
+    // sources: { name: { data, state, reload } } for hire requests, fees, meeting times, documents.
+    const get = k => sources[k] || { data: [], state: "ready", reload: () => {} };
+    const engagement = pickEngagement(get("hire requests").data, caseId);
+    const items = caseTodos({ caseId, engagement, feeText: engagement ? feeLabel(engagement) : "",
+        payments: get("fees").data, proposals: get("meeting times").data, docs: get("documents").data });
+    const failed = Object.keys(sources).filter(k => sources[k].state === "error");
+    const loading = Object.keys(sources).some(k => sources[k].state === "loading");
+    const status = failed.length ? "error" : loading ? "loading" : "ready";
+    const shown = items.slice(0, 3);
+    const outline = { display: "inline-flex", alignItems: "center", height: 36, padding: "0 16px", borderRadius: 999, cursor: "pointer",
+        border: `1px solid ${t.primary}73`, background: "transparent", color: t.primary, fontWeight: 700, fontSize: 13 };
+    const solid = { ...outline, border: 0, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" };
+    return (
+        <section aria-label="Your to-do" data-case-todos={items.length} data-todos-state={status} style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: t.text }}>Your to-do</h2>
+                {items.length > 0 && <span style={{ fontSize: 13, color: t.textMuted }}>
+                    {status === "loading" ? `${items.length} found so far · Still checking…` : `${items.length} waiting on you`}</span>}
+                {status === "error" && <CheckFailed t={t} what={andList(failed)} onRetry={() => failed.forEach(k => sources[k].reload())} />}
+                {status === "loading" && !items.length && <span style={{ fontSize: 13, color: t.textMuted }}>Checking what's waiting on you…</span>}
+                {status === "ready" && !items.length && <span style={{ fontSize: 13, color: t.textMuted }}>Nothing is waiting on you right now.</span>}
+                {items.length > shown.length && <span style={{ fontSize: 13, color: t.textMuted }}>· showing the first {shown.length}</span>}
+            </div>
+            {shown.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+                    {shown.map(td => (
+                        <article key={td.key} data-todo={td.action} style={{ display: "flex", flexDirection: "column", gap: 10, padding: "16px 18px", borderRadius: 16,
+                            background: t.card, border: `1px solid ${td.warn ? `${t.warn}66` : t.border}` }}>
+                            <span style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", height: 22, padding: "0 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 800,
+                                background: td.warn ? `${t.warn}22` : t.cardHi, color: td.warn ? t.warn : t.textMuted }}>{td.chip}</span>
+                            <div style={{ lineHeight: 1.35 }}>
+                                <b style={{ display: "block", fontSize: 15, color: t.text }}>{td.title}</b>
+                                <span style={{ fontSize: 13, color: t.textMuted }}>{td.sub}</span>
+                            </div>
+                            <button type="button" onClick={() => onAction(td.action, td.action === "engagement" ? engagement : td)}
+                                style={{ ...(td.primary ? solid : outline), marginTop: "auto", alignSelf: "flex-start" }}>{td.cta}</button>
+                        </article>
+                    ))}
+                </div>
+            )}
+        </section>
+    );
+}
+
+// ─── UPDATES + DETAILS (Tracking v2, 2026-11-23) ─────────────────────────────
+// What happened on the case, newest first, with a reply box to the lawyer;
+// beside it the case's facts, money and files. Replaces four equal cards
+// (Action Required, a timeline preview, Notifications, Documents) and a
+// "Communication" card that only linked away.
+function CaseUpdates({ t, caseId, groups, messagesState, missing = [], loadingAny = false, canReply, lawyerName, onSent, onRetry, onOpenMessages }) {
+    const [text, setText] = useState("");
+    const [sending, setSending] = useState(false);
+    const [sendError, setSendError] = useState(null);
+    const [showAll, setShowAll] = useState(false);
+    const LIMIT = 6;
+    let left = showAll ? Infinity : LIMIT;
+    const shown = groups.map(g => { const items = g.items.slice(0, Math.max(0, left)); left -= items.length; return { ...g, items }; }).filter(g => g.items.length);
+    const total = groups.reduce((n, g) => n + g.items.length, 0);
+    const send = async () => {
+        const body = text.trim();
+        if (!body || sending || !caseId) return;
+        setSending(true); setSendError(null);
+        const { data, error } = await apiSendMessage(caseId, body);
+        setSending(false);
+        // Nothing was delivered: keep the text and say why.
+        if (error || !data) { setSendError(error?.message || "Your message was not sent. Try again."); return; }
+        setText("");
+        onSent?.(data);
+    };
+    return (
+        <section aria-label="Updates" data-case-updates={total} style={{ borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, padding: "16px 20px", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", alignItems: "baseline", marginBottom: 4 }}>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: t.text }}>Updates</h2>
+                <button type="button" onClick={onOpenMessages} style={{ marginLeft: "auto", background: "none", border: 0, padding: 0, cursor: "pointer", fontSize: 13, fontWeight: 700, color: t.primary }}>All messages</button>
+            </div>
+            {missing.length > 0 && (
+                <div style={{ margin: "8px 0" }}>
+                    <CheckFailed t={t} what="" onRetry={onRetry}>Couldn't load the {andList(missing)} on this case, so some updates may be missing.</CheckFailed>
+                </div>
+            )}
+            {total === 0 && !missing.length && (
+                <div data-updates-empty style={{ fontSize: 13.5, color: t.textMuted, padding: "10px 0 14px" }}>
+                    {loadingAny || messagesState === "loading" ? "Loading updates…" : "Nothing has happened on this case yet. Messages, documents and steps your lawyer marks will show here."}
+                </div>
+            )}
+            {shown.map(g => (
+                <div key={g.key}>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted, margin: "10px 0 2px" }}>{g.label}</div>
+                    {g.items.map(u => (
+                        <div key={u.key} data-update={u.tag} style={{ display: "flex", gap: 12, padding: "9px 0" }}>
+                            <span aria-hidden="true" style={{ width: 32, height: 32, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 10.5, fontWeight: 800,
+                                background: u.mine ? t.cardHi : t.primaryGlow2, color: u.mine ? t.textMuted : t.primary }}>
+                                {u.tag === "msg" ? (u.mine ? "You" : initialsOf(u.who)) : u.tag === "doc" ? "DOC" : u.tag === "fee" ? "FEE" : "✓"}
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13.5, color: t.text }}><b>{u.who}</b> <span style={{ color: t.textMuted }}>{u.what} · {u.time}</span></div>
+                                {u.body && <div style={{ marginTop: 4, padding: "9px 12px", borderRadius: 12, background: t.cardHi, fontSize: 13.5, color: t.text, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{u.body}</div>}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ))}
+            {total > LIMIT && (
+                <button type="button" onClick={() => setShowAll(v => !v)} style={{ alignSelf: "flex-start", margin: "2px 0 8px 44px", padding: 0, border: 0, background: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, color: t.textMuted }}>
+                    {showAll ? "Show fewer" : `Show ${total - LIMIT} older update${total - LIMIT === 1 ? "" : "s"}`}
+                </button>
+            )}
+            {canReply ? (
+                <form onSubmit={e => { e.preventDefault(); send(); }} style={{ display: "flex", gap: 8, alignItems: "center", paddingTop: 12, marginTop: 6, borderTop: `1px solid ${t.border}` }}>
+                    <label htmlFor="case-reply" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Write to your lawyer</label>
+                    <input id="case-reply" data-case-reply value={text} onChange={e => { setText(e.target.value); setSendError(null); }} disabled={sending}
+                        placeholder={`Write to ${lawyerName ? String(lawyerName).replace(/^(adv\.?|advocate)\s+/i, "").split(" ")[0] : "your lawyer"}…`}
+                        style={{ flex: 1, height: 42, boxSizing: "border-box", padding: "0 16px", borderRadius: 999, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none" }} />
+                    <button type="submit" data-case-send disabled={sending || !text.trim()}
+                        style={{ height: 42, padding: "0 20px", borderRadius: 999, border: 0, cursor: sending || !text.trim() ? "default" : "pointer", opacity: sending || !text.trim() ? .6 : 1,
+                            background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)", fontWeight: 700 }}>{sending ? "Sending…" : "Send"}</button>
+                </form>
+            ) : (
+                <div style={{ paddingTop: 12, marginTop: 6, borderTop: `1px solid ${t.border}`, fontSize: 13, color: t.textMuted }}>You can message here once a lawyer takes your case.</div>
+            )}
+            {sendError && <div role="alert" style={{ marginTop: 8, fontSize: 12.5, color: t.danger }}>{sendError}</div>}
+        </section>
+    );
+}
+
+function CaseDetails({ t, groups, onTab }) {
+    return (
+        <aside aria-label="Case details" data-case-details style={{ borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, padding: "4px 20px" }}>
+            {groups.map((g, i) => (
+                <section key={g.key} data-details={g.key} style={{ padding: "14px 0", borderBottom: i === groups.length - 1 ? 0 : `1px solid ${t.border}` }}>
+                    <div style={{ display: "flex", alignItems: "baseline", marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: t.textMuted }}>{g.title}</div>
+                        <button type="button" onClick={() => onTab(g.tab)} style={{ marginLeft: "auto", background: "none", border: 0, padding: 0, cursor: "pointer", fontSize: 12.5, fontWeight: 700, color: t.primary }}>{g.link}</button>
+                    </div>
+                    {g.error ? <CheckFailed t={t} what="" onRetry={g.onRetry}>{g.error}</CheckFailed>
+                        : g.loading ? <div style={{ fontSize: 13, color: t.textMuted }}>Loading…</div>
+                        : g.rows.length === 0 ? <div style={{ fontSize: 13, color: t.textMuted }}>Nothing recorded yet.</div> : null}
+                    {!g.error && !g.loading && g.rows.map(r => (
+                        <div key={r.k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "3px 0", fontSize: 13.5 }}>
+                            <span style={{ color: t.textMuted }}>{r.k}</span>
+                            <b style={{ textAlign: "right", color: r.warn ? t.warn : t.text, overflowWrap: "anywhere" }}>{r.v}</b>
+                        </div>
+                    ))}
+                </section>
+            ))}
+        </aside>
+    );
+}
+
+// ─── MY MATTERS (Tracking v2, 2026-11-23) ─────────────────────────────────────
+// Every case the client has, each saying where it stands in one sentence (the
+// same sentence as its status card), its steps, its lawyer, and what is
+// waiting on the client. Replaces the case dropdown that named cases by their
+// database id, and the silent "open the newest case" on /tracking.
+function MyMatters({ t, cases, casesState, onRetry, onOpen, onAllPayments = null }) {
+    const engagements = useEngagements();
+    const payments = useSource(() => Promise.resolve(listPayments()).then(listOf), []);
+    const proposals = useSource(() => Promise.resolve(listMeetingProposals({ status: "open" })).then(listOf), []);
+    const sources = { "hire requests": engagements, fees: payments, "meeting times": proposals };
+    const failed = Object.keys(sources).filter(k => sources[k].state === "error");
+    const checking = Object.keys(sources).some(k => sources[k].state === "loading");
+    const rows = cases.map(c => {
+        const engagement = pickEngagement(engagements.data, c.id);
+        const feeText = engagement ? feeLabel(engagement) : "";
+        const hero = caseHero({ caseInfo: c, nextHearing: c.nextHearingRaw || null, engagement, feeText, engagementState: engagements.state });
+        const todos = caseTodos({ caseId: c.id, engagement, feeText, payments: payments.data, proposals: proposals.data });
+        return { c, engagement, hero, todos };
+    });
+    // What waits on the client comes first; otherwise the server's order (newest).
+    const ordered = [...rows.filter(r => r.todos.length), ...rows.filter(r => !r.todos.length)];
+    const waiting = rows.reduce((n, r) => n + r.todos.length, 0);
+    const solid = { display: "inline-flex", alignItems: "center", justifyContent: "center", height: 38, padding: "0 18px", borderRadius: 999, border: 0, cursor: "pointer",
+        fontWeight: 700, fontSize: 13.5, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)", textDecoration: "none" };
+    const outline = { ...solid, background: "transparent", border: `1px solid ${t.primary}73`, color: t.primary };
+    return (
+        <div data-my-matters>
+            <header style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginBottom: 20 }}>
+                <div style={{ flex: "1 1 360px" }}>
+                    <h1 style={{ margin: 0, font: "800 32px/1.15 Nunito, 'Hanken Grotesk', sans-serif", letterSpacing: "-.01em", color: t.text }}>My matters</h1>
+                    <div data-matters-summary style={{ marginTop: 4, fontSize: 14.5, color: t.textMuted }}>
+                        {casesState !== "ready" || !cases.length ? "Your matters, newest first."
+                            : failed.length ? <CheckFailed t={t} what={andList(failed)} onRetry={() => failed.forEach(k => sources[k].reload())} />
+                            : waiting && checking ? <><b style={{ color: t.warn }}>{waiting} thing{waiting === 1 ? "" : "s"} found so far</b> · Still checking…</>
+                            : waiting ? <><b style={{ color: t.warn }}>{waiting} thing{waiting === 1 ? "" : "s"}</b> {waiting === 1 ? "is" : "are"} waiting on you across your matters.</>
+                            : checking ? "Checking what's waiting on you…"
+                            : "Nothing is waiting on you right now."}
+                    </div>
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {onAllPayments && <button type="button" data-open-all-payments onClick={onAllPayments} style={outline}>All my payments</button>}
+                    <a href="/intake" style={solid}>+ Start a new matter</a>
+                </div>
+            </header>
+
+            {casesState === "loading" && <div style={{ fontSize: 13.5, color: t.textMuted }}>Loading your matters…</div>}
+            {casesState === "error" && (
+                <div role="alert" data-matters-error style={{ padding: "16px 18px", borderRadius: 16, background: t.card, border: `1px solid ${t.border}`, display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ flex: 1, fontSize: 13.5, color: t.text }}>Couldn't load your matters. Check your connection and try again.</span>
+                    <button type="button" onClick={onRetry} style={outline}>Try again</button>
+                </div>
+            )}
+            {casesState === "ready" && !cases.length && (
+                <div data-matters-empty style={{ padding: "36px 24px", borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, textAlign: "center" }}>
+                    <b style={{ display: "block", fontSize: 17, color: t.text }}>No matters yet</b>
+                    <div style={{ fontSize: 13.5, color: t.textMuted, margin: "6px 0 14px" }}>Describe your problem in Legal Intake. Once you confirm it, it opens here as a case.</div>
+                    <a href="/intake" style={solid}>Start a new matter</a>
+                </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {ordered.map(({ c, engagement, hero, todos }) => {
+                    const first = todos[0] || null;
+                    const lawyer = engagement?.status === "accepted" ? engagement.lawyer_name : null;
+                    const meta = [c.type && c.type.charAt(0).toUpperCase() + c.type.slice(1), c.caseNumber].filter(Boolean).join(" · ");
+                    return (
+                        <article key={c.id} data-matter={c.id} data-waiting={todos.length}
+                            style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 240px", borderRadius: 20, background: t.card, overflow: "hidden",
+                                border: `1px solid ${todos.length ? `${t.warn}55` : t.border}` }}>
+                            <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, color: t.textMuted }}>
+                                    <b style={{ color: t.text, fontSize: 14 }}>{c.title}</b>
+                                    {meta && <><span aria-hidden="true">·</span><span>{meta}</span></>}
+                                    <span style={{ display: "inline-flex", alignItems: "center", height: 22, padding: "0 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 700,
+                                        background: t.cardHi, color: t.textMuted }}>{caseStatusLabel(c.status)}</span>
+                                </div>
+                                <h2 data-matter-headline style={{ margin: 0, font: "800 22px/1.2 Nunito, 'Hanken Grotesk', sans-serif", color: hero.tone === "muted" ? t.textMuted : t.text }}>{hero.headline}</h2>
+                                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", fontSize: 12.5, color: t.textMuted }}>
+                                    {c.total > 0 ? (<>
+                                        <span aria-hidden="true" style={{ display: "grid", gridTemplateColumns: `repeat(${c.total}, minmax(0, 1fr))`, gap: 4, width: Math.min(280, 36 * c.total) }}>
+                                            {Array.from({ length: c.total }, (_, i) => (
+                                                <span key={i} style={{ height: 6, borderRadius: 3, background: i < c.progress ? t.primary : t.border }} />
+                                            ))}
+                                        </span>
+                                        <span>{c.progress} of {c.total} steps done</span>
+                                    </>) : <span>No steps added yet</span>}
+                                    <span style={{ marginLeft: "auto" }}>{lawyer || (c.lawyerAssigned ? "Lawyer assigned" : "No lawyer yet")}</span>
+                                </div>
+                            </div>
+                            <div style={{ padding: 18, borderLeft: `1px solid ${t.border}`, background: t.cardHi, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
+                                <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: first ? t.warn : t.textMuted }}>
+                                    {first ? `Waiting on you${todos.length > 1 ? ` · ${todos.length}` : ""}`
+                                        : failed.length ? "Couldn't check" : checking ? "Checking…" : "Nothing waiting on you"}
+                                </div>
+                                {first && <b style={{ fontSize: 14.5, color: t.text, lineHeight: 1.3 }}>{first.title}</b>}
+                                <button type="button" data-open-matter={c.id} onClick={() => onOpen(c.id)} style={first ? solid : outline}>Open case</button>
+                            </div>
+                        </article>
+                    );
+                })}
+            </div>
+            {casesState === "ready" && cases.length >= 20 && (
+                <div style={{ marginTop: 12, fontSize: 13, color: t.textMuted }}>Showing your 20 most recent matters.</div>
+            )}
+        </div>
+    );
+}
 
 // ─── PAGE: OVERVIEW ───────────────────────────────────────────────────────────
 const _fmtHearingDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : "—";
@@ -558,7 +816,9 @@ function HearingUpdates({ hearings, caseTitle, court }) {
             <div style={{ padding: 16 }}>
                 {nextUp && (
                     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: t.primaryGlow2, border: `1px solid ${t.primary}40`, marginBottom: 12 }}>
-                        <span style={{ fontSize: 16 }}>📅</span>
+                        <span aria-hidden="true" style={{ display: "flex", color: t.primary }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></svg>
+                        </span>
                         <div>
                             <div style={{ fontSize: 12.5, fontWeight: 700, color: t.primary }}>Next hearing: {_fmtHearingDate(nextUp.date)}{nextUp.time ? ` · ${nextUp.time}` : ""}</div>
                             <div style={{ fontSize: 11, color: t.textMuted }}>{[nextUp.purpose, nextUp.court].filter(Boolean).join(" — ")}</div>
@@ -604,13 +864,12 @@ function HearingUpdates({ hearings, caseTitle, court }) {
     );
 }
 
-function PageOverview({ setPage, activeCase, feed, hearings, milestones = [], casesState = "ready", onRetryCases = null }) {
+function PageOverview({ setPage, activeCase, hearings, steps = [], onHeroAction = null, afterHero = null, casesState = "ready", onRetryCases = null }) {
     const t = useT();
     const { T } = useLang();
-    const uc = urgencyConfig(t);
-    const critical = feed.filter(f => !f.done && (f.urgency === "critical" || f.urgency === "overdue"));
-    const upcoming = feed.filter(f => !f.done && (f.urgency === "urgent" || f.urgency === "upcoming")).slice(0, 2);
-    const activeM = milestones.find(m => m.status === "active");
+    const engagements = useEngagements();
+    const data = useCaseOverviewData(activeCase?.id || null);
+    const overviewEngagement = activeCase ? pickEngagement(engagements.data, activeCase.id) : null;
 
     // Every field below reads off activeCase. Before the mock CASES array was
     // removed this was never undefined; on a real account with no cases it is,
@@ -639,209 +898,26 @@ function PageOverview({ setPage, activeCase, feed, hearings, milestones = [], ca
 
     return (
         <div>
-            {/* Hero card */}
-            <Card t={t} style={{ marginBottom: 20 }}>
-                <div style={{ padding: "20px 24px 14px" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                                <Badge variant={["closed", "dismissed"].includes(activeCase.status) ? "gray" : "success"} t={t}>● {caseStatusLabel(activeCase.status)}</Badge>
-                                <Badge variant="warn" t={t}>{activeCase.type}</Badge>
-                            </div>
-                            <div style={{ fontSize: 26, fontWeight: 800, color: t.text, letterSpacing: "-0.4px", marginBottom: 4 }}>{activeCase.title}</div>
-                            <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 14 }}>Filed {activeCase.filed} · {activeCase.court} · {activeCase.judge}</div>
-                            <div style={{ marginBottom: 6 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                    <span style={{ fontSize: 11, color: t.textMuted }}>Case progress ({activeCase.progress}/{activeCase.total} milestones)</span>
-                                    <span style={{ fontSize: 11, color: t.primary, fontWeight: 700 }}>{activeCase.pct}%</span>
-                                </div>
-                                <div style={{ height: 6, background: t.accent, borderRadius: 3, overflow: "hidden" }}>
-                                    <div style={{ height: "100%", width: `${activeCase.pct}%`, background: `linear-gradient(90deg,${t.primary},${t.secondary})`, borderRadius: 3 }} />
-                                </div>
-                            </div>
-                            <div style={{ fontSize: 12, color: t.textDim }}>
-                                Next hearing: <span style={{ color: t.primary, fontWeight: 700 }}>{activeCase.nextHearing}</span>
-                            </div>
-                        </div>
-                        <Ring pct={activeCase.pct} t={t} />
-                    </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderTop: `1px solid ${t.border}` }}>
-                    {[
-                        { icon: "🗂", label: "CASE ID", val: activeCase.id, color: t.primary },
-                        { icon: "✅", label: "PROGRESS", val: `${activeCase.progress}/${activeCase.total} Steps`, color: t.success },
-                        { icon: "📅", label: "NEXT HEARING", val: activeCase.nextHearing, color: t.danger },
-                        { icon: "👤", label: "LAWYER", val: activeCase.lawyerAssigned ? "Assigned" : "Not yet", color: t.info },
-                    ].map((s, i) => (
-                        <div key={s.label} style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, borderRight: i < 3 ? `1px solid ${t.border}` : "none" }}>
-                            <div style={{
-                                width: 30, height: 30, borderRadius: 8, background: t.primaryGlow2, border: `1px solid ${t.border}`,
-                                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13
-                            }}>{s.icon}</div>
-                            <div>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: t.textMuted, letterSpacing: "0.1em", textTransform: "uppercase" }}>{s.label}</div>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: s.color, marginTop: 1 }}>{s.val}</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </Card>
+            <CaseStatusHero t={t} activeCase={activeCase} hearings={hearings} steps={steps} engagements={engagements.data} engagementState={engagements.state}
+                onAction={(a, e) => (a === "retry-engagements" ? engagements.reload() : (onHeroAction || (() => {}))(a, e))} />
+            <CaseTodos t={t} caseId={activeCase.id} onAction={onHeroAction || (() => {})}
+                sources={{ "hire requests": engagements, fees: data.payments, "meeting times": data.proposals, documents: data.v2Docs }} />
+            {afterHero}
 
-            {/* Peshi tracker — hearing updates in plain language */}
-            <HearingUpdates hearings={hearings} caseTitle={activeCase?.title} court={activeCase?.court} />
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 16 }}>
-                {/* Action Required — unified feed preview */}
-                <Card t={t} onClick={() => setPage("reminders")}>
-                    <SH icon="🚨" title="Action Required" desc="Deadlines, hearings & reminders"
-                        badge={<Badge variant="danger" t={t}>● {critical.length} Critical</Badge>} t={t} />
-                    <div style={{ padding: 16 }}>
-                        {critical.length > 0 && (
-                            <>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: t.danger, letterSpacing: "0.1em", marginBottom: 8 }}>⚠ NEEDS ATTENTION</div>
-                                {critical.map(f => {
-                                    const u = uc[f.urgency];
-                                    return (
-                                        <div key={f.id} style={{
-                                            display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10,
-                                            background: u.bg, border: `1px solid ${u.border}`, marginBottom: 8
-                                        }}>
-                                            <span style={{ fontSize: 16, flexShrink: 0 }}>{typeIcon[f.type]}</span>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontSize: 13, fontWeight: 700, color: u.color }}>{f.title}</div>
-                                                <div style={{ fontSize: 11, color: t.textMuted }}>{f.date} · {f.time}</div>
-                                            </div>
-                                            <Badge variant="danger" t={t} sm>{u.label}</Badge>
-                                        </div>
-                                    );
-                                })}
-                            </>
-                        )}
-                        {upcoming.length > 0 && (
-                            <>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: t.textMuted, letterSpacing: "0.1em", marginBottom: 8, marginTop: 4 }}>{T("UPCOMING", "آئندہ")}</div>
-                                {upcoming.map(f => {
-                                    const u = uc[f.urgency];
-                                    return (
-                                        <div key={f.id} style={{
-                                            display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10,
-                                            background: t.cardHi, border: `1px solid ${t.border}`, marginBottom: 8
-                                        }}>
-                                            <span style={{ fontSize: 16, flexShrink: 0 }}>{typeIcon[f.type]}</span>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{f.title}</div>
-                                                <div style={{ fontSize: 11, color: t.textMuted }}>{f.date}</div>
-                                            </div>
-                                            <Badge variant={f.urgency === "urgent" ? "warn" : "info"} t={t} sm>{u.label}</Badge>
-                                        </div>
-                                    );
-                                })}
-                            </>
-                        )}
-                    </div>
-                </Card>
-
-                {/* Timeline with "you are here" */}
-                <Card t={t} onClick={() => setPage("timeline")}>
-                    <SH icon="🕐" title="Case Timeline" desc="Milestones, hearings & court instructions"
-                        badge={activeCase.total ? <Badge variant="success" t={t}>{activeCase.progress}/{activeCase.total} done</Badge> : null} t={t} />
-                    <div style={{ padding: "16px 20px" }}>
-                        {activeM && (
-                            <div style={{
-                                padding: "8px 12px", borderRadius: 10, background: t.primaryGlow2,
-                                border: `1px solid ${t.primary}44`, marginBottom: 14
-                            }}>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: t.primary, letterSpacing: "0.08em", marginBottom: 2 }}>▶ YOU ARE HERE</div>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{activeM.event}</div>
-                                <div style={{ fontSize: 11, color: t.textMuted }}>{activeM.date} · {activeM.time}</div>
-                            </div>
-                        )}
-                        {milestones.length === 0 && (
-                            <Empty t={t} icon="🗓" title="No milestones recorded yet"
-                                desc="The case timeline fills in as your lawyer records progress." />
-                        )}
-                        {milestones.slice(0, 4).map((m, i) => {
-                            const isDone = m.status === "done", isActive = m.status === "active";
-                            return (
-                                <div key={m.id} style={{ display: "flex", gap: 12, paddingBottom: i < 3 ? 14 : 0, position: "relative" }}>
-                                    {i < 3 && <div style={{ position: "absolute", left: 13, top: 28, width: 2, bottom: 0, background: t.border }} />}
-                                    <div style={{
-                                        width: 26, height: 26, borderRadius: "50%", border: `2px solid ${isActive ? t.primary : isDone ? t.success : t.border}`,
-                                        background: isActive ? t.primaryGlow2 : isDone ? `${t.success}22` : "transparent",
-                                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11,
-                                        color: isActive ? t.primary : isDone ? t.success : t.textFaint,
-                                        boxShadow: isActive ? `0 0 10px ${t.primaryGlow}` : "none", zIndex: 1, flexShrink: 0
-                                    }}>
-                                        {isDone ? "✓" : isActive ? "▶" : "○"}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: 12, fontWeight: 700, color: isActive ? t.text : isDone ? t.textDim : t.textFaint }}>{m.event}</div>
-                                        <div style={{ fontSize: 10, color: t.textFaint }}>{m.date}</div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </Card>
-
-                {/* Notifications with urgency tiers */}
-                <Card t={t} onClick={() => setPage("notifications")}>
-                    <SH icon="🔔" title="Notifications" desc="Sorted by urgency"
-                        badge={<Badge variant="warn" t={t}>{feed.filter(f => !f.done).length} Unread</Badge>} t={t} />
-                    <div style={{ padding: "12px 20px" }}>
-                        {[...feed].sort((a, b) => priorityOrder[a.urgency] - priorityOrder[b.urgency]).slice(0, 4).map((n, i) => {
-                            const u = uc[n.urgency];
-                            return (
-                                <div key={n.id} style={{ display: "flex", gap: 10, padding: "9px 0", borderBottom: `1px solid ${t.border}`, opacity: n.done ? 0.5 : 1 }}>
-                                    <div style={{
-                                        width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: u.bg, border: `1px solid ${u.border}`,
-                                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14
-                                    }}>{typeIcon[n.type] || "🔔"}</div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                                            <span style={{ fontSize: 12, fontWeight: 700, color: t.text }}>{n.title}</span>
-                                            {!n.done && <span style={{ width: 6, height: 6, borderRadius: "50%", background: u.dot, display: "inline-block" }} />}
-                                        </div>
-                                        <div style={{ fontSize: 11, color: t.textMuted, lineHeight: 1.4 }}>{n.desc}</div>
-                                        <div style={{ fontSize: 10, color: t.textFaint, marginTop: 2 }}>{n.date}</div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        <div style={{ padding: "10px 0", textAlign: "center" }}>
-                            <span onClick={e => { e.stopPropagation(); setPage("notifications"); }}
-                                style={{ fontSize: 12, color: t.primary, fontWeight: 700, cursor: "pointer" }}>View all →</span>
-                        </div>
-                    </div>
-                </Card>
-            </div>
-
-            {/* Bottom row */}
-            <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <Card t={t} onClick={() => setPage("documents")}>
-                    <SH icon="📁" title="Documents" desc="Case files & uploads" t={t} />
-                    {/* The preview list here used to render a fixed array of
-                        invented filenames. Documents are loaded per case in
-                        PageDocuments; rather than duplicate that fetch, this
-                        card points at it instead of inventing a preview. */}
-                    <Empty t={t} icon="📁" title="Open documents"
-                        desc="Case files and uploads for the selected case." />
-                    <div style={{ padding: "0 0 14px", textAlign: "center" }}>
-                        <span style={{ fontSize: 12, color: t.primary, fontWeight: 700, cursor: "pointer" }}>View all documents →</span>
-                    </div>
-                </Card>
-
-                <Card t={t} onClick={() => setPage("communication")}>
-                    <SH icon="💬" title="Communication" desc="Messages & notes with your lawyer" t={t} />
-                    {/* Previously two hardcoded messages, including a lawyer
-                        reply about "Exhibit C pages 8-14" that no user ever
-                        sent. Real messages load in PageCommunication. */}
-                    <Empty t={t} icon="💬" title="Open conversation"
-                        desc="Messages and notes exchanged with your lawyer on this case." />
-                    <div style={{ padding: "0 0 14px", textAlign: "center" }}>
-                        <span style={{ fontSize: 12, color: t.primary, fontWeight: 700, cursor: "pointer" }}>Open conversation →</span>
-                    </div>
-                </Card>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 18, alignItems: "start" }}>
+                <CaseUpdates t={t} caseId={activeCase.id} messagesState={data.messages.state}
+                    missing={[data.messages.state === "error" && "messages", data.payments.state === "error" && "fees", data.docsState === "error" && "documents"].filter(Boolean)}
+                    loadingAny={[data.payments.state, data.docsState].includes("loading")}
+                    onRetry={() => { if (data.messages.state === "error") data.messages.reload(); if (data.payments.state === "error") data.payments.reload(); if (data.docsState === "error") data.reloadDocs(); }}
+                    groups={groupByDay(caseUpdates({ messages: data.messages.data, docs: data.docRows, steps, payments: data.casePayments, lawyerName: overviewEngagement?.lawyer_name || null }))}
+                    canReply={!["closed", "dismissed"].includes(activeCase.status) && (overviewEngagement?.status === "accepted" || activeCase.lawyerAssigned)}
+                    lawyerName={overviewEngagement?.status === "accepted" ? overviewEngagement.lawyer_name : null}
+                    onSent={() => data.messages.reload()} onOpenMessages={() => setPage("communication")} />
+                <CaseDetails t={t} onTab={setPage}
+                    groups={caseDetails({ caseInfo: activeCase, engagement: overviewEngagement, feeText: overviewEngagement ? feeLabel(overviewEngagement) : "", payments: data.casePayments, docs: data.docRows })
+                        .map(g => g.key === "money" ? { ...g, loading: data.payments.state === "loading", error: data.payments.state === "error" ? "Couldn't load the fees on this case." : null, onRetry: data.payments.reload }
+                            : g.key === "files" ? { ...g, loading: data.docsState === "loading", error: data.docsState === "error" ? "Couldn't load this case's documents." : null, onRetry: data.reloadDocs }
+                            : g)} />
             </div>
         </div>
     );
@@ -850,7 +926,7 @@ function PageOverview({ setPage, activeCase, feed, hearings, milestones = [], ca
 // ─── PAGE: TIMELINE ───────────────────────────────────────────────────────────
 // Accepts the milestones prop: the case timeline from the API plus any
 // appointment milestones written by ModLawyers via CaseContext.
-function PageTimeline({ milestones: propMilestones, hearings = [] }) {
+function PageTimeline({ milestones: propMilestones, hearings = [], loadState = "ready", onRetry = null, activeCase = null }) {
     const t = useT();
     const milestoneRows = propMilestones || [];
     const hearingRows = hearings.map(mapApiHearing);
@@ -860,10 +936,8 @@ function PageTimeline({ milestones: propMilestones, hearings = [] }) {
     const pendingCount = milestoneRows.length - doneCount;
     const outcomes = hearings.filter(h => h.outcome).sort((x, y) => new Date(y.date) - new Date(x.date));
     const [tab, setTab] = useState("all");
-    const [addNote, setAddNote] = useState(null);
-    const [noteText, setNoteText] = useState("");
-    const [tagLawyer, setTagLawyer] = useState(false);
-    const [notes, setNotes] = useState({});
+    // "Add Note / Tag Lawyer" was removed (2026-11-23): the note lived only in
+    // this browser and the lawyer was never told. Questions go to Messages.
     const activeRef = useRef(null);
 
     useEffect(() => {
@@ -873,10 +947,28 @@ function PageTimeline({ milestones: propMilestones, hearings = [] }) {
     const list = tab === "hearings" ? allMilestones.filter(m => m.tag === "hearing" || m.tag === "appointment")
         : tab === "done" ? allMilestones.filter(m => m.status === "done")
             : allMilestones;
-    const tagStyle = { complete: { v: "success", l: "Complete" }, hearing: { v: "warn", l: "⚖ Hearing" }, pending: { v: "gray", l: "Pending" } };
+    const tagStyle = { complete: { v: "success", l: "Complete" }, hearing: { v: "warn", l: "Hearing" }, pending: { v: "gray", l: "Pending" } };
+
+    // A read still in flight, or one that failed, is not "no hearings".
+    if (loadState === "loading") {
+        return <Card t={t}><div data-timeline-state="loading" style={{ padding: 24, fontSize: 13.5, color: t.textMuted }}>Loading the timeline…</div></Card>;
+    }
+    if (loadState === "error") {
+        return (
+            <Card t={t}>
+                <div role="alert" data-timeline-state="error" style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
+                    <b style={{ color: t.text }}>Couldn't load this case's timeline</b>
+                    <span style={{ fontSize: 14, color: t.textMuted }}>Hearings and milestones may be missing from this view. Check your connection and try again.</span>
+                    {onRetry && <button type="button" onClick={onRetry} style={{ ...hubBtn("ghost", t), height: 36 }}>Try again</button>}
+                </div>
+            </Card>
+        );
+    }
 
     return (
         <div>
+            {/* Share a hearing on WhatsApp (moved here from the Overview, 2026-11-23). */}
+            <HearingUpdates hearings={hearings} caseTitle={activeCase?.title} court={activeCase?.court} />
             <div className="rgrid" style={{ display: "grid", gridTemplateColumns: "1fr 288px", gap: 16 }}>
                 <Card t={t}>
                     <SH icon="🕐" title="Case Timeline" desc="Milestones, hearings & court instructions"
@@ -903,47 +995,22 @@ function PageTimeline({ milestones: propMilestones, hearings = [] }) {
                                         width: 32, height: 32, borderRadius: "50%",
                                         border: `2px solid ${isActive ? t.primary : isDone ? t.success : t.border}`,
                                         background: isActive ? t.primaryGlow2 : isDone ? `${t.success}22` : "transparent",
-                                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0, zIndex: 1,
+                                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.5, flexShrink: 0, zIndex: 1,
                                         color: isActive ? t.primary : isDone ? t.success : t.textFaint,
                                         boxShadow: isActive ? `0 0 14px ${t.primaryGlow}` : "none"
                                     }}>
                                         {isDone ? "✓" : isActive ? "▶" : "○"}
                                     </div>
                                     <div style={{ flex: 1, paddingTop: 4 }}>
-                                        {isActive && <div style={{ fontSize: 10, fontWeight: 700, color: t.primary, letterSpacing: "0.08em", marginBottom: 4 }}>▶ YOU ARE HERE</div>}
+                                        {isActive && <div style={{ fontSize: 12, fontWeight: 700, color: t.primary, letterSpacing: "0.08em", marginBottom: 4 }}>▶ YOU ARE HERE</div>}
                                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                                             <div style={{ fontSize: 14, fontWeight: 700, color: isActive ? t.text : isDone ? t.textDim : t.textFaint }}>{m.event}</div>
-                                            <div style={{ fontSize: 10, color: t.textFaint, textAlign: "right", flexShrink: 0, marginLeft: 12 }}>{m.date}<br />{m.time}</div>
+                                            <div style={{ fontSize: 13.5, color: t.textFaint, textAlign: "right", flexShrink: 0, marginLeft: 12 }}>{m.date}<br />{m.time}</div>
                                         </div>
-                                        <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 6 }}>{m.desc}</div>
+                                        <div style={{ fontSize: 13.5, color: t.textMuted, marginBottom: 6 }}>{m.desc}</div>
                                         <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                                             <Badge variant={tc.v} t={t} sm>{tc.l}</Badge>
-                                            {notes[m.id] && <Badge variant="info" t={t} sm>📝 Note added</Badge>}
                                         </div>
-                                        {addNote === m.id ? (
-                                            <div style={{ marginTop: 10, background: t.cardHi, border: `1px solid ${t.border}`, borderRadius: 12, padding: 12 }}>
-                                                <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Write note…"
-                                                    style={{
-                                                        width: "100%", minHeight: 60, background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 8,
-                                                        padding: "8px 12px", color: t.text, fontSize: 12, outline: "none", resize: "vertical", boxSizing: "border-box", marginBottom: 8
-                                                    }} />
-                                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                                                    <Toggle value={tagLawyer} onChange={setTagLawyer} t={t} />
-                                                    <span style={{ fontSize: 11, color: t.textDim }}>Tag lawyer for review</span>
-                                                </div>
-                                                <div style={{ display: "flex", gap: 6 }}>
-                                                    <Btn t={t} variant="primary" style={{ fontSize: 11 }} onClick={() => { setNotes(p => ({ ...p, [m.id]: noteText })); setAddNote(null); setNoteText(""); }}>Save Note</Btn>
-                                                    <Btn t={t} variant="ghost" style={{ fontSize: 11 }} onClick={() => { setAddNote(null); setNoteText(""); }}>Cancel</Btn>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div style={{ marginTop: 6 }}>
-                                                <span onClick={() => setAddNote(m.id)} style={{ fontSize: 11, color: t.primary, cursor: "pointer", fontWeight: 700 }}>+ Add Note / Tag Lawyer</span>
-                                            </div>
-                                        )}
-                                        {notes[m.id] && addNote !== m.id && (
-                                            <div style={{ marginTop: 6, background: t.inputBg, borderRadius: 8, padding: "8px 12px", borderLeft: `3px solid ${t.primary}`, fontSize: 12, color: t.textDim }}>{notes[m.id]}</div>
-                                        )}
                                     </div>
                                 </div>
                             );
@@ -955,19 +1022,19 @@ function PageTimeline({ milestones: propMilestones, hearings = [] }) {
                     <Card t={t}>
                         <SH icon="📊" title="Progress" desc="Milestone completion" t={t} />
                         <div style={{ padding: 16 }}>
-                            {milestoneRows.length === 0 && <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 10 }}>Your lawyer has not added milestones yet.</div>}
+                            {milestoneRows.length === 0 && <div style={{ fontSize: 13.5, color: t.textMuted, marginBottom: 10 }}>Your lawyer has not added milestones yet.</div>}
                             {milestoneRows.length > 0 && [{ l: "Completed", c: doneCount, col: t.success }, { l: "Pending", c: pendingCount, col: t.textFaint }].map(item => (
                                 <div key={item.l} style={{ marginBottom: 14 }}>
                                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                                        <span style={{ fontSize: 12, color: t.textDim, fontWeight: 500 }}>{item.l}</span>
-                                        <span style={{ fontSize: 11, color: item.col, fontWeight: 700 }}>{item.c}/{milestoneRows.length}</span>
+                                        <span style={{ fontSize: 13.5, color: t.textDim, fontWeight: 500 }}>{item.l}</span>
+                                        <span style={{ fontSize: 12.5, color: item.col, fontWeight: 700 }}>{item.c}/{milestoneRows.length}</span>
                                     </div>
                                     <div style={{ height: 5, background: t.accent, borderRadius: 3, overflow: "hidden" }}>
                                         <div style={{ height: "100%", width: `${(item.c / milestoneRows.length) * 100}%`, background: item.col, borderRadius: 3 }} />
                                     </div>
                                 </div>
                             ))}
-                            <div style={{ fontSize: 11, color: t.textFaint, marginTop: 4, padding: "8px 10px", background: t.cardHi, borderRadius: 8 }}>
+                            <div style={{ fontSize: 12.5, color: t.textFaint, marginTop: 4, padding: "8px 10px", background: t.cardHi, borderRadius: 8 }}>
                                 % = milestones marked complete by your lawyer
                             </div>
                         </div>
@@ -975,12 +1042,12 @@ function PageTimeline({ milestones: propMilestones, hearings = [] }) {
                     <Card t={t}>
                         <SH icon="📋" title="What the court decided" t={t} />
                         <div style={{ padding: 14 }}>
-                            {outcomes.length === 0 && <div style={{ fontSize: 12, color: t.textMuted }}>No hearing outcomes recorded yet.</div>}
+                            {outcomes.length === 0 && <div style={{ fontSize: 13.5, color: t.textMuted }}>No hearing outcomes recorded yet.</div>}
                             {outcomes.map((h, i) => (
                                 <div key={h._id || i} style={{ background: t.cardHi, border: `1px solid ${t.border}`, borderRadius: 10, padding: 12, marginBottom: i < outcomes.length - 1 ? 10 : 0 }}>
-                                    <div style={{ fontSize: 10, color: t.warn, fontWeight: 700, marginBottom: 4 }}>⚖ {formatPkt(h.date, { month: "short", day: "numeric", year: "numeric" })} · {h.outcome_label || h.outcome}</div>
-                                    {h.outcome_note && <div style={{ fontSize: 12, color: t.textDim, lineHeight: 1.5 }}>{h.outcome_note}</div>}
-                                    {h.outcome_meaning && <div style={{ fontSize: 11.5, color: t.textMuted, lineHeight: 1.5, marginTop: 4 }}>{h.outcome_meaning}</div>}
+                                    <div style={{ fontSize: 13.5, color: t.warn, fontWeight: 700, marginBottom: 4 }}>{formatPkt(h.date, { month: "short", day: "numeric", year: "numeric" })} · {h.outcome_label || h.outcome}</div>
+                                    {h.outcome_note && <div style={{ fontSize: 13.5, color: t.textDim, lineHeight: 1.5 }}>{h.outcome_note}</div>}
+                                    {h.outcome_meaning && <div style={{ fontSize: 14, color: t.textMuted, lineHeight: 1.5, marginTop: 4 }}>{h.outcome_meaning}</div>}
                                 </div>
                             ))}
                         </div>
@@ -1032,14 +1099,17 @@ const DOC_SORTS = {
 };
 
 // ─── PAGE: DOCUMENTS ──────────────────────────────────────────────────────────
-// The case's documents, from the server. What was here and did nothing has
-// been made to work or removed: Open and Download had no handler, Sort was
-// ignored, a "Seen by lawyer" label was always "Not yet seen" (nothing records
-// it), a version history always showed one version with a dead ↓, and a
-// failed read showed "0 Files".
+// The case's documents, from the server (redesigned 2026-11-23, approved v2
+// preview). What needs the client comes first ("Needs you": a document the
+// lawyer sent back, or one the system says must be approved again); then one
+// plain list. A row's status sits in its text line as the app's own word, and
+// every row has the same two buttons. Search shows only above 5 documents and
+// sort from 2: a toolbar over nothing was most of the old screen.
+const DOC_TONE = t => ({ ok: t.primary, info: t.info || t.primary, warn: t.warn, danger: t.danger, muted: t.textMuted });
+
 function PageDocuments({ activeCaseId }) {
     const t = useT();
-    const [filter, setFilter] = useState("All");
+    const router = useClientRouter();
     const [search, setSearch] = useState("");
     const [sort, setSort] = useState("date");
     const [apiDocs, setApiDocs] = useState(null);   // null = loading
@@ -1106,105 +1176,199 @@ function PageDocuments({ activeCaseId }) {
     };
 
     const docSource = apiDocs ?? [];
-    const cats = ["All", ...Array.from(new Set(docSource.map(d => d.category)))];
-    const filtered = docSource
-        .filter(d => (filter === "All" || d.category === filter)
-            && (!search || d.name.toLowerCase().includes(search.toLowerCase())))
+    const viewOf = d => (d.v2 ? documentStatusView(d._raw) : null);
+    // Needs you: sent back by the lawyer, or needing approval again. Nothing else.
+    const needsYou = docSource.filter(d => { const v = viewOf(d); return v && (v.isRecovery || d._raw?.review_status === "returned"); });
+    const needIds = new Set(needsYou.map(d => d.id));
+    const rest = docSource.filter(d => !needIds.has(d.id));
+    const listed = rest
+        .filter(d => !search || d.name.toLowerCase().includes(search.toLowerCase()))
         .sort(DOC_SORTS[sort] || DOC_SORTS.date);
-    const btn = (on) => ({
-        padding: "5px 12px", borderRadius: 8, border: `1px solid ${t.border}`, background: "transparent",
-        color: t.textMuted, fontSize: 11, fontWeight: 600, cursor: on ? "wait" : "pointer", fontFamily: "inherit",
+    const tone = DOC_TONE(t);
+    const pill = (kind, on) => ({
+        display: "inline-flex", alignItems: "center", justifyContent: "center", width: 104, height: 36, borderRadius: 999,
+        cursor: on ? "wait" : "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", background: "transparent",
+        border: `1px solid ${kind === "brand" ? `${t.primary}73` : t.border}`, color: kind === "brand" ? t.primary : t.text,
     });
+    const solid = { display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 104, height: 40, padding: "0 20px", borderRadius: 999, border: 0,
+        cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit", background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" };
+    const fileIcon = (col, bg) => (
+        <span aria-hidden="true" style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 12, display: "grid", placeItems: "center", background: bg, color: col }}>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></svg>
+        </span>
+    );
+    const label = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", margin: 0 };
+    const draftCard = (
+        <aside aria-label="Need a new document" style={{ borderRadius: 18, background: "var(--brand-soft, rgba(62,224,161,.13))", border: `1px solid ${t.border}`, padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+            <b style={{ fontSize: 15.5, color: t.text }}>Need a new document?</b>
+            <span style={{ fontSize: 13.5, color: t.textMuted }}>Draft it from a template, then send it to your lawyer to review. Drafts linked to this case show here.</span>
+            <button type="button" data-draft-document onClick={() => router.push("/documents")} style={{ ...solid, alignSelf: "flex-start", height: 38, fontSize: 13.5 }}>Draft a document</button>
+        </aside>
+    );
+
+    if (apiDocs === null) return <div style={{ fontSize: 14, color: t.textMuted }}>Loading documents…</div>;
+    if (loadError) return (
+        <div role="alert" style={{ borderRadius: 16, background: t.card, border: `1px solid ${t.border}`, padding: "16px 18px", fontSize: 14, color: t.text, display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ flex: 1 }}>{loadError}</span>
+            <button type="button" onClick={load} style={pill("brand", false)}>Retry</button>
+        </div>
+    );
+    if (!docSource.length) return (
+        <section aria-label="Documents on this case" data-docs-empty
+            style={{ borderRadius: 20, background: t.card, border: `1px solid ${t.border}`, padding: "40px 40px", display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 40, alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {fileIcon(t.primary, "var(--brand-soft, rgba(62,224,161,.13))")}
+                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: t.text }}>No documents on this case yet</h2>
+                <p style={{ margin: 0, fontSize: 14.5, color: t.textMuted, maxWidth: 520 }}>Documents you draft and link to this case, and the copies your lawyer sends back, are listed here to open or download.</p>
+                <button type="button" data-draft-document onClick={() => router.push("/documents")} style={{ ...solid, alignSelf: "flex-start", marginTop: 4 }}>Draft a document</button>
+            </div>
+            <ol style={{ listStyle: "none", margin: 0, padding: "20px 22px", borderRadius: 16, background: "var(--brand-soft, rgba(62,224,161,.10))", border: `1px solid ${t.primary}4D`, display: "flex", flexDirection: "column", gap: 14 }}>
+                {["Draft from a template in Documents", "Send it to your lawyer for review", "Drafts linked to this case appear here"].map((s, i) => (
+                    <li key={s} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <b aria-hidden="true" style={{ width: 24, height: 24, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 12.5,
+                            background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" }}>{i + 1}</b>
+                        <span style={{ fontSize: 13.5, color: t.text }}>{s}</span>
+                    </li>
+                ))}
+            </ol>
+        </section>
+    );
 
     return (
-        <div>
-            <Card t={t}>
-                <SH icon="📁" title="Case documents" desc="Open or download the documents on this case"
-                    badge={<Badge variant="primary" t={t}>{apiDocs === null ? "…" : `${filtered.length} file${filtered.length === 1 ? "" : "s"}`}</Badge>} t={t} />
-                <div style={{ padding: "14px 20px", borderBottom: `1px solid ${t.border}` }}>
-                    <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-                        <div style={{ flex: 1, position: "relative" }}>
-                            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: t.textMuted }}>🔍</span>
-                            <Inp placeholder="Search documents…" value={search} onChange={setSearch} t={t} style={{ paddingLeft: 36 }} />
-                        </div>
-                        <select aria-label="Sort documents" value={sort} onChange={e => setSort(e.target.value)}
-                            style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 10, padding: "0 14px", color: t.textDim, fontSize: 12, fontWeight: 600, outline: "none", cursor: "pointer" }}>
-                            <option value="date">Sort: Newest</option>
-                            <option value="name">Sort: Name</option>
-                            <option value="type">Sort: Type</option>
-                        </select>
-                    </div>
-                    {cats.length > 2 && (
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {cats.map(c => (
-                                <button key={c} type="button" onClick={() => setFilter(c)} aria-pressed={filter === c}
-                                    style={{
-                                        padding: "5px 12px", borderRadius: 20, border: `1px solid ${filter === c ? t.primary : t.border}`,
-                                        background: filter === c ? t.primaryGlow2 : "transparent", color: filter === c ? t.primary : t.textMuted,
-                                        fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                                    }}>{c}</button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                <div style={{ padding: 20 }}>
-                    {apiDocs === null && <div style={{ fontSize: 13, color: t.textMuted }}>Loading documents…</div>}
-                    {loadError && (
-                        <div role="alert" style={{ fontSize: 13, color: t.danger }}>
-                            {loadError}{" "}
-                            <button type="button" onClick={load} style={{ background: "none", border: "none", color: t.primary, cursor: "pointer", fontWeight: 700, fontFamily: "inherit" }}>Retry</button>
-                        </div>
-                    )}
-                    {apiDocs !== null && !loadError && filtered.length === 0 && (
-                        <div style={{ fontSize: 13, color: t.textMuted }}>
-                            {docSource.length ? "No documents match." : "No documents on this case yet."}
-                        </div>
-                    )}
-                    {filtered.map(doc => (
-                        <div key={doc.id} data-doc={doc.id} style={{ borderRadius: 12, border: `1px solid ${t.border}`, marginBottom: 8, background: t.cardHi, padding: "12px 14px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                                <div style={{
-                                    width: 38, height: 44, borderRadius: 8, background: `${t.danger}18`, border: `1px solid ${t.danger}33`,
-                                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0,
-                                }}>📄</div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>{doc.name}</div>
-                                    <div style={{ display: "flex", gap: 10, fontSize: 11, color: t.textMuted, flexWrap: "wrap" }}>
-                                        <span style={{ color: t.danger, fontWeight: 700 }}>{doc.type}</span>
-                                        <span>{doc.date}</span><span>{doc.category}</span>
-                                        {doc.status && <span data-doc-status style={{ fontWeight: 700, color: t.text }}>{doc.status}</span>}
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 300px", gap: 24, alignItems: "start" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 22, minWidth: 0 }}>
+                {needsYou.length > 0 && (
+                    <section aria-label="Needs you" data-docs-needs-you style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <h2 style={{ ...label, color: t.warn }}>Needs you · {needsYou.length}</h2>
+                        {needsYou.map(doc => {
+                            const v = viewOf(doc);
+                            const recovery = v.isRecovery;
+                            return (
+                                <article key={doc.id} data-doc={doc.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "18px 22px", borderRadius: 18, background: t.card, border: `1px solid ${t.warn}73` }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                                        {fileIcon(t.warn, `${t.warn}22`)}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <b style={{ display: "block", fontSize: 16, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.name}</b>
+                                            <span data-doc-status style={{ fontSize: 13.5, color: t.textMuted }}>
+                                                {recovery ? (v.explanation || v.headline) : "Your lawyer sent it back. Open it to see their changes."}
+                                            </span>
+                                        </div>
+                                        {recovery
+                                            ? <button type="button" onClick={() => router.push("/documents")} style={solid}>Open in Documents</button>
+                                            : <button type="button" onClick={() => openDoc(doc)} disabled={!!busy || doc.downloadable === false} style={solid}>
+                                                {busy === `${doc.id}:open` ? "Opening…" : "Open"}</button>}
                                     </div>
-                                </div>
-                                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                                    <button type="button" onClick={() => openDoc(doc)} disabled={!!busy || doc.downloadable === false} title={doc.downloadable === false ? "This version has no PDF yet" : undefined} style={btn(busy === `${doc.id}:open`)}>
-                                        {busy === `${doc.id}:open` ? "Opening…" : "↗ Open"}
-                                    </button>
-                                    <button type="button" onClick={() => download(doc)} disabled={!!busy || doc.downloadable === false} style={btn(busy === `${doc.id}:download`)}>
-                                        {busy === `${doc.id}:download` ? "Downloading…" : "↓ Download"}
-                                    </button>
-                                </div>
-                            </div>
-                            {docError[doc.id] && <div role="alert" style={{ fontSize: 12, color: t.danger, marginTop: 8 }}>{docError[doc.id]}</div>}
+                                    {docError[doc.id] && <div role="alert" style={{ fontSize: 13.5, color: t.danger }}>{docError[doc.id]}</div>}
+                                </article>
+                            );
+                        })}
+                    </section>
+                )}
+
+                <section aria-label="All documents" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 36 }}>
+                        <h2 style={{ ...label, color: t.textMuted }}>{needsYou.length ? "All documents" : "Documents"} · {rest.length}</h2>
+                        {rest.length > 5 && (
+                            <label style={{ marginLeft: "auto", position: "relative", display: "flex", alignItems: "center" }}>
+                                <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search documents</span>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ position: "absolute", left: 12 }}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+                                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search"
+                                    style={{ width: 200, height: 36, boxSizing: "border-box", padding: "0 12px 0 34px", borderRadius: 999, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13.5, outline: "none" }} />
+                            </label>
+                        )}
+                        {rest.length > 1 && (
+                            <select aria-label="Sort documents" value={sort} onChange={e => setSort(e.target.value)}
+                                style={{ marginLeft: rest.length > 5 ? 0 : "auto", height: 36, padding: "0 12px", borderRadius: 999, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13.5, fontWeight: 600, outline: "none", cursor: "pointer" }}>
+                                <option value="date">Newest first</option>
+                                <option value="name">Name</option>
+                                <option value="type">Type</option>
+                            </select>
+                        )}
+                    </div>
+                    {rest.length > 0 && (
+                        <div style={{ borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, overflow: "hidden" }}>
+                            {listed.length === 0 && <div style={{ padding: "16px 20px", fontSize: 14, color: t.textMuted }}>No documents match.</div>}
+                            {listed.map((doc, i) => {
+                                const v = viewOf(doc);
+                                const ready = doc.downloadable !== false;
+                                return (
+                                    <article key={doc.id} data-doc={doc.id} style={{ padding: "15px 20px", borderTop: i ? `1px solid ${t.border}` : 0 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                            {fileIcon(t.textMuted, t.cardHi)}
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <b style={{ display: "block", fontSize: 15, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.name}</b>
+                                                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, color: t.textMuted }}>
+                                                    {v && <span data-doc-status style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700, color: tone[v.tone] || t.textMuted }}>
+                                                        <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor" }} />{v.label}</span>}
+                                                    {v && <span aria-hidden="true">·</span>}
+                                                    <span>{doc.type} · {doc.date}</span>
+                                                </span>
+                                            </div>
+                                            {ready ? (<>
+                                                <button type="button" onClick={() => openDoc(doc)} disabled={!!busy} style={pill("brand", busy === `${doc.id}:open`)}>
+                                                    {busy === `${doc.id}:open` ? "Opening…" : "Open"}</button>
+                                                <button type="button" onClick={() => download(doc)} disabled={!!busy} style={pill("plain", busy === `${doc.id}:download`)}>
+                                                    {busy === `${doc.id}:download` ? "Downloading…" : "Download"}</button>
+                                            </>) : (
+                                                // No PDF for this version yet: say so, in the buttons' space.
+                                                <span style={{ width: 216, textAlign: "center", fontSize: 13, color: t.textMuted }}>PDF not ready yet</span>
+                                            )}
+                                        </div>
+                                        {docError[doc.id] && <div role="alert" style={{ fontSize: 13.5, color: t.danger, marginTop: 8 }}>{docError[doc.id]}</div>}
+                                    </article>
+                                );
+                            })}
                         </div>
-                    ))}
-                </div>
-            </Card>
+                    )}
+                </section>
+            </div>
+            <div style={{ marginTop: 46 }}>{draftCard}</div>
         </div>
     );
 }
 
-// ─── PAGE: NOTIFICATIONS ──────────────────────────────────────────────────────
-// Fix #4: reads from CaseContext feed; mutations go through context helpers.
-function PagePayments({ t }) {
+// ─── PAGE: PAYMENTS ───────────────────────────────────────────────────────────
+// Redesigned 2026-11-23 (approved v2 preview): the amount due first and
+// biggest, with one Pay; the agreed fee as one quiet line; then a history
+// table of what has finished. A due fee is shown once: in the top card, never
+// again in the history.
+//   due      = created, pending (checkout started, not settled: payable again),
+//              failed (the payer was told to try again)
+//   finished = paid, expired, cancelled
+// The agreed-fee line needs an ACCEPTED engagement with a FIXED fee and counts
+// professional fees only: a peshi fee is not part of the agreed fee, and an
+// hourly or per-hearing rate has no "left".
+const PAY_DUE = new Set(["created", "pending", "failed"]);
+
+function PagePayments({ t, caseId = null, focusPaymentId = null, onAllPayments = null }) {
     const { T } = useLang();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    // A failed read is said, never shown as "no fee requests": it could hide a
+    // fee that is due (2026-11-23).
+    const [loadError, setLoadError] = useState(null);
+    // The engagement on this case, for the agreed-fee line (case view only).
+    const engagements = useEngagements();
+    const engagement = caseId ? (engagements.data || []).find(e => String(e.case_id || "") === String(caseId) && e.status === "accepted") || null : null;
+    // A link to one payment (a fee notification): scroll to it once it is on screen.
+    const focusDone = useRef(null);
+    useEffect(() => {
+        if (!focusPaymentId || loading || focusDone.current === focusPaymentId) return;
+        const hit = items.find(p => String(p.id) === String(focusPaymentId));
+        if (!hit) return;
+        focusDone.current = focusPaymentId;
+        setTimeout(() => {
+            const el = [...document.querySelectorAll("[data-payment]")].find(n => n.getAttribute("data-payment") === String(focusPaymentId));
+            el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        }, 0);
+    }, [focusPaymentId, loading, items, caseId]);
     const [payingId, setPayingId] = useState(null);
     const [payError, setPayError] = useState({});   // payment id -> message
 
     const load = async () => {
-        const { data } = await listPayments();
-        if (Array.isArray(data)) setItems(data);
+        const { data, error } = await listPayments();
+        if (Array.isArray(data)) { setItems(data); setLoadError(null); }
+        else setLoadError(error?.message || "Couldn't load your payments.");
         setLoading(false);
     };
     useEffect(() => { load(); }, []);
@@ -1229,176 +1393,203 @@ function PagePayments({ t }) {
         setPayingId(null);
     };
 
-    const badge = (status) => {
-        const map = {
-            paid: t.badgeSuccess, pending: t.badgeWarn, created: t.badgeInfo,
-            expired: t.badgeGray, failed: t.badgeDanger, cancelled: t.badgeGray,
-        };
-        const b = map[status] || t.badgeInfo;
-        const label = {
-            paid: T("Paid", "ادا شدہ"), pending: T("Processing", "زیرِ عمل"),
-            created: T("Due", "واجب"), expired: T("Expired", "میعاد ختم"),
-            failed: T("Failed", "ناکام"), cancelled: T("Cancelled", "منسوخ")
-        }[status] || status;
-        return <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: b.bg, color: b.color, border: `1px solid ${b.border}` }}>{label}</span>;
-    };
+    const money = n => `PKR ${Number(n || 0).toLocaleString()}`;
+    const day = iso => (iso ? formatPkt(iso, { day: "numeric", month: "short" }) : null);
+    const feeName = p => (p.purpose === "peshi_fee" ? T("Appearance (peshi) fee", "پیشی فیس") : T("Professional fee", "پروفیشنل فیس"));
+    const isFocus = p => !!focusPaymentId && String(p.id) === String(focusPaymentId);
+    const focusRing = p => (isFocus(p) ? { outline: `2px solid ${t.primary}`, outlineOffset: -2, borderRadius: 12 } : null);
+    const ts = p => new Date(p.paid_at || p.updated_at || p.created_at || 0).getTime();
+
+    const shown = caseId ? items.filter(p => String(p.case_id || "") === String(caseId)) : items;
+    const due = shown.filter(p => PAY_DUE.has(p.status))
+        .sort((a, b) => new Date(a.expires_at || a.created_at || 0) - new Date(b.expires_at || b.created_at || 0));
+    const finished = shown.filter(p => !PAY_DUE.has(p.status)).sort((a, b) => ts(b) - ts(a));
+    const dueTotal = due.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    // The agreed fee, only where it means something.
+    const fixedFee = engagement && engagement.fee_amount && !["hourly", "per_hearing"].includes(engagement.fee_type);
+    const proPaid = shown.filter(p => p.status === "paid" && p.purpose !== "peshi_fee").reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    const dueNote = p => (p.status === "failed" ? T("Last attempt did not go through — try again", "پچھلی کوشش مکمل نہیں ہوئی — دوبارہ کوشش کریں")
+        : p.status === "pending" ? T("Payment started, not finished", "ادائیگی شروع ہوئی، مکمل نہیں")
+        : p.expires_at ? `${T("Pay by", "ادائیگی کی آخری تاریخ")} ${day(p.expires_at)}` : T("Due now", "ابھی واجب"));
+    const byLine = p => [feeName(p), p.payee_snapshot?.name ? `${T("requested by", "مانگی")} ${p.payee_snapshot.name}${p.created_at ? ` ${T("on", "")} ${day(p.created_at)}` : ""}` : null,
+        !caseId && p.case_snapshot?.title ? p.case_snapshot.title : null].filter(Boolean).join(" · ");
+    const payLabel = p => (payingId === p.id ? T("Processing…", "زیرِ عمل…") : `${p.status === "failed" ? T("Try again", "دوبارہ کوشش") + " · " : ""}${T("Pay", "ادا کریں")} ${money(p.amount)}`);
+    const payBtn = (p, big) => (
+        <button type="button" onClick={() => pay(p)} disabled={payingId === p.id}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: big ? 220 : 170, height: big ? 48 : 40, padding: "0 20px", borderRadius: 999, border: "none",
+                background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)", fontSize: big ? 15 : 13.5, fontWeight: 800,
+                cursor: payingId === p.id ? "default" : "pointer", fontFamily: "inherit", opacity: payingId === p.id ? .7 : 1 }}>{payLabel(p)}</button>
+    );
+    const payErr = p => payError[p.id] && <div role="alert" style={{ fontSize: 12.5, color: t.danger || "#B42318", marginTop: 6 }}>{payError[p.id]}</div>;
+    const finishedStatus = p => (p.status === "paid" ? [`${T("Paid", "ادا شدہ")}${day(p.paid_at || p.updated_at) ? ` ${day(p.paid_at || p.updated_at)}` : ""}`, t.primary]
+        : p.status === "expired" ? [T("Expired", "میعاد ختم"), t.textMuted]
+        : p.status === "cancelled" ? [T("Cancelled", "منسوخ"), t.textMuted] : [p.status, t.textMuted]);
+    const th = { padding: "10px 12px", fontWeight: 700, fontSize: 12, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted, borderTop: `1px solid ${t.border}`, textAlign: "left" };
+    const td = { padding: "14px 12px", borderTop: `1px solid ${t.border}`, verticalAlign: "middle" };
 
     return (
-        <div style={{ maxWidth: 720 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: t.text, marginBottom: 4 }}>{T("Payments", "ادائیگیاں")}</div>
-            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 18 }}>
-                {T("Fees requested by your lawyer. Pay securely from here.", "آپ کے وکیل کی طرف سے مانگی گئی فیس۔ یہاں سے محفوظ ادائیگی کریں۔")}
+        <div data-payments-page style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+                <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: t.text }}>{T("Payments", "ادائیگیاں")}</h1>
+                <span style={{ fontSize: 13.5, color: t.textMuted }}>
+                    {caseId ? T("Fees your lawyer requested on this case", "اس کیس پر آپ کے وکیل کی مانگی گئی فیس") : T("Every fee across your matters", "آپ کے تمام کیسز کی فیس")}
+                </span>
             </div>
 
-            {loading && <div style={{ fontSize: 13, color: t.textMuted }}>{T("Loading…", "لوڈ ہو رہا ہے…")}</div>}
-            {!loading && items.length === 0 && (
-                <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 28, textAlign: "center", fontSize: 13.5, color: t.textMuted }}>
-                    {T("No fee requests yet.", "ابھی تک کوئی فیس کی درخواست نہیں۔")}
+            {loading && <div style={{ fontSize: 13.5, color: t.textMuted }}>{T("Loading…", "لوڈ ہو رہا ہے…")}</div>}
+            {!loading && loadError && (
+                <div role="alert" data-payments-error style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ flex: 1, fontSize: 13.5, color: t.text }}>
+                        {items.length ? T("Couldn't refresh your payments — this list may be out of date.", "ادائیگیاں تازہ نہیں ہو سکیں — یہ فہرست پرانی ہو سکتی ہے۔")
+                            : T("Couldn't load your payments. A fee may be due.", "ادائیگیاں لوڈ نہیں ہو سکیں۔ کوئی فیس واجب ہو سکتی ہے۔")}
+                    </span>
+                    <button type="button" onClick={() => { setLoading(true); load(); }} style={{ ...hubBtn("ghost", t), height: 34 }}>{T("Try again", "دوبارہ کوشش کریں")}</button>
+                </div>
+            )}
+            {focusPaymentId && !loading && !loadError && !items.some(p => String(p.id) === String(focusPaymentId)) && (
+                <div role="status" data-payment-missing style={{ fontSize: 12.5, color: t.textMuted }}>
+                    {T("The payment this link points to is not in your list.", "اس لنک والی ادائیگی آپ کی فہرست میں نہیں ہے۔")}
+                </div>
+            )}
+            {!loading && !loadError && shown.length === 0 && (
+                <div data-payments-empty style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 16, padding: 28, textAlign: "center", fontSize: 14, color: t.textMuted }}>
+                    {caseId ? T("No fee requests on this case yet.", "اس کیس پر ابھی کوئی فیس کی درخواست نہیں۔") : T("No fee requests yet.", "ابھی تک کوئی فیس کی درخواست نہیں۔")}
+                    {caseId && onAllPayments && <div style={{ marginTop: 10 }}><button type="button" data-open-all-payments onClick={onAllPayments} style={{ border: 0, background: "none", padding: 0, cursor: "pointer", color: t.primary, fontSize: 13.5, fontWeight: 700 }}>{T("All my payments →", "تمام ادائیگیاں ←")}</button></div>}
                 </div>
             )}
 
-            {items.map(p => (
-                <div key={p.id} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ flex: 1, minWidth: 200 }}>
-                        <div style={{ fontSize: 17, fontWeight: 800, color: t.text }}>PKR {Number(p.amount).toLocaleString()}</div>
-                        <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>
-                            {p.purpose === "peshi_fee" ? T("Appearance (peshi) fee", "پیشی فیس") : T("Professional fee", "پروفیشنل فیس")}
-                            {p.payee_snapshot?.name ? ` · ${p.payee_snapshot.name}` : ""}
+            {/* 1. THE AMOUNT DUE: the one thing to act on */}
+            {!loading && due.length === 1 && (() => {
+                const p = due[0];
+                return (
+                    <section aria-label="Amount due" data-amount-due data-payment={p.id} data-focused={isFocus(p) ? "" : undefined}
+                        style={{ display: "flex", alignItems: "center", gap: 28, padding: "24px 28px", borderRadius: 20, background: t.card, border: `1px solid ${p.status === "failed" ? (t.danger || "#B42318") : t.warn}66`, ...focusRing(p) }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: p.status === "failed" ? (t.danger || "#B42318") : t.warn }}>
+                                {T("Amount due", "واجب رقم")} · {dueNote(p)}</div>
+                            <div style={{ font: "800 40px/1.1 Nunito, 'Hanken Grotesk', sans-serif", marginTop: 6, color: t.text }}>{money(p.amount)}</div>
+                            <div style={{ fontSize: 14.5, color: t.textMuted, marginTop: 6 }}>{byLine(p)}</div>
+                            {p.note && <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 4, fontStyle: "italic" }}>“{p.note}”</div>}
+                            {payErr(p)}
                         </div>
-                        {p.case_snapshot?.title && <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>{p.case_snapshot.title}</div>}
-                        {p.note && <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 2, fontStyle: "italic" }}>“{p.note}”</div>}
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                            {payBtn(p, true)}
+                            <span style={{ fontSize: 12.5, color: t.textMuted }}>{T("Secure payment · receipt after it is paid", "محفوظ ادائیگی · ادائیگی کے بعد رسید")}</span>
+                        </div>
+                    </section>
+                );
+            })()}
+            {!loading && due.length > 1 && (
+                <section aria-label="Amount due" data-amount-due style={{ borderRadius: 20, background: t.card, border: `1px solid ${t.warn}66`, overflow: "hidden" }}>
+                    <div style={{ padding: "20px 28px 14px" }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: t.warn }}>{due.length} {T("fees due", "فیس واجب")}</div>
+                        <div style={{ font: "800 36px/1.1 Nunito, 'Hanken Grotesk', sans-serif", marginTop: 6, color: t.text }}>{money(dueTotal)}</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-                        {badge(p.status)}
-                        {/* failed is payable again: the payer was told to try again */}
-                        {(p.status === "created" || p.status === "pending" || p.status === "failed") && (
-                            <button onClick={() => pay(p)} disabled={payingId === p.id} style={{ padding: "0 20px", height: 40, borderRadius: 10, border: "none", background: t.primary, color: t.mode === "dark" ? "#0F2A30" : "#fff", fontSize: 13.5, fontWeight: 800, cursor: payingId === p.id ? "default" : "pointer", fontFamily: "inherit" }}>
-                                {payingId === p.id ? T("Processing…", "زیرِ عمل…") : `${p.status === "failed" ? T("Try again", "دوبارہ کوشش") + " · " : ""}${T("Pay", "ادا کریں")} PKR ${Number(p.amount).toLocaleString()}`}
-                            </button>
-                        )}
-                        {payError[p.id] && (
-                            <div role="alert" style={{ fontSize: 11.5, color: t.danger || "#B42318", maxWidth: 220, textAlign: "right" }}>{payError[p.id]}</div>
-                        )}
-                        {p.status === "paid" && (
-                            <button onClick={() => downloadReceipt(p.id, `receipt-${p.id}.pdf`)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${t.border}`, background: "transparent", color: t.primary, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                                {T("Receipt", "رسید")} ↓
-                            </button>
-                        )}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function PageNotifications({ feed, onMarkDone, onMarkAllDone, milestones = [] }) {
-    const t = useT();
-    const [tab, setTab] = useState("all");
-    const [settings, setSettings] = useState({
-        pushHearing: true, pushStatus: true, pushDocs: true, pushReply: false,
-        emailAll: true, emailDigest: true, emailWeekly: false, emailDeadline: true,
-    });
-    const uc = urgencyConfig(t);
-    const unread = feed.filter(f => !f.done).length;
-    const displayed = (
-        tab === "unread" ? feed.filter(f => !f.done) :
-            tab === "critical" ? feed.filter(f => f.urgency === "critical" || f.urgency === "overdue") :
-                [...feed]
-    ).sort((a, b) => priorityOrder[a.urgency] - priorityOrder[b.urgency]);
-
-    const settingSections = [
-        {
-            title: "Push Notifications", icon: "📲", items: [
-                { k: "pushHearing", l: "Hearing Reminders", d: "Reminders before scheduled hearings" },
-                { k: "pushStatus", l: "Status Updates", d: "Case phase change alerts" },
-                { k: "pushDocs", l: "Document Alerts", d: "When lawyer uploads documents" },
-                { k: "pushReply", l: "Lawyer Replies", d: "Responses to your questions" },
-            ]
-        },
-        {
-            title: "Email Notifications", icon: "✉️", items: [
-                { k: "emailAll", l: "Enable Email Notifications", d: "Global email toggle" },
-                { k: "emailDigest", l: "Daily Digest", d: "End-of-day case summary" },
-                { k: "emailWeekly", l: "Weekly Report", d: "Weekly progress summary" },
-                { k: "emailDeadline", l: "Deadline Reminders", d: "48hrs before overdue items" },
-            ]
-        },
-    ];
-
-    return (
-        <div>
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-                <Btn t={t} variant="ghost" onClick={onMarkAllDone}>✓ Mark All Read</Btn>
-            </div>
-            <div className="rgrid" style={{ display: "grid", gridTemplateColumns: "1fr 308px", gap: 16 }}>
-                <Card t={t}>
-                    <SH icon="🔔" title="Notifications" desc="Sorted by urgency — critical items first"
-                        badge={unread > 0 ? <Badge variant="danger" t={t}>{unread} Unread</Badge> : null} t={t} />
-                    <Tabs tabs={[
-                        { key: "all", label: "All", count: feed.length },
-                        { key: "unread", label: "Unread", count: unread },
-                        { key: "critical", label: "⚠ Critical", count: feed.filter(f => f.urgency === "critical" || f.urgency === "overdue").length },
-                    ]} active={tab} onChange={setTab} t={t} />
-                    <div style={{ padding: "4px 20px 20px" }}>
-                        {displayed.map(n => {
-                            const u = uc[n.urgency];
-                            const ms = n.milestoneId ? milestones.find(m => m.milestoneId === n.milestoneId) : null;
-                            return (
-                                <div key={n.id} onClick={() => !n.done && onMarkDone(n.id)}
-                                    style={{
-                                        display: "flex", gap: 12, padding: "14px 0", borderBottom: `1px solid ${t.border}`,
-                                        opacity: n.done ? 0.45 : 1, cursor: "pointer", transition: "opacity 0.2s"
-                                    }}>
-                                    <div style={{
-                                        width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: u.bg, border: `1px solid ${u.border}`,
-                                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16
-                                    }}>{typeIcon[n.type] || "🔔"}</div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
-                                            <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{n.title}</span>
-                                            {!n.done && <span style={{ width: 7, height: 7, borderRadius: "50%", background: u.dot, display: "inline-block" }} />}
-                                            <Badge variant={
-                                                n.urgency === "critical" || n.urgency === "overdue" ? "danger" :
-                                                    n.urgency === "urgent" ? "warn" :
-                                                        n.urgency === "upcoming" ? "info" : "gray"
-                                            } t={t} sm>{u.label}</Badge>
-                                        </div>
-                                        <div style={{ fontSize: 12, color: t.textDim, lineHeight: 1.5, marginBottom: 3 }}>{n.desc}</div>
-                                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                            <span style={{ fontSize: 10, color: t.textFaint }}>{n.date} · {n.time}</span>
-                                            {ms && <span style={{ fontSize: 10, color: t.primary, fontWeight: 600 }}>● {ms.event}</span>}
-                                        </div>
-                                    </div>
+                    {due.map(p => (
+                        <div key={p.id} data-payment={p.id} data-focused={isFocus(p) ? "" : undefined}
+                            style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 28px", borderTop: `1px solid ${t.border}`, ...focusRing(p) }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <b style={{ fontSize: 16, color: t.text }}>{money(p.amount)}</b>
+                                <div style={{ fontSize: 13.5, color: t.textMuted }}>
+                                    <span style={{ fontWeight: 700, color: p.status === "failed" ? (t.danger || "#B42318") : t.warn }}>{dueNote(p)}</span> · {byLine(p)}
                                 </div>
-                            );
-                        })}
-                    </div>
-                </Card>
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {settingSections.map(section => (
-                        <Card key={section.title} t={t}>
-                            <SH icon={section.icon} title={section.title} t={t} />
-                            <div style={{ padding: "4px 20px 16px" }}>
-                                {section.items.map((s, i) => (
-                                    <div key={s.k} style={{
-                                        display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
-                                        borderBottom: i < section.items.length - 1 ? `1px solid ${t.border}` : "none"
-                                    }}>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: 13, color: t.text, fontWeight: 600 }}>{s.l}</div>
-                                            <div style={{ fontSize: 11, color: t.textFaint }}>{s.d}</div>
-                                        </div>
-                                        <Toggle value={settings[s.k]} onChange={v => setSettings(p => ({ ...p, [s.k]: v }))} t={t} />
-                                    </div>
-                                ))}
+                                {payErr(p)}
                             </div>
-                        </Card>
+                            {payBtn(p, false)}
+                        </div>
                     ))}
+                </section>
+            )}
+            {!loading && !loadError && shown.length > 0 && due.length === 0 && (
+                <div data-nothing-due style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 700, color: t.primary }}>
+                    <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "currentColor" }} />
+                    {caseId ? T("Nothing due on this case right now.", "اس کیس پر ابھی کچھ واجب نہیں۔") : T("Nothing due right now.", "ابھی کچھ واجب نہیں۔")}
                 </div>
-            </div>
+            )}
+
+            {/* 2. THE AGREED FEE: one quiet line */}
+            {!loading && engagement && engagement.fee_amount ? (
+                fixedFee ? (
+                    <section aria-label="Agreed fee" data-agreed-fee style={{ display: "flex", alignItems: "center", gap: 18, padding: "0 4px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 14, color: t.textMuted, whiteSpace: "nowrap" }}>
+                            {T("Professional fee:", "پروفیشنل فیس:")} <b style={{ color: t.text }}>{money(proPaid)}</b> {T("paid of", "ادا از")} <b style={{ color: t.text }}>{money(engagement.fee_amount)}</b> {T("agreed", "طے شدہ")}
+                        </span>
+                        <span aria-hidden="true" style={{ flex: "1 1 160px", height: 8, borderRadius: 4, background: t.cardHi, overflow: "hidden" }}>
+                            <span style={{ display: "block", height: "100%", width: `${Math.min(100, (proPaid / Number(engagement.fee_amount)) * 100)}%`, background: t.primary }} />
+                        </span>
+                        <span style={{ fontSize: 14, color: t.textMuted, whiteSpace: "nowrap" }}>{money(Math.max(0, Number(engagement.fee_amount) - proPaid))} {T("left", "باقی")}</span>
+                    </section>
+                ) : (
+                    <div data-agreed-fee style={{ fontSize: 14, color: t.textMuted, padding: "0 4px" }}>
+                        {T("Agreed rate:", "طے شدہ ریٹ:")} <b style={{ color: t.text }}>{feeLabel(engagement)}</b>
+                    </div>
+                )
+            ) : null}
+
+            {/* 3. HISTORY: what has finished */}
+            {!loading && (finished.length > 0 || (caseId && onAllPayments && shown.length > 0)) && (
+                <section aria-label="Payment history" data-payment-history style={{ borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", padding: "16px 22px" }}>
+                        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: t.text }}>{T("Payment history", "ادائیگیوں کی تاریخ")}</h2>
+                        {caseId && onAllPayments && (
+                            <button type="button" data-open-all-payments onClick={onAllPayments}
+                                style={{ marginLeft: "auto", border: 0, background: "none", padding: 0, cursor: "pointer", color: t.primary, fontSize: 13.5, fontWeight: 700 }}>
+                                {T("All my payments →", "تمام ادائیگیاں ←")}
+                            </button>
+                        )}
+                    </div>
+                    {finished.length === 0 ? (
+                        <div style={{ padding: "0 22px 16px", fontSize: 13.5, color: t.textMuted }}>{T("No finished payments yet.", "ابھی کوئی ادائیگی مکمل نہیں۔")}</div>
+                    ) : (
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                            <thead>
+                                <tr>
+                                    <th scope="col" style={{ ...th, paddingLeft: 22 }}>{T("Date", "تاریخ")}</th>
+                                    <th scope="col" style={th}>{T("Fee", "فیس")}</th>
+                                    <th scope="col" style={{ ...th, textAlign: "right" }}>{T("Amount", "رقم")}</th>
+                                    <th scope="col" style={th}>{T("Status", "حیثیت")}</th>
+                                    <th scope="col" style={{ ...th, textAlign: "right", paddingRight: 22 }}>{T("Receipt", "رسید")}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {finished.map(p => {
+                                    const [word, ink] = finishedStatus(p);
+                                    return (
+                                        <tr key={p.id} data-payment={p.id} data-focused={isFocus(p) ? "" : undefined} style={isFocus(p) ? { outline: `2px solid ${t.primary}`, outlineOffset: -2 } : undefined}>
+                                            <td style={{ ...td, paddingLeft: 22, color: t.textMuted, whiteSpace: "nowrap" }}>{day(p.created_at) || "—"}</td>
+                                            <td style={td}>
+                                                <b style={{ color: t.text }}>{feeName(p)}</b>
+                                                <div style={{ fontSize: 12.5, color: t.textMuted }}>{[p.payee_snapshot?.name, !caseId ? p.case_snapshot?.title : null].filter(Boolean).join(" · ")}</div>
+                                            </td>
+                                            <td style={{ ...td, textAlign: "right", fontWeight: 700, color: t.text, whiteSpace: "nowrap" }}>{money(p.amount)}</td>
+                                            <td style={{ ...td, whiteSpace: "nowrap" }}>
+                                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700, color: ink }}>
+                                                    <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor" }} />{word}</span>
+                                            </td>
+                                            <td style={{ ...td, textAlign: "right", paddingRight: 22, whiteSpace: "nowrap" }}>
+                                                {p.status === "paid"
+                                                    ? <button type="button" onClick={() => downloadReceipt(p.id, `receipt-${p.id}.pdf`)}
+                                                        style={{ border: 0, background: "none", padding: 0, cursor: "pointer", color: t.primary, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit" }}>{T("Receipt", "رسید")} ↓</button>
+                                                    : <span style={{ color: t.textMuted }}>—</span>}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
+                </section>
+            )}
         </div>
     );
 }
+
+// The Notifications page that was here was removed (2026-11-23). It repeated
+// the app's notification drawer (the bell in the app sidebar), but clicking a
+// row only marked it read; the drawer opens the exact case, payment or
+// appointment.
 
 // ─── PAGE: COMMUNICATION ──────────────────────────────────────────────────────
 // The case conversation with the lawyer, from the server and nothing else.
@@ -1536,184 +1727,6 @@ function PageCommunication({ caseId, activeCase }) {
                                 <div key={m.id} style={{ padding: "10px 0", borderBottom: i < waiting.length - 1 ? `1px solid ${t.border}` : "none" }}>
                                     <div style={{ fontSize: 12, fontWeight: 600, color: t.text, marginBottom: 4, overflowWrap: "anywhere" }}>{m.text.length > 120 ? m.text.slice(0, 119) + "…" : m.text}</div>
                                     <div style={{ fontSize: 10.5, color: t.textFaint }}>Sent {m.date}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ─── PAGE: REMINDERS — unified feed ──────────────────────────────────────────
-function PageReminders({ feed, setFeed, milestones = [], documents = [] }) {
-    const t = useT();
-    const [tab, setTab] = useState("all");
-    const [form, setForm] = useState({ desc: "", date: "", time: "", milestoneId: "" });
-    const [editId, setEditId] = useState(null);
-    const [editForm, setEditForm] = useState({});
-    const uc = urgencyConfig(t);
-
-    const displayed = (
-        tab === "overdue" ? feed.filter(f => !f.done && (f.urgency === "overdue" || f.urgency === "critical")) :
-            tab === "upcoming" ? feed.filter(f => !f.done && (f.urgency === "upcoming" || f.urgency === "urgent")) :
-                tab === "done" ? feed.filter(f => f.done) :
-                    [...feed]
-    ).sort((a, b) => priorityOrder[a.urgency] - priorityOrder[b.urgency]);
-
-    const conflictOn = (date) => date ? feed.find(f => f.dateRaw === date && !f.done) : null;
-
-    const addReminder = () => {
-        if (!form.desc || !form.date) return;
-        const conflict = conflictOn(form.date);
-        const ms = milestones.find(m => m.milestoneId === form.milestoneId);
-        setFeed(p => [...p, {
-            id: "r" + Date.now(), type: "reminder", urgency: "normal",
-            title: form.desc, date: form.date, dateRaw: form.date, time: form.time || "Any time",
-            desc: ms ? `Linked to: ${ms.event}` : "Personal reminder",
-            milestoneId: form.milestoneId || undefined, done: false,
-            conflict: conflict ? conflict.title : null,
-        }]);
-        setForm({ desc: "", date: "", time: "", milestoneId: "" });
-    };
-
-    return (
-        <div>
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-                <Btn t={t} variant="primary" onClick={() => document.getElementById("reminder-form")?.scrollIntoView({ behavior: "smooth" })}>+ New Reminder</Btn>
-            </div>
-            <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <Card t={t}>
-                    <SH icon="📋" title="All Events & Deadlines" desc="Hearings, deadlines & reminders — one view"
-                        badge={<Badge variant="danger" t={t}>{feed.filter(f => !f.done && (f.urgency === "overdue" || f.urgency === "critical")).length} Overdue</Badge>} t={t} />
-                    <Tabs tabs={[
-                        { key: "all", label: "All", count: feed.length },
-                        { key: "overdue", label: "Overdue", count: feed.filter(f => !f.done && (f.urgency === "overdue" || f.urgency === "critical")).length },
-                        { key: "upcoming", label: "Upcoming", count: feed.filter(f => !f.done && (f.urgency === "upcoming" || f.urgency === "urgent")).length },
-                        { key: "done", label: "Done", count: feed.filter(f => f.done).length },
-                    ]} active={tab} onChange={setTab} t={t} />
-                    <div style={{ padding: "12px 20px" }}>
-                        {displayed.map(f => {
-                            const u = uc[f.urgency];
-                            const ms = f.milestoneId ? milestones.find(m => m.milestoneId === f.milestoneId) : null;
-                            const isEditing = editId === f.id;
-                            return (
-                                <div key={f.id} style={{
-                                    borderRadius: 12, border: `1px solid ${f.done ? t.border : u.border}`,
-                                    marginBottom: 10, overflow: "hidden", opacity: f.done ? 0.5 : 1, transition: "opacity 0.2s"
-                                }}>
-                                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: f.done ? t.cardHi : u.bg }}>
-                                        <div onClick={() => setFeed(p => p.map(x => x.id === f.id ? { ...x, done: !x.done } : x))}
-                                            style={{
-                                                width: 22, height: 22, borderRadius: 6, border: `2px solid ${f.done ? t.success : u.color}`,
-                                                background: f.done ? t.success : "transparent", cursor: "pointer", flexShrink: 0, marginTop: 2,
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                color: "#fff", fontSize: 11, fontWeight: 800, transition: "all 0.15s"
-                                            }}>{f.done ? "✓" : ""}</div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                                                <span style={{ fontSize: 16 }}>{typeIcon[f.type]}</span>
-                                                <span style={{ fontSize: 13, fontWeight: 700, color: f.done ? t.textMuted : t.text, textDecoration: f.done ? "line-through" : "none" }}>{f.title}</span>
-                                                <Badge variant={
-                                                    f.urgency === "critical" || f.urgency === "overdue" ? "danger" :
-                                                        f.urgency === "urgent" ? "warn" :
-                                                            f.urgency === "upcoming" ? "info" :
-                                                                f.urgency === "normal" ? "primary" : "gray"
-                                                } t={t} sm>{u.label}</Badge>
-                                                {f.conflict && <Badge variant="danger" t={t} sm>⚡ Conflicts with {f.conflict}</Badge>}
-                                            </div>
-                                            <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>{f.desc}</div>
-                                            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                                                <span style={{ fontSize: 11, color: u.color, fontWeight: 600 }}>{f.date} · {f.time}</span>
-                                                {ms && <span style={{ fontSize: 11, color: t.primary, fontWeight: 600 }}>● {ms.event}</span>}
-                                            </div>
-                                        </div>
-                                        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                                            {f.type === "reminder" && !f.done && (
-                                                <button onClick={() => { setEditId(f.id); setEditForm({ desc: f.title, date: f.dateRaw, time: f.time }); }}
-                                                    style={{ background: "transparent", border: "none", color: t.textFaint, cursor: "pointer", fontSize: 13 }}>✏</button>
-                                            )}
-                                            {f.type === "reminder" && (
-                                                <button onClick={() => setFeed(p => p.filter(x => x.id !== f.id))}
-                                                    style={{ background: "transparent", border: "none", color: t.textFaint, cursor: "pointer", fontSize: 16, padding: "0 2px" }}>×</button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {isEditing && (
-                                        <div style={{ padding: "10px 14px", borderTop: `1px solid ${t.border}`, background: t.cardHi }}>
-                                            <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                                                <Inp placeholder="Description" value={editForm.desc} onChange={v => setEditForm(p => ({ ...p, desc: v }))} t={t} />
-                                                <Inp type="date" value={editForm.date} onChange={v => setEditForm(p => ({ ...p, date: v }))} t={t} />
-                                            </div>
-                                            <div style={{ display: "flex", gap: 6 }}>
-                                                <Btn t={t} variant="primary" style={{ fontSize: 11 }} onClick={() => { setFeed(p => p.map(x => x.id === f.id ? { ...x, title: editForm.desc, dateRaw: editForm.date, date: editForm.date } : x)); setEditId(null); }}>Save</Btn>
-                                                <Btn t={t} variant="ghost" style={{ fontSize: 11 }} onClick={() => setEditId(null)}>Cancel</Btn>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </Card>
-
-                <div id="reminder-form" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    <Card t={t}>
-                        <SH icon="⏰" title="Set Custom Reminder" desc="Link to a milestone for context" t={t} />
-                        <div style={{ padding: 16 }}>
-                            <div style={{ marginBottom: 10 }}>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: t.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Description</div>
-                                <Inp placeholder="e.g. Review witness statement before hearing…" value={form.desc} onChange={v => setForm(p => ({ ...p, desc: v }))} t={t} />
-                            </div>
-                            <div style={{ marginBottom: 10 }}>
-                                <div style={{ fontSize: 10, fontWeight: 700, color: t.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Link to Milestone</div>
-                                <select value={form.milestoneId} onChange={e => setForm(p => ({ ...p, milestoneId: e.target.value }))}
-                                    style={{
-                                        width: "100%", background: t.inputBg, border: `1px solid ${form.milestoneId ? t.primary : t.border}`, borderRadius: 10,
-                                        padding: "9px 12px", color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box"
-                                    }}>
-                                    <option value="">— No milestone —</option>
-                                    {milestones.map(m => <option key={m.id} value={m.milestoneId}>{m.event}</option>)}
-                                </select>
-                            </div>
-                            <div className="rgrid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-                                <div>
-                                    <div style={{ fontSize: 10, fontWeight: 700, color: t.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Date</div>
-                                    <Inp type="date" value={form.date} onChange={v => setForm(p => ({ ...p, date: v }))} t={t} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: 10, fontWeight: 700, color: t.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Time</div>
-                                    <Inp type="time" value={form.time} onChange={v => setForm(p => ({ ...p, time: v }))} t={t} />
-                                </div>
-                            </div>
-                            {form.date && conflictOn(form.date) && (
-                                <div style={{
-                                    padding: "8px 12px", borderRadius: 8, background: "rgba(255,107,122,0.08)",
-                                    border: "1px solid rgba(255,107,122,0.2)", marginBottom: 10, fontSize: 11, color: t.danger
-                                }}>
-                                    ⚡ Another event on this date: <strong>{conflictOn(form.date)?.title}</strong>
-                                </div>
-                            )}
-                            <Btn t={t} variant="primary" full onClick={addReminder} disabled={!form.desc || !form.date}>+ Create Reminder</Btn>
-                        </div>
-                    </Card>
-
-                    <Card t={t}>
-                        <SH icon="📊" title="Event Summary" t={t} />
-                        <div style={{ padding: "8px 20px 16px" }}>
-                            {[
-                                { label: "Overdue", count: feed.filter(f => !f.done && (f.urgency === "overdue" || f.urgency === "critical")).length, color: t.danger },
-                                { label: "Due soon", count: feed.filter(f => !f.done && f.urgency === "urgent").length, color: t.warn },
-                                { label: "Upcoming", count: feed.filter(f => !f.done && f.urgency === "upcoming").length, color: t.info },
-                                { label: "Completed", count: feed.filter(f => f.done).length, color: t.success },
-                            ].map((s, i) => (
-                                <div key={s.label} style={{
-                                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                                    padding: "8px 0", borderBottom: i < 3 ? `1px solid ${t.border}` : "none"
-                                }}>
-                                    <span style={{ fontSize: 13, color: t.textDim }}>{s.label}</span>
-                                    <span style={{ fontSize: 16, fontWeight: 800, color: s.color }}>{s.count}</span>
                                 </div>
                             ))}
                         </div>
@@ -3015,56 +3028,19 @@ function useHireRequests(dep) {
 function hireAction(appt, e) {
     const first = String(appt.lawyer_name || "your lawyer").split(" ")[0];
     if (!e) return ["Hire " + first + " for a case", "They send their fee and scope; nothing is agreed until you accept.", hireHref(appt), "Request to hire", "prim"];
-    if (e.status === "requested") return ["Hire request sent", `Waiting for ${first} to send their fee and scope. You'll be notified.`, "/lawyers", "View request", "ghost"];
-    if (e.status === "terms_proposed") return [`${first} sent you terms`, `${e.fee_amount != null ? `Fee Rs ${Number(e.fee_amount).toLocaleString()}` : "Their fee and scope"} — accept or decline them.`, "/lawyers", "Review terms", "prim"];
-    if (e.status === "accepted" || e.status === "completed") return [`${first} is your lawyer`, `${e.case_title || "Your case"} — follow it on Tracking.`, "/tracking", "Open case", "prim"];
+    if (e.status === "requested") return ["Hire request sent", `Waiting for ${first} to send their fee and scope. You'll be notified.`, matterHref(e.case_id, { engagement: e.id }), "View request", "ghost"];
+    if (e.status === "terms_proposed") return [`${first} sent you terms`, `${e.fee_amount != null ? `Fee Rs ${Number(e.fee_amount).toLocaleString()}` : "Their fee and scope"} — accept or decline them.`, matterHref(e.case_id, { engagement: e.id }), "Review terms", "prim"];
+    if (e.status === "accepted" || e.status === "completed") return [`${first} is your lawyer`, `${e.case_title || "Your case"} — follow it on Tracking.`, matterHref(e.case_id, { engagement: e.id }), "Open case", "prim"];
     return ["Hire request closed", `It was ${String(e.status).replace(/_/g, " ")}. This consultation was used for it; book a follow-up to ask again.`, lawyerHref(appt, "book"), "Book a follow-up", "ghost"];
 }
-
-function HireAfterConsultation({ appt, t, engagement = null }) {
-    if (appt.status !== "completed" || !appt.lawyer_id) return null;
-    const [title, sub, href, cta] = hireAction(appt, engagement);
-    // The first offer keeps its familiar words; every later state says where it stands.
-    const label = engagement ? `${cta} →` : "Hire this lawyer →";
-
-    return (
-        <div style={{ marginTop: 10 }} data-hire-state={engagement?.status || "none"}>
-            <a href={href} style={{
-                display: "inline-block", minHeight: 44, lineHeight: "28px",
-                padding: "8px 16px", borderRadius: 9, textDecoration: "none",
-                border: "1px solid " + t.primary + "55", background: t.primary + "12",
-                color: t.primary, fontSize: 12.5, fontWeight: 700,
-            }}>
-                {label}
-            </a>
-            <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 6 }}>
-                {engagement ? `${title}. ${sub}` : <>Ask {appt.lawyer_name || "this lawyer"} to take one of your cases.
-                You will agree the fee before anything is assigned.</>}
-            </div>
-        </div>
-    );
-}
-
-
 
 /* ── APPOINTMENTS, REDESIGNED (2026-10-12) ─────────────────────────────────
  * One card is the whole appointment: where it stands (a progress strip), what
  * to do now (join, wait, next step), and the actions that already existed
  * below it. The same component serves Tracking's tab and the Appointments
  * page, so there is one list and one set of rules. */
-const APPT_STEPS = ["Requested", "Confirmed", "Meeting", "Next step"];
-
 function apptEnded(appt, now = Date.now()) {
     return Boolean(appt.end_at && new Date(appt.end_at).getTime() <= now);
-}
-
-/** Which step is current: 1 = waiting for the lawyer, 2 = meeting ahead,
- * 3 = after the meeting. -1 for an appointment that ended without one. */
-function apptStep(appt) {
-    if (appt.status === "pending") return 1;
-    if (appt.status === "confirmed") return 2;
-    if (appt.status === "completed") return 3;
-    return -1;
 }
 
 function untilWords(iso, now = Date.now()) {
@@ -3112,24 +3088,6 @@ function googleCalendarHref(appt) {
     return "https://calendar.google.com/calendar/render?" + q.toString();
 }
 
-function ApptProgress({ appt, t }) {
-    const step = apptStep(appt);
-    if (step < 0) return null;
-    return (
-        <ol aria-label="Progress" data-appt-progress style={{ listStyle: "none", margin: "14px 0 0", padding: 0, display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 8 }}>
-            {APPT_STEPS.map((label, i) => {
-                const done = i < step, now = i === step;
-                return (
-                    <li key={label} aria-current={now ? "step" : undefined} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        <span style={{ height: 4, borderRadius: 3, background: done ? t.primary : now ? t.warn : t.border }} />
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: done ? t.text : now ? t.warn : t.textFaint }}>{done ? "✓ " : ""}{label}</span>
-                    </li>
-                );
-            })}
-        </ol>
-    );
-}
-
 /* Join in-app video (2026-10-20): the client gets the same join screen as the
  * lawyer -- blurred page, camera check, a big Join -- before the call itself.
  * "Message" opens this appointment's thread when the page has one. */
@@ -3158,86 +3116,16 @@ function ClientJoinVideo({ appt, t, onMessage = null }) {
     </>);
 }
 
-/** What the client does now: the meeting's how and when, or the next step. */
-function ApptNow({ appt, t }) {
-    const video = useVideoConfigured();
-    const box = { marginTop: 12, padding: "12px 14px", borderRadius: 12, background: t.inputBg, border: `1px solid ${t.border}` };
-    const btn = { display: "inline-flex", alignItems: "center", justifyContent: "center", height: 38, padding: "0 14px", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", cursor: "pointer", fontFamily: "inherit" };
-    if (appt.status === "pending") {
-        return (
-            <div style={box} data-appt-now="waiting">
-                <div style={{ fontSize: 13, color: t.text, fontWeight: 700 }}>Waiting for {appt.lawyer_name || "the lawyer"} to confirm</div>
-                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>You'll be notified when they answer. You can change the time or cancel below until then.</div>
-            </div>
-        );
-    }
-    if (appt.status === "confirmed" && !apptEnded(appt)) {
-        const live = appt.meeting_link;
-        return (
-            <div style={{ ...box, borderColor: `${t.primary}55` }} data-appt-now="meeting">
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <div style={{ flex: "1 1 200px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", color: t.textMuted }}>Starts</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: t.text }}>{untilWords(appt.scheduled_at)}</div>
-                    </div>
-                    {live && (
-                        <a href={appt.meeting_link} target="_blank" rel="noreferrer"
-                            style={{ ...btn, border: "none", color: "#fff", background: "linear-gradient(135deg,#12897f,#1c9c66)" }}>
-                            🔗 Join Meeting →
-                        </a>
-                    )}
-                    <button type="button" onClick={() => downloadIcs(appt)} style={{ ...btn, border: `1px solid ${t.border}`, background: "transparent", color: t.text }}>Add to calendar</button>
-                </div>
-                {!live && appt.mode === "video" && (video ? (
-                    <div style={{ marginTop: 10 }}><ClientJoinVideo appt={appt} t={t} /></div>
-                ) : (
-                    <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted }}>Joining link not shared yet — your lawyer will add it.</div>
-                ))}
-                {appt.mode === "phone" && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted }}>Phone consultation — confirm the number with your lawyer before the time.</div>
-                )}
-                {appt.mode === "in_person" && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted }}>In person — the office address is on your lawyer's profile.</div>
-                )}
-            </div>
-        );
-    }
-    if (appt.status === "confirmed") {
-        return (
-            <div style={box} data-appt-now="ended">
-                <div style={{ fontSize: 13, color: t.text, fontWeight: 700 }}>This consultation has ended</div>
-                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>Your lawyer marks it complete; then you can hire them, book a follow-up or leave a review.</div>
-            </div>
-        );
-    }
-    if (appt.status === "completed") {
-        return (
-            <div style={box} data-appt-now="next">
-                <div style={{ fontSize: 13, color: t.text, fontWeight: 700 }}>What would you like to do next?</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-                    <a href="/documents" style={{ ...btn, border: `1px solid ${t.border}`, color: t.text }}>Get a document reviewed</a>
-                    <a href={lawyerHref(appt, "book")} style={{ ...btn, border: `1px solid ${t.border}`, color: t.text }}>Book a follow-up</a>
-                </div>
-            </div>
-        );
-    }
-    if (appt.status === "cancelled" || appt.status === "expired") {
-        return (
-            <div style={{ marginTop: 10 }}>
-                <a href={lawyerHref(appt, "book")} style={{ fontSize: 12.5, color: t.primary, fontWeight: 700, textDecoration: "none" }}>Book a new time →</a>
-            </div>
-        );
-    }
-    return null;
-}
-
 /* ── THE APPOINTMENTS PAGE (2026-10-12) ─────────────────────────────────────
  * The sidebar's Appointments page, as designed: a hub of compact rows (one
  * action each) and, on opening one, its own page. The actions themselves are
  * the components above -- Reschedule, Cancel, Report, Hire -- so the rules
  * live in one place. Tracking's tab keeps its expanded cards. */
 // Headings in the Documents module typeface too (2026-10-12), at a heavier weight.
-const HUB_SERIF = "'Nunito Sans', 'Avenir Next', Avenir, system-ui, sans-serif";
+// Same type as Overview (2026-11-23): Hanken Grotesk for the page and its
+// headings, Nunito Sans only for the page title (as Overview's greeting).
+const HUB_SERIF = "'Hanken Grotesk', system-ui, sans-serif";
+const HUB_TITLE = "'Nunito Sans', 'Avenir Next', Avenir, system-ui, sans-serif";
 const GRAD = "linear-gradient(135deg,#12897f,#1c9c66)";
 
 function hubChip(appt, t) {
@@ -3432,7 +3320,7 @@ function MeetingProposals({ t, onChosen }) {
                     <article key={p.id} data-proposal={p.id} style={{ padding: "18px 20px", borderRadius: 18, border: `1px solid ${t.primary}66`,
                         background: `linear-gradient(120deg, color-mix(in srgb, ${t.primary} 12%, ${t.card}) 0%, ${t.card} 60%)` }}>
                         <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.primary }}>Meeting proposed</div>
-                        <div style={{ font: `800 18px/1.3 ${HUB_SERIF}`, color: t.text, marginTop: 4 }}>
+                        <div style={{ font: `700 18px/1.3 ${HUB_SERIF}`, color: t.text, marginTop: 4 }}>
                             {p.lawyer_name || "Your lawyer"} would like to meet about “{p.case_title || "your case"}”
                         </div>
                         <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 4 }}>{p.agenda} · {word} · {mins} minutes</div>
@@ -3545,7 +3433,7 @@ function AppointmentsHub(props) {
         <div data-appointments-hub style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <header style={{ display: "flex", alignItems: "flex-end", gap: 14, flexWrap: "wrap" }}>
                 <div style={{ flex: "1 1 260px" }}>
-                    <h1 style={{ margin: 0, font: `800 30px/1.15 ${HUB_SERIF}`, color: t.text }}>Appointments</h1>
+                    <h1 style={{ margin: 0, font: `600 34px/1.15 ${HUB_TITLE}`, color: t.text }}>Appointments</h1>
                     <div style={{ fontSize: 14, color: t.textMuted, marginTop: 4 }}>Manage your consultations, view details and join your meetings.</div>
                 </div>
                 <a href="/lawyers" style={hubBtn("prim", t)}>+ Book a consultation</a>
@@ -3553,7 +3441,10 @@ function AppointmentsHub(props) {
 
             {refreshError && (
                 <div role="alert" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${t.warn}55`, background: `${t.warn}12`, fontSize: 13, color: t.text, display: "flex", gap: 10, alignItems: "center" }}>
-                    <span style={{ flex: 1 }}>{refreshError} {appointments.length ? "These may be out of date." : ""}</span>
+                    <span style={{ flex: 1 }}>
+                        {!appointments.length && <b style={{ display: "block" }}>Could not load your appointments</b>}
+                        {refreshError} {appointments.length ? "These may be out of date." : ""}
+                    </span>
                     <button type="button" onClick={() => onReload && onReload()} style={hubBtn("ghost", t)}>Try again</button>
                 </div>
             )}
@@ -3707,10 +3598,12 @@ function AppointmentsHub(props) {
                                         {appt.status === "completed" && !engByAppt[appt.id] && <button type="button" data-row-hire onClick={() => setHireFor(appt)} style={{ ...hubBtn("prim", t), fontFamily: "inherit" }}>Hire</button>}
                                         {appt.status === "completed" && <button type="button" data-row-review onClick={() => setReviewFor(appt)} style={{ ...hubBtn("ghost", t), fontFamily: "inherit" }}>Review</button>}
                                         {appt.status === "completed" && engByAppt[appt.id] && (() => {
-                                            const st = engByAppt[appt.id].status;
+                                            const eng = engByAppt[appt.id];
+                                            const st = eng.status;
+                                            // "Open case" opens THAT case (2026-11-23), not whichever Tracking picks first.
                                             const [label, href, kind] = st === "terms_proposed" ? ["Review terms", "/lawyers", "prim"]
                                                 : st === "requested" ? ["Hire requested", "/lawyers", "ghost"]
-                                                : (st === "accepted" || st === "completed") ? ["Open case", "/tracking", "ghost"] : [null];
+                                                : (st === "accepted" || st === "completed") ? ["Open case", matterHref(eng.case_id, { engagement: eng.id }), "ghost"] : [null];
                                             if (!label) return null;
                                             return HIRE_HERE.has(st)
                                                 ? <button type="button" data-hire-state={st} onClick={() => setHireFor(appt)} style={{ ...hubBtn(kind, t), fontFamily: "inherit" }}>{label}</button>
@@ -3828,7 +3721,7 @@ function AppointmentDetail({ appt, t, onBack, onReload, cancelErrors, setCancelE
     );
     const sectionTitle = (text, extra) => (
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h2 style={{ margin: 0, flex: 1, font: `800 17px/1.3 ${HUB_SERIF}`, color: t.text }}>{text}</h2>{extra}
+            <h2 style={{ margin: 0, flex: 1, font: `700 16px/1.3 ${HUB_SERIF}`, color: t.text }}>{text}</h2>{extra}
         </div>
     );
     const rel = dayTag(appt.scheduled_at);
@@ -3864,7 +3757,7 @@ function AppointmentDetail({ appt, t, onBack, onReload, cancelErrors, setCancelE
         <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
             {iconTile(icon, col)}
             <div style={{ flex: "1 1 240px", minWidth: 0 }}>
-                <div style={{ font: `800 16.5px/1.3 ${HUB_SERIF}`, color: t.text }}>{title}</div>
+                <div style={{ font: `700 16px/1.3 ${HUB_SERIF}`, color: t.text }}>{title}</div>
                 <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 2 }}>{sub}</div>
             </div>
             {right}
@@ -3903,7 +3796,7 @@ function AppointmentDetail({ appt, t, onBack, onReload, cancelErrors, setCancelE
                     <span aria-hidden="true" style={{ width: 68, height: 68, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", fontWeight: 800, fontSize: 21, color: "#fff", background: GRAD,
                         boxShadow: `0 0 0 4px ${t.card}, 0 0 0 6px ${tint(tone, 45)}` }}>{initialsOf(appt.lawyer_name)}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <h1 style={{ margin: 0, font: `800 25px/1.2 ${HUB_SERIF}`, color: t.text }}>{appt.lawyer_name || "Your lawyer"}</h1>
+                        <h1 style={{ margin: 0, font: `600 26px/1.2 ${HUB_TITLE}`, color: t.text }}>{appt.lawyer_name || "Your lawyer"}</h1>
                         <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 3 }}>{["Lawyer", specs, c.experience_years ? `${c.experience_years} years experience` : null].filter(Boolean).join(" · ")}</div>
                         {c.total_reviews > 0 && <div style={{ fontSize: 13, marginTop: 4, color: t.text, display: "flex", alignItems: "center", gap: 5 }}><span style={{ color: "#F2C35E" }}>★</span> <b>{Number(c.rating).toFixed(1)}</b> <span style={{ color: t.textMuted }}>({c.total_reviews} reviews)</span></div>}
                     </div>
@@ -4025,7 +3918,7 @@ function AppointmentDetail({ appt, t, onBack, onReload, cancelErrors, setCancelE
                                 appt.status === "no_show" ? "The meeting did not take place." : (appt.status === "expired" ? "The lawyer did not answer before the time." : "It will not take place at this time."), tone)}
                             <CancellationDetail appt={appt} t={t} />
                             <ExpiryDetail appt={appt} t={t} />
-                            <div style={{ font: `800 15px/1.3 ${HUB_SERIF}`, color: t.text, marginTop: 16 }}>What you can do now</div>
+                            <div style={{ font: `700 15px/1.3 ${HUB_SERIF}`, color: t.text, marginTop: 16 }}>What you can do now</div>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 12, marginTop: 8 }}>
                                 {[["repeat", "Book a new time", `Pick another time with ${first}.`, lawyerHref(appt, "book"), "prim", "Book a new time"],
                                   ["search", "Try another lawyer", "Compare lawyers by practice area, city and fee.", "/lawyers", "ghost", "Browse lawyers"],
@@ -4067,6 +3960,12 @@ function AppointmentDetail({ appt, t, onBack, onReload, cancelErrors, setCancelE
                 </div>
 
                 <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {/* A refused cancel or move (422 cutoff, 409 conflict) reloads the
+                        appointment, and a finished one has no Manage panel; the reason
+                        is still owed, so it stays here (2026-11-23). */}
+                    {!live && err && (
+                        <div role="alert" data-detail-error style={{ ...box, padding: "12px 16px", fontSize: 13, fontWeight: 600, color: t.danger }}>{err}</div>
+                    )}
                     {live && (
                         <section aria-label="Manage appointment" data-detail-manage style={{ ...box, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 4 }}>
                             {sectionTitle("Manage appointment")}
@@ -4121,229 +4020,10 @@ function AppointmentDetail({ appt, t, onBack, onReload, cancelErrors, setCancelE
     );
 }
 
-function PageAppointments({ appointments, loading, t, onReload, cancelErrors, setCancelError, refreshError,
-                            onLoadMore, loadingMore, moreError, total, complete, caseTitles = {}, standalone = false, focusId = null }) {
-    const { T } = useLang();
-    // Hire requests by consultation, so a completed card shows where its request stands.
-    const hireRequests = useHireRequests(appointments.length);
-    // The one card whose message thread is open.
-    const [threadFor, setThreadFor] = useState(null);
-    const statusStyle = {
-        pending: { bg: `${t.warn}18`, color: t.warn, label: "Pending Confirmation" },
-        confirmed: { bg: `${t.primary}18`, color: t.primary, label: "Confirmed" },
-        cancelled: { bg: "rgba(255,107,122,0.12)", color: t.danger, label: "Cancelled" },
-        completed: { bg: `${t.info}14`, color: t.info, label: "Completed" },
-        no_show: { bg: t.cardHi, color: t.textMuted, label: "No Show" },
-        // A request that was never answered and has stopped holding its slot.
-        // Its own entry because it is its own outcome — and because without
-        // one the fallback below would have shown it as still pending, which
-        // is the one thing it definitely is not.
-        expired: { bg: t.cardHi, color: t.textMuted, label: "Expired" },
-    };
-    const modeWords = { video: "Video call", in_person: "In person", phone: "Phone" };
-    // Upcoming first, then everything that is over -- each in the server's order.
-    const isUpcoming = a => (a.status === "pending" || a.status === "confirmed") && !apptEnded(a);
-    const upcoming = appointments.filter(isUpcoming);
-    const past = appointments.filter(a => !isUpcoming(a));
-    // Opened from a link to one appointment (after booking): bring it into view.
-    useEffect(() => {
-        if (!focusId) return;
-        const el = typeof document !== "undefined" && document.querySelector(`[data-appt="${CSS.escape(focusId)}"]`);
-        if (el && el.scrollIntoView) el.scrollIntoView({ block: "center", behavior: "smooth" });
-    }, [focusId, appointments.length]);
-
-    // The spinner is for the FIRST read only. Re-reads (after a cancel, a
-    // reschedule, a live notification) used to swap the whole list for it,
-    // unmounting every card and wiping any dispute or reschedule form the
-    // client was typing into.
-    if (loading && !appointments.length) return (
-        <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
-            <div style={{ width: 32, height: 32, border: `3px solid ${t.primary}`, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        </div>
-    );
-
-    // A FAILED READ IS NOT AN EMPTY DIARY.
-    //
-    // This used to be `if (!appointments.length)` alone, and the loader turned
-    // every failed read into `[]` — so a dropped connection or a 500 told the
-    // client, in plain words, that they had no appointments. That is a lie
-    // about their own legal engagements, and it is indistinguishable from the
-    // truth. When a read has failed and nothing is held, the page says the read
-    // failed and offers to try again.
-    if (!appointments.length && refreshError) return (
-        <div style={{ textAlign: "center", padding: "60px 24px" }} role="alert">
-            <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: t.text, marginBottom: 8 }}>
-                {T("Could not load your appointments", "ملاقاتیں لوڈ نہیں ہو سکیں")}
-            </div>
-            <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16 }}>{refreshError}</div>
-            <button type="button" onClick={() => onReload && onReload()} style={{
-                minHeight: 44, padding: "10px 20px", borderRadius: 10, cursor: "pointer",
-                border: "1px solid " + t.border, background: "transparent",
-                color: t.text, fontSize: 13, fontWeight: 700, fontFamily: "inherit",
-            }}>
-                Try again
-            </button>
-        </div>
-    );
-
-    if (!appointments.length) return (
-        <div style={{ textAlign: "center", padding: "60px 24px" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: t.text, marginBottom: 8 }}>{T("No appointments yet", "ابھی کوئی ملاقات نہیں")}</div>
-            <div style={{ fontSize: 13, color: t.textMuted }}>Book a consultation with a lawyer to get started.</div>
-            <a href="/lawyers" style={{ display: "inline-flex", marginTop: 16, height: 42, alignItems: "center", padding: "0 18px", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none", background: "linear-gradient(135deg,#12897f,#1c9c66)" }}>Find a lawyer</a>
-        </div>
-    );
-
-    return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, flexWrap: "wrap", marginBottom: 4 }}>
-                <div style={{ flex: "1 1 240px" }}>
-                    <div style={{ fontSize: standalone ? 26 : 20, fontWeight: 800, color: t.text }}>{T("Your Appointments", "آپ کی ملاقاتیں")}</div>
-                    <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>Every consultation, what it needs from you, and what comes next.</div>
-                </div>
-                <a href="/lawyers" style={{ display: "inline-flex", height: 40, alignItems: "center", padding: "0 16px", borderRadius: 12, color: "#fff", fontSize: 13.5, fontWeight: 700, textDecoration: "none", background: "linear-gradient(135deg,#12897f,#1c9c66)" }}>+ Book a consultation</a>
-            </div>
-            {refreshError && (
-                // Rows are still shown — they are the last thing the server
-                // actually said — but they are labelled as possibly out of
-                // date rather than presented as current.
-                <div role="alert" style={{
-                    padding: "10px 14px", borderRadius: 10,
-                    border: "1px solid " + t.warn + "55", background: t.warn + "12",
-                    fontSize: 12, color: t.text, display: "flex",
-                    alignItems: "center", gap: 10, flexWrap: "wrap",
-                }}>
-                    <span style={{ flex: "1 1 220px" }}>
-                        {refreshError} These may be out of date.
-                    </span>
-                    <button type="button" onClick={() => onReload && onReload()} style={{
-                        minHeight: 44, padding: "8px 16px", borderRadius: 9, cursor: "pointer",
-                        border: "1px solid " + t.border, background: "transparent",
-                        color: t.text, fontSize: 12, fontWeight: 700, fontFamily: "inherit",
-                    }}>
-                        Refresh
-                    </button>
-                </div>
-            )}
-            {loading && (
-                <div aria-live="polite" style={{ fontSize: 12, color: t.textMuted }}>Refreshing…</div>
-            )}
-            {[["Upcoming", upcoming], ["Past & closed", past]].filter(([, list]) => list.length).map(([heading, list]) => (
-            <section key={heading} aria-label={heading} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted, marginTop: 6 }}>{heading}</div>
-            {list.map(appt => {
-                // NOT `|| statusStyle.pending`. Defaulting an unrecognised
-                // status to "Pending Confirmation" told the client their
-                // request was still live when it was not — including, before
-                // this entry existed, every expired one.
-                const s = statusStyle[appt.status] || {
-                    bg: t.cardHi, color: t.textMuted,
-                    label: statusWord(appt.status),
-                };
-                // PKT explicitly — `toLocale*` without a timeZone renders in
-                // whatever zone the browser is in, which is not the zone this
-                // appointment was booked in.
-                const dateStr = formatPkt(appt.scheduled_at, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-                const timeStr = formatPkt(appt.scheduled_at, { hour: "2-digit", minute: "2-digit" });
-                return (
-                    <Card key={appt.id} t={t} style={{ padding: 0, ...(focusId === appt.id ? { boxShadow: `0 0 0 2px ${t.primary}` } : {}) }} data-appt={appt.id}>
-                        {/* Status strip */}
-                        <div style={{ height: 4, borderRadius: "16px 16px 0 0", background: s.color, opacity: 0.7 }} />
-                        <div style={{ padding: "16px 20px" }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
-                                <div aria-hidden="true" style={{ width: 64, height: 64, flexShrink: 0, borderRadius: 14, background: t.inputBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                                    <span style={{ fontSize: 10.5, fontWeight: 800, color: t.textMuted, textTransform: "uppercase" }}>{formatPkt(appt.scheduled_at, { weekday: "short", day: "numeric" })}</span>
-                                    <b style={{ fontSize: 17, color: t.text }}>{formatPkt(appt.scheduled_at, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })}</b>
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 15.5, fontWeight: 800, color: t.text }}>
-                                        Consultation{appt.lawyer_name ? ` — ${appt.lawyer_name}` : ""}
-                                    </div>
-                                    <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 3 }}>{dateStr} · {timeStr} PKT</div>
-                                    <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 2 }}>
-                                        {[modeWords[appt.mode] || appt.mode, appt.duration_minutes ? `${appt.duration_minutes} min` : null,
-                                          appt.case_id ? (caseTitles[appt.case_id] || `Case ${appt.case_id.slice(-8)}`) : "General consultation"].filter(Boolean).join(" · ")}
-                                    </div>
-                                </div>
-                                <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: s.bg, color: s.color, whiteSpace: "nowrap", flexShrink: 0 }}>
-                                    {s.label}
-                                </span>
-                            </div>
-                            <ApptProgress appt={appt} t={t} />
-                            <ApptNow appt={appt} t={t} />
-                            {appt.notes && (
-                                <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: t.inputBg, border: `1px solid ${t.border}`, fontSize: 12, color: t.textMuted, fontStyle: "italic" }}>
-                                    "{appt.notes}"
-                                </div>
-                            )}
-                            <HireAfterConsultation appt={appt} t={t} engagement={hireRequests[appt.id] || null} />
-                            <CancellationDetail appt={appt} t={t} />
-                            <ExpiryDetail appt={appt} t={t} />
-                            <ReportIssue appt={appt} t={t} />
-                            <RescheduleAppointment appt={appt} t={t} onReload={onReload}
-                                error={(cancelErrors || {})[appt.id] || null}
-                                setError={setCancelError} />
-                            <CancelAppointment appt={appt} t={t} onReload={onReload}
-                                error={(cancelErrors || {})[appt.id] || null}
-                                setError={setCancelError} onMessage={() => setThreadFor(appt.id)} />
-                            <div data-card-messages style={{ marginTop: 12, display: "flex", flexDirection: "column" }}>
-                                <ApptMessages appt={appt} t={t} open={threadFor === appt.id}
-                                    onOpenChange={o => setThreadFor(o ? appt.id : null)} />
-                            </div>
-                        </div>
-                    </Card>
-                );
-            })}
-            </section>
-            ))}
-
-            {/* LATER-PAGE FAILURE. The appointments above were read
-                successfully and stay exactly where they are — a client
-                watching their own appointments vanish to report a partial
-                failure would reasonably conclude something had been
-                cancelled. */}
-            {moreError && (
-                <div role="alert" style={{
-                    padding: "10px 12px", borderRadius: 8,
-                    background: `${t.danger}0e`, border: `1px solid ${t.danger}33`,
-                    fontSize: 12, color: t.danger,
-                }}>
-                    {moreError} The appointments already shown are unaffected.
-                </div>
-            )}
-
-            {/* END OF LIST, only when the SERVER says so. A short page is not
-                the signal: rows can be removed between requests, and "that is
-                everything" would be a claim the server never made. */}
-            <div style={{ textAlign: "center", paddingTop: 4 }}>
-                {!complete && (
-                    <button type="button" onClick={onLoadMore} disabled={loadingMore}
-                        aria-busy={loadingMore || undefined}
-                        style={{
-                            minHeight: 44, padding: "10px 18px", borderRadius: 9,
-                            border: `1px solid ${t.border}`, background: "transparent",
-                            color: t.text, fontSize: 12, fontWeight: 700,
-                            cursor: loadingMore ? "wait" : "pointer",
-                            opacity: loadingMore ? 0.6 : 1, fontFamily: "inherit",
-                        }}>
-                        {loadingMore ? "Loading…" : "Load more appointments"}
-                    </button>
-                )}
-                <div style={{ fontSize: 11, color: t.textFaint, marginTop: 8 }}>
-                    {Number.isInteger(total)
-                        ? `Showing ${appointments.length} of ${total}`
-                        : `Showing ${appointments.length}`}
-                    {complete ? " — that is all of them." : ""}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// The sidebar page gets the hub; Tracking's tab keeps its cards.
-const AppointmentsPage = ({ standalone, ...props }) => standalone ? <AppointmentsHub {...props} /> : <PageAppointments {...props} />;
+// Appointments have one page, /appointments (2026-11-23). Tracking's own
+// Appointments tab showed the same list a second time, in older cards; it was
+// removed once every test of it had moved to this page.
+const AppointmentsPage = ({ standalone, ...props }) => <AppointmentsHub {...props} />;
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 // Fix #2: accepts isDark from Dashboard — no longer owns its own theme state.
@@ -4352,7 +4032,7 @@ const AppointmentsPage = ({ standalone, ...props }) => standalone ? <Appointment
 export default function Module7({ isDark, standalone = null }) {
     const t = clientThemeOnTokens(isDark ? DARK : LIGHT);
     const isMobile = useIsMobile();
-    const { notifications, markNotificationDone, markAllNotificationsDone, appointmentMilestones } = useCase();
+    const { appointmentMilestones } = useCase();
     const [page, setPage] = useState(standalone || "overview");
     // Opened on one appointment (?appointment=<id>, after booking). Read
     // through the router: after router.push from the booking dialog,
@@ -4367,14 +4047,44 @@ export default function Module7({ isDark, standalone = null }) {
         try { return new URLSearchParams(window.location.search).get("thread"); } catch { return null; }
     })();
     const openThreadId = threadParam === "open" ? focusAppt : null;
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    // Icon-only inner nav on phones
-    useEffect(() => { if (isMobile) setSidebarCollapsed(true); }, [isMobile]);
+    // My Matters links (2026-11-23): ?case=<id>&tab=<summary|timeline|documents|messages|payments>
+    // [&engagement=<id>]. The case and tab survive refresh, Back and a
+    // notification click; a case that cannot be opened is said so, never
+    // silently swapped for the newest one.
+    const caseParam = standalone ? null : (searchParams?.get("case") || null);
+    const tabParam = standalone ? null : (searchParams?.get("tab") || null);
+    const engagementParam = standalone ? null : (searchParams?.get("engagement") || null);
+    const paymentParam = standalone ? null : (searchParams?.get("payment") || null);
+    // The status card's "Review terms" opens the request below it (v2).
+    const [focusEngagement, setFocusEngagement] = useState(null);
+    const [focusPayment, setFocusPayment] = useState(null);
+    const clientRouter = useClientRouter();
+    const [caseLinkError, setCaseLinkError] = useState(null);   // null | "missing" | "draft"
+    // My matters (v2): shown when /tracking names no case and no tab; a link
+    // that names either opens the case as before.
+    // All my payments (2026-11-23): every fee across cases, with NO case
+    // header. /tracking?view=payments, and an old fee link that names a
+    // payment but no case (it used to open under whichever case came first).
+    const viewParam = standalone ? null : (searchParams?.get("view") || null);
+    const globalPayments = !standalone && !caseParam && (viewParam === "payments" || (tabParam === "payments" && !!paymentParam));
+    const [showAllPayments, setShowAllPayments] = useState(() => globalPayments);
+    const [showMatters, setShowMatters] = useState(() => !standalone && !caseParam && !tabParam && !globalPayments);
+    useEffect(() => {
+        if (globalPayments) { setShowAllPayments(true); setShowMatters(false); }
+        else if (caseParam || tabParam) { setShowAllPayments(false); setShowMatters(false); }
+    }, [globalPayments, caseParam, tabParam]);
+    useEffect(() => {
+        if (tabParam && TAB_TO_PAGE[tabParam]) setPage(TAB_TO_PAGE[tabParam]);
+    }, [tabParam]);
     const [activeCaseId, setActiveCaseId] = useState(null);
     const [apiCases, setApiCases] = useState([]);
     const [casesState, setCasesState] = useState("loading");   // loading | ready | error
     const [apiMilestones, setApiMilestones] = useState([]);
     const [apiHearings, setApiHearings] = useState([]);
+    // loading | ready | error for the open case's timeline: a failed read is
+    // never shown as "no hearings" (2026-11-23).
+    const [timelineState, setTimelineState] = useState("loading");
+    const [timelineTry, setTimelineTry] = useState(0);
     const [apiAppointments, setApiAppointments] = useState([]);
     const [apptLoading, setApptLoading] = useState(false);
     // Cancellation failures, keyed by appointment id. Held here because a
@@ -4414,13 +4124,65 @@ export default function Module7({ isDark, standalone = null }) {
             // real one.
             const real = confirmedCases(data?.items);
             if (real.length) {
-                const mapped = real.map(mapApiCase);
-                setApiCases(mapped);
-                setActiveCaseId(mapped[0].id);
+                setApiCases(real.map(mapApiCase));
             }
         });
     }, []);
     useEffect(() => { loadCases(); }, [loadCases]);
+
+    // Which case is open. With ?case= it is THAT case: from the loaded page
+    // when it is there, else read directly (the list holds the newest 20 only).
+    // Without it, the newest confirmed case, as before.
+    useEffect(() => {
+        if (casesState !== "ready") return undefined;
+        // (The standalone Appointments page has no ?case=, so it takes the
+        // newest case as before.)
+        if (!caseParam) {
+            setCaseLinkError(null);
+            setActiveCaseId(cur => (cur && apiCases.some(c => c.id === cur)) ? cur : (apiCases[0]?.id ?? null));
+            return undefined;
+        }
+        if (apiCases.some(c => c.id === caseParam)) { setCaseLinkError(null); setActiveCaseId(caseParam); return undefined; }
+        let off = false;
+        getCase(caseParam).then(({ data, error }) => {
+            if (off) return;
+            if (error || !data) { setActiveCaseId(null); setCaseLinkError("missing"); return; }
+            if (data.status === "draft") { setActiveCaseId(null); setCaseLinkError("draft"); return; }
+            const one = mapApiCase(data);
+            setApiCases(list => (list.some(c => c.id === one.id) ? list : [...list, one]));
+            setActiveCaseId(one.id);
+            setCaseLinkError(null);
+        });
+        return () => { off = true; };
+    }, [standalone, casesState, caseParam, apiCases]);
+
+    // Keep the address on what is on screen (refresh, share). This only
+    // TIDIES the current entry (replace); a move the client makes is a new
+    // history entry, pushed by goPage/goCase/goMatters/goAllPayments.
+    useEffect(() => {
+        if (standalone || typeof window === "undefined") return;
+        // Only while the page really is /tracking: never rewrite another route.
+        if (!window.location.pathname.startsWith("/tracking")) return;
+        if (showAllPayments) {
+            const want = paymentParam && globalPayments ? `/tracking?view=payments&payment=${encodeURIComponent(paymentParam)}` : "/tracking?view=payments";
+            if (window.location.pathname + window.location.search !== want) window.history.replaceState(null, "", want);
+            return;
+        }
+        if (showMatters) {
+            if (window.location.pathname + window.location.search !== "/tracking") window.history.replaceState(null, "", "/tracking");
+            return;
+        }
+        if (caseLinkError || !activeCaseId) return;
+        const tab = PAGE_TO_TAB[page];
+        if (!tab) return;
+        const href = matterHref(activeCaseId, {
+            tab,
+            engagement: activeCaseId === caseParam ? engagementParam : null,
+            // The payment a link named stays in the address while its tab is open.
+            payment: page === "payments" ? paymentParam : null,
+        });
+        if (window.location.pathname + window.location.search !== href) window.history.replaceState(null, "", href);
+    }, [standalone, showAllPayments, globalPayments, showMatters, caseLinkError, activeCaseId, page, caseParam, engagementParam, paymentParam]);
 
     // One loader, reused.
     //
@@ -4547,8 +4309,11 @@ export default function Module7({ isDark, standalone = null }) {
         let off = false;
         setApiMilestones([]);
         setApiHearings([]);
-        getCaseTimeline(activeCaseId).then(({ data }) => {
+        setTimelineState("loading");
+        getCaseTimeline(activeCaseId).then(({ data, error }) => {
             if (off) return;
+            if (error || !data) { setTimelineState("error"); return; }
+            setTimelineState("ready");
             if (data?.milestones?.length) {
                 setApiMilestones(data.milestones.map(mapApiMilestone));
             } else {
@@ -4557,37 +4322,71 @@ export default function Module7({ isDark, standalone = null }) {
             setApiHearings(data?.hearing_dates || []);
         });
         return () => { off = true; };
-    }, [activeCaseId]);
+    }, [activeCaseId, timelineTry]);
 
     // No fallbacks. An empty list renders an empty state, not invented cases.
     const displayCases = apiCases;
     const displayMilestones = apiMilestones;
 
-    // Local reminders created inside PageReminders (notifications come from CaseContext)
-    const [localReminders, setLocalReminders] = useState([]);
-    const feed = [...notifications, ...localReminders];
-    const setFeed = (updater) => {
-        const notifIds = new Set(notifications.map(n => n.id));
-        const fullFeed = [...notifications, ...localReminders];
-        const updated = typeof updater === 'function' ? updater(fullFeed) : updater;
-        // Route notification done-toggles through CaseContext
-        updated
-            .filter(x => notifIds.has(x.id) && x.done && !notifications.find(n => n.id === x.id)?.done)
-            .forEach(n => markNotificationDone(n.id));
-        // Persist only local (non-notification) entries in local state
-        setLocalReminders(updated.filter(x => !notifIds.has(x.id)));
-    };
-
     // Merge milestones with any appointment milestones from Module 4
     const allMilestones = [...displayMilestones, ...appointmentMilestones];
 
-    const activeCase = displayCases.find(c => c.id === activeCaseId) || displayCases[0];
-    const unreadCount = feed.filter(f => !f.done).length;
+    // No silent fallback when a link named a case: an unknown id shows the
+    // "cannot be opened" state instead of the newest case.
+    const activeCase = displayCases.find(c => c.id === activeCaseId) || (caseParam ? null : displayCases[0]);
+
+    // BACK / FORWARD (review item 3, 2026-11-23). Every move between views
+    // (a tab, a case, My matters, All my payments) is a browser history entry,
+    // and Back/Forward put the view back from the address. The address used
+    // to be rewritten in place, so Back left Tracking altogether.
+    const pushHref = (href) => {
+        if (standalone || typeof window === "undefined" || !window.location.pathname.startsWith("/tracking")) return;
+        if (window.location.pathname + window.location.search !== href) window.history.pushState(null, "", href);
+    };
+    const goPage = (key) => {
+        setPage(key);
+        if (activeCaseId && PAGE_TO_TAB[key]) pushHref(matterHref(activeCaseId, { tab: PAGE_TO_TAB[key] }));
+    };
+    const goCase = (id) => {
+        setCaseLinkError(null); setActiveCaseId(id); setPage("overview");
+        setShowMatters(false); setShowAllPayments(false);
+        pushHref(matterHref(id, { tab: "summary" }));
+    };
+    const goMatters = () => { setShowAllPayments(false); setShowMatters(true); pushHref("/tracking"); };
+    const goAllPayments = () => { setShowMatters(false); setShowAllPayments(true); pushHref("/tracking?view=payments"); };
+    useEffect(() => {
+        if (standalone || typeof window === "undefined") return undefined;
+        const onPop = () => {
+            if (!window.location.pathname.startsWith("/tracking")) return;
+            const q = new URLSearchParams(window.location.search);
+            const c = q.get("case"), tab = q.get("tab"), view = q.get("view"), pay = q.get("payment");
+            if (!c && (view === "payments" || (tab === "payments" && pay))) { setShowMatters(false); setShowAllPayments(true); return; }
+            if (!c && !tab) { setShowAllPayments(false); setShowMatters(true); return; }
+            setShowAllPayments(false); setShowMatters(false);
+            if (c) { setCaseLinkError(null); setActiveCaseId(c); }
+            setPage(TAB_TO_PAGE[tab] || "overview");
+        };
+        window.addEventListener("popstate", onPop);
+        return () => window.removeEventListener("popstate", onPop);
+    }, [standalone]);
+
+    // What the status card's buttons do (v2). "Review terms" opens and
+    // highlights the request in the list just below the card.
+    const heroAction = (action, eng) => {
+        if (action === "timeline") goPage("timeline");
+        else if (action === "messages") goPage("communication");
+        else if (action === "engagement" && eng) setFocusEngagement(eng.id);
+        else if (action === "pay" && eng) { setFocusPayment(eng.id); goPage("payments"); }
+        else if (action === "documents") goPage("documents");
+        else if (action === "proposals") clientRouter.push("/appointments?section=proposals");
+        else if (action === "find-lawyer") clientRouter.push("/lawyers");
+        else if (action === "book" && eng) clientRouter.push(lawyerHref({ lawyer_id: eng.lawyer_id, lawyer_name: eng.lawyer_name }, "book"));
+    };
 
     const pages = {
         // My hire requests sit on top of the overview (moved here from the
         // Lawyers page, 2026-11-23): with or without a case selected.
-        overview: (props) => <><HireRequests /><PageOverview      {...props} activeCase={activeCase} feed={feed} hearings={apiHearings} milestones={allMilestones} casesState={casesState} onRetryCases={loadCases} /></>,
+        overview: (props) => <><PageOverview      {...props} steps={displayMilestones} onHeroAction={heroAction} afterHero={<HireRequests caseId={activeCase?.id || null} focusEngagementId={focusEngagement || engagementParam} />} activeCase={activeCase} hearings={apiHearings} casesState={casesState} onRetryCases={loadCases} /></>,
         appointments: (props) => <AppointmentsPage standalone={Boolean(standalone)} {...props} appointments={apiAppointments} loading={apptLoading} onReload={reloadAppointments} cancelErrors={cancelErrors} setCancelError={setCancelError}
             refreshError={apptRefreshError}
             onLoadMore={loadMoreAppointments} loadingMore={apptLoadingMore}
@@ -4595,14 +4394,11 @@ export default function Module7({ isDark, standalone = null }) {
             complete={apptPages !== null && apptPage >= apptPages}
             caseTitles={Object.fromEntries(displayCases.map(c => [c.id, c.title]))}
             standalone={Boolean(standalone)} focusId={focusAppt} openThreadId={openThreadId} />,
-        timeline: (props) => <PageTimeline      {...props} milestones={allMilestones} hearings={apiHearings} />,
+        timeline: (props) => <PageTimeline      {...props} activeCase={activeCase} milestones={allMilestones} hearings={apiHearings}
+            loadState={activeCaseId ? timelineState : "ready"} onRetry={() => setTimelineTry(n => n + 1)} />,
         documents: (props) => <PageDocuments     {...props} activeCaseId={activeCaseId} />,
-        payments: (props) => <PagePayments      {...props} />,
-        notifications: (props) => <PageNotifications {...props} feed={feed} milestones={allMilestones}
-            onMarkDone={markNotificationDone}
-            onMarkAllDone={markAllNotificationsDone} />,
+        payments: (props) => <PagePayments      {...props} caseId={activeCase?.id || null} focusPaymentId={focusPayment || paymentParam} onAllPayments={goAllPayments} />,
         communication: (props) => <PageCommunication {...props} caseId={activeCaseId} activeCase={activeCase} />,
-        reminders: (props) => <PageReminders     {...props} feed={feed} setFeed={setFeed} milestones={allMilestones} />,
     };
     // CALLED, not rendered as a component.
     //
@@ -4616,7 +4412,25 @@ export default function Module7({ isDark, standalone = null }) {
     //
     // Calling the arrow returns the element directly, so the child type is the
     // real page component and stays stable across renders.
-    const renderPage = pages[page] || pages.overview;
+    const pageFn = pages[page] || pages.overview;
+    // A link named a case that cannot be opened: say so on every tab, with a
+    // way back to all matters, instead of showing another case's data.
+    const renderPage = (props) => caseLinkError ? (
+        <div role="alert" data-case-link-error={caseLinkError} style={{ maxWidth: 640, margin: "40px auto", padding: "22px 24px", borderRadius: 16, background: t.card, border: `1px solid ${t.border}`, color: t.text }}>
+            <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>
+                {caseLinkError === "draft" ? "This case is still a draft" : "This case could not be opened"}
+            </div>
+            <div style={{ fontSize: 13.5, color: t.textMuted, marginBottom: 14 }}>
+                {caseLinkError === "draft"
+                    ? "Confirm it at the end of your Legal Intake first; it opens here after that."
+                    : "It may have been removed, or it is not on your account. Nothing from another case is shown instead."}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+                {caseLinkError === "draft" && <a href="/intake" style={{ ...hubBtn("prim", t), textDecoration: "none" }}>Go to Legal Intake</a>}
+                <a href="/tracking" style={{ ...hubBtn("ghost", t), textDecoration: "none" }}>Show all my matters</a>
+            </div>
+        </div>
+    ) : pageFn(props);
 
     return (
         <>
@@ -4630,24 +4444,33 @@ export default function Module7({ isDark, standalone = null }) {
           .tracking-root [style*="grid-template-columns"]{grid-template-columns:1fr !important;}
         }
         select option{background:${t.card};}
+        .tracking-root button,.tracking-root input,.tracking-root select,.tracking-root textarea{font-family:inherit}
       `}</style>
             {standalone ? (
-            <div className="tracking-root" data-appointments-page data-lenis-prevent style={{ position: "absolute", inset: 0, background: t.bg, fontFamily: "'Nunito Sans', 'Avenir Next', Avenir, system-ui, sans-serif", color: t.text, overflowY: "auto", scrollbarWidth: "none" }}>
+            <div className="tracking-root" data-appointments-page data-lenis-prevent style={{ position: "absolute", inset: 0, background: t.bg, fontFamily: "'Hanken Grotesk', system-ui, sans-serif", color: t.text, overflowY: "auto", scrollbarWidth: "none" }}>
                 <style>{`[data-appointments-page]::-webkit-scrollbar{display:none}[data-appointments-page] .hub-stat:hover{transform:translateY(-2px)}`}</style>
                 <div style={{ maxWidth: 1240, margin: "0 auto", padding: isMobile ? 12 : "28px 32px" }}>
                     {renderPage({ setPage, t })}
                 </div>
             </div>
             ) : (
-            <div className="tracking-root" style={{ display: "flex", position: "absolute", inset: 0, background: t.bg, fontFamily: "'Inter',sans-serif", color: t.text, overflow: "hidden" }}>
-                <Sidebar page={page} onNavigate={setPage} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(p => !p)} t={t} />
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                    <TopHeader t={t} onBack={() => setPage("overview")}
-                        activeCaseId={activeCaseId} cases={displayCases} onCaseSwitch={setActiveCaseId} unreadCount={unreadCount}
-                        onBell={() => setPage("notifications")} />
-                    <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? 12 : 24 }}>
-                        {renderPage({ setPage, t })}
-                    </div>
+            <div className="tracking-root" data-lenis-prevent style={{ position: "absolute", inset: 0, background: t.bg, fontFamily: "'Hanken Grotesk', system-ui, sans-serif", color: t.text, overflowY: "auto" }}>
+                <div style={{ maxWidth: 1240, margin: "0 auto", padding: isMobile ? 12 : "22px 32px 32px" }}>
+                    {showAllPayments ? (<>
+                        <nav aria-label="Breadcrumb" data-all-payments style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 40, marginBottom: 18, fontSize: 13.5, color: t.textMuted }}>
+                            <BackToMatters t={t} onClick={goMatters} />
+                            <span aria-hidden="true">/</span>
+                            <b style={{ color: t.text }}>All my payments</b>
+                        </nav>
+                        <PagePayments t={t} caseId={null} focusPaymentId={globalPayments ? paymentParam : null} />
+                    </>) : showMatters ? (
+                        <MyMatters t={t} cases={displayCases} casesState={casesState} onRetry={loadCases}
+                            onAllPayments={goAllPayments} onOpen={goCase} />
+                    ) : (<>
+                        <CaseBar t={t} page={page} onNavigate={goPage} activeCase={caseLinkError ? null : activeCase}
+                            cases={displayCases} onCaseSwitch={goCase} onMatters={goMatters} />
+                        {renderPage({ setPage: goPage, t })}
+                    </>)}
                 </div>
             </div>
             )}

@@ -141,11 +141,19 @@ test("a confirmed phone consultation shows the lawyer's number; no join button",
     await ui.unmount();
 });
 
-test("Tracking keeps its own navigation and its cards", async () => {
+test("Tracking has no Appointments tab of its own: one list, on /appointments (2026-11-23)", async () => {
     api.__respond("listAppointments", { data: { items: [appt({ id: "a-up" })] } });
     const ui = await mountPage({ standalone: null });
     assert.equal(ui.container.querySelector("[data-appointments-hub]"), null);
-    assert.ok([...ui.container.querySelectorAll("div")].some(d => d.textContent.trim() === "Appointments"));
+    // /tracking opens on My matters (v2): open a case to see its tabs.
+    const open = ui.container.querySelector("[data-open-matter]");
+    if (open) {
+        await act(async () => { open.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
+        await act(async () => { await new Promise(r => setTimeout(r, 30)); });
+    }
+    const tabs = [...ui.container.querySelectorAll("[data-case-tab]")].map(b => b.textContent.trim());
+    assert.ok(tabs.includes("Overview"), "the case tabs were not found");
+    assert.ok(!tabs.includes("Appointments"), "Tracking still has its own Appointments tab");
     await ui.unmount();
 });
 

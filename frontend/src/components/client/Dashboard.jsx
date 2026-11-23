@@ -441,7 +441,7 @@ const DashboardInner = ({ go, isDark, toggleTheme, themePref, setThemePref, refi
     const [acctOpen, setAcctOpen] = useState(false);   // the account menu
     const [folding, setFolding] = useState(false);     // the fold button's click motion
     const [tip, setTip] = useState(null);              // the collapsed sidebar's hover label
-    const [termsCount, setTermsCount] = useState(0);   // lawyers' proposed terms awaiting the client
+    const [termsCount, setTermsCount] = useState(0);   // proposed terms awaiting the client (shown on Tracking)
     useEffect(() => {
         if (!acctOpen) return undefined;
         const close = (e) => { if (!e.target.closest?.("[data-client-account]")) setAcctOpen(false); };
@@ -650,14 +650,17 @@ const DashboardInner = ({ go, isDark, toggleTheme, themePref, setThemePref, refi
                                 {SIDE_ITEMS.filter(item => item.group === group.id).map(item => {
                                 const active = tab === item.id;
                                 // Real counts only, and only where the client has something to do.
-                                const count = item.id === "tracking" ? unreadCount
-                                    : item.id === "intake" ? draftCount
-                                    : item.id === "lawyers" ? termsCount : 0;
-                                const tone = item.id === "intake" ? " gold" : item.id === "lawyers" ? " cyan" : "";
-                                const showDot = count > 0 && !(item.id === "tracking" && active);
+                                // Proposed terms are answered on the case in My Matters
+                                // (2026-11-23), so their count sits on Tracking, not Lawyers;
+                                // it takes priority there over the unread-notice count.
+                                const trackingTerms = item.id === "tracking" && termsCount > 0;
+                                const count = item.id === "tracking" ? (termsCount || unreadCount)
+                                    : item.id === "intake" ? draftCount : 0;
+                                const tone = item.id === "intake" ? " gold" : trackingTerms ? " cyan" : "";
+                                const showDot = count > 0 && !(item.id === "tracking" && active && !trackingTerms);
                                 const tipText = T(item.label, item.ur) + (showDot
                                     ? (item.id === "intake" ? T(` · ${count} to confirm`, ` · ${count} تصدیق باقی`)
-                                        : item.id === "lawyers" ? T(` · ${count} terms to review`, ` · ${count} شرائط`)
+                                        : trackingTerms ? T(` · ${count} terms to review`, ` · ${count} شرائط`)
                                         : T(` · ${count} new`, ` · ${count} نئی`)) : "");
                                 const hasMenu = Boolean(SUB_ITEMS[item.id]);
                                 const isAg = item.id === "agreements";

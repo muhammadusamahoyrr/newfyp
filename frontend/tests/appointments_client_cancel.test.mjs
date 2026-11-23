@@ -133,7 +133,7 @@ async function mountTracking() {
     };
 
     await act(async () => {
-        root.render(h(CaseCtx.Provider, { value: ctx }, h(Module7, { isDark: true })));
+        root.render(h(CaseCtx.Provider, { value: ctx }, h(Module7, { isDark: true, standalone: "appointments" })));
     });
     await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
 
@@ -166,11 +166,22 @@ async function mountTracking() {
          * for a div and not a button; if the nav is ever made keyboard-usable,
          * this helper is the thing that should start failing.
          */
-        openAppointments: async () => {
-            const nav = [...container.querySelectorAll("div")]
-                .find(el => el.textContent.trim() === "Appointments");
-            assert.ok(nav, "no Appointments nav control");
-            await click(nav);
+        /** Open an appointment on the /appointments page (2026-11-23: the
+         *  Tracking tab it used to be opened from was a duplicate, removed).
+         *  Its actions live in its detail view: find its row under Upcoming,
+         *  Past or Cancelled and open it. With no id, the first one found. */
+        openAppointments: async (id = null) => {
+            if (container.querySelector("[data-appointment-detail]")) return;
+            for (const k of ["upcoming", "past", "cancelled"]) {
+                const tabBtn = container.querySelector(`[data-hub-tab="${k}"]`);
+                if (tabBtn) await click(tabBtn);
+                const row = [...container.querySelectorAll("[data-hub-row]")]
+                    .find(r => !id || r.getAttribute("data-hub-row") === String(id));
+                if (row) { await click(row.querySelector("[data-open-appt]")); return; }
+            }
+            // None to open: back on the default list, as the page first shows.
+            const first = container.querySelector('[data-hub-tab="upcoming"]');
+            if (first) await click(first);
         },
         settle: async (ms = 30) => {
             await act(async () => { await new Promise(r => realSetTimeout(r, ms)); });
@@ -306,7 +317,7 @@ test("the status shown after cancelling is the server's, not a local guess", asy
 
     await ui.click("Yes, cancel it");
 
-    assert.match(ui.text(), /No Show/,
+    assert.match(ui.text(), /No show/i,
                  "the card did not re-read the server after cancelling");
     assert.doesNotMatch(ui.text(), /Cancelled/,
                         "a local cancelled status was invented");
@@ -794,7 +805,7 @@ test("a first read that fails says so instead of claiming no appointments", asyn
     const ui = await mountTracking();
     await ui.openAppointments();
 
-    assert.doesNotMatch(ui.text(), /No appointments yet/,
+    assert.doesNotMatch(ui.text(), /Nothing coming up/,
                         "a failed read was reported as an empty diary");
     assert.match(ui.text(), /Could not load your appointments/);
     await ui.unmount();
@@ -807,7 +818,7 @@ test("a 500 on the list is reported as a failure, not as emptiness", async () =>
     const ui = await mountTracking();
     await ui.openAppointments();
 
-    assert.doesNotMatch(ui.text(), /No appointments yet/);
+    assert.doesNotMatch(ui.text(), /Nothing coming up/);
     assert.match(ui.text(), /Could not load your appointments/);
     await ui.unmount();
 });
@@ -821,7 +832,7 @@ test("a malformed 200 body is not read as zero appointments", async () => {
     const ui = await mountTracking();
     await ui.openAppointments();
 
-    assert.doesNotMatch(ui.text(), /No appointments yet/);
+    assert.doesNotMatch(ui.text(), /Nothing coming up/);
     assert.match(ui.text(), /could not be read/i);
     await ui.unmount();
 });
@@ -849,7 +860,7 @@ test("a failed refresh preserves the rows already on screen", async () => {
     await ui.click("Yes, cancel it");
 
     assert.match(ui.text(), /Pending/, "the preserved row was dropped");
-    assert.doesNotMatch(ui.text(), /No appointments yet/);
+    assert.doesNotMatch(ui.text(), /Nothing coming up/);
     await ui.unmount();
 });
 
@@ -860,7 +871,7 @@ test("an empty list from a SUCCESSFUL read still says there are none", async () 
     const ui = await mountTracking();
     await ui.openAppointments();
 
-    assert.match(ui.text(), /No appointments yet/);
+    assert.match(ui.text(), /Nothing coming up/);
     await ui.unmount();
 });
 
@@ -879,7 +890,7 @@ test("the failed-read state offers a way to try again", async () => {
 
     await ui.click("Try again");
 
-    assert.match(ui.text(), /Pending/, "the retry did not recover the list");
+    assert.match(ui.text(), /Waiting for lawyer/, "the retry did not recover the list");
     assert.doesNotMatch(ui.text(), /Could not load your appointments/);
     await ui.unmount();
 });
@@ -1286,7 +1297,7 @@ test("a video appointment with no link is not presented as joinable", async () =
     await ui.openAppointments();
 
     assert.equal([...ui.container.querySelectorAll("a")]
-        .filter(a => /Join Meeting/.test(a.textContent)).length, 0,
+        .filter(a => /Join meeting/i.test(a.textContent)).length, 0,
         "a joinable link was shown for an appointment that has none");
     assert.match(ui.text(), /not shared yet/);
     await ui.unmount();
@@ -1530,7 +1541,7 @@ test("Join Meeting is offered only on a confirmed consultation that has not ende
         serveAppointments([appt]);
         const ui = await mountTracking();
         await ui.openAppointments();
-        const join = [...ui.container.querySelectorAll("a")].find(a => a.textContent.includes("Join Meeting"));
+        const join = [...ui.container.querySelectorAll("a")].find(a => /Join meeting/i.test(a.textContent));
         assert.equal(!!join, offered, `${appt.status} ending ${appt.end_at}`);
         await ui.unmount();
     }

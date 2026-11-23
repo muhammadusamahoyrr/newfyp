@@ -4,6 +4,7 @@ import { useClientRouter as useRouter } from "./clientNav.js";
 import { useT } from "./theme.js";
 import { useToast } from "@/components/shared/Toast.jsx";
 import { useCase } from "./CaseContext.jsx";
+import { matterHref } from "@/lib/notificationTarget.js";
 import Ic from "./Ic.jsx";
 import { Card, BtnPrimary, BtnOutline, ThemedInput, Badge, Tooltip } from "@/components/shared/shared.jsx";
 import { intakeStart, intakeSaveStep, intakeConvert, intakeGet, intakeRetryAnalysis, intakeClarify, transcribeAudio, uploadIntakeEvidence, confirmCase, deleteIntakeEvidence, downloadIntakeEvidence, getResumableIntake, getIntakeOcrReview, confirmIntakeOcrPage } from "@/lib/api.js";
@@ -555,7 +556,7 @@ const ModIntake = () => {
     const router = useRouter();
     const { T, lang } = useLang();
     const isMobile = useIsMobile();
-    const { completeIntake, addNotification } = useCase();
+    const { completeIntake, addNotification, reloadCases } = useCase();
     const { user } = useAuth();
     const userId = user?._id || user?.id || null;
 
@@ -1630,6 +1631,11 @@ ${!aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSES
         }
         setConvertedCaseType(caseTypeInput);
         setCaseConfirmed(true);
+        // Re-read the shared case list now (2026-11-23): without it Overview
+        // kept saying "Confirm your draft case" and the Intake badge stayed
+        // up until a full reload. Not awaited: the confirmation screen does
+        // not wait on it, and a failed refresh keeps the list it had.
+        reloadCases?.();
         scopedRemove("aai-intake-token");
         setIntakeToken(null);
 
@@ -2816,7 +2822,7 @@ ${!aiStructured?.risk_level && aiStructured?.risk_level_basis === RISK_NOT_ASSES
                                     <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                                 </button>
                                 <button type="button" className="in-back" data-next="document" onClick={() => router.push("/documents")}>{T("Draft a document", "دستاویز تیار کریں")}</button>
-                                <button type="button" className="in-back" data-next="track" onClick={() => router.push("/tracking")}>{T("Track the case", "کیس دیکھیں")}</button>
+                                <button type="button" className="in-back" data-next="track" onClick={() => router.push(matterHref(caseId))}>{T("Track the case", "کیس دیکھیں")}</button>
                             </div>
                         </>
                     )}

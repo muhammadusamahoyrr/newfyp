@@ -1172,7 +1172,7 @@ test("the top container: registered not verified, a working tile filter, one mat
     assert.ok(hero, "the container is gone");
     const text = hero.textContent;
     assert.doesNotMatch(text, /All verified/, "lawyers are registered, not verified");
-    assert.match(text, /All registered/);
+    assert.match(text, /Registered · Show all/);
     assert.match(text, /Find the right lawyer/);
     assert.doesNotMatch(text, /Legal directory|Find Expert Legal Counsel/i);
     assert.doesNotMatch(text, /AI match\b/i, "the sparkle 'AI match' label is back");

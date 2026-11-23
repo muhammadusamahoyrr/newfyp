@@ -459,7 +459,10 @@ async def _settle(payment: dict, event_id: str, status: str) -> dict:
         await _notify(
             payment["payer_id"], NotificationType.PAYMENT_FAILED, "Payment did not go through",
             f"Your payment of PKR {payment['amount']:,.0f} could not be completed. Please try again.",
-            {"payment_id": payment["_id"]},
+            # The case, as the requested/received notices carry (2026-11-23):
+            # without it the client app opened the fee under whichever case
+            # it picked, so one case's header sat over another case's fee.
+            {"payment_id": payment["_id"], "case_id": payment.get("case_id")},
         )
         return {"status": "failed"}
 
