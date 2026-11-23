@@ -466,8 +466,14 @@ test("the lawyer New Chat button starts a real conversation", () => {
     const code = src("components/lawyer/AILegalPage.jsx");
     assert.ok(!/onClick=\{\(\) => setMsgs\(\[\]\)\}/.test(code),
         "New Chat still only clears the display");
-    assert.match(code, /onClick=\{\(\) => startConversation\(/,
+    // Since 2026-11-23 the handler reuses the open thread only when it is EMPTY
+    // (nothing to carry over); any thread with messages still gets a new one.
+    const handler = code.match(/className="ai-new"[\s\S]*?\}\}\s*\n?\s*title=/);
+    assert.ok(handler, "the New Chat button is missing");
+    assert.match(handler[0], /startConversation\(caseId\)/,
         "New Chat does not start a conversation");
+    assert.match(handler[0], /msgs\.length === 0/,
+        "New Chat may reuse only an empty thread");
 });
 
 test("no callback reads the user without depending on it", () => {

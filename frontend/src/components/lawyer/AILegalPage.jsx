@@ -694,7 +694,10 @@ function AILegalScreen() {
                 seen.add(r.session_id);
                 return true;
             });
-            setHistory(groupConversations(unique));
+            // A thread with no message yet is not history: listing it showed
+            // a row of "New conversation" copies. The open one stays (2026-11-23).
+            setHistory(groupConversations(unique.filter(r =>
+                (r.message_count ?? 1) > 0 || r.session_id === sessionIdRef.current)));
             return unique;
         });
 
@@ -1271,6 +1274,68 @@ function AILegalScreen() {
         if (days === 1) return { text: "Tomorrow", c: "var(--amber, #F2C35E)" };
         return { text: new Date(d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }), c: "#3CCFE0" };
     };
+    /* The question box, built once: under the heading on an empty thread, at
+       the bottom once the thread has messages (2026-11-23). */
+    const composer = (
+        <>
+                <div className="ai-box">
+
+                    {/* Grows with the question, like the client chat (2026-11-23):
+                        Enter sends, Shift+Enter makes a new line; past
+                        MAX_QUERY_HEIGHT it scrolls inside. Enter during an Urdu IME
+                        composition does not send. */}
+                    <textarea ref={queryRef} value={query} onChange={e => setQuery(e.target.value)}
+                        rows={1} dir="auto" aria-label="Ask Attorney AI"
+                        onKeyDown={e => {
+                            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                                e.preventDefault();
+                                send();
+                            }
+                        }}
+                        placeholder="Ask Attorney AI..."
+                        className="thin-scrollbar"
+                        style={{
+                            display: "block", width: "100%", boxSizing: "border-box", resize: "none",
+                            background: "transparent", border: "none", outline: "none",
+                            color: t.text, fontSize: 15, padding: "2px 2px 8px", lineHeight: 1.5,
+                            fontFamily: "inherit", overflowY: "hidden", maxHeight: MAX_QUERY_HEIGHT,
+                        }} />
+
+                    {/* Toolbar row */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                        {/* What answers: the research assistant, on the corpus. */}
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {setPage && (
+                            <button type="button" className="ai-attach" onClick={() => setPage("doc-analyzer")}
+                                aria-label="Attach a document" title="Attach a document (opens Document review)">
+                                <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" /></svg>
+                            </button>
+                        )}
+                        <span className="ai-chip" title="Answers from Pakistani statutes and case law in the library">
+                            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 5.5A2.5 2.5 0 0 1 4.5 3H10v16H4.5A2.5 2.5 0 0 0 2 21.5zM22 5.5A2.5 2.5 0 0 0 19.5 3H14v16h5.5a2.5 2.5 0 0 1 2.5 2.5z" /></svg>
+                            AttorneyAI
+                        </span>
+                        </span>
+
+                        {/* Right controls */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {/* Voice: dictates into the box; the lawyer still reads and sends. */}
+                            {/* The shared dictation (2026-10-20): keeps what was typed. */}
+                            <LawyerVoice value={query} onText={setQuery} />
+
+
+                            {/* Send button */}
+                            <button onClick={send} aria-label="Send" className={`ai-send${query.trim() ? " on" : ""}`}>
+                                {/* An upward arrow (2026-10-20), as on the client chat. */}
+                                <SendArrow />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p className="disc">Answers cite Pakistani statutes and reported judgments. Check the cited text before relying on it in court.</p>
+        </>
+    );
+
     const threadTitle = hasMessages ? (rows.find(r => r.session_id === sessionId)?.title || "Research") : "New research";
 
     return (
@@ -1283,7 +1348,18 @@ function AILegalScreen() {
 
                 <div className="cv-top">
                     <button type="button" className="ai-new"
-                        onClick={() => startConversation(activeCaseObj ? (activeCaseObj._id || null) : null)}
+                        onClick={() => {
+                            const caseId = activeCaseObj ? (activeCaseObj._id || null) : null;
+                            // Already on an empty thread for the same case: use it.
+                            // Each click used to make another empty conversation and
+                            // the history filled with "New conversation" (2026-11-23).
+                            if (sessionIdRef.current && msgs.length === 0 && !loading
+                                && boundCaseRef.current === caseId) {
+                                queryRef.current?.focus();
+                                return;
+                            }
+                            startConversation(caseId);
+                        }}
                         title={activeCaseObj ? `Start a new thread for ${activeCaseObj.id}` : "Start a new general research thread"}>
                         <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z" /><path d="M8 10.5h8M8 14h5" /></svg>
                         New Chat
@@ -1423,7 +1499,7 @@ function AILegalScreen() {
                             {listLoading ? "Loading\u2026" : "Load older threads"}
                         </button>
                     )}
-                    {!listMore && !listLoading && rows.length === 0 && (
+                    {!listMore && !listLoading && history.every(g => g.items.length === 0) && (
                         search ? (
                             <div style={{ padding: "10px 8px", fontSize: 13, color: "var(--faint)" }}>No threads match that search.</div>
                         ) : (
@@ -1485,7 +1561,10 @@ function AILegalScreen() {
                         </div>
                     );
                 })()}
-                <div className="cv-foot"><span>Private to you</span><span>{rows.length}{listMore ? "+" : ""} chat{rows.length === 1 ? "" : "s"}</span></div>
+                {(() => {
+                    const shown = history.reduce((n, g) => n + g.items.length, 0);
+                    return <div className="cv-foot"><span>Private to you</span><span>{shown}{listMore ? "+" : ""} chat{shown === 1 ? "" : "s"}</span></div>;
+                })()}
             </section>
             {/* Fold or open the sidebar: one round button on its edge. */}
             <button type="button" className="ai-edge" onClick={() => setSideOpen(v => !v)}
@@ -1563,6 +1642,7 @@ function AILegalScreen() {
                                 ? <>Research for <span>{activeCaseObj.id}</span></>
                                 : <>Ask anything about <span>Pakistani law</span></>}</h2>
                         </div>
+                            <div className="ai-compose">{composer}</div>
                             <div className="ai-below">
                                 {caseCards.length > 0 && (
                                     <>
@@ -2016,64 +2096,14 @@ function AILegalScreen() {
                     )}
                 </div>
 
-                {/* ── Rich input box ── */}
+                {/* ── Rich input box: at the bottom once the thread has messages; on
+                    an empty thread it sits under the heading, as in the client chat
+                    (2026-11-23). ── */}
+                {hasMessages && (
                 <div style={{ padding: "0 24px 10px", display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-                    <div className="ai-box">
-
-                        {/* Grows with the question, like the client chat (2026-11-23):
-                            Enter sends, Shift+Enter makes a new line; past
-                            MAX_QUERY_HEIGHT it scrolls inside. Enter during an Urdu IME
-                            composition does not send. */}
-                        <textarea ref={queryRef} value={query} onChange={e => setQuery(e.target.value)}
-                            rows={1} dir="auto" aria-label="Ask Attorney AI"
-                            onKeyDown={e => {
-                                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                                    e.preventDefault();
-                                    send();
-                                }
-                            }}
-                            placeholder="Ask Attorney AI..."
-                            className="thin-scrollbar"
-                            style={{
-                                display: "block", width: "100%", boxSizing: "border-box", resize: "none",
-                                background: "transparent", border: "none", outline: "none",
-                                color: t.text, fontSize: 15, padding: "2px 2px 8px", lineHeight: 1.5,
-                                fontFamily: "inherit", overflowY: "hidden", maxHeight: MAX_QUERY_HEIGHT,
-                            }} />
-
-                        {/* Toolbar row */}
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                            {/* What answers: the research assistant, on the corpus. */}
-                            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            {setPage && (
-                                <button type="button" className="ai-attach" onClick={() => setPage("doc-analyzer")}
-                                    aria-label="Attach a document" title="Attach a document (opens Document review)">
-                                    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" /></svg>
-                                </button>
-                            )}
-                            <span className="ai-chip" title="Answers from Pakistani statutes and case law in the library">
-                                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 5.5A2.5 2.5 0 0 1 4.5 3H10v16H4.5A2.5 2.5 0 0 0 2 21.5zM22 5.5A2.5 2.5 0 0 0 19.5 3H14v16h5.5a2.5 2.5 0 0 1 2.5 2.5z" /></svg>
-                                AttorneyAI
-                            </span>
-                            </span>
-
-                            {/* Right controls */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                {/* Voice: dictates into the box; the lawyer still reads and sends. */}
-                                {/* The shared dictation (2026-10-20): keeps what was typed. */}
-                                <LawyerVoice value={query} onText={setQuery} />
-
-
-                                {/* Send button */}
-                                <button onClick={send} aria-label="Send" className={`ai-send${query.trim() ? " on" : ""}`}>
-                                    {/* An upward arrow (2026-10-20), as on the client chat. */}
-                                    <SendArrow />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <p className="disc">Answers cite Pakistani statutes and reported judgments. Check the cited text before relying on it in court.</p>
+                    {composer}
                 </div>
+                )}
             </div>
 
             {/* ── SOURCES ── one answer's citations; opened from a chip. */}

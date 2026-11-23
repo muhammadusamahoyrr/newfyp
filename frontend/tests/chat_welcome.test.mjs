@@ -49,6 +49,24 @@ test("the lawyer research box grows the same way", () => {
     assert.match(lawyer, /el\.style\.height = `\$\{Math\.min\(full, MAX_QUERY_HEIGHT\)\}px`/);
 });
 
+test("the lawyer research box sits under the heading on an empty thread, like the client chat", () => {
+    const lawyer = readFileSync(
+        new URL("../src/components/lawyer/AILegalPage.jsx", import.meta.url), "utf8");
+    assert.match(lawyer, /const composer = \(/);
+    assert.match(lawyer, /className="ai-welcome"[\s\S]*?<div className="ai-compose">\{composer\}<\/div>[\s\S]*?className="ai-below"/,
+        "the empty thread does not show the box under the heading");
+    assert.match(lawyer, /\{hasMessages && \([\s\S]*?\{composer\}/, "a thread with messages lost its bottom box");
+});
+
+test("the lawyer research history does not fill with empty threads either", () => {
+    const lawyer = readFileSync(
+        new URL("../src/components/lawyer/AILegalPage.jsx", import.meta.url), "utf8");
+    // New Chat on an empty thread for the same case reuses it…
+    assert.match(lawyer, /sessionIdRef\.current && msgs\.length === 0 && !loading\s*&& boundCaseRef\.current === caseId/);
+    // …and a thread with no message is not listed, except the open one.
+    assert.match(lawyer, /\(r\.message_count \?\? 1\) > 0 \|\| r\.session_id === sessionIdRef\.current/);
+});
+
 test("empty conversations do not fill the history with 'New conversation' copies", () => {
     // New Chat on an already-empty chat reuses it…
     assert.match(code, /sessionReady && sessionIdRef\.current && msgs\.length === 0 && !typing/);
