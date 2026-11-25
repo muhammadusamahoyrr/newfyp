@@ -107,3 +107,24 @@ test("profile (option A, 2026-11-25): done items are chips, only missing ones ge
     assert.ok(container.querySelector("[data-province-unset]"), "the header does not flag the missing province");
     await act(async () => root.unmount()); container.remove();
 });
+
+test("profile: province is picked from a dropdown, and every field is the same 46px input (2026-11-25)", async () => {
+    api.__reset();
+    api.__respond("bootstrapAuth", true);
+    api.__respond("getMe", { data: { _id: "c1", role: "client", full_name: "Ayesha Khan", email: "a@x.pk" }, error: null });
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+        root.render(h(AuthProvider, null, h(ToastCtx.Provider, { value: { show: () => {} } }, h(ModProfile))));
+    });
+    await settle(120);
+    await act(async () => { container.querySelector('[data-profile-todo="province"] button').dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    const sel = container.querySelector("select[data-province-select]");
+    assert.ok(sel, "province is not a dropdown");
+    assert.equal(container.querySelectorAll('.pc-prov').length, 0, "the chip grid is back");
+    assert.ok([...sel.options].some(o => o.textContent === "Punjab"));
+    const css = [...container.querySelectorAll("style")].map(s => s.textContent).join("");
+    assert.match(css, /\.pc-input\{flex:none;width:100%;[^}]*height:46px/);
+    await act(async () => root.unmount()); container.remove();
+});

@@ -47,6 +47,7 @@ const PROFILE_CSS = `[data-profile-c]{display:flex;flex-direction:column;gap:18p
 [data-profile-c] .pc-v.none{font-style:italic}
 [data-profile-c] .pc-why{font-size:12px;color:var(--faint)}
 [data-profile-c] .pc-act{display:flex;gap:8px;justify-content:flex-end}
+[data-profile-c] .pc-act .pc-btn{min-width:108px;height:38px}
 [data-profile-c] .pc-seg{display:inline-flex;padding:3px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
 [data-profile-c] .pc-seg button{height:32px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
 [data-profile-c] .pc-seg button[aria-checked="true"]{background:color-mix(in srgb,#b9a6f2 20%,var(--surface));color:var(--ink)}
@@ -78,15 +79,21 @@ const PROFILE_CSS = `[data-profile-c]{display:flex;flex-direction:column;gap:18p
 [data-profile-c] .pc-ed{width:32px;height:32px;flex:none;border-radius:10px;border:1px solid color-mix(in srgb,var(--brand-text) 25%,transparent);background:color-mix(in srgb,var(--brand-text) 8%,transparent);color:var(--brand-text);display:grid;place-items:center;cursor:pointer;transition:background .2s,color .2s,transform .15s}
 [data-profile-c] .pc-ed:hover{background:var(--brand-text);color:#04262c}
 [data-profile-c] .pc-ed:active{transform:scale(.92)}
-[data-profile-c] .pc-input{flex:1;min-width:0;height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--brand-text);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-text) 16%,transparent);background:var(--input);color:var(--ink);font:inherit;font-size:14px;outline:none}
+[data-profile-c] .pc-input{flex:none;width:100%;box-sizing:border-box;min-width:0;height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--line-strong);background:var(--input);color:var(--ink);font:inherit;font-size:14.5px;outline:none;transition:border-color .15s,box-shadow .15s}
+[data-profile-c] .pc-input:focus{border-color:var(--brand-text);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-text) 16%,transparent)}
+[data-profile-c] .pc-input::placeholder{color:var(--faint)}
+[data-profile-c] select.pc-input{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:40px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2393A4A8' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+[data-profile-c] select.pc-input option{background:var(--surface);color:var(--ink)}
+[data-profile-c] .pc-pw{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+[data-profile-c] .pc-pw label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
 [data-profile-c] .pc-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 16px;border-radius:999px;border:1px solid color-mix(in srgb,var(--a,var(--brand-text)) 38%,transparent);background:color-mix(in srgb,var(--a,var(--brand-text)) 13%,var(--surface));color:var(--a,var(--brand-text));font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s,color .2s,transform .12s}
-[data-profile-c] .pc-btn:hover:not(:disabled){background:var(--a,var(--brand-text));border-color:transparent;color:#04262c}
+[data-profile-c] .pc-btn:hover:not(:disabled){background:color-mix(in srgb,var(--a,var(--brand-text)) 26%,var(--surface));border-color:color-mix(in srgb,var(--a,var(--brand-text)) 60%,transparent);color:var(--a,var(--brand-text));transform:translateY(-1px);box-shadow:0 8px 18px -12px color-mix(in srgb,var(--a,var(--brand-text)) 70%,transparent)}
 [data-profile-c] .pc-btn:active:not(:disabled){transform:scale(.95)}
 [data-profile-c] .pc-btn:disabled{opacity:.55;cursor:not-allowed}
 [data-profile-c] .pc-btn.go{border:0;background:var(--brand-solid,linear-gradient(135deg,#3EE0A1,#2EC4D6));color:var(--on-brand,#04212A);box-shadow:0 8px 18px -10px rgba(46,196,214,.8)}
 [data-profile-c] .pc-btn.go:hover:not(:disabled){filter:brightness(1.08);background:var(--brand-solid,linear-gradient(135deg,#3EE0A1,#2EC4D6));color:var(--on-brand,#04212A)}
 [data-profile-c] .pc-btn.nt{border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--ink) 11%,var(--surface));color:var(--ink)}
-[data-profile-c] .pc-btn.nt:hover:not(:disabled){background:color-mix(in srgb,var(--ink) 17%,var(--surface));color:var(--ink);border-color:color-mix(in srgb,var(--ink) 20%,transparent)}
+[data-profile-c] .pc-btn.nt:hover:not(:disabled){background:color-mix(in srgb,var(--brand-text) 18%,var(--surface));color:var(--brand-text);border-color:color-mix(in srgb,var(--brand-text) 55%,transparent);transform:translateY(-1px)}
 [data-profile-c] .pc-btn.gd{border:0;background:linear-gradient(135deg,#F6D27A,#EEA24E);color:#2A1A04;box-shadow:0 8px 18px -10px rgba(238,162,78,.7)}
 [data-profile-c] .pc-btn.gd:hover:not(:disabled){filter:brightness(1.06);background:linear-gradient(135deg,#F6D27A,#EEA24E);color:#2A1A04}
 [data-profile-c] .pc-done{display:flex;flex-wrap:wrap;gap:8px}
@@ -245,7 +252,7 @@ const ModProfile = () => {
         { key: "full_name", k: "Full name", v: name, icon: I.user, c: "var(--brand-text)", empty: "Not added", why: "As on your CNIC — used on your documents" },
         { key: "email", k: "Email", v: user?.email || "", icon: I.mail, c: "#6addeb", empty: "Not added", why: "Used to sign in · change it in Security" },
         { key: "phone", k: "Phone", v: user?.phone || "", icon: I.phone, c: "var(--gold)", type: "tel", empty: "Not added", why: "So your lawyer can call you" },
-        { key: "province", k: "Province", v: provinceName(user?.province), icon: I.pin, c: "#5ad69a", empty: "Not chosen", why: "Decides which laws apply and which lawyers we suggest" },
+        { key: "province", k: "Province", v: provinceName(user?.province), icon: I.pin, c: "#5ad69a", empty: "Not chosen", why: "Sets the laws and lawyers we suggest" },
     ];
 
     return (
@@ -296,11 +303,12 @@ const ModProfile = () => {
                                     {editing === r.key ? (
                                         <span className="pc-val">
                                             {r.key === "province" ? (
-                                                <span className="pc-provs" role="radiogroup" aria-label="Province">
-                                                    {PROVINCES.map(([v, label]) => (
-                                                        <button key={v} type="button" role="radio" aria-checked={draft === v} className="pc-prov" onClick={() => setDraft(v)}>{label}</button>
-                                                    ))}
-                                                </span>
+                                                <select className="pc-input" data-province-select aria-label="Province" value={draft || ""} autoFocus
+                                                    onChange={e => setDraft(e.target.value)}
+                                                    onKeyDown={e => { if (e.key === "Escape") setEditing(null); }}>
+                                                    <option value="" disabled>Choose your province</option>
+                                                    {PROVINCES.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                                                </select>
                                             ) : (
                                                 <input className="pc-input" type={r.type || "text"} value={draft} autoFocus aria-label={r.k}
                                                     placeholder={r.key === "phone" ? "+92 300 1234567" : r.key === "full_name" ? "As on your CNIC" : undefined}
@@ -452,17 +460,17 @@ const ModProfile = () => {
                     {pwdMode && (
                         <section className="pc-card pc-sec" style={{ "--c": "#6addeb" }}>
                             <h2 className="pc-h" style={{ marginBottom: 14 }}>Change password</h2>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+                            <div className="pc-pw">
                                 {[["current", "Current password", "current-password"], ["next", "New password", "new-password"], ["confirm", "Confirm new password", "new-password"]].map(([k, label, ac]) => (
-                                    <label key={k} style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--faint)" }}>
+                                    <label key={k}>
                                         {label}
-                                        <ThemedInput type="password" autoComplete={ac} value={pwdData[k]} onChange={e => setPwdData(d => ({ ...d, [k]: e.target.value }))} />
+                                        <input className="pc-input" type="password" autoComplete={ac} value={pwdData[k]} onChange={e => setPwdData(d => ({ ...d, [k]: e.target.value }))} />
                                     </label>
                                 ))}
                             </div>
                             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
                                 <button type="button" className="pc-btn go" disabled={saving} onClick={handlePasswordUpdate}>{saving ? "Updating…" : "Update password"}</button>
-                                <button type="button" className="pc-btn" style={{ "--a": "var(--muted)" }} disabled={saving} onClick={() => { setPwdMode(false); setPwdData({ current: "", next: "", confirm: "" }); }}>Cancel</button>
+                                <button type="button" className="pc-btn nt" disabled={saving} onClick={() => { setPwdMode(false); setPwdData({ current: "", next: "", confirm: "" }); }}>Cancel</button>
                             </div>
                         </section>
                     )}
