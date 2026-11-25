@@ -94,6 +94,8 @@ async def list_agreements(
     status: str | None = Query(None),
     archived: bool = Query(False),
     case_id: str | None = Query(None, min_length=1, max_length=64),
+    # Only agreements on no matter (the list's "Not linked" filter, 2026-11-25).
+    unlinked: bool = Query(False),
     current_user: dict = Depends(get_current_user),
 ):
     """One page of the agreements the current user may see, newest first.
@@ -105,7 +107,22 @@ async def list_agreements(
     """
     return await agreement_service.list_agreements(
         current_user["_id"], page=page, page_size=page_size, status=status,
-        archived=archived, case_id=case_id)
+        archived=archived, case_id=case_id, unlinked=unlinked)
+
+
+@router.get("/capabilities")
+async def agreement_capabilities(current_user: dict = Depends(get_current_user)):
+    """What this server lets a user do with agreements -- read by the UI.
+
+    ONE SOURCE OF TRUTH (2026-11-25). The client builder used to be switched
+    on by a build-time frontend variable as well as this server setting, and
+    the two could disagree: the button hidden while the server allowed it, or
+    shown while the server refused the send with a 403 at the very last click.
+    The UI now asks the server. Declared before `/{agreement_id}` so this path
+    is never read as an agreement id.
+    """
+    from app.core.config import settings
+    return {"diy_builder": bool(settings.agreements_diy_builder_enabled)}
 
 
 # ── Step 4: invited signers, who have no account ─────────────────────────────

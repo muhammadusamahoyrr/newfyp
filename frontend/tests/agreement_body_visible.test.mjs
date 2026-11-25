@@ -102,10 +102,23 @@ function signedInAs(userId) {
     }));
 }
 
+/* Every screen a test mounts is unmounted after it. Left mounted, a screen's
+ * own timers (the 3.2 s toast) fired during a LATER test, outside act -- the
+ * "not wrapped in act(...)" warnings. */
+const mounted = [];
+test.afterEach(async () => {
+    while (mounted.length) {
+        const { root, host } = mounted.pop();
+        await act(async () => { root.unmount(); });
+        host.remove();
+    }
+});
+
 async function mount(element) {
     const host = dom.window.document.createElement("div");
     dom.window.document.body.appendChild(host);
     const root = createRoot(host);
+    mounted.push({ root, host });
     await act(async () => { root.render(element); });
     await act(async () => {});
     await act(async () => {});
@@ -175,6 +188,9 @@ const clientScreen = () => h(AuthProvider, null, h(ModAgreements));
 test.beforeEach(() => {
     __reset();
     signedInAs(ME);
+    // Both screens keep the open agreement in the address (?agreement=), and
+    // every test here shares one window: start each from a clean address.
+    dom.window.history.replaceState(null, "", "/");
 });
 
 // ── the body reaches the screen ─────────────────────────────────────────────
@@ -206,6 +222,130 @@ test("client: opening an agreement shows its text, fetched by id", async () => {
     assert.ok(ui.text().includes(BODY), "the agreement text is not on screen");
     assert.ok(!ui.text().includes("No content."));
     assert.equal(__calls("getAgreement").length, 1);
+});
+
+/* 2026-11-25: a declined agreement said "Rejected" and nothing else -- the
+ * reason was only in the notification. The server now sends `declined`. */
+test("client: a declined agreement says who declined it and why", async () => {
+    const declined = lightRow({ status: "cancelled",
+        declined: { by_user_id: THEM, by_name: "The Client", at: "2026-11-25T09:00:00Z",
+                    reason: "The fee clause is wrong." } });
+    __respond("listAgreements", () => page([declined]));
+    __respond("getAgreement", () => ok({ ...declined, body_html: BODY }));
+
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    await ui.openRow("Retainer");
+
+    const box = ui.host.querySelector("[data-agreement-declined]");
+    assert.ok(box, "no decline note on the declined agreement");
+    assert.match(box.textContent, /Declined by The Client on Nov 25, 2026/);
+    assert.match(box.textContent, /Reason: The fee clause is wrong\./);
+});
+
+test("client: a decline with no reason says so, and the decliner sees 'You declined'", async () => {
+    const declined = lightRow({ status: "cancelled",
+        declined: { by_user_id: ME, by_name: "Adv Khan", at: null, reason: null } });
+    __respond("listAgreements", () => page([declined]));
+    __respond("getAgreement", () => ok({ ...declined, body_html: BODY }));
+
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    await ui.openRow("Retainer");
+
+    const box = ui.host.querySelector("[data-agreement-declined]");
+    assert.match(box.textContent, /You declined this agreement/);
+    assert.match(box.textContent, /No reason was given\./);
+});
+
+/* LIVE (2026-11-25): a lawyer signing or declining left the client's
+ * Agreements page saying "Pending" until a manual reload. */
+test("client: a signed/declined notice refreshes the list and the open agreement", async () => {
+    const { broadcastNotification } = await import("../src/lib/notificationTarget.js");
+    const pending = lightRow({ created_by: THEM });
+    __respond("listAgreements", () => page([pending]));
+    __respond("getAgreement", () => ok({ ...pending, body_html: BODY }));
+
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    await ui.openRow("Retainer");
+    assert.equal(ui.host.querySelector("[data-agreement-declined]"), null);
+    const listReads = __calls("listAgreements").length;
+
+    const declined = lightRow({ created_by: THEM, status: "cancelled",
+        declined: { by_user_id: THEM, by_name: "The Client", at: null, reason: "Not now." } });
+    __respond("listAgreements", () => page([declined]));
+    __respond("getAgreement", () => ok({ ...declined, body_html: BODY }));
+    await act(async () => { broadcastNotification({ type: "agreement_declined", payload: { agreement_id: "A1" } }); });
+    await act(async () => {});
+    await act(async () => {});
+
+    assert.ok(__calls("listAgreements").length > listReads, "the list was not re-read");
+    const box = ui.host.querySelector("[data-agreement-declined]");
+    assert.ok(box, "the open agreement still shows the old pending state");
+    assert.match(box.textContent, /Reason: Not now\./);
+});
+
+test("client: two quick notices — the older answer never replaces the newer status", async () => {
+    const { broadcastNotification } = await import("../src/lib/notificationTarget.js");
+    const pending = lightRow({ created_by: THEM });
+    __respond("listAgreements", () => page([pending]));
+    __respond("getAgreement", () => ok({ ...pending, body_html: BODY }));
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    await ui.openRow("Retainer");
+
+    // First notice: its read is SLOW and answers "still pending".
+    let releaseOld;
+    const old = new Promise(r => { releaseOld = r; });
+    __respond("getAgreement", () => old);
+    await act(async () => { broadcastNotification({ type: "agreement_signed", payload: { agreement_id: "A1" } }); });
+    // Second notice: answers at once with the newer state, declined.
+    const declined = lightRow({ created_by: THEM, status: "cancelled",
+        declined: { by_user_id: THEM, by_name: "The Client", at: null, reason: "Newest." } });
+    __respond("getAgreement", () => ok({ ...declined, body_html: BODY }));
+    await act(async () => { broadcastNotification({ type: "agreement_declined", payload: { agreement_id: "A1" } }); });
+    await act(async () => {});
+    assert.ok(ui.host.querySelector("[data-agreement-declined]"), "precondition: the newer state is shown");
+
+    await act(async () => { releaseOld(ok({ ...pending, body_html: BODY })); });
+    await act(async () => {});
+    assert.ok(ui.host.querySelector("[data-agreement-declined]"), "the older answer replaced the newer status");
+});
+
+test("client: a notice about something else does not re-read the list", async () => {
+    const { broadcastNotification } = await import("../src/lib/notificationTarget.js");
+    __respond("listAgreements", () => page([lightRow()]));
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    const reads = __calls("listAgreements").length;
+    await act(async () => { broadcastNotification({ type: "case_message", payload: { case_id: "C1" } }); });
+    assert.equal(__calls("listAgreements").length, reads);
+    void ui;
+});
+
+/* D1 + B3 (2026-11-25): the agreement view uses the builder's typeface, keeps
+ * the agreement's own text in its document face, and shows no emoji icons. */
+test("client: the agreement view is in the builder's typeface, with icons not emoji", async () => {
+    __respond("listAgreements", () => page([lightRow()]));
+    __respond("getAgreement", () => ok(fullDoc()));
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    await ui.openRow("Retainer");
+    const modal = [...ui.host.querySelectorAll("[data-ag-font]")].find(el => el.textContent.includes(BODY));
+    assert.ok(modal, "the agreement view is outside the typeface wrapper");
+    const body = [...modal.querySelectorAll("[data-keep-font]")].find(el => el.textContent.includes(BODY));
+    assert.ok(body, "the agreement's own text would be forced into the UI font");
+    assert.doesNotMatch(modal.textContent, /[\u{1F300}-\u{1FAFF}✅⏰✍⚖]/u, "emoji used as an icon");
+});
+
+test("client: a pending agreement has no decline note", async () => {
+    __respond("listAgreements", () => page([lightRow()]));
+    __respond("getAgreement", () => ok(fullDoc()));
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    await ui.openRow("Retainer");
+    assert.equal(ui.host.querySelector("[data-agreement-declined]"), null);
 });
 
 test("an engagement letter is fetched the same way", async () => {

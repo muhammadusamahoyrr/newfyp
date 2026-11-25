@@ -19,7 +19,7 @@ import { requestNewMatter } from "./newMatter.js";
  * clients did not have, presented as analysis. It is gone, not restyled.
  *
  * Scoped by [data-overview]; colours are the client tokens (clientTheme.js). */
-const OVERVIEW_CSS = `[data-overview]{display:flex;flex-direction:column;gap:18px}
+const OVERVIEW_CSS = `[data-overview]{display:flex;flex-direction:column;gap:18px;color:var(--ink)}
 [data-overview]{--ov-line:var(--line);--ov-well:var(--surface-2)}
 [data-client-theme][data-mode="light"] [data-overview]{--ov-line:#D9E2DE;--ov-well:#F3F7F5}
 [data-overview] .ov-card{position:relative;border-radius:20px;border:1px solid var(--ov-line);background:var(--surface);box-shadow:var(--shadow-rest)}
@@ -102,7 +102,24 @@ const OVERVIEW_CSS = `[data-overview]{display:flex;flex-direction:column;gap:18p
 [data-overview] .ov-empty{padding:12px 0;font-size:13px;color:var(--faint)}
 [data-overview] .ov-clip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (prefers-reduced-motion:reduce){[data-overview] *{animation:none!important;transition:none!important}}
-@media (max-width:1100px){[data-overview] .ov-hero,[data-overview] .ov-main{grid-template-columns:minmax(0,1fr)}[data-overview] .ov-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}`;
+@media (max-width:1100px){[data-overview] .ov-hero,[data-overview] .ov-main{grid-template-columns:minmax(0,1fr)}[data-overview] .ov-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Hero colours, option 1 (canvas OverviewHeroColours, 2026-11-25): each box
+ * takes the colour of what it means (gold = needs you, teal = appointment),
+ * and every button is filled per the colour roles. Declared last, so these win. */
+[data-overview] .ov-btn.go,[data-overview] .ov-btn.go:hover{border:0;background:var(--brand-solid,linear-gradient(135deg,#3EE0A1,#2EC4D6));color:var(--on-brand,#04212A);box-shadow:0 8px 18px -10px rgba(46,196,214,.8)}
+[data-overview] .ov-btn.chat,[data-overview] .ov-btn.chat:hover{background:color-mix(in srgb,var(--ink) 11%,var(--surface));border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);color:var(--ink);filter:none}
+[data-overview] .ov-btn.chat:hover{background:color-mix(in srgb,var(--ink) 16%,var(--surface))}
+[data-overview] .ov-need:not(.calm){border-color:color-mix(in srgb,var(--gold) 45%,transparent);background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 16%,transparent),color-mix(in srgb,var(--gold) 5%,transparent))}
+[data-overview] .ov-need:not(.calm) .ov-badge{background:linear-gradient(135deg,#F6D27A,#EEA24E);color:#2A1A04}
+[data-overview] .ov-need:not(.calm) .ov-lbl{color:var(--gold)!important}
+[data-overview] .ov-need:not(.calm) .ov-btn,[data-overview] .ov-need:not(.calm) .ov-btn:hover{border:0;background:linear-gradient(135deg,#F6D27A,#EEA24E);color:#2A1A04;box-shadow:0 8px 18px -10px rgba(238,162,78,.7)}
+[data-overview] .ov-appt{border-color:color-mix(in srgb,var(--teal-ink) 30%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--teal-ink) 16%,transparent),color-mix(in srgb,var(--teal-ink) 4%,transparent) 70%)}
+[data-overview] .ov-appt .ov-lbl{color:var(--teal-ink)!important}
+[data-overview] .ov-appt-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--teal-ink) 16%,transparent);color:var(--teal-ink)}
+[data-overview] .ov-btn.tl,[data-overview] .ov-btn.tl:hover{border:0;background:color-mix(in srgb,var(--teal-ink) 16%,transparent);color:var(--teal-ink);filter:none}
+[data-overview] .ov-btn.tl:hover{background:color-mix(in srgb,var(--teal-ink) 24%,transparent)}
+[data-overview] .ov-btn.cy,[data-overview] .ov-btn.cy:hover{border:0;background:linear-gradient(180deg,#8AE7F2 0%,#5BCFE2 55%,#3FBFD6 100%);color:#04212A;box-shadow:0 8px 18px -12px rgba(0,0,0,.7)}
+[data-overview] .ov-btn.cy:hover{filter:brightness(1.06)}`;
 
 // The case journey, as the server's statuses read on it.
 const STAGES = ["Intake", "Open", "Lawyer", "In progress", "Closed"];
@@ -363,8 +380,11 @@ const ModOverview = ({ onOpenNotifications }) => {
                     </div>
                 </div>
 
-                <div className="ov-well" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div className="ov-lbl" style={{ color: "var(--brand-text)" }}>Next appointment</div>
+                <div className="ov-well ov-appt" data-ov-appt style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span className="ov-appt-ic" aria-hidden="true"><Svg d={I.cal} s={16} /></span>
+                        <div className="ov-lbl" style={{ color: "var(--brand-text)" }}>Next appointment</div>
+                    </div>
                     {next ? (<>
                         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                             <div className="ov-date">
@@ -389,8 +409,8 @@ const ModOverview = ({ onOpenNotifications }) => {
                     <div style={{ display: "flex", gap: 8 }}>
                         {/* Theme colours only (2026-10-19): the cyan and gold pair
                             here matched nothing else in the hero. */}
-                        <button type="button" className="ov-btn sm" style={{ flex: 1, "--a": "var(--brand-text)" }} onClick={() => router.push(next ? `/appointments?appointment=${encodeURIComponent(next._id || next.id)}` : "/appointments")}>{next ? "Details" : "See all"}</button>
-                        <button type="button" className="ov-btn sm go" style={{ flex: 1 }} onClick={() => router.push("/lawyers")}>Book a meeting</button>
+                        <button type="button" className="ov-btn sm tl" style={{ flex: 1, "--a": "var(--brand-text)" }} onClick={() => router.push(next ? `/appointments?appointment=${encodeURIComponent(next._id || next.id)}` : "/appointments")}>{next ? "Details" : "See all"}</button>
+                        <button type="button" className="ov-btn sm cy" style={{ flex: 1 }} onClick={() => router.push("/lawyers")}>Book a meeting</button>
                     </div>
                     {upcoming.length > 1 && <div style={{ fontSize: 12, color: "var(--faint)" }}>{upcoming.length - 1} more upcoming</div>}
                     {/* The cache holds one page; the rest is the client's click. */}

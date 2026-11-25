@@ -35,7 +35,7 @@ const PROFILE_CSS = `[data-profile-c]{display:flex;flex-direction:column;gap:18p
 [data-profile-c] .pc-tabs{display:flex;gap:6px;padding:5px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);flex:none}
 [data-profile-c] .pc-tab{height:40px;padding:0 18px;border-radius:999px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:background .2s,color .2s}
 [data-profile-c] .pc-tab:hover{color:var(--ink);background:var(--hover-tint)}
-[data-profile-c] .pc-tab[aria-selected="true"]{background:linear-gradient(135deg,#12897f,#1c9c66);color:#fff}
+[data-profile-c] .pc-tab[aria-selected="true"]{background:var(--chip-on-bg,#F3F2F4);color:var(--chip-on-ink,#2A282C)}
 [data-profile-c] .pc-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
 [data-profile-c] .pc-sec-head{padding:18px 22px 14px;border-bottom:1px solid var(--line)}
 [data-profile-c] .pc-sec-head p{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
@@ -78,13 +78,22 @@ const PROFILE_CSS = `[data-profile-c]{display:flex;flex-direction:column;gap:18p
 [data-profile-c] .pc-ed{width:32px;height:32px;flex:none;border-radius:10px;border:1px solid color-mix(in srgb,var(--brand-text) 25%,transparent);background:color-mix(in srgb,var(--brand-text) 8%,transparent);color:var(--brand-text);display:grid;place-items:center;cursor:pointer;transition:background .2s,color .2s,transform .15s}
 [data-profile-c] .pc-ed:hover{background:var(--brand-text);color:#04262c}
 [data-profile-c] .pc-ed:active{transform:scale(.92)}
-[data-profile-c] .pc-input{flex:1;min-width:0;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--brand-text);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-text) 16%,transparent);background:var(--input);color:var(--ink);font:inherit;font-size:14px;outline:none}
+[data-profile-c] .pc-input{flex:1;min-width:0;height:46px;padding:0 14px;border-radius:14px;border:1px solid var(--brand-text);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-text) 16%,transparent);background:var(--input);color:var(--ink);font:inherit;font-size:14px;outline:none}
 [data-profile-c] .pc-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 16px;border-radius:999px;border:1px solid color-mix(in srgb,var(--a,var(--brand-text)) 38%,transparent);background:color-mix(in srgb,var(--a,var(--brand-text)) 13%,var(--surface));color:var(--a,var(--brand-text));font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s,color .2s,transform .12s}
 [data-profile-c] .pc-btn:hover:not(:disabled){background:var(--a,var(--brand-text));border-color:transparent;color:#04262c}
 [data-profile-c] .pc-btn:active:not(:disabled){transform:scale(.95)}
 [data-profile-c] .pc-btn:disabled{opacity:.55;cursor:not-allowed}
-[data-profile-c] .pc-btn.go{border:0;background:linear-gradient(135deg,#12897f,#1c9c66);color:#fff}
-[data-profile-c] .pc-btn.go:hover:not(:disabled){filter:brightness(1.08);background:linear-gradient(135deg,#12897f,#1c9c66);color:#fff}
+[data-profile-c] .pc-btn.go{border:0;background:var(--brand-solid,linear-gradient(135deg,#3EE0A1,#2EC4D6));color:var(--on-brand,#04212A);box-shadow:0 8px 18px -10px rgba(46,196,214,.8)}
+[data-profile-c] .pc-btn.go:hover:not(:disabled){filter:brightness(1.08);background:var(--brand-solid,linear-gradient(135deg,#3EE0A1,#2EC4D6));color:var(--on-brand,#04212A)}
+[data-profile-c] .pc-btn.nt{border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--ink) 11%,var(--surface));color:var(--ink)}
+[data-profile-c] .pc-btn.nt:hover:not(:disabled){background:color-mix(in srgb,var(--ink) 17%,var(--surface));color:var(--ink);border-color:color-mix(in srgb,var(--ink) 20%,transparent)}
+[data-profile-c] .pc-btn.gd{border:0;background:linear-gradient(135deg,#F6D27A,#EEA24E);color:#2A1A04;box-shadow:0 8px 18px -10px rgba(238,162,78,.7)}
+[data-profile-c] .pc-btn.gd:hover:not(:disabled){filter:brightness(1.06);background:linear-gradient(135deg,#F6D27A,#EEA24E);color:#2A1A04}
+[data-profile-c] .pc-done{display:flex;flex-wrap:wrap;gap:8px}
+[data-profile-c] .pc-done span{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:color-mix(in srgb,var(--brand-text) 15%,transparent);color:var(--brand-text);font-size:13px;font-weight:700}
+[data-profile-c] .pc-todo{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--gold) 9%,transparent);border:1px solid color-mix(in srgb,var(--gold) 38%,transparent);color:var(--ink)}
+[data-profile-c] .pc-todo .ic{color:var(--gold);display:inline-flex}
+[data-profile-c] .pc-todo small{display:block;font-size:12.5px;color:var(--faint)}
 [data-profile-c] .pc-link{border:0;background:none;padding:0;color:var(--brand-text);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
 [data-profile-c] .pc-link:hover{text-decoration:underline}
 [data-profile-c] .pc-provs{display:flex;flex-wrap:wrap;gap:6px}
@@ -162,6 +171,8 @@ const ModProfile = () => {
         : "";
 
     // What a complete profile has, from the fields the account really holds.
+    const TODO_ICON = { full_name: I.user, email: I.mail, phone: I.phone, province: I.pin };
+    const TODO_WHY = { full_name: "Used on your documents", email: "Used to sign in", phone: "So your lawyer can call you", province: "Picks the right laws and lawyers" };
     const checklist = [
         ["full_name", "your name", Boolean(name)],
         ["email", "an email", Boolean(user?.email)],
@@ -259,7 +270,7 @@ const ModProfile = () => {
                         <span style={{ fontSize: 13, color: "var(--faint)" }} aria-hidden="true">•</span>
                         {user?.province
                             ? <span style={{ fontSize: 13, color: "var(--muted)" }}>{provinceName(user.province)}</span>
-                            : <span style={{ fontSize: 13, color: "var(--gold)" }}>Province not set</span>}
+                            : <span className="pc-chip" data-province-unset style={{ "--c": "var(--gold)" }}><Svg d={I.pin} s={13} />Province not set</span>}
                     </div>
                 </div>
                 <div className="pc-tabs" role="tablist" aria-label="Profile sections">
@@ -292,6 +303,7 @@ const ModProfile = () => {
                                                 </span>
                                             ) : (
                                                 <input className="pc-input" type={r.type || "text"} value={draft} autoFocus aria-label={r.k}
+                                                    placeholder={r.key === "phone" ? "+92 300 1234567" : r.key === "full_name" ? "As on your CNIC" : undefined}
                                                     onChange={e => setDraft(e.target.value)}
                                                     onKeyDown={e => { if (e.key === "Enter") saveField(r.key, draft); if (e.key === "Escape") setEditing(null); }} />
                                             )}
@@ -305,11 +317,11 @@ const ModProfile = () => {
                                     <span className="pc-act">
                                         {editing === r.key ? (<>
                                             <button type="button" className="pc-btn go" disabled={saving || (r.key === "province" && !draft)} onClick={() => saveField(r.key, draft)}>{saving ? "Saving…" : "Save"}</button>
-                                            <button type="button" className="pc-btn" style={{ "--a": "var(--muted)" }} onClick={() => setEditing(null)}>Cancel</button>
+                                            <button type="button" className="pc-btn nt" onClick={() => setEditing(null)}>Cancel</button>
                                         </>) : r.key === "email" ? (
                                             <button type="button" className="pc-btn" style={{ "--a": "#6addeb" }} onClick={() => setTab("security")}>Manage</button>
                                         ) : r.v ? (
-                                            <button type="button" className="pc-btn" style={{ "--a": "var(--muted)" }} onClick={() => startEdit(r.key)}><Svg d={I.pen} s={13} w={2.2} />Edit</button>
+                                            <button type="button" className="pc-btn nt" onClick={() => startEdit(r.key)}><Svg d={I.pen} s={13} w={2.2} />Edit</button>
                                         ) : (
                                             <button type="button" className="pc-btn" style={{ "--a": "var(--brand-text)" }} onClick={() => startEdit(r.key)}>+ Add</button>
                                         )}
@@ -351,19 +363,28 @@ const ModProfile = () => {
                                     <div style={{ fontSize: 12.5, color: "var(--muted)" }}>{done} of {checklist.length} done{missing ? " · takes a minute" : ""}</div>
                                 </div>
                             </div>
-                            <div className="pc-checklist">
-                                {checklist.map(([key, label, ok]) => (
-                                    <div key={key} className="pc-check-row" data-ok={ok ? "" : undefined}>
-                                        <span className="tick" aria-hidden="true">{ok && <Svg d={I.check} s={11} w={3} />}</span>
-                                        <span style={{ flex: 1, textTransform: "capitalize" }}>{label.replace(/^(your|a|an) /, "")}</span>
-                                        {!ok && key !== "email" && <button type="button" className="pc-link" onClick={() => startEdit(key)}>Add</button>}
-                                    </div>
-                                ))}
-                            </div>
-                            {missing && missing[0] !== "email" && (
-                                <button type="button" className="pc-cta" onClick={() => startEdit(missing[0])}>
-                                    Add {missing[1].replace(/^(your|a|an) /, "")} <span aria-hidden="true">→</span>
-                                </button>
+                            {/* Done items as small chips; only what is missing gets a row,
+                                in gold, with its own Add (canvas ProfileA, 2026-11-25). */}
+                            {done > 0 && (
+                                <div className="pc-done" data-profile-done>
+                                    {checklist.filter(c => c[2]).map(([key, label]) => (
+                                        <span key={key}><Svg d={I.check} s={12} w={3} /><span style={{ textTransform: "capitalize", background: "none", padding: 0, height: "auto" }}>{label.replace(/^(your|a|an) /, "")}</span></span>
+                                    ))}
+                                </div>
+                            )}
+                            {missing && (
+                                <div className="pc-checklist">
+                                    {checklist.filter(c => !c[2]).map(([key, label]) => (
+                                        <div key={key} className="pc-todo" data-profile-todo={key}>
+                                            <span className="ic" aria-hidden="true"><Svg d={TODO_ICON[key] || I.user} s={18} /></span>
+                                            <span style={{ flex: 1, minWidth: 0 }}>
+                                                <b style={{ textTransform: "capitalize" }}>{label.replace(/^(your|a|an) /, "")}</b>
+                                                <small>{TODO_WHY[key]}</small>
+                                            </span>
+                                            {key !== "email" && <button type="button" className="pc-btn gd" onClick={() => startEdit(key)}>Add</button>}
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </section>
 

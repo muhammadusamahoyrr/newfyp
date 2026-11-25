@@ -147,8 +147,9 @@ const NAV_SECTIONS = [
             // Document review requests (Phase 2). Listed only while the server
             // has DOCUMENT_REVIEW_REQUESTS on -- see `reviewQueueOn`.
             { id: "review-queue", label: "Review Queue", icon: "checkSquare", requires: "reviewQueue" },
-            // HIDDEN 2026-10-19 at the user's request (see HIDDEN_PAGES in App.jsx).
-            // { id: "agreements", label: "Agreements", icon: "fileText" },
+            // Hidden 2026-10-19, restored 2026-11-25 so a lawyer can sign what a
+            // client sends them.
+            { id: "agreements", label: "Agreements", icon: "fileText" },
         ],
     },
     {

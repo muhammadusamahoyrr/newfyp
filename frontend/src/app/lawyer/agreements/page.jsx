@@ -1,7 +1,6 @@
-import { redirect } from 'next/navigation';
+import App from '@/components/lawyer/App';
 
-// Agreements are hidden from lawyers for now (2026-10-19, user's request). The
-// page component is kept; to bring it back, render
-// <App initialPage="agreements" /> here again, restore the nav item in
-// components/lawyer/layout.jsx and take it out of HIDDEN_PAGES in App.jsx.
-export default function Page() { redirect('/lawyer'); }
+// Restored 2026-11-25. It had been hidden (2026-10-19), which left every
+// agreement sent to a lawyer unsignable: no page, no case-page view, and the
+// notification opened a case that does not show agreements.
+export default function Page() { return <App initialPage="agreements" />; }

@@ -12,6 +12,32 @@ import AgreementBody from "@/components/shared/AgreementBody.jsx";
 
 const PAGE_SIZE = 25;
 
+// WRITING AGREEMENTS IS OFF (2026-11-25). The page came back so a lawyer can
+// SIGN and DECLINE what a client sends them. Authoring is a separate product
+// decision, so "New agreement" stays hidden until it is made. A draft the
+// lawyer already has still opens in the composer.
+export const LAWYER_CAN_CREATE_AGREEMENTS = false;
+
+const OPEN_AGREEMENT_KEY = "attorney:lawyer-open-agreement";
+
+/* THE ADDRESS IS THE SOURCE OF TRUTH (2026-11-25), as on the client's
+ * Tracking page: an open agreement is /lawyer/agreements?agreement=<id>, so a
+ * refresh, a copied link and Back/Forward all reopen the same one.
+ * sessionStorage is only the hand-over for an in-app jump. */
+export function agreementParam() {
+    try { return new URLSearchParams(window.location.search).get("agreement"); } catch { return null; }
+}
+function writeAgreementParam(id, { replace = false } = {}) {
+    if (typeof window === "undefined" || agreementParam() === (id || null)) return;
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("agreement", id); else url.searchParams.delete("agreement");
+    const next = url.pathname + url.search + url.hash;
+    try {
+        if (replace) window.history.replaceState(window.history.state, "", next);
+        else window.history.pushState(window.history.state, "", next);
+    } catch { /* history unavailable */ }
+}
+
 const STATUS_LABEL = { pending: "Pending", executed: "Executed", cancelled: "Cancelled", draft: "Draft" };
 const STATUS_BADGE = { Pending: "warn", Executed: "success", Cancelled: "danger", Draft: "gray" };
 
@@ -122,6 +148,7 @@ export function AgreementsPage() {
      * The sign and decline panels are gated on `doc.body != null`, so a failed
      * fetch cannot leave somebody able to sign text they were never shown. */
     const openAgreement = useCallback(async (row) => {
+        writeAgreementParam(row.id);
         setActive(row);
         setSignSig({ method: "canvas", data: "" });
         setSignConsent(false);
@@ -144,6 +171,70 @@ export function AgreementsPage() {
                  eto: data.eto_classification, error: null });
     }, [user?.full_name]);
 
+    /* OPEN ONE AGREEMENT BY ID (2026-11-25): from a notification, or a link
+     * with ?agreement=. The list may not hold it (another page or filter), so
+     * it is fetched by id. The server decides whether this lawyer may see it;
+     * a refusal is said plainly, never shown as an empty screen. */
+    const [focusMissing, setFocusMissing] = useState(false);
+    // THE LAST AGREEMENT ASKED FOR IS THE ONLY ONE THAT MAY OPEN. Open A, then
+    // B before A answers: A's late answer must not open A under ?agreement=B,
+    // and a refused B must not leave A on screen behind "couldn't open".
+    const focusSeq = useRef(0);
+    const openById = useCallback(async (id) => {
+        if (!id) return;
+        const token = ++focusSeq.current;
+        setFocusMissing(false);
+        // Whatever was open goes NOW, before the new answer arrives.
+        openSeq.current += 1;
+        setActive(null); setDoc(null); setSignConsent(false); setDeclineOpen(false); setDeclineReason("");
+        // Written FIRST, so even an agreement that cannot be opened keeps its
+        // address (a refresh shows the same honest "couldn't open").
+        writeAgreementParam(id);
+        const { data, error } = await getAgreement(id);
+        if (token !== focusSeq.current) return;
+        if (error || !data) { setFocusMissing(true); return; }
+        const row = mapAgreement(data, user?._id);
+        // A draft opens in the composer, which has no address of its own.
+        if (row.isDraft) { writeAgreementParam(null, { replace: true }); setComposing(data); return; }
+        openAgreement(row);
+    }, [user?._id, openAgreement]);
+
+    // Closing without touching the address (Back already changed it).
+    const dropOpen = () => { focusSeq.current += 1; openSeq.current += 1; setActive(null); setDoc(null); setSignConsent(false); setDeclineOpen(false); setDeclineReason(""); };
+    const activeRef = useRef(null);
+    activeRef.current = active;
+
+    const myId = user?._id;
+    useEffect(() => {
+        if (!myId) return undefined;
+        // The address first; the hand-over only when the address has none,
+        // and then the address is written so a refresh keeps it.
+        let pending = agreementParam();
+        try {
+            const handed = sessionStorage.getItem(OPEN_AGREEMENT_KEY);
+            sessionStorage.removeItem(OPEN_AGREEMENT_KEY);
+            if (!pending && handed) { pending = handed; writeAgreementParam(handed, { replace: true }); }
+        } catch { /* storage off */ }
+        if (pending) openById(pending);
+        const onOpen = (ev) => {
+            try { sessionStorage.removeItem(OPEN_AGREEMENT_KEY); } catch { /* storage off */ }
+            openById(ev.detail);
+        };
+        // Back / Forward: open what the address names, or close.
+        const onPop = () => {
+            const id = agreementParam();
+            if (id) { if (activeRef.current?.id !== id) openById(id); }
+            else { setFocusMissing(false); if (activeRef.current) dropOpen(); }
+        };
+        window.addEventListener("attorney:open-agreement", onOpen);
+        window.addEventListener("popstate", onPop);
+        return () => {
+            window.removeEventListener("attorney:open-agreement", onOpen);
+            window.removeEventListener("popstate", onPop);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [myId]);
+
     const doSign = async () => {
         if (!signSig.data) {
             showToast("⚠️ Add your signature first — draw, type or upload");
@@ -159,6 +250,7 @@ export function AgreementsPage() {
         setBusy(false);
         if (error) { showToast("❌ " + (error.message || "Failed to sign")); return; }
         showToast(data?.status === "executed" ? "🎉 Agreement fully executed — all parties notified" : "✅ Signed — awaiting the other parties");
+        writeAgreementParam(null, { replace: true });
         setActive(null);
         reload();
     };
@@ -169,6 +261,7 @@ export function AgreementsPage() {
         setBusy(false);
         if (error) { showToast("❌ " + (error.message || "Failed to decline")); return; }
         showToast("Agreement declined — the other party has been notified");
+        writeAgreementParam(null, { replace: true });
         setActive(null);
         setDeclineOpen(false);
         setDeclineReason("");
@@ -183,7 +276,7 @@ export function AgreementsPage() {
         showToast("⬇ Downloaded");
     };
 
-    const closeModal = () => { openSeq.current += 1; setActive(null); setDoc(null); setSignConsent(false); setDeclineOpen(false); setDeclineReason(""); };
+    const closeModal = () => { writeAgreementParam(null); focusSeq.current += 1; openSeq.current += 1; setActive(null); setDoc(null); setSignConsent(false); setDeclineOpen(false); setDeclineReason(""); };
 
     const changeFilter = (next) => {
         // ONE place, because resetting the page is not optional: keeping page
@@ -206,8 +299,22 @@ export function AgreementsPage() {
                         Contracts and legacy engagement letters — signed electronically under ETO 2002
                     </div>
                 </div>
-                <Btn variant="primary" onClick={() => setComposing("new")}>+ New agreement</Btn>
+                {LAWYER_CAN_CREATE_AGREEMENTS && (
+                    <Btn variant="primary" onClick={() => setComposing("new")}>+ New agreement</Btn>
+                )}
             </div>
+
+            {focusMissing && (
+                <div role="alert" data-agreement-missing style={{
+                    display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12,
+                    background: `${T.warn}14`, border: `1px solid ${T.warn}55`, color: T.text, fontSize: 13,
+                }}>
+                    <span style={{ flex: 1 }}>
+                        We couldn&rsquo;t open that agreement. It may have been removed, or you may no longer have access to it.
+                    </span>
+                    <Btn variant="secondary" size="sm" onClick={() => { setFocusMissing(false); writeAgreementParam(null, { replace: true }); }}>Dismiss</Btn>
+                </div>
+            )}
 
             {/* Stats */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
@@ -255,12 +362,14 @@ export function AgreementsPage() {
                     <div style={{ padding: 40, textAlign: "center" }}>
                         <div style={{ fontSize: 32, marginBottom: 10 }}>📜</div>
                         <div style={{ fontSize: 14, color: T.textMuted }}>
-                            No agreements yet. Write one with &ldquo;New agreement&rdquo;; agreements
-                            shared with you appear here too.
+                            {LAWYER_CAN_CREATE_AGREEMENTS
+                                ? <>No agreements yet. Write one with &ldquo;New agreement&rdquo;; agreements shared with you appear here too.</>
+                                : <>No agreements yet. When a client sends you an agreement to sign, it appears here.</>}
                         </div>
                     </div>
                 ) : items.map((a, i) => (
                     <div key={a.id} onClick={() => {
+                        focusSeq.current += 1; setFocusMissing(false);
                         if (a.isDraft) { setComposing(a.raw); return; }
                         openAgreement(a);
                     }} style={{

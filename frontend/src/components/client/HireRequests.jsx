@@ -27,7 +27,7 @@ const ENDED_ENG = ["declined", "cancelled", "completed", "terminated"];
 const FEE_SUFFIX = { hourly: "/hr", per_hearing: "/hearing" };
 const ENG_BADGE = {
     requested:      { label: "Pending",        color: "#EF9F27" },
-    terms_proposed: { label: "Terms received", color: "#3B82F6" },
+    terms_proposed: { label: "Terms received", color: "var(--gold, #F2C35E)" },
     accepted:       { label: "Engaged",        color: "#1D9E75" },
     completed:      { label: "Completed",      color: "#6B7280" },
     terminated:     { label: "Ended",          color: "#9CA3AF" },
@@ -57,11 +57,22 @@ export const endedText = (e) => {
 };
 
 // Readable, finger-sized actions (2026-11-23: they were 11px chips).
+// One size for every action and the status chip beside them (2026-11-25),
+// and a colour that says what the button does: go ahead = brand gradient,
+// say no / end = danger, everything else = a quiet outline.
 const engBtn = (t) => ({
     fontSize: 13, fontWeight: 700, color: t.textMuted, background: "none",
-    border: `1px solid ${t.border}`, borderRadius: 999, height: 34, padding: "0 14px",
+    border: `1px solid ${t.border}`, borderRadius: 999, height: 36, minWidth: 128, padding: "0 16px",
+    display: "inline-flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box",
     cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
 });
+const engGo = (t) => ({ ...engBtn(t), border: 0, color: "var(--on-brand, #04212A)",
+    background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))" });
+const engStop = (t) => ({ ...engBtn(t), color: "var(--danger, #FF8A80)", background: "var(--danger-soft, rgba(255,138,128,.14))",
+    border: "1px solid color-mix(in srgb, var(--danger, #FF8A80) 45%, transparent)" });
+const engChip = (color) => ({ display: "inline-flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box",
+    height: 36, minWidth: 128, padding: "0 14px", borderRadius: 999, flexShrink: 0, whiteSpace: "nowrap",
+    fontSize: 13, fontWeight: 700, color, background: `color-mix(in srgb, ${color} 14%, transparent)` });
 
 /* The note asked for before declining terms, ending or completing an
  * engagement (2026-11-23). These used to be browser prompts: unstyled, easy
@@ -303,15 +314,14 @@ export default function HireRequests({ caseId = null, focusEngagementId = null }
                                 </div>
                             )}
                         </div>
-                        <span style={{ fontSize: 13.5, fontWeight: 700, color: badge.color, background: `${badge.color}18`, borderRadius: 20, padding: "4px 12px", flexShrink: 0 }}>{badge.label}</span>
+                        <span data-eng-badge style={engChip(badge.color)}>{badge.label}</span>
                         {e.status === "requested" && (
-                            <button onClick={() => withdrawRequest(e.id)} disabled={engBusy === e.id} style={engBtn(t)}>Withdraw</button>
+                            <button onClick={() => withdrawRequest(e.id)} disabled={engBusy === e.id} style={engStop(t)}>Withdraw</button>
                         )}
                         {e.status === "terms_proposed" && (
                             <>
-                                <button onClick={() => declineTerms(e)} disabled={engBusy === e.id} style={engBtn(t)}>Decline</button>
-                                <button onClick={() => acceptTerms(e)} disabled={engBusy === e.id}
-                                    style={{ ...engBtn(t), color: onPrimaryInk(t), background: t.primary, border: `1px solid ${t.primary}` }}>
+                                <button data-eng-decline onClick={() => declineTerms(e)} disabled={engBusy === e.id} style={engStop(t)}>Decline</button>
+                                <button data-eng-accept onClick={() => acceptTerms(e)} disabled={engBusy === e.id} style={engGo(t)}>
                                     {engBusy === e.id ? "Accepting…" : "Accept terms"}
                                 </button>
                             </>
@@ -321,8 +331,7 @@ export default function HireRequests({ caseId = null, focusEngagementId = null }
                                 <button onClick={() => markComplete(e)} disabled={engBusy === e.id} style={engBtn(t)}>
                                     {e.completion_proposed_by === "lawyer" ? "Confirm complete" : "Mark complete"}
                                 </button>
-                                <button onClick={() => endEngagement(e)} disabled={engBusy === e.id}
-                                    style={{ ...engBtn(t), color: "#B91C1C", borderColor: "#FCA5A5" }}>
+                                <button onClick={() => endEngagement(e)} disabled={engBusy === e.id} style={engStop(t)}>
                                     End engagement
                                 </button>
                             </>

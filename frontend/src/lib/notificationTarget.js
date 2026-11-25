@@ -57,10 +57,14 @@ export function lawyerNotificationTarget(type, payload = {}) {
     if (t.startsWith("review_request_")) return { page: "review-queue", caseId: null };
     // Quick review requests are answered from the Document review inbox.
     if (t.startsWith("quick_review_")) return { page: "documents", caseId: null };
-    // The Agreements and Payments pages are hidden from the lawyer UI
-    // (App.jsx HIDDEN_PAGES), so routing there landed on the dashboard. Open
-    // the case the notice is about instead; with no case, stay put.
-    if (t.startsWith("agreement_") || t.startsWith("payment_")) {
+    // An agreement opens THAT agreement on Agreements (restored 2026-11-25):
+    // the case page shows no agreements, so it was a dead end for signing.
+    if (t.startsWith("agreement_")) {
+        return { page: "agreements", caseId: null, agreementId: idOf(payload?.agreement_id) };
+    }
+    // Payments is still hidden from the lawyer UI (App.jsx HIDDEN_PAGES).
+    // Open the case the notice is about instead; with no case, stay put.
+    if (t.startsWith("payment_")) {
         return caseId ? { page: "cases", caseId } : null;
     }
     if (t.startsWith("dispute_")) return { page: "overseas-disputes", caseId: null };
@@ -73,13 +77,15 @@ export function lawyerNotificationTarget(type, payload = {}) {
  *  plus `&engagement=…` to open and highlight one hire request. With no case
  *  id it opens My Matters without choosing one. Tabs: summary, timeline,
  *  documents, messages, payments; `&payment=…` opens and highlights one fee. */
-export function matterHref(caseId, { tab = "summary", engagement = null, payment = null, document = null } = {}) {
+export function matterHref(caseId, { tab = "summary", engagement = null, payment = null, document = null, agreement = null } = {}) {
     const q = new URLSearchParams();
     if (caseId) q.set("case", String(caseId));
     if (tab) q.set("tab", tab);
     if (engagement) q.set("engagement", String(engagement));
     if (payment) q.set("payment", String(payment));
     if (document) q.set("document", String(document));
+    // One agreement on the matter's Documents tab, highlighted (2026-11-25).
+    if (agreement) q.set("agreement", String(agreement));
     const s = q.toString();
     return s ? `/tracking?${s}` : "/tracking";
 }

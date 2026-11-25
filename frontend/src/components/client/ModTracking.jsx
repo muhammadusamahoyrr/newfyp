@@ -10,7 +10,7 @@ import { PreJoinModal } from "@/components/shared/PreJoin.jsx";
 import ReviewLawyerDialog from "./ReviewLawyerDialog.jsx";
 import HireDialog from "./HireDialog.jsx";
 import HireRequests, { feeLabel } from "./HireRequests.jsx";
-import { caseHero, pickEngagement, stageWindow } from "@/lib/caseHero.js";
+import { caseHero, pickEngagement, stageWindow, journeyStages } from "@/lib/caseHero.js";
 import { appointmentTodos, caseTodos } from "@/lib/caseTodos.js";
 import { caseUpdates, groupByDay, caseDetails } from "@/lib/caseUpdates.js";
 import { getReviewEligibility, errorCode } from "@/lib/api.js";
@@ -35,6 +35,8 @@ import { useAuth } from "@/context/AuthContext.jsx";
 import { requestDocumentsView } from "@/lib/documentsNav.js";
 import { AppointmentThread } from "@/components/shared/AppointmentThread.jsx";
 import { documentStatusView } from "@/lib/documentStatus.js";
+import { useAgreementBuilderOn } from "./useAgreementBuilder.js";
+import { shortMatterTitle, fullMatterTitle, matterLabel } from "@/lib/matterTitle.js";
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
 // Nothing is hardcoded here on purpose. This block used to hold five arrays of
@@ -251,7 +253,8 @@ const CASE_TABS = [
     { key: "payments", label: "Payments" },
 ];
 
-const caseLabel = c => (c?.caseNumber ? `${c.title} · ${c.caseNumber}` : c?.title || "Case");
+// Short title (an old matter's title is the whole intake question) + number.
+const caseLabel = c => (c ? matterLabel(c.title, c.caseNumber, 60) : "Case");
 
 function CaseBar({ t, page, onNavigate, activeCase, cases, onCaseSwitch, onMatters = null }) {
     const [open, setOpen] = useState(false);
@@ -271,12 +274,15 @@ function CaseBar({ t, page, onNavigate, activeCase, cases, onCaseSwitch, onMatte
                 <BackToMatters t={t} onClick={onMatters} />
                 {activeCase && (<>
                     <span aria-hidden="true">/</span>
-                    <b data-case-bar-title style={{ color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 420 }}>{activeCase.title}</b>
+                    <b data-case-bar-title title={fullMatterTitle(activeCase.title)} style={{ color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 420 }}>
+                        {shortMatterTitle(activeCase.title, 48)}
+                    </b>
+                    {activeCase.caseNumber && <span data-case-bar-number style={{ whiteSpace: "nowrap", color: t.textMuted }}>· {activeCase.caseNumber}</span>}
                 </>)}
                 {others.length > 0 && (
                     <button type="button" aria-haspopup="menu" aria-expanded={open} data-case-switch onClick={() => setOpen(v => !v)}
                         style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 28, padding: "0 10px", borderRadius: 999,
-                            border: `1px solid ${t.border}`, background: "transparent", color: t.textMuted, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+                            ...NEUTRAL_FILL, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
                         Switch
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                     </button>
@@ -285,9 +291,10 @@ function CaseBar({ t, page, onNavigate, activeCase, cases, onCaseSwitch, onMatte
                     <div role="menu" aria-label="Your other cases" style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, minWidth: 300, zIndex: 50,
                         background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, boxShadow: t.shadowHover, padding: 6 }}>
                         {others.map(c => (
-                            <button key={c.id} type="button" role="menuitem" data-case-option={c.id}
+                            <button key={c.id} type="button" role="menuitem" data-case-option={c.id} title={fullMatterTitle(c.title)}
                                 onClick={() => { setOpen(false); onCaseSwitch(c.id); }}
-                                style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", borderRadius: 10, border: 0,
+                                style={{ display: "block", width: "100%", maxWidth: 420, textAlign: "left", padding: "9px 12px", borderRadius: 10, border: 0,
+                                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                                     background: "transparent", color: t.text, cursor: "pointer", fontSize: 13.5, fontWeight: 600 }}
                                 onMouseEnter={e => { e.currentTarget.style.background = t.cardHi; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
@@ -437,7 +444,11 @@ function CheckFailed({ t, what, onRetry, children }) {
 function CaseStatusHero({ t, activeCase, hearings = [], steps = [], engagements = [], engagementState = "ready", onAction }) {
     const engagement = pickEngagement(engagements, activeCase.id);
     const hero = caseHero({ caseInfo: activeCase, nextHearing: nextHearingOf(hearings), engagement, feeText: engagement ? feeLabel(engagement) : "", engagementState });
-    const stages = stageWindow(steps);
+    // The lawyer's own milestones when there are any; otherwise the case's
+    // journey from real facts (as the approved preview draws it), never blank.
+    const fromMilestones = stageWindow(steps);
+    const stages = fromMilestones.length ? fromMilestones
+        : journeyStages({ caseInfo: activeCase, engagement, nextHearing: nextHearingOf(hearings), hadHearing: hearings.length > 0 });
     const warn = hero.tone === "warn";
     const pill = warn ? { bg: `${t.warn}22`, ink: t.warn } : hero.tone === "muted" ? { bg: t.cardHi, ink: t.textMuted } : { bg: t.primaryGlow2, ink: t.primary };
     const meta = [activeCase.type && activeCase.type.charAt(0).toUpperCase() + activeCase.type.slice(1), activeCase.caseNumber].filter(Boolean).join(" · ");
@@ -445,7 +456,7 @@ function CaseStatusHero({ t, activeCase, hearings = [], steps = [], engagements 
         border: `1px solid ${t.primary}73`, background: "transparent", color: t.primary, fontWeight: 700, fontSize: 13, cursor: "pointer", textDecoration: "none" };
     const solid = { ...outline, border: 0, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" };
     const act = (a, primary = false) => (
-        <button key={a.label} type="button" data-hero-action={a.action} onClick={() => onAction(a.action, engagement)} style={primary ? solid : outline}>{a.label}</button>
+        <button key={a.label} type="button" data-hero-action={a.action} onClick={() => onAction(a.action, engagement)} style={primary ? solid : { ...outline, ...ON_TINT }}>{a.label}</button>
     );
     const p = hero.person;
     return (
@@ -499,6 +510,11 @@ function CaseStatusHero({ t, activeCase, hearings = [], steps = [], engagements 
             <aside aria-label={p.label} data-hero-person style={{ padding: "18px 18px", borderLeft: `1px solid ${t.border}`,
                 // The theme's own soft brand tint over the card: right in Light, System and Dark alike.
                 background: "var(--brand-soft, rgba(62,224,161,.13))", display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 }}>
+                {p.waiting && (
+                    <span data-person-waiting style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 10px", borderRadius: 999,
+                        fontSize: 12, fontWeight: 800, background: `${t.warn}22`, color: t.warn }}>
+                        <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor" }} />Waiting on you</span>
+                )}
                 <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: t.textMuted }}>{p.label}</div>
                 {p.name && (
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -508,9 +524,12 @@ function CaseStatusHero({ t, activeCase, hearings = [], steps = [], engagements 
                     </div>
                 )}
                 <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.45 }}>{p.sub}</div>
+                {p.note && <div data-person-note style={{ fontSize: 13, color: t.text, lineHeight: 1.45 }}>{p.note}</div>}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
-                    {p.actions.map(a => (
-                        <button key={a.label} type="button" data-person-action={a.action} onClick={() => onAction(a.action, engagement)} style={{ ...outline, flex: "1 1 auto", height: 34, fontSize: 12.5, padding: "0 12px", whiteSpace: "nowrap" }}>{a.label}</button>
+                    {p.actions.map((a, i) => (
+                        // The step waiting on the client is the card's one solid button (2026-11-25).
+                        <button key={a.label} type="button" data-person-action={a.action} onClick={() => onAction(a.action, engagement)}
+                            style={{ ...(p.waiting && i === 0 ? solid : { ...outline, ...ON_TINT }), flex: "1 1 auto", height: 36, fontSize: 13, padding: "0 12px", whiteSpace: "nowrap" }}>{a.label}</button>
                     ))}
                 </div>
             </aside>
@@ -561,10 +580,15 @@ function CaseTodos({ t, caseId, sources, userId = null, onAction }) {
     // sources: { name: { data, state, reload } } for hire requests, fees, meeting times, documents.
     const get = k => sources[k] || { data: [], state: "ready", reload: () => {} };
     const engagement = pickEngagement(get("hire requests").data, caseId);
-    const items = caseTodos({ caseId, engagement, feeText: engagement ? feeLabel(engagement) : "",
+    const all = caseTodos({ caseId, engagement, feeText: engagement ? feeLabel(engagement) : "",
         payments: get("fees").data, proposals: get("meeting times").data, appointments: get("appointments").data,
         docs: get("documents").data,
         agreements: get("agreements").data, userId });
+    // The hire request's own step (answer the terms, confirm the work is
+    // finished) is already the status card's headline, button and lawyer
+    // panel: a second card for it was the same action twice (2026-11-25).
+    const inHero = all.some(td => td.action === "engagement");
+    const items = all.filter(td => td.action !== "engagement").map((td, i) => ({ ...td, primary: i === 0 }));
     const failed = Object.keys(sources).filter(k => sources[k].state === "error");
     const loading = Object.keys(sources).some(k => sources[k].state === "loading");
     const status = failed.length ? "error" : loading ? "loading" : "ready";
@@ -572,6 +596,7 @@ function CaseTodos({ t, caseId, sources, userId = null, onAction }) {
     const outline = { display: "inline-flex", alignItems: "center", height: 36, padding: "0 16px", borderRadius: 999, cursor: "pointer",
         border: `1px solid ${t.primary}73`, background: "transparent", color: t.primary, fontWeight: 700, fontSize: 13 };
     const solid = { ...outline, border: 0, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" };
+    const second = { ...outline, ...ON_TINT };   // the other to-dos: teal outline (colour roles)
     return (
         <section aria-label="Your to-do" data-case-todos={items.length} data-todos-state={status} style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
@@ -580,7 +605,8 @@ function CaseTodos({ t, caseId, sources, userId = null, onAction }) {
                     {status === "loading" ? `${items.length} found so far · Still checking…` : `${items.length} waiting on you`}</span>}
                 {status === "error" && <CheckFailed t={t} what={andList(failed)} onRetry={() => failed.forEach(k => sources[k].reload())} />}
                 {status === "loading" && !items.length && <span style={{ fontSize: 13, color: t.textMuted }}>Checking what's waiting on you…</span>}
-                {status === "ready" && !items.length && <span style={{ fontSize: 13, color: t.textMuted }}>Nothing is waiting on you right now.</span>}
+                {status === "ready" && !items.length && <span style={{ fontSize: 13, color: t.textMuted }}>
+                    {inHero ? "Nothing else is waiting on you — the lawyer's request is in the card above." : "Nothing is waiting on you right now."}</span>}
                 {items.length > 3 && <button type="button" data-toggle-all-todos onClick={() => setShowAll(v => !v)}
                     style={{ border: 0, background: "none", padding: 0, cursor: "pointer", color: t.primary, fontSize: 13, fontWeight: 700 }}>
                     {showAll ? "Show fewer" : `Show all ${items.length}`}
@@ -598,7 +624,7 @@ function CaseTodos({ t, caseId, sources, userId = null, onAction }) {
                                 <span style={{ fontSize: 13, color: t.textMuted }}>{td.sub}</span>
                             </div>
                             <button type="button" onClick={() => onAction(td.action, td.action === "engagement" ? engagement : td)}
-                                style={{ ...(td.primary ? solid : outline), marginTop: "auto", alignSelf: "flex-start" }}>{td.cta}</button>
+                                style={{ ...(td.primary ? solid : second), marginTop: "auto", alignSelf: "flex-start" }}>{td.cta}</button>
                         </article>
                     ))}
                 </div>
@@ -717,8 +743,50 @@ function CaseDetails({ t, groups, onTab }) {
 // same sentence as its status card), its steps, its lawyer, and what is
 // waiting on the client. Replaces the case dropdown that named cases by their
 // database id, and the silent "open the newest case" on /tracking.
-function MyMatters({ t, cases, casesState, onRetry, onOpen, onOpenAppointment, onAllPayments = null }) {
+const MATTER_CLOSED = new Set(["closed", "dismissed", "completed", "withdrawn"]);
+
+/* My matters text colours, option A (canvas board InkA, 2026-11-25): only the
+ * headline is full white; the title, details and stage step down in calm greys,
+ * and the side label takes the brand tint. Theme variables, so Light works. */
+const INK = {
+    title: "color-mix(in srgb, var(--ink, #F1F5F6) 82%, var(--muted, #BFCACC))",
+    meta: "var(--faint, #93A4A8)",
+    stage: "var(--muted, #BFCACC)",
+    label: "var(--brand-text, #5EE6B0)",
+};
+
+/* An outlined button that sits ON a brand-tinted panel (My matters' side
+ * panel, the case card's lawyer panel). Transparent, it took the panel's own
+ * tint and vanished into it (2026-11-25): it gets the deeper surface behind
+ * it, so it reads as a button in Light and Dark alike. */
+const ON_TINT = {
+    background: "var(--surface-2, #0F2429)",
+    border: "1px solid color-mix(in srgb, var(--teal-ink, #6ADDEB) 55%, transparent)",
+    color: "var(--teal-ink, #6ADDEB)",
+};
+/* Colour roles (2026-11-25, canvas board TealMatters): mint gradient = the one
+ * main action; teal outline (ON_TINT) = open / go somewhere / a second action;
+ * gold = waiting on you; red = decline / remove. */
+const TEAL_INK = "var(--teal-ink, #6ADDEB)";
+/* Teal filled (My matters' Open case, 2026-11-25) and the soft "tonal" fills
+ * for a row's main action (canvas DocButtons option 1). */
+// Option 6 of the gradient board (user's pick, 2026-11-25): cyan with a soft
+// top shine. Dark text on it reads in Dark and Light alike.
+const TEAL_SOLID = { background: "linear-gradient(180deg, #8AE7F2 0%, #5BCFE2 55%, #3FBFD6 100%)", border: 0, color: "#04212A",
+    boxShadow: "0 8px 18px -12px rgba(0,0,0,.7)" };
+const TEAL_TONAL = { background: "color-mix(in srgb, var(--teal-ink, #6ADDEB) 16%, transparent)", border: 0, color: TEAL_INK };
+const MINT_TONAL = { background: "color-mix(in srgb, var(--brand-text, #5EE6B0) 16%, transparent)", border: 0, color: "var(--brand-text, #5EE6B0)" };
+/* No transparent buttons in the matter flow (user, 2026-11-25): on the dark
+ * theme a border-only button has the page's own colour and does not read as a
+ * button. Anything that is not the main action or a teal one is NEUTRAL: a
+ * light fill of the text colour over the card, visible in Dark and Light. */
+const NEUTRAL_FILL = { background: "color-mix(in srgb, var(--ink, #F1F5F6) 11%, var(--surface, #183840))",
+    border: "1px solid color-mix(in srgb, var(--ink, #F1F5F6) 16%, transparent)", color: "var(--ink, #F1F5F6)" };
+const SR_ONLY = { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap" };
+
+function MyMatters({ t, cases, drafts = [], casesState, onRetry, onOpen, onOpenAppointment, onAllPayments = null }) {
     const engagements = useEngagements();
+    const [showClosed, setShowClosed] = useState(false);
     const payments = useSource(() => Promise.resolve(listPayments()).then(listOf), []);
     const proposals = useSource(() => Promise.resolve(listMeetingProposals({ status: "open", all: true })).then(listOf), []);
     // The client's actionable documents across cases, so one sent back or
@@ -749,7 +817,11 @@ function MyMatters({ t, cases, casesState, onRetry, onOpen, onOpenAppointment, o
         return { c, engagement, hero, todos };
     });
     // What waits on the client comes first; otherwise the server's order (newest).
-    const ordered = [...rows.filter(r => r.todos.length), ...rows.filter(r => !r.todos.length)];
+    // Closed matters fold away under "Closed matters (n)" (2026-11-25, as the preview).
+    const isClosed = r => MATTER_CLOSED.has(String(r.c.status || ""));
+    const live = rows.filter(r => !isClosed(r));
+    const closedRows = rows.filter(isClosed);
+    const ordered = [...live.filter(r => r.todos.length), ...live.filter(r => !r.todos.length)];
     // Initial consultations may intentionally have no case. They still need a
     // visible home here or the cross-matter summary can claim there is nothing
     // waiting while Appointments is asking the client to choose a time.
@@ -757,7 +829,7 @@ function MyMatters({ t, cases, casesState, onRetry, onOpen, onOpenAppointment, o
     const waiting = rows.reduce((n, r) => n + r.todos.length, 0) + otherActions.length;
     const solid = { display: "inline-flex", alignItems: "center", justifyContent: "center", height: 38, padding: "0 18px", borderRadius: 999, border: 0, cursor: "pointer",
         fontWeight: 700, fontSize: 13.5, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)", textDecoration: "none" };
-    const outline = { ...solid, background: "transparent", border: `1px solid ${t.primary}73`, color: t.primary };
+    const outline = { ...solid, ...TEAL_TONAL };
     return (
         <div data-my-matters>
             <header style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginBottom: 20 }}>
@@ -773,7 +845,7 @@ function MyMatters({ t, cases, casesState, onRetry, onOpen, onOpenAppointment, o
                     </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {onAllPayments && <button type="button" data-open-all-payments onClick={onAllPayments} style={outline}>All my payments</button>}
+                    {onAllPayments && <button type="button" data-open-all-payments onClick={onAllPayments} style={{ ...outline, ...ON_TINT }}>All my payments</button>}
                     <a href="/intake" style={solid}>+ Start a new matter</a>
                 </div>
             </header>
@@ -785,7 +857,7 @@ function MyMatters({ t, cases, casesState, onRetry, onOpen, onOpenAppointment, o
                     <button type="button" onClick={onRetry} style={outline}>Try again</button>
                 </div>
             )}
-            {casesState === "ready" && !cases.length && (
+            {casesState === "ready" && !cases.length && !drafts.length && (
                 <div data-matters-empty style={{ padding: "36px 24px", borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, textAlign: "center" }}>
                     <b style={{ display: "block", fontSize: 17, color: t.text }}>No matters yet</b>
                     <div style={{ fontSize: 13.5, color: t.textMuted, margin: "6px 0 14px" }}>Describe your problem in Legal Intake. Once you confirm it, it opens here as a case.</div>
@@ -813,46 +885,99 @@ function MyMatters({ t, cases, casesState, onRetry, onOpen, onOpenAppointment, o
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {ordered.map(({ c, engagement, hero, todos }) => {
+                {[...ordered, ...(showClosed ? closedRows : [])].map(({ c, engagement, hero, todos }, idx) => {
                     const first = todos[0] || null;
                     const lawyer = engagement?.status === "accepted" ? engagement.lawyer_name : null;
-                    const meta = [c.type && c.type.charAt(0).toUpperCase() + c.type.slice(1), c.caseNumber].filter(Boolean).join(" · ");
                     return (
                         <article key={c.id} data-matter={c.id} data-waiting={todos.length}
                             style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 240px", borderRadius: 20, background: t.card, overflow: "hidden",
                                 border: `1px solid ${todos.length ? `${t.warn}55` : t.border}` }}>
                             <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, color: t.textMuted }}>
-                                    <b style={{ color: t.text, fontSize: 14 }}>{c.title}</b>
-                                    {meta && <><span aria-hidden="true">·</span><span>{meta}</span></>}
-                                    <span style={{ display: "inline-flex", alignItems: "center", height: 22, padding: "0 9px", borderRadius: 999, fontSize: 11.5, fontWeight: 700,
-                                        background: t.cardHi, color: t.textMuted }}>{caseStatusLabel(c.status)}</span>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, color: INK.meta }}>
+                                    <b data-matter-title title={fullMatterTitle(c.title)} style={{ color: INK.title, fontSize: 14, minWidth: 0, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shortMatterTitle(c.title, 60)}</b>
+                                    {c.type && <><span aria-hidden="true">·</span><span>{c.type.charAt(0).toUpperCase() + c.type.slice(1)}</span></>}
+                                    {c.caseNumber && <><span aria-hidden="true">·</span><span data-matter-number style={{ color: TEAL_INK }}>{c.caseNumber}</span></>}
                                 </div>
                                 <h2 data-matter-headline style={{ margin: 0, font: "800 22px/1.2 Nunito, 'Hanken Grotesk', sans-serif", color: hero.tone === "muted" ? t.textMuted : t.text }}>{hero.headline}</h2>
-                                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", fontSize: 12.5, color: t.textMuted }}>
-                                    {c.total > 0 ? (<>
-                                        <span aria-hidden="true" style={{ display: "grid", gridTemplateColumns: `repeat(${c.total}, minmax(0, 1fr))`, gap: 4, width: Math.min(280, 36 * c.total) }}>
-                                            {Array.from({ length: c.total }, (_, i) => (
-                                                <span key={i} style={{ height: 6, borderRadius: 3, background: i < c.progress ? t.primary : t.border }} />
-                                            ))}
-                                        </span>
-                                        <span>{c.progress} of {c.total} steps done</span>
-                                    </>) : <span>No steps added yet</span>}
-                                    <span style={{ marginLeft: "auto" }}>{lawyer || (c.lawyerAssigned ? "Lawyer assigned" : "No lawyer yet")}</span>
+                                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", fontSize: 12.5, color: INK.stage }}>
+                                    {(() => {
+                                        // Every card reads the same way: the case's five-stage
+                                        // journey from real facts (2026-11-25). A lawyer's
+                                        // milestones ("1 of 1 steps done") counted something
+                                        // else on some cards only; they stay on the Timeline.
+                                        const j = journeyStages({ caseInfo: c, engagement, nextHearing: c.nextHearingRaw ? { date: c.nextHearingRaw } : null, hadHearing: !!c.nextHearingRaw });
+                                        const now = j.findIndex(st => st.state === "now");
+                                        return (<>
+                                            <span aria-hidden="true" data-matter-journey style={{ display: "grid", gridTemplateColumns: `repeat(${j.length}, minmax(0, 1fr))`, gap: 4, width: 280 }}>
+                                                {j.map((st, i) => (
+                                                    <span key={i} data-seg={st.state} style={{ height: 6, borderRadius: 3, background: st.state === "now" ? TEAL_INK : st.state === "done" ? t.primary : t.border }} />
+                                                ))}
+                                            </span>
+                                            <span data-matter-stage>{now === -1 ? `All ${j.length} stages done` : `Stage ${now + 1} of ${j.length} · ${j[now].title}`}</span>
+                                        </>);
+                                    })()}
+                                    <span data-matter-lawyer style={{ marginLeft: "auto", color: lawyer || c.lawyerAssigned ? INK.title : INK.meta }}>{lawyer || (c.lawyerAssigned ? "Lawyer assigned" : "No lawyer yet")}</span>
                                 </div>
                             </div>
-                            <div style={{ padding: 18, borderLeft: `1px solid ${t.border}`, background: t.cardHi, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
-                                <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: first ? t.warn : t.textMuted }}>
+                            {/* The same theme tint as the case page's status panel
+                                (decided 2026-11-23: cardHi clashed across themes). */}
+                            <div data-matter-side style={{ padding: 18, borderLeft: `1px solid ${t.border}`, background: "var(--brand-soft, rgba(62,224,161,.13))", display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
+                                <div data-matter-side-label style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: first ? t.warn : failed.length ? INK.meta : INK.label }}>
                                     {first ? `Waiting on you${todos.length > 1 ? ` · ${todos.length}` : ""}`
                                         : failed.length ? "Couldn't check" : checking ? "Checking…" : "Nothing waiting on you"}
                                 </div>
                                 {first && <b style={{ fontSize: 14.5, color: t.text, lineHeight: 1.3 }}>{first.title}</b>}
-                                <button type="button" data-open-matter={c.id} onClick={() => onOpen(c.id)} style={first ? solid : outline}>Open case</button>
+                                {first && (first.sub || first.chip) && (
+                                    <span data-matter-next-sub style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.35, marginTop: -4 }}>
+                                        {[first.sub, first.chip && first.chip !== "Waiting on you" ? first.chip : null].filter(Boolean).join(" · ")}
+                                    </span>
+                                )}
+                                <button type="button" data-open-matter={c.id}
+                                    onClick={() => (first?.action === "engagement" ? onOpen(c.id, { engagement: first.id }) : onOpen(c.id))}
+                                    /* ONE solid button on the page (as the preview): the top
+                                       card, and only when something waits on it. The rest
+                                       are outlined, so the eye lands on the most urgent. */
+                                    style={first && idx === 0 ? solid : { ...outline, ...TEAL_SOLID }}>{first?.action === "engagement" ? first.cta : "Open case"}</button>
                             </div>
                         </article>
                     );
                 })}
             </div>
+            {casesState === "ready" && drafts.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 14 }}>
+                    {drafts.map(d => (
+                        <article key={d.id} data-draft-matter={d.id}
+                            style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 240px", borderRadius: 20, background: t.card, overflow: "hidden", border: `1px solid ${t.border}` }}>
+                            <div style={{ padding: "18px 22px", display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, color: t.textMuted }}>
+                                    <b title={fullMatterTitle(d.title)} style={{ color: t.text, fontSize: 14, minWidth: 0, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shortMatterTitle(d.title, 60)}</b>
+                                    <span aria-hidden="true">·</span><span>{[d.type && d.type.charAt(0).toUpperCase() + d.type.slice(1), "draft"].filter(Boolean).join(" · ")}</span>
+                                </div>
+                                <h2 style={{ margin: 0, font: "800 22px/1.2 Nunito, 'Hanken Grotesk', sans-serif", color: t.textMuted }}>Not submitted yet</h2>
+                                <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 12.5, color: t.textMuted }}>
+                                    <span aria-hidden="true" style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 4, width: 280 }}>
+                                        {[0, 1, 2, 3, 4].map(i => <span key={i} style={{ height: 6, borderRadius: 3, background: t.border }} />)}
+                                    </span>
+                                    <span>Confirm it in Legal Intake to open it as a case</span>
+                                </div>
+                            </div>
+                            <div data-matter-side style={{ padding: 18, borderLeft: `1px solid ${t.border}`, background: "var(--brand-soft, rgba(62,224,161,.13))", display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
+                                <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted }}>Next step</div>
+                                <b style={{ fontSize: 14.5, color: t.text, lineHeight: 1.3 }}>Finish describing your problem</b>
+                                <a href="/intake" data-continue-intake style={{ ...outline, ...ON_TINT }}>Continue intake</a>
+                            </div>
+                        </article>
+                    ))}
+                </div>
+            )}
+            {casesState === "ready" && (cases.length > 0 || drafts.length > 0) && (
+                <button type="button" data-closed-matters aria-expanded={showClosed} disabled={!closedRows.length}
+                    onClick={() => setShowClosed(v => !v)}
+                    style={{ marginTop: 16, border: 0, background: "none", padding: 0, cursor: closedRows.length ? "pointer" : "default",
+                        fontSize: 13.5, fontWeight: 700, color: t.textMuted, fontFamily: "inherit", opacity: closedRows.length ? 1 : 0.7 }}>
+                    {showClosed ? "Hide closed matters" : `${closedRows.length ? "\u25B8 " : ""}Closed matters (${closedRows.length})`}
+                </button>
+            )}
         </div>
     );
 }
@@ -915,7 +1040,7 @@ function HearingUpdates({ hearings, caseTitle, court }) {
 
     return (
         <Card t={t} style={{ marginBottom: 16 }}>
-            <SH icon="🏛" title="Hearing Updates" desc="What happened at each court date — explained simply" t={t}
+            <SH title="Hearing Updates" desc="What happened at each court date — explained simply" t={t}
                 badge={
                     <button onClick={(e) => { e.stopPropagation(); setShowUrdu(u => !u); }} style={{
                         padding: "4px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer",
@@ -964,7 +1089,10 @@ function HearingUpdates({ hearings, caseTitle, court }) {
                             {showUrdu ? (h.outcome_meaning_ur || h.outcome_meaning || "") : (h.outcome_meaning || "")}
                         </div>
                         {h.outcome_note && (
-                            <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 3 }}>💬 Lawyer's note: {h.outcome_note}</div>
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12.5, color: t.textMuted, marginTop: 4 }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0, marginTop: 2 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                                <span>Lawyer&rsquo;s note: {h.outcome_note}</span>
+                            </div>
                         )}
                     </div>
                 ))}
@@ -1221,7 +1349,154 @@ const DOC_SORTS = {
 // sort from 2: a toolbar over nothing was most of the old screen.
 const DOC_TONE = t => ({ ok: t.primary, info: t.info || t.primary, warn: t.warn, danger: t.danger, muted: t.textMuted });
 
-function PageDocuments({ activeCaseId, focusDocumentId = null }) {
+/* "Agreements on this matter" (board 1, 2026-11-25). A SHORTCUT, not a second
+ * agreement system: it lists this matter's agreements (the server filters by
+ * case_id) and every Open goes to the one Agreements page. No viewer, signing
+ * or decline logic lives here.
+ *
+ * "New agreement" opens the builder FOR this matter (/agreements?case=…,
+ * board 2): its lawyer already a required signer. Shown only while the
+ * server's builder switch is on (GET /agreements/capabilities). */
+export const AGREEMENT_FROM_MATTER = true;
+
+const readCaseAgreements = async (caseId) => {
+    const out = [];
+    let page = 1, pages = 1;
+    do {
+        const r = await listAgreements({ page, page_size: 50, case_id: caseId });
+        out.push(...itemsOf(r));
+        pages = Number.isInteger(r.data?.pages) ? r.data.pages : 1;
+        page += 1;
+    } while (page <= pages);
+    return out;
+};
+
+/** How one agreement on the matter reads, in the app's own words. */
+export function matterAgreementView(a, myId = null) {
+    const parties = Array.isArray(a?.parties) ? a.parties : [];
+    const day = iso => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : null);
+    if (a?.status === "executed") return { tone: "ok", status: "Signed by everyone", sub: day(a.updated_at) ? `completed ${day(a.updated_at)}` : "" };
+    if (a?.status === "cancelled") {
+        const d = a.declined;
+        if (!d) return { tone: "bad", status: "Cancelled", sub: day(a.updated_at) || "" };
+        const mine = myId && d.by_user_id && String(d.by_user_id) === String(myId);
+        return { tone: "bad", status: mine ? "You declined it" : `Declined by ${d.by_name || "a party"}`, sub: day(d.at) || "", reason: d.reason || null };
+    }
+    const waiting = parties.filter(p => p && !p.signed);
+    const meWaiting = myId && waiting.some(p => String(p.user_id) === String(myId));
+    const total = a?.total_parties ?? parties.length;
+    const signed = a?.signed_count ?? parties.filter(p => p?.signed).length;
+    if (meWaiting) return { tone: "warn", status: "Waiting for your signature", sub: `${signed} of ${total} signed`, mine: true };
+    const names = waiting.map(p => p.full_name || p.email || "an invited signer");
+    return { tone: "warn", status: names.length ? `Waiting for ${andList(names)}` : "Waiting for signatures", sub: `${signed} of ${total} signed` };
+}
+
+function MatterAgreements({ caseId, focusAgreementId = null }) {
+    const t = useT();
+    const router = useClientRouter();
+    const myId = useMyId();
+    const src = useSource(() => (caseId ? readCaseAgreements(caseId) : []), [caseId]);
+    const engagements = useEngagements(caseId);
+    const builderOn = useAgreementBuilderOn();   // the server's switch
+    const { reload } = src;
+    // Live: a lawyer signing or declining shows here without a reload.
+    useEffect(() => onNotification(n => {
+        const type = String(n?.type || "");
+        const noticeCase = n?.payload?.case_id;
+        if (type.startsWith("agreement_") && (!noticeCase || String(noticeCase) === String(caseId))) reload();
+    }), [caseId, reload]);
+    // ?agreement=… (e.g. "Back to matter" after sending): bring THAT row into
+    // view once the list has it, the way ?document= does for files.
+    const focusRows = Array.isArray(src.data) ? src.data : [];
+    const focusFound = !!focusAgreementId && focusRows.some(a => String(a.id || a._id) === String(focusAgreementId));
+    useEffect(() => {
+        if (!focusFound) return;
+        const el = [...document.querySelectorAll("[data-matter-agreement]")]
+            .find(node => node.getAttribute("data-matter-agreement") === String(focusAgreementId));
+        el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }, [focusFound, focusAgreementId]);
+    if (!caseId) return null;
+
+    const hired = (engagements.data || []).find(e => e && e.status === "accepted" && (!e.case_id || String(e.case_id) === String(caseId)));
+    const noLawyer = engagements.state === "ready" && !hired;
+    const rows = Array.isArray(src.data) ? src.data : [];
+    const toneInk = { ok: t.success, warn: t.warn, bad: t.danger };
+    const pill = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 104, height: 36, borderRadius: 999,
+        cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", ...TEAL_TONAL };
+    const open = id => router.push(`/agreements?agreement=${encodeURIComponent(id)}`);
+
+    // Rows inside the card: a line between them, none above the first.
+    const line = first => (first ? 0 : `1px solid ${t.border}`);
+    const hasNote = (src.state === "loading" && !rows.length) || src.state === "error"
+        || (src.state === "ready" && !rows.length) || (src.state === "ready" && focusAgreementId && !focusFound);
+    return (
+        <section aria-label="Agreements on this matter" data-matter-agreements={src.state} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 38 }}>
+                <h2 style={{ margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted }}>
+                    Agreements{src.state === "ready" ? ` \u00b7 ${rows.length}` : ""}</h2>
+                {hired?.lawyer_name && <span style={{ marginLeft: "auto", fontSize: 13, color: t.textMuted }}>With {hired.lawyer_name}, your lawyer on this matter</span>}
+                {AGREEMENT_FROM_MATTER && builderOn === true && hired && (
+                    <button type="button" data-new-matter-agreement onClick={() => router.push(`/agreements?case=${encodeURIComponent(caseId)}`)}
+                        style={{ ...pill, ...MINT_TONAL, width: "auto", padding: "0 16px", marginLeft: hired?.lawyer_name ? 0 : "auto" }}>
+                        + New agreement</button>
+                )}
+            </div>
+            <div style={{ borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, overflow: "hidden" }}>
+            {src.state === "loading" && !rows.length && (
+                <div style={{ padding: "14px 20px", fontSize: 13.5, color: t.textMuted }}>Checking agreements…</div>
+            )}
+            {src.state === "error" && (
+                <div role="alert" data-matter-agreements-error style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", fontSize: 13.5, color: t.text }}>
+                    <span style={{ flex: 1 }}>Couldn&rsquo;t check this matter&rsquo;s agreements{rows.length ? " — this list may be out of date" : ""}.</span>
+                    <button type="button" onClick={reload} style={pill}>Try again</button>
+                </div>
+            )}
+            {src.state === "ready" && !rows.length && (
+                <div data-matter-agreements-empty style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", fontSize: 14, color: t.textMuted }}>
+                    <span aria-hidden="true" style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 12, display: "grid", placeItems: "center",
+                        background: "var(--brand-soft, rgba(62,224,161,.13))", color: t.primary }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13 7l4 4" /></svg>
+                    </span>
+                    <span>
+                    {noLawyer
+                        ? <>Agreements on a matter need a lawyer on it. <button type="button" onClick={() => router.push("/lawyers")}
+                            style={{ border: 0, background: "none", padding: 0, cursor: "pointer", color: t.primary, fontWeight: 700, fontSize: 13.5, fontFamily: "inherit" }}>Find a lawyer →</button></>
+                        : `No agreements on this matter yet.${hired?.lawyer_name ? ` An agreement you send ${hired.lawyer_name} to sign shows here.` : ""}`}</span>
+                </div>
+            )}
+            {src.state === "ready" && focusAgreementId && !focusFound && (
+                <div role="status" data-matter-agreement-missing style={{ padding: "12px 20px", fontSize: 13.5, color: t.text, background: `${t.warn}14` }}>
+                    The agreement this link points to is not on this matter.
+                </div>
+            )}
+            {rows.map((a, i) => {
+                const id = a.id || a._id;
+                const v = matterAgreementView(a, myId);
+                const focused = !!focusAgreementId && String(id) === String(focusAgreementId);
+                return (
+                    <article key={id} data-matter-agreement={id} data-focused={focused ? "" : undefined}
+                        style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", borderTop: line(i === 0 && !hasNote),
+                            background: focused ? "var(--brand-soft, rgba(62,224,161,.10))" : "transparent",
+                            boxShadow: focused ? `inset 3px 0 0 ${t.primary}` : "none" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <b style={{ display: "block", fontSize: 15, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title || "Agreement"}</b>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, color: t.textMuted }}>
+                                <span data-agreement-status style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 700, color: toneInk[v.tone] || t.textMuted }}>
+                                    <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor" }} />{v.status}</span>
+                                {v.sub && <><span aria-hidden="true">·</span><span>{v.sub}</span></>}
+                            </span>
+                            {v.reason && <span data-agreement-reason style={{ display: "block", marginTop: 4, fontSize: 13, color: t.text, whiteSpace: "pre-wrap" }}>&ldquo;{v.reason}&rdquo;</span>}
+                        </div>
+                        <button type="button" onClick={() => open(id)} style={{ ...pill, ...TEAL_TONAL, ...(v.mine ? { width: "auto", padding: "0 16px" } : null) }}>{v.mine ? "Review & sign" : "Open"}</button>
+                    </article>
+                );
+            })}
+            </div>
+        </section>
+    );
+}
+
+function PageDocuments({ activeCaseId, focusDocumentId = null, focusAgreementId = null }) {
     const t = useT();
     const router = useClientRouter();
     const [search, setSearch] = useState("");
@@ -1323,10 +1598,15 @@ function PageDocuments({ activeCaseId, focusDocumentId = null }) {
         .sort(DOC_SORTS[sort] || DOC_SORTS.date);
     const tone = DOC_TONE(t);
     const pill = (kind, on) => ({
-        display: "inline-flex", alignItems: "center", justifyContent: "center", width: 104, height: 36, borderRadius: 999,
-        cursor: on ? "wait" : "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit", background: "transparent",
-        border: `1px solid ${kind === "brand" ? `${t.primary}73` : t.border}`, color: kind === "brand" ? t.primary : t.text,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minWidth: 112, padding: "0 14px", boxSizing: "border-box", height: 36, borderRadius: 999,
+        cursor: on ? "wait" : "pointer", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+        ...(kind === "brand" ? TEAL_TONAL : NEUTRAL_FILL),
     });
+    const iconBtn = on => ({ position: "relative", display: "inline-grid", placeItems: "center", width: 36, height: 36, padding: 0, borderRadius: "50%", boxSizing: "border-box",
+        cursor: on ? "wait" : "pointer", fontFamily: "inherit", ...NEUTRAL_FILL });
+    const ico = d => <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
+    const EYE = ico(<><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>);
+    const DOWN = ico(<><path d="M12 4v11" /><path d="M7 10l5 5 5-5" /><path d="M5 20h14" /></>);
     const solid = { display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 104, height: 40, padding: "0 20px", borderRadius: 999, border: 0,
         cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit", background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" };
     const fileIcon = (col, bg) => (
@@ -1337,15 +1617,6 @@ function PageDocuments({ activeCaseId, focusDocumentId = null }) {
     const label = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", margin: 0 };
     // Every document the client keeps, beyond this case: the Vault (Documents).
     const openVault = () => { requestDocumentsView("vault"); router.push("/documents"); };
-    const draftCard = (
-        <aside aria-label="Need a new document" style={{ borderRadius: 18, background: "var(--brand-soft, rgba(62,224,161,.13))", border: `1px solid ${t.border}`, padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-            <b style={{ fontSize: 15.5, color: t.text }}>Need a new document?</b>
-            <span style={{ fontSize: 13.5, color: t.textMuted }}>Draft it from a template, then send it to your lawyer to review. Drafts linked to this case show here.</span>
-            <button type="button" data-draft-document onClick={() => router.push("/documents")} style={{ ...solid, alignSelf: "flex-start", height: 38, fontSize: 13.5 }}>Draft a document</button>
-            <button type="button" data-open-vault onClick={openVault}
-                style={{ alignSelf: "flex-start", border: 0, background: "none", padding: 0, cursor: "pointer", color: t.primary, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit" }}>Open your Vault →</button>
-        </aside>
-    );
 
     if (apiDocs === null) return <div style={{ fontSize: 14, color: t.textMuted }}>Loading documents…</div>;
     if (loadError) return (
@@ -1358,6 +1629,7 @@ function PageDocuments({ activeCaseId, focusDocumentId = null }) {
         {focusDocumentMissing && <div role="status" data-document-missing style={{ marginBottom: 14, borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, padding: "12px 16px", color: t.text, fontSize: 13.5 }}>
             The document this link points to is no longer available on this matter.
         </div>}
+        <div style={{ marginBottom: 20 }}><MatterAgreements caseId={activeCaseId} focusAgreementId={focusAgreementId} /></div>
         <section aria-label="Documents on this case" data-docs-empty
             style={{ borderRadius: 20, background: t.card, border: `1px solid ${t.border}`, padding: "40px 40px", display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 40, alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1379,11 +1651,14 @@ function PageDocuments({ activeCaseId, focusDocumentId = null }) {
     </>);
 
     return (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 300px", gap: 24, alignItems: "start" }}>
-            {loadWarning && <div role="alert" data-documents-warning style={{ gridColumn: "1 / -1", borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, padding: "12px 16px", color: t.text, fontSize: 13.5 }}>
+        // One column (board DocsTabA, 2026-11-25): the rail beside it started
+        // lower than the list and left a dead column; its two actions now sit
+        // in the Documents header and the agreements follow the files.
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+            {loadWarning && <div role="alert" data-documents-warning style={{ borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, padding: "12px 16px", color: t.text, fontSize: 13.5 }}>
                 {loadWarning} <button type="button" onClick={load} style={{ border: 0, background: "none", padding: 0, color: t.primary, fontWeight: 700, cursor: "pointer" }}>Try again</button>
             </div>}
-            {focusDocumentMissing && <div role="status" data-document-missing style={{ gridColumn: "1 / -1", borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, padding: "12px 16px", color: t.text, fontSize: 13.5 }}>
+            {focusDocumentMissing && <div role="status" data-document-missing style={{ borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, padding: "12px 16px", color: t.text, fontSize: 13.5 }}>
                 The document this link points to is no longer available on this matter.
             </div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 22, minWidth: 0 }}>
@@ -1416,8 +1691,9 @@ function PageDocuments({ activeCaseId, focusDocumentId = null }) {
                 )}
 
                 <section aria-label="All documents" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 36 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 38 }}>
                         <h2 style={{ ...label, color: t.textMuted }}>{needsYou.length ? "All documents" : "Documents"} · {rest.length}</h2>
+                        {rest.length <= 1 && <span style={{ marginLeft: "auto", fontSize: 13, color: t.textMuted }}>Drafts linked to this case and copies your lawyer sends back</span>}
                         {rest.length > 5 && (
                             <label style={{ marginLeft: "auto", position: "relative", display: "flex", alignItems: "center" }}>
                                 <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Search documents</span>
@@ -1429,11 +1705,14 @@ function PageDocuments({ activeCaseId, focusDocumentId = null }) {
                         {rest.length > 1 && (
                             <select aria-label="Sort documents" value={sort} onChange={e => setSort(e.target.value)}
                                 style={{ marginLeft: rest.length > 5 ? 0 : "auto", height: 36, padding: "0 12px", borderRadius: 999, border: `1px solid ${t.border}`, background: t.inputBg, color: t.text, fontSize: 13.5, fontWeight: 600, outline: "none", cursor: "pointer" }}>
-                                <option value="date">Newest first</option>
-                                <option value="name">Name</option>
-                                <option value="type">Type</option>
+                                {/* Options in the theme's colours: the native list was white with light text. */}
+                                {[["date", "Newest first"], ["name", "Name"], ["type", "Type"]].map(([v, l]) => (
+                                    <option key={v} value={v} style={{ background: t.card, color: t.text }}>{l}</option>
+                                ))}
                             </select>
                         )}
+                        <button type="button" data-open-vault onClick={openVault} style={{ ...pill("brand", false), ...TEAL_SOLID, minWidth: 0, height: 38 }}>Open Vault</button>
+                        <button type="button" data-draft-document onClick={() => router.push("/documents")} style={{ ...solid, height: 38, fontSize: 13.5 }}>+ Draft a document</button>
                     </div>
                     {rest.length > 0 && (
                         <div style={{ borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, overflow: "hidden" }}>
@@ -1456,9 +1735,10 @@ function PageDocuments({ activeCaseId, focusDocumentId = null }) {
                                             </div>
                                             {ready ? (<>
                                                 <button type="button" onClick={() => openDoc(doc)} disabled={!!busy} style={pill("brand", busy === `${doc.id}:open`)}>
-                                                    {busy === `${doc.id}:open` ? "Opening…" : "Open"}</button>
-                                                <button type="button" onClick={() => download(doc)} disabled={!!busy} style={pill("plain", busy === `${doc.id}:download`)}>
-                                                    {busy === `${doc.id}:download` ? "Downloading…" : "Download"}</button>
+                                                    {EYE}{busy === `${doc.id}:open` ? "Opening…" : "Open"}</button>
+                                                <button type="button" data-doc-download onClick={() => download(doc)} disabled={!!busy} className="doc-icon-btn"
+                                                    title={busy === `${doc.id}:download` ? "Downloading…" : "Download"} style={iconBtn(busy === `${doc.id}:download`)}>
+                                                    {DOWN}<span style={SR_ONLY}>{busy === `${doc.id}:download` ? "Downloading…" : "Download"}</span></button>
                                             </>) : (
                                                 // No PDF for this version yet: say so, in the buttons' space.
                                                 <span style={{ width: 216, textAlign: "center", fontSize: 13, color: t.textMuted }}>PDF not ready yet</span>
@@ -1471,8 +1751,9 @@ function PageDocuments({ activeCaseId, focusDocumentId = null }) {
                         </div>
                     )}
                 </section>
+
+                <MatterAgreements caseId={activeCaseId} focusAgreementId={focusAgreementId} />
             </div>
-            <div style={{ marginTop: 46 }}>{draftCard}</div>
         </div>
     );
 }
@@ -1881,7 +2162,10 @@ function PageCommunication({ caseId, activeCase }) {
                                 <div style={{ flex: 1 }}>
                                     <Inp placeholder="Ask your lawyer a question…" value={input} onChange={v => { setInput(v); setSendError(null); }} t={t} />
                                 </div>
-                                <Btn t={t} variant="primary" onClick={send} disabled={!input.trim() || sending}>{sending ? "Sending…" : "Send ↗"}</Btn>
+                                {/* The theme's brand button (2026-11-25), as on the Overview's reply box: the flat mint one stood apart. */}
+                                <Btn t={t} variant="primary" onClick={send} disabled={!input.trim() || sending}
+                                    style={!input.trim() || sending ? { minWidth: 110 } : { minWidth: 110, border: 0, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" }}>
+                                    <span data-send-message>{sending ? "Sending…" : "Send ↗"}</span></Btn>
                             </div>
                             {sendError && <div role="alert" style={{ fontSize: 12, color: t.danger || "#e8526a", marginTop: 6 }}>{sendError}</div>}
                         </>)}
@@ -4259,6 +4543,7 @@ export default function Module7({ isDark, standalone = null }) {
     const engagementParam = standalone ? null : (searchParams?.get("engagement") || null);
     const paymentParam = standalone ? null : (searchParams?.get("payment") || null);
     const documentParam = standalone ? null : (searchParams?.get("document") || null);
+    const agreementParam = standalone ? null : (searchParams?.get("agreement") || null);
     // The status card's "Review terms" opens the request below it (v2).
     const [focusEngagement, setFocusEngagement] = useState(null);
     const [focusPayment, setFocusPayment] = useState(null);
@@ -4319,6 +4604,7 @@ export default function Module7({ isDark, standalone = null }) {
     }, []);
 
     // Load cases from API on mount (and again from "Try again").
+    const [draftMatters, setDraftMatters] = useState([]);
     const loadCases = useCallback(async () => {
         const mine = ++casesReadSeq.current;
         setCasesState("loading");
@@ -4337,6 +4623,9 @@ export default function Module7({ isDark, standalone = null }) {
         if (mine !== casesReadSeq.current) return false;
         const unique = [...new Map(confirmedCases(all).map(row => [String(row?._id || row?.id || ""), row])).values()];
         setApiCases(unique.map(mapApiCase));
+        // Drafts are not cases yet, but My matters shows them as "Not submitted
+        // yet · Continue intake" (2026-11-25, as the approved preview).
+        setDraftMatters([...new Map(all.filter(isDraftCase).map(row => [String(row?._id || row?.id || ""), row])).values()].map(mapApiCase));
         setCasesState("ready");
         return true;
     }, []);
@@ -4402,13 +4691,16 @@ export default function Module7({ isDark, standalone = null }) {
         if (!tab) return;
         const href = matterHref(activeCaseId, {
             tab,
-            engagement: activeCaseId === caseParam ? engagementParam : null,
+            // The request in focus stays in the address (pressed "Review terms" /
+            // "View request", or arrived from a link naming it).
+            engagement: focusEngagement || (activeCaseId === caseParam ? engagementParam : null),
             // The payment a link named stays in the address while its tab is open.
             payment: page === "payments" ? paymentParam : null,
             document: page === "documents" ? documentParam : null,
+            agreement: page === "documents" ? agreementParam : null,
         });
         if (window.location.pathname + window.location.search !== href) window.history.replaceState(null, "", href);
-    }, [standalone, showAllPayments, globalPayments, showMatters, caseLinkError, activeCaseId, page, caseParam, engagementParam, paymentParam, documentParam]);
+    }, [standalone, showAllPayments, globalPayments, showMatters, caseLinkError, activeCaseId, page, caseParam, engagementParam, paymentParam, documentParam, agreementParam, focusEngagement]);
 
     // One loader, reused.
     //
@@ -4580,11 +4872,13 @@ export default function Module7({ isDark, standalone = null }) {
         setPage(key);
         if (activeCaseId && PAGE_TO_TAB[key]) pushHref(matterHref(activeCaseId, { tab: PAGE_TO_TAB[key] }));
     };
-    const goCase = (id) => {
-        setFocusEngagement(null); setFocusPayment(null);
+    // `engagement`: open the case ON that hire request (its box opens,
+    // highlighted) -- My matters' "Review terms" (2026-11-25).
+    const goCase = (id, { engagement = null } = {}) => {
+        setFocusEngagement(engagement); setFocusPayment(null);
         setCaseLinkError(null); setActiveCaseId(id); setPage("overview");
         setShowMatters(false); setShowAllPayments(false);
-        pushHref(matterHref(id, { tab: "summary" }));
+        pushHref(matterHref(id, { tab: "summary", engagement }));
     };
     const goMatters = () => { setFocusEngagement(null); setFocusPayment(null); setShowAllPayments(false); setShowMatters(true); pushHref("/tracking"); };
     const goAllPayments = () => { setFocusEngagement(null); setFocusPayment(null); setShowMatters(false); setShowAllPayments(true); pushHref("/tracking?view=payments"); };
@@ -4638,7 +4932,13 @@ export default function Module7({ isDark, standalone = null }) {
     const pages = {
         // My hire requests sit on top of the overview (moved here from the
         // Lawyers page, 2026-11-23): with or without a case selected.
-        overview: (props) => <><PageOverview      {...props} steps={displayMilestones} onHeroAction={heroAction} afterHero={<HireRequests caseId={activeCase?.id || null} focusEngagementId={focusEngagement || engagementParam} />} activeCase={activeCase} hearings={apiHearings} casesState={caseIsOpening ? "loading" : casesState} onRetryCases={loadCases} /></>,
+        // The hire-request box ON DEMAND (2026-11-25, as the approved preview):
+        // it opens -- scrolled to and highlighted -- when the client presses
+        // "View request" / "Review terms" (status card or to-do) or arrives
+        // from a link naming the request. Its actions are unchanged.
+        overview: (props) => <><PageOverview      {...props} steps={displayMilestones} onHeroAction={heroAction}
+            afterHero={(focusEngagement || engagementParam) ? <HireRequests caseId={activeCase?.id || null} focusEngagementId={focusEngagement || engagementParam} /> : null}
+            activeCase={activeCase} hearings={apiHearings} casesState={caseIsOpening ? "loading" : casesState} onRetryCases={loadCases} /></>,
         appointments: (props) => <AppointmentsPage standalone={Boolean(standalone)} {...props} appointments={apiAppointments} loading={apptLoading} onReload={reloadAppointments} cancelErrors={cancelErrors} setCancelError={setCancelError}
             refreshError={apptRefreshError}
             onLoadMore={loadMoreAppointments} loadingMore={apptLoadingMore}
@@ -4648,7 +4948,7 @@ export default function Module7({ isDark, standalone = null }) {
             standalone={Boolean(standalone)} focusId={focusAppt} openThreadId={openThreadId} />,
         timeline: (props) => <PageTimeline      {...props} activeCase={activeCase} milestones={allMilestones} hearings={apiHearings}
             loadState={activeCaseId ? timelineState : "ready"} onRetry={() => setTimelineTry(n => n + 1)} />,
-        documents: (props) => <PageDocuments     {...props} activeCaseId={activeCaseId} focusDocumentId={documentParam} />,
+        documents: (props) => <PageDocuments     {...props} activeCaseId={activeCaseId} focusDocumentId={documentParam} focusAgreementId={agreementParam} />,
         payments: (props) => <PagePayments      {...props} caseId={activeCase?.id || null} focusPaymentId={focusPayment || paymentParam} onAllPayments={goAllPayments} />,
         communication: (props) => <PageCommunication {...props} caseId={activeCaseId} activeCase={activeCase} />,
     };
@@ -4729,7 +5029,7 @@ export default function Module7({ isDark, standalone = null }) {
                         </nav>
                         <PagePayments t={t} caseId={null} focusPaymentId={globalPayments ? paymentParam : null} />
                     </>) : showMatters ? (
-                        <MyMatters t={t} cases={displayCases} casesState={casesState} onRetry={loadCases}
+                        <MyMatters t={t} cases={displayCases} drafts={draftMatters} casesState={casesState} onRetry={loadCases}
                             onAllPayments={goAllPayments} onOpen={goCase}
                             onOpenAppointment={id => clientRouter.push(`/appointments?appointment=${encodeURIComponent(id)}`)} />
                     ) : (<>

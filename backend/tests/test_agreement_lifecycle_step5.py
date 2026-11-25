@@ -227,6 +227,72 @@ async def test_a_cancelled_agreement_never_becomes_executed(world):
     assert row["status"] == AgreementStatus.CANCELLED.value
 
 
+# ── who declined, and why (2026-11-25) ──────────────────────────────────────
+#
+# The reason lived only in `audit_log` (never sent: it holds IP addresses) and
+# in the notification text, so the other party saw "cancelled" and nothing else.
+
+async def _declined(reason="The fee clause is wrong."):
+    from app.services import agreement_service
+    doc = await _sent()
+    await agreement_service.decline_agreement(
+        agreement_id=doc["_id"], user_id=CLIENT, reason=reason,
+        ip_address="203.0.113.9", ip_verifiable=True)
+    return doc
+
+
+async def test_the_other_party_sees_who_declined_and_why(world):
+    from app.schemas.agreement import AgreementOut
+    from app.services import agreement_service
+
+    doc = await _declined()
+    view = await agreement_service.get_agreement(doc["_id"], LAWYER)
+
+    assert view["declined"]["by_user_id"] == CLIENT
+    assert view["declined"]["by_name"] == "The Client"
+    assert view["declined"]["reason"] == "The fee clause is wrong."
+    assert view["declined"]["at"] is not None
+    # Through the response model the route uses, and with no IP anywhere.
+    body = AgreementOut.model_validate(view).model_dump_json()
+    assert "The fee clause is wrong." in body
+    assert "203.0.113.9" not in body
+
+
+async def test_the_list_row_carries_the_decline_too_without_the_ip(world):
+    from app.schemas.agreement import AgreementListItem
+    from app.services import agreement_service
+
+    doc = await _declined()
+    page = await agreement_service.list_agreements(LAWYER)
+    row = next(r for r in page["items"] if r["id"] == doc["_id"])
+
+    assert row["declined"]["reason"] == "The fee clause is wrong."
+    body = AgreementListItem.model_validate(row).model_dump_json()
+    assert "203.0.113.9" not in body and "audit_log" not in body
+
+
+async def test_a_decline_without_a_reason_says_so_with_none(world):
+    from app.services import agreement_service
+
+    doc = await _declined(reason=None)
+    view = await agreement_service.get_agreement(doc["_id"], LAWYER)
+
+    assert view["declined"]["by_name"] == "The Client"
+    assert view["declined"]["reason"] is None
+
+
+async def test_a_pending_or_executed_agreement_has_no_decline(world):
+    from app.services import agreement_service
+
+    doc = await _sent()
+    assert (await agreement_service.get_agreement(doc["_id"], LAWYER))["declined"] is None
+    await agreement_service.submit_signature(
+        agreement_id=doc["_id"], user_id=CLIENT, method="typed",
+        signature_data="The Client", consent=True, ip_address=None,
+        ip_verifiable=False)
+    assert (await agreement_service.get_agreement(doc["_id"], LAWYER))["declined"] is None
+
+
 async def test_an_agreement_inside_its_window_still_signs(world):
     """The guard must not refuse a live agreement."""
     from app.services import agreement_service

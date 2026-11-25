@@ -197,3 +197,154 @@ test("a document notification names the document to open, not only the inbox (20
         { page: "documents", caseId: null, docId: "d9" });
     assert.equal(lawyerNotificationTarget("document_withdrawn", {}).docId, null);
 });
+
+/* Agreements restored for lawyers (2026-11-25). The page was hidden, so an
+ * agreement a client sent could not be signed: the notification opened a case
+ * that shows no agreements. It now opens THAT agreement. */
+const AGR = { id: "agr1", _id: "agr1", title: "Rent agreement", status: "pending", body_html: "<p>Terms</p>",
+    body_format: "html", parties: [{ user_id: "cl1", full_name: "Bilal", signed: true }, { user_id: "l1", full_name: "Asad Ali", signed: false }],
+    signed_count: 1, total_parties: 2, created_at: new Date().toISOString() };
+
+test("an agreement notice targets that agreement on Agreements, not a case", () => {
+    assert.deepEqual(nt.lawyerNotificationTarget("agreement_created", { agreement_id: "agr1", case_id: "c1" }),
+        { page: "agreements", caseId: null, agreementId: "agr1" });
+    assert.equal(nt.lawyerNotificationTarget("agreement_executed", {}).agreementId, null);
+    // Payments is still hidden: those notices still open their case.
+    assert.deepEqual(nt.lawyerNotificationTarget("payment_received", { case_id: "c1" }), { page: "cases", caseId: "c1" });
+});
+
+test("clicking an agreement notification opens that agreement ready to sign", async () => {
+    serve([NOTE("n7", "agreement_created", { agreement_id: "agr1" })]);
+    api.__respond("listAgreements", { data: { items: [], total: 0, pages: 1 }, error: null });
+    api.__respond("getAgreement", { data: AGR, error: null });
+    const ui = await mount();
+    await ui.openBell();
+    await ui.click(ui.row("agreement_created title n7"));
+    await settle(150);
+    assert.ok(api.__calls("getAgreement").some(c => c.args[0] === "agr1"), "the agreement was not fetched by id");
+    assert.match(ui.text(), /Rent agreement/);
+    assert.match(ui.text(), /Terms/, "the agreement's wording is not shown");
+    assert.equal(ui.container.querySelector("[data-agreement-missing]"), null);
+    // The address names it, so a refresh or a copied link keeps it.
+    assert.equal(window.location.pathname + window.location.search, "/lawyer/agreements?agreement=agr1");
+    await ui.unmount();
+});
+
+const at = (path) => window.history.replaceState(null, "", path);
+const backAndSettle = async () => { await act(async () => { window.history.back(); }); await settle(150); };
+
+test("the agreement in the address opens on load (refresh / copied link)", async () => {
+    serve([]);
+    api.__respond("listAgreements", { data: { items: [], total: 0, pages: 1 }, error: null });
+    api.__respond("getAgreement", { data: AGR, error: null });
+    at("/lawyer/agreements?agreement=agr1");
+    const ui = await mount("agreements");
+    await settle(150);
+    assert.ok(api.__calls("getAgreement").some(c => c.args[0] === "agr1"));
+    assert.match(ui.text(), /Terms/);
+    await ui.unmount();
+    at("/lawyer");
+});
+
+test("closing writes the address, and Back reopens the same agreement", async () => {
+    serve([]);
+    api.__respond("listAgreements", { data: { items: [], total: 0, pages: 1 }, error: null });
+    api.__respond("getAgreement", { data: AGR, error: null });
+    at("/lawyer/agreements?agreement=agr1");
+    const ui = await mount("agreements");
+    await settle(150);
+    await ui.click([...ui.container.querySelectorAll("button")].find(b => b.textContent === "✕"));
+    assert.equal(window.location.search, "", "closing left the agreement in the address");
+    assert.doesNotMatch(ui.text(), /Terms/);
+    await backAndSettle();
+    assert.equal(window.location.search, "?agreement=agr1");
+    assert.match(ui.text(), /Terms/, "Back did not reopen the agreement");
+    await ui.unmount();
+    at("/lawyer");
+});
+
+/* RACES (2026-11-25, Codex). Open A, then B before A answers. */
+const deferred = () => { let resolve; const p = new Promise(r => { resolve = r; }); return { p, resolve }; };
+const openEvent = (id) => act(async () => { window.dispatchEvent(new CustomEvent("attorney:open-agreement", { detail: id })); });
+const AGR_B = { ...AGR, id: "agrB", _id: "agrB", title: "Lease renewal", body_html: "<p>Clause B</p>" };
+
+test("A then B: A's late answer never opens A under ?agreement=B", async () => {
+    serve([]);
+    api.__respond("listAgreements", { data: { items: [], total: 0, pages: 1 }, error: null });
+    const slowA = deferred();
+    api.__respond("getAgreement", (id) => (id === "agr1" ? slowA.p : Promise.resolve({ data: AGR_B, error: null })));
+    const ui = await mount("agreements");
+    await openEvent("agr1");
+    await openEvent("agrB");
+    await settle(100);
+    slowA.resolve({ data: AGR, error: null });   // A answers LAST
+    await settle(150);
+    assert.equal(window.location.search, "?agreement=agrB");
+    assert.match(ui.text(), /Clause B/);
+    assert.doesNotMatch(ui.text(), /Terms|Rent agreement/, "A's late answer replaced B");
+    await ui.unmount();
+    at("/lawyer");
+});
+
+test("A open, then a B this lawyer cannot see: A is cleared, never left behind 'couldn't open'", async () => {
+    serve([]);
+    api.__respond("listAgreements", { data: { items: [], total: 0, pages: 1 }, error: null });
+    api.__respond("getAgreement", (id) => (id === "agr1"
+        ? { data: AGR, error: null }
+        : { data: null, error: { message: "You are not a party to this agreement", status: 403 } }));
+    const ui = await mount("agreements");
+    await openEvent("agr1");
+    await settle(150);
+    assert.match(ui.text(), /Terms/, "precondition: A is open");
+    await openEvent("secret");
+    await settle(150);
+    assert.ok(ui.container.querySelector("[data-agreement-missing]"));
+    assert.doesNotMatch(ui.text(), /Terms|Rent agreement/, "A is still on screen behind 'couldn't open'");
+    assert.equal(window.location.search, "?agreement=secret");
+    await ui.unmount();
+    at("/lawyer");
+});
+
+test("a lawyer who is not a party, on a direct link, sees 'couldn't open' and none of the wording", async () => {
+    serve([]);
+    api.__respond("listAgreements", { data: { items: [], total: 0, pages: 1 }, error: null });
+    api.__respond("getAgreement", { data: null, error: { message: "You are not a party to this agreement", status: 403 } });
+    at("/lawyer/agreements?agreement=agr1");
+    const ui = await mount("agreements");
+    await settle(150);
+    assert.ok(ui.container.querySelector("[data-agreement-missing]"));
+    assert.doesNotMatch(ui.text(), /Terms|Rent agreement/);
+    await ui.unmount();
+    at("/lawyer");
+});
+
+test("an agreement the lawyer cannot open says so instead of an empty screen", async () => {
+    serve([NOTE("n8", "agreement_created", { agreement_id: "gone" })]);
+    api.__respond("listAgreements", { data: { items: [], total: 0, pages: 1 }, error: null });
+    api.__respond("getAgreement", { data: null, error: { message: "Not found" } });
+    const ui = await mount();
+    await ui.openBell();
+    await ui.click(ui.row("agreement_created title n8"));
+    await settle(150);
+    assert.ok(ui.container.querySelector("[data-agreement-missing]"), "no unavailable message");
+    await ui.unmount();
+});
+
+test("Agreements is reachable again, and writing new ones stays off", async () => {
+    const { HIDDEN_PAGES } = await import("../src/components/lawyer/App.jsx");
+    assert.equal(HIDDEN_PAGES.has("agreements"), false);
+    const fs = await import("node:fs");
+    const route = fs.readFileSync(new URL("../src/app/lawyer/agreements/page.jsx", import.meta.url), "utf8");
+    assert.match(route, /initialPage="agreements"/);
+    assert.doesNotMatch(route, /redirect\(/);
+    const nav = fs.readFileSync(new URL("../src/components/lawyer/layout.jsx", import.meta.url), "utf8");
+    assert.match(nav, /^\s*\{ id: "agreements", label: "Agreements"/m, "the sidebar entry is still commented out");
+
+    serve([]);
+    api.__respond("listAgreements", { data: { items: [], total: 0, pages: 1 }, error: null });
+    const ui = await mount("agreements");
+    assert.match(ui.text(), /Agreements/);
+    assert.doesNotMatch(ui.text(), /\+ New agreement/);
+    assert.match(ui.text(), /When a client sends you an agreement to sign/);
+    await ui.unmount();
+});

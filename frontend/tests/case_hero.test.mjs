@@ -2,7 +2,7 @@
  * where the case is and what happens next, from real records only. */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { caseHero, daysUntil, pickEngagement, stageWindow } from "../src/lib/caseHero.js";
+import { caseHero, daysUntil, pickEngagement, stageWindow, journeyStages } from "../src/lib/caseHero.js";
 
 const TODAY = "2026-11-23";
 const caseInfo = (over = {}) => ({ id: "C1", status: "in_progress", lawyerAssigned: true, ...over });
@@ -38,7 +38,10 @@ test("terms waiting on the client come before any date", () => {
         engagement: { status: "terms_proposed", lawyer_name: "Adv. Bilal Ahmed" } });
     assert.equal(h.headline, "Adv. Bilal Ahmed sent you terms");
     assert.match(h.sub, /PKR 60,000\. Nothing is agreed until you accept\./);
-    assert.equal(h.primary.action, "engagement");
+    // Review terms is the lawyer panel's one button, not repeated on the left.
+    assert.equal(h.primary, null);
+    assert.equal(h.person.waiting, true);
+    assert.deepEqual(h.person.actions.map(x => x.action), ["engagement"]);
     assert.equal(h.tone, "warn");
     assert.equal(h.person.label, "Offering to take your case");
 });
@@ -60,7 +63,7 @@ test("a request still waiting names the lawyer", () => {
 test("a lawyer at work with no hearing date does not invent one", () => {
     const h = caseHero({ caseInfo: caseInfo(), today: TODAY,
         engagement: { status: "accepted", lawyer_name: "Adv. Ayesha Khan" } });
-    assert.equal(h.headline, "Ayesha is working on your case");
+    assert.equal(h.headline, "Ayesha Khan is working on your case");
     assert.match(h.sub, /No hearing date yet/);
 });
 
@@ -117,4 +120,30 @@ test("a sentence that stands on other facts carries a warning when the request c
     const stale = caseHero({ caseInfo: caseInfo(), today: TODAY, engagementState: "error",
         engagement: { status: "accepted", lawyer_name: "Adv. Ayesha Khan" } });
     assert.match(stale.warning, /Couldn't check the latest/, "stale data was shown as current");
+});
+
+/* The journey line for a case without milestones (2026-11-25): each stage is
+ * done only on a real fact, and the first stage not done is "You are here". */
+const states = l => l.map(s => `${s.state}:${s.title}`);
+test("journey: a new case with no lawyer is at 'Choosing a lawyer'", () => {
+    const l = journeyStages({ caseInfo: { status: "open", filed: "Nov 17, 2026" } });
+    assert.deepEqual(states(l), ["done:Problem described", "now:Choosing a lawyer", "next:Case filed", "next:Hearings", "next:Decision"]);
+    assert.equal(l[0].when, "Nov 17, 2026");
+    assert.equal(l[1].when, "You are here");
+});
+test("journey: an accepted lawyer moves it to 'Case filed', dated by the acceptance", () => {
+    const l = journeyStages({ caseInfo: { status: "in_progress" }, engagement: { status: "accepted", accepted_at: "2026-11-18T09:00:00Z" } });
+    assert.deepEqual(states(l).slice(0, 3), ["done:Problem described", "done:Lawyer hired", "now:Case filed"]);
+    assert.match(l[1].when, /18 Nov|Nov 18/);
+});
+test("journey: a hearing means the case is filed; closed means decided", () => {
+    const h = journeyStages({ caseInfo: { status: "in_progress", lawyerAssigned: true }, nextHearing: { date: "2026-12-02T05:00:00Z" } });
+    assert.deepEqual(states(h).slice(2, 4), ["done:Case filed", "now:Hearings"]);
+    const c = journeyStages({ caseInfo: { status: "closed", lawyerAssigned: true } });
+    assert.ok(c.every(s => s.state === "done"), "a closed case is not fully done");
+});
+test("journey: a request that is only sent does not count as a lawyer hired", () => {
+    const l = journeyStages({ caseInfo: { status: "open" }, engagement: { status: "requested" } });
+    assert.equal(l[1].state, "now");
+    assert.equal(l[1].title, "Choosing a lawyer");
 });

@@ -76,12 +76,17 @@ class AgreementRepository(BaseRepository):
     async def page_for_user(self, user_id: str, page: int, page_size: int,
                             status: str | None = None,
                             archived: bool = False,
-                            case_id: str | None = None):
+                            case_id: str | None = None,
+                            unlinked: bool = False):
         """One page of the same set, newest first. `case_id` is ANDed with the
-        visibility rule, so it can only narrow what the user may see."""
+        visibility rule, so it can only narrow what the user may see.
+        `unlinked` (2026-11-25) narrows the same way to agreements on NO
+        matter: `case_id` null or absent."""
         query = self.visible_to(user_id, status, archived)
         if case_id:
             query = {"$and": [query, {"case_id": case_id}]}
+        elif unlinked:
+            query = {"$and": [query, {"case_id": None}]}
         return await self.paginate(query, page, page_size, sort=[("created_at", -1)])
 
     async def append_audit_log(self, agreement_id: str, entry: dict) -> bool:

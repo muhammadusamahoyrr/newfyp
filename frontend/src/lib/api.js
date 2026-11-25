@@ -1696,6 +1696,11 @@ export async function declineAgreement(agreement_id, reason = null) {
   });
 }
 
+/* Whether the client builder is on: the server's switch, the only one. */
+export async function getAgreementCapabilities() {
+  return apiFetch('/agreements/capabilities');
+}
+
 export async function getAgreement(agreement_id) {
   return apiFetch(`/agreements/${agreement_id}`);
 }
@@ -1760,10 +1765,11 @@ export async function updateLawyerProfile(updates) {
  *
  * The rows carry no `body_html`. Open an agreement to read it. */
 export async function listAgreements({ page = 1, page_size = 20, status = null,
-                                       archived = false, case_id = null } = {}) {
+                                       archived = false, case_id = null, unlinked = false } = {}) {
   const p = new URLSearchParams({ page, page_size });
   if (status) p.set('status', status);
   if (case_id) p.set('case_id', case_id);
+  else if (unlinked) p.set('unlinked', 'true');   // on no matter
   if (archived) p.set('archived', 'true');
   return apiFetch(`/agreements?${p}`);
 }

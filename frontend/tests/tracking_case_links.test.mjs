@@ -140,7 +140,7 @@ test("a draft case named in a link points to the intake", async () => {
 });
 
 test("hire requests belong to the open case only; another case's terms wait on My matters", async () => {
-    const ui = await mountTracking({ case: "C1", tab: "summary" });
+    const ui = await mountTracking({ case: "C1", tab: "summary", engagement: "E1" });
     const box = ui.container.querySelector("[data-hire-requests]");
     assert.ok(box, "hire requests missing");
     assert.match(box.textContent, /Hire requests for this case/);
@@ -168,7 +168,7 @@ test("?engagement= highlights that request", async () => {
 
 test("a failed read of hire requests says so instead of hiding them", async () => {
     api.__respond("listEngagements", { data: null, error: { message: "Network error" }, status: 0 });
-    const ui = await mountTracking({ case: "C1" });
+    const ui = await mountTracking({ case: "C1", engagement: "E1" });
     const err = ui.container.querySelector("[data-hire-requests-error]");
     assert.ok(err, "a failed read looked like 'no requests'");
     assert.match(err.textContent, /Couldn't load your hire requests/);
@@ -262,7 +262,7 @@ test("Decline opens a dialog; Cancel sends nothing, Confirm sends the reason", a
     let prompted = false;
     dom.window.prompt = () => { prompted = true; return ""; };
     api.__respond("declineEngagementTerms", { data: { id: "E2", status: "declined" } });
-    const ui = await mountTracking({ case: "C2" });
+    const ui = await mountTracking({ case: "C2", engagement: "E2" });
     await click(btnIn(ui.container.querySelector('[data-engagement="E2"]'), /^Decline$/));
     assert.equal(prompted, false, "a browser prompt opened");
     assert.equal(dialog()?.getAttribute("data-note-dialog"), "decline");
@@ -283,7 +283,7 @@ test("Decline opens a dialog; Cancel sends nothing, Confirm sends the reason", a
 test("ending an engagement needs a reason before it can be confirmed", async () => {
     api.__respond("listEngagements", { data: [{ id: "E5", case_id: "C1", status: "accepted", lawyer_name: "Adv Omar", case_title: "Newest matter" }] });
     api.__respond("terminateEngagement", { data: { id: "E5", status: "terminated" } });
-    const ui = await mountTracking({ case: "C1" });
+    const ui = await mountTracking({ case: "C1", engagement: "E5" });
     await click(btnIn(ui.container.querySelector('[data-engagement="E5"]'), /End engagement/));
     assert.equal(dialog()?.getAttribute("data-note-dialog"), "end");
     assert.match(dialog().textContent, /released/);
@@ -300,7 +300,7 @@ test("ending an engagement needs a reason before it can be confirmed", async () 
 test("a failed action keeps the dialog open with the text", async () => {
     api.__respond("listEngagements", { data: [{ id: "E6", case_id: "C1", status: "accepted", lawyer_name: "Adv Omar", completion_proposed_by: "lawyer" }] });
     api.__respond("completeEngagement", { data: null, error: { message: "Network error" }, status: 0 });
-    const ui = await mountTracking({ case: "C1" });
+    const ui = await mountTracking({ case: "C1", engagement: "E6" });
     await click(btnIn(ui.container.querySelector('[data-engagement="E6"]'), /Confirm complete/));
     assert.equal(dialog()?.getAttribute("data-note-dialog"), "confirmComplete");
     await typeInto(dialog().querySelector("textarea"), "Settled");
@@ -414,16 +414,28 @@ test("terms on this case lead the card, and Review terms highlights the request 
     const hero = ui.container.querySelector("[data-case-hero]");
     assert.equal(hero.getAttribute("data-case-hero"), "warn");
     assert.equal(hero.querySelector("[data-hero-headline]").textContent, "Adv Sana sent you terms");
-    assert.equal(ui.container.querySelector('[data-engagement="E2"]').hasAttribute("data-focused"), false);
-    await click(hero.querySelector('[data-hero-action="engagement"]'));
+    assert.equal(ui.container.querySelector("[data-hire-requests]"), null, "the hire box shows before it is asked for (preview: on demand)");
+    assert.equal(hero.querySelectorAll('[data-hero-action="engagement"], [data-person-action="engagement"]').length, 1, "Review terms shown twice on the card");
+    await click(hero.querySelector('[data-person-action="engagement"]'));
     assert.ok(ui.container.querySelector('[data-engagement="E2"]').hasAttribute("data-focused"), "the request was not highlighted");
+    const row = ui.container.querySelector('[data-engagement="E2"]');
+    assert.match(row.querySelector("[data-eng-decline]").getAttribute("style"), /--danger/, "Decline is not in the danger colour");
+    assert.match(row.querySelector("[data-eng-accept]").getAttribute("style"), /--brand-solid/, "Accept is not the brand button");
+    const h = el => el.getAttribute("style").match(/height: (\d+)px/)?.[1];
+    assert.deepEqual([row.querySelector("[data-eng-badge]"), row.querySelector("[data-eng-decline]"), row.querySelector("[data-eng-accept]")].map(h), ["36", "36", "36"], "chip and buttons differ in height");
     await ui.unmount();
 });
 
-test("with no milestones the stage line says so instead of drawing empty steps", async () => {
+test("with no milestones the stage line shows the case's journey from real facts (as the preview)", async () => {
     api.__respond("getCaseTimeline", { data: { milestones: [], hearing_dates: [] } });
     const ui = await mountTracking({ case: "C1" });
-    assert.ok(ui.container.querySelector("[data-hero-no-stages]"));
+    const line = ui.container.querySelector("[data-hero-stages]");
+    assert.ok(line, "no stage line on a case without milestones");
+    const st = [...line.querySelectorAll("[data-stage]")].map(li => [li.getAttribute("data-stage"), li.querySelector("b").textContent]);
+    // Only a hire REQUEST (not accepted): described is done, choosing a lawyer is where they are.
+    assert.deepEqual(st, [["done", "Problem described"], ["now", "Choosing a lawyer"], ["next", "Case filed"], ["next", "Hearings"], ["next", "Decision"]]);
+    assert.match(line.querySelector('[data-stage="now"]').textContent, /You are here/);
+    assert.equal(ui.container.querySelector("[data-hero-no-stages]"), null);
     assert.equal(ui.container.querySelector("[data-hero-headline]").textContent, "Waiting for Adv Omar to reply");
     await ui.unmount();
 });
@@ -751,7 +763,7 @@ test("the to-do marks a partial list as unfinished while a check is still runnin
 });
 
 test("hire requests that fail to refresh keep the list but say it may be out of date", async () => {
-    const ui = await mountTracking({ case: "C1" });
+    const ui = await mountTracking({ case: "C1", engagement: "E1" });
     assert.equal(ui.container.querySelector("[data-hire-requests-stale]"), null);
     api.__respond("listEngagements", FAIL);
     await notify({ type: "engagement_terms_proposed", payload: { case_id: "C1", engagement_id: "E1" } });
@@ -817,8 +829,10 @@ test("a tab is a history entry: Back returns to the previous tab, Forward again"
 test("opening a case from My matters is a history entry: Back returns to My matters", async () => {
     dom.window.history.replaceState(null, "", "/tracking");
     const ui = await mountTracking({});
-    await click(ui.container.querySelector('[data-open-matter="C2"]'));
-    assert.equal(dom.window.location.search, "?case=C2&tab=summary");
+    // C1 has nothing waiting, so its button is a plain "Open case" (C2's is
+    // "Review terms", which opens on the request -- tested on its own).
+    await click(ui.container.querySelector('[data-open-matter="C1"]'));
+    assert.equal(dom.window.location.search, "?case=C1&tab=summary");
     assert.ok(ui.container.querySelector("[data-case-hero]"));
     await back();
     assert.ok(ui.container.querySelector("[data-my-matters]"), "Back did not return to My matters");
@@ -884,6 +898,219 @@ test("documents: search appears only above 5, and a version without a PDF says s
     assert.match(noPdf.textContent, /PDF not ready yet/);
     assert.equal(noPdf.querySelectorAll("button").length, 0, "Open/Download offered without a PDF");
     await ui.unmount();
+});
+
+/* ── long intake titles (2026-11-25): shortened, the full text in the tooltip ── */
+test("My matters and the case bar shorten an intake-question title, keeping it in the tooltip", async () => {
+    const long = "My name is Imran Ali and I live in Village Chak 45, Tehsil Kasur, District Kasur and my landlord will not give my money back";
+    api.__respond("listCases", { data: { items: [{ _id: "C1", title: long, status: "open", case_number: "ATT-1" }, caseRow("C2", "Rent dispute")] } });
+    let ui = await mountTracking({});
+    // The card's side panel uses the same theme tint as the case page's status panel.
+    assert.match(ui.container.querySelector('[data-matter="C1"] [data-matter-side]').style.background, /--brand-soft/);
+    const t1 = ui.container.querySelector('[data-matter="C1"] [data-matter-title]');
+    assert.ok(t1.textContent.length <= 60 && t1.textContent.endsWith("…"), `card title not shortened: ${t1.textContent}`);
+    assert.equal(t1.getAttribute("title"), long);
+    await ui.unmount();
+    ui = await mountTracking({ case: "C1", tab: "summary" });
+    const bar = ui.container.querySelector("[data-case-bar-title]");
+    assert.ok(bar.textContent.length < long.length, "case bar shows the whole intake text");
+    assert.match(ui.container.querySelector("[data-case-bar-number]").textContent, /ATT-1/);
+    assert.equal(bar.getAttribute("title"), long);
+    await ui.unmount();
+});
+
+/* ── My matters, as the approved preview (2026-11-25) ───────────────────── */
+test("My matters: a case without milestones shows its 5-stage journey, and no status pill", async () => {
+    const ui = await mountTracking({});
+    const card = ui.container.querySelector('[data-matter="C1"]');
+    const segs = [...card.querySelectorAll("[data-matter-journey] [data-seg]")].map(s => s.getAttribute("data-seg"));
+    assert.deepEqual(segs, ["done", "now", "next", "next", "next"]);
+    assert.match(card.querySelector("[data-matter-stage]").textContent, /^Stage 2 of 5 · Choosing a lawyer$/);
+    assert.doesNotMatch(card.textContent, /No steps added yet/);
+    assert.doesNotMatch(card.querySelector("[data-matter-title]").parentElement.textContent, /Awaiting Lawyer|\bOpen\b/, "a status pill in the title row");
+    await ui.unmount();
+});
+
+test("My matters: terms waiting say 'Review terms' and open the case on that request", async () => {
+    const ui = await mountTracking({});
+    const btn = ui.container.querySelector('[data-open-matter="C2"]');
+    assert.equal(btn.textContent, "Review terms");
+    assert.equal(ui.container.querySelector('[data-open-matter="C1"]').textContent, "Open case");
+    await click(btn);
+    assert.match(dom.window.location.search, /case=C2.*engagement=E2/, "the address does not name the request");
+    const row = ui.container.querySelector('[data-hire-requests] [data-engagement="E2"]');
+    assert.ok(row, "the hire request box did not open on the case");
+    assert.ok(row.hasAttribute("data-focused"));
+    await ui.unmount();
+});
+
+test("My matters: a draft shows as 'Not submitted yet' with Continue intake (as the preview)", async () => {
+    api.__respond("listCases", { data: { items: [caseRow("C1", "Newest matter"), { ...caseRow("D1", "Share in father's house"), status: "draft", case_type: "property" }] } });
+    const ui = await mountTracking({});
+    assert.equal(ui.container.querySelector('[data-matter="D1"]'), null, "a draft was listed as a case");
+    const draft = ui.container.querySelector('[data-draft-matter="D1"]');
+    assert.ok(draft, "the draft is missing");
+    assert.match(draft.textContent, /Share in father's house/);
+    assert.match(draft.textContent, /Not submitted yet/);
+    assert.equal(draft.querySelector("[data-continue-intake]").getAttribute("href"), "/intake");
+    assert.equal(ui.container.querySelector("[data-closed-matters]").textContent, "Closed matters (0)");
+    assert.ok(ui.container.querySelector("[data-closed-matters]").disabled);
+    await ui.unmount();
+});
+
+test("My matters: the side panel adds the to-do's detail (amount, date) under its title", async () => {
+    api.__respond("listPayments", { data: [{ id: "P1", case_id: "C1", status: "created", amount: 5000, purpose: "peshi_fee", expires_at: "2026-11-28T10:00:00Z", created_at: "2026-11-21T10:00:00Z" }] });
+    const ui = await mountTracking({});
+    const sub = ui.container.querySelector('[data-matter="C1"] [data-matter-next-sub]');
+    assert.ok(sub, "no detail line under the waiting item");
+    assert.match(sub.textContent, /PKR 5,000/);
+    assert.match(sub.textContent, /Pay by 28 Nov/);
+    await ui.unmount();
+});
+
+test("My matters: only the top waiting card gets the solid button (as the preview)", async () => {
+    api.__respond("listPayments", { data: [{ id: "P1", case_id: "C1", status: "created", amount: 5000, purpose: "peshi_fee" }] });
+    const ui = await mountTracking({});
+    // Both C1 (fee) and C2 (terms) wait on the client; only the first card's button is solid.
+    const btns = [...ui.container.querySelectorAll("[data-open-matter]")];
+    const solid = btns.filter(b => /brand-solid/.test(b.style.background));
+    assert.equal(solid.length, 1, "more than one solid button competes for attention");
+    assert.equal(solid[0], btns[0], "the solid button is not on the top card");
+    // The others sit on the brand tint: teal filled (user's pick, 2026-11-25),
+    // never a transparent fill that vanishes into the panel.
+    for (const b of btns.slice(1)) assert.match(b.getAttribute("style"), /#8AE7F2|rgb\(138, 231, 242\)/i, "the other cards' button is not the chosen cyan gradient");
+    await ui.unmount();
+});
+
+test("the case card's lawyer-panel buttons stand apart from the tinted panel", async () => {
+    const ui = await mountTracking({ case: "C1" });
+    const acts = [...ui.container.querySelectorAll("[data-person-action]")];
+    assert.ok(acts.length > 0);
+    for (const b of acts) assert.match(b.style.background, /--surface-2/);
+    await ui.unmount();
+});
+
+test("My matters: closed matters fold away under 'Closed matters (n)'", async () => {
+    api.__respond("listCases", { data: { items: [caseRow("C1", "Newest matter"), { ...caseRow("C9", "Old settled case"), status: "closed" }] } });
+    const ui = await mountTracking({});
+    assert.equal(ui.container.querySelector('[data-matter="C9"]'), null, "a closed matter is listed with the live ones");
+    const toggle = ui.container.querySelector("[data-closed-matters]");
+    assert.equal(toggle.textContent, "▸ Closed matters (1)");
+    await click(toggle);
+    assert.ok(ui.container.querySelector('[data-matter="C9"]'));
+    await ui.unmount();
+});
+
+/* ── board 1: "Agreements on this matter" (2026-11-25) ───────────────────── */
+
+const hiredOnC1 = () => api.__respond("listEngagements", { data: [
+    { id: "E1", case_id: "C1", status: "accepted", lawyer_name: "Adv Ayesha Khan" }] });
+const agr = (id, title, over = {}) => ({ id, _id: id, title, case_id: "C1", status: "pending", signed_count: 1, total_parties: 2,
+    parties: [{ user_id: "u1", full_name: "Me", signed: true }, { user_id: "L1", full_name: "Adv Ayesha Khan", signed: false }],
+    updated_at: "2026-11-24T05:00:00Z", ...over });
+
+test("matter agreements: this matter's agreements, in the app's words, each opening the one Agreements page", async () => {
+    hiredOnC1();
+    api.__respond("listAgreements", { data: { items: [
+        agr("G1", "Rent agreement — 12 months"),
+        agr("G2", "Settlement terms", { status: "cancelled",
+            declined: { by_user_id: "L1", by_name: "Adv Ayesha Khan", at: "2026-11-24T05:00:00Z", reason: "The fee clause is wrong." } }),
+        agr("G3", "Engagement letter", { status: "executed" }),
+    ], pages: 1 } });
+    const ui = await mountTracking({ case: "C1", tab: "documents" });
+    const box = ui.container.querySelector("[data-matter-agreements]");
+    assert.ok(box, "no Agreements on this matter section");
+    assert.ok(api.__calls("listAgreements").some(c => c.args[0]?.case_id === "C1"), "not asked for this matter only");
+    assert.match(box.textContent, /With Adv Ayesha Khan, your lawyer on this matter/);
+    const status = id => box.querySelector(`[data-matter-agreement="${id}"] [data-agreement-status]`).textContent;
+    assert.equal(status("G1"), "Waiting for Adv Ayesha Khan");
+    assert.equal(status("G2"), "Declined by Adv Ayesha Khan");
+    assert.match(box.querySelector('[data-matter-agreement="G2"] [data-agreement-reason]').textContent, /The fee clause is wrong\./);
+    assert.equal(status("G3"), "Signed by everyone");
+    await click([...box.querySelector('[data-matter-agreement="G1"]').querySelectorAll("button")].find(b => b.textContent === "Open"));
+    assert.equal(nav().pushed.at(-1), "/agreements?agreement=G1");
+    // "New agreement" follows the SERVER's builder switch; unanswered here
+    // (GET /agreements/capabilities), so it is off: no button (fail closed).
+    assert.equal(box.querySelector("[data-new-matter-agreement]"), null);
+    await ui.unmount();
+});
+
+test("matter agreements: with the server's builder on, New agreement opens the builder FOR this matter", async () => {
+    const builder = await import("../src/components/client/useAgreementBuilder.js");
+    builder.__resetAgreementBuilder();
+    hiredOnC1();
+    api.__respond("getAgreementCapabilities", { data: { diy_builder: true }, error: null });
+    api.__respond("listAgreements", { data: { items: [], pages: 1 } });
+    try {
+        const ui = await mountTracking({ case: "C1", tab: "documents" });
+        const btn = ui.container.querySelector("[data-new-matter-agreement]");
+        assert.ok(btn, "no New agreement with the builder on");
+        await click(btn);
+        assert.equal(nav().pushed.at(-1), "/agreements?case=C1");
+        await ui.unmount();
+    } finally { builder.__resetAgreementBuilder(); }
+});
+
+test("matter agreements: none yet, no lawyer, and a failed read each say so", async () => {
+    hiredOnC1();
+    api.__respond("listAgreements", { data: { items: [], pages: 1 } });
+    let ui = await mountTracking({ case: "C1", tab: "documents" });
+    assert.match(ui.container.querySelector("[data-matter-agreements-empty]").textContent, /No agreements on this matter yet/);
+    await ui.unmount();
+
+    api.__respond("listEngagements", { data: [] });
+    ui = await mountTracking({ case: "C1", tab: "documents" });
+    assert.match(ui.container.querySelector("[data-matter-agreements-empty]").textContent, /need a lawyer on it/);
+    await ui.unmount();
+
+    api.__respond("listAgreements", { data: null, error: { message: "boom" } });
+    ui = await mountTracking({ case: "C1", tab: "documents" });
+    assert.ok(ui.container.querySelector("[data-matter-agreements-error]"), "a failed read shown as 'none'");
+    assert.equal(ui.container.querySelector("[data-matter-agreements-empty]"), null);
+    await ui.unmount();
+});
+
+test("matter agreements: a lawyer's decline shows without a reload", async () => {
+    hiredOnC1();
+    api.__respond("listAgreements", { data: { items: [agr("G1", "Rent agreement")], pages: 1 } });
+    const ui = await mountTracking({ case: "C1", tab: "documents" });
+    const { broadcastNotification } = await import("../src/lib/notificationTarget.js");
+    api.__respond("listAgreements", { data: { items: [agr("G1", "Rent agreement", { status: "cancelled",
+        declined: { by_user_id: "L1", by_name: "Adv Ayesha Khan", at: null, reason: "Not now." } })], pages: 1 } });
+    await act(async () => { broadcastNotification({ type: "agreement_declined", payload: { agreement_id: "G1", case_id: "C1" } }); });
+    await act(async () => { await new Promise(r => realSetTimeout(r, 80)); });
+    assert.match(ui.container.querySelector('[data-matter-agreement="G1"]').textContent, /Declined by Adv Ayesha Khan.*Not now\./s);
+    await ui.unmount();
+});
+
+test("matter agreements: ?agreement= highlights that row and keeps it in the address", async () => {
+    hiredOnC1();
+    api.__respond("listAgreements", { data: { items: [agr("G1", "Rent agreement"), agr("G2", "Other one")], pages: 1 } });
+    const ui = await mountTracking({ case: "C1", tab: "documents", agreement: "G1" });
+    const g1 = ui.container.querySelector('[data-matter-agreement="G1"]');
+    assert.ok(g1.hasAttribute("data-focused"), "the linked agreement is not highlighted");
+    assert.equal(ui.container.querySelector('[data-matter-agreement="G2"]').hasAttribute("data-focused"), false);
+    assert.equal(ui.container.querySelector("[data-matter-agreement-missing]"), null);
+    assert.match(dom.window.location.search, /agreement=G1/, "the address dropped the agreement");
+    await ui.unmount();
+});
+
+test("matter agreements: an ?agreement= that is not on this matter says so", async () => {
+    hiredOnC1();
+    api.__respond("listAgreements", { data: { items: [agr("G1", "Rent agreement")], pages: 1 } });
+    const ui = await mountTracking({ case: "C1", tab: "documents", agreement: "NOPE" });
+    assert.match(ui.container.querySelector("[data-matter-agreement-missing]").textContent, /not on this matter/);
+    assert.equal(ui.container.querySelector("[data-focused]"), null);
+    await ui.unmount();
+});
+
+test("matter agreements: an agreement waiting for the client says so and offers Review & sign", async () => {
+    const { matterAgreementView } = await import("../src/components/client/ModTracking.jsx");
+    const v = matterAgreementView(agr("G9", "Letter", { parties: [{ user_id: "L1", full_name: "Adv A", signed: true }, { user_id: "u1", signed: false }] }), "u1");
+    assert.equal(v.status, "Waiting for your signature");
+    assert.equal(v.mine, true);
+    assert.equal(matterAgreementView(agr("G8", "X", { status: "cancelled", declined: { by_user_id: "u1", by_name: "Me" } }), "u1").status, "You declined it");
+    assert.equal(matterAgreementView(agr("G7", "X", { status: "cancelled" })).status, "Cancelled");
 });
 
 test("payments: one fee due is the big card with one Pay, and is not repeated in the history", async () => {
@@ -984,6 +1211,35 @@ test("with the client signed in, an agreement waiting for their signature is on 
     await act(async () => root.unmount()); container.remove();
 });
 
+test("once the lawyer signs or declines, the 'Sign' to-do goes without a reload (live notice)", async () => {
+    api.__respond("bootstrapAuth", true);
+    api.__respond("getMe", { data: { _id: "u1", role: "client", full_name: "Test Client" } });
+    api.__respond("listAgreements", { data: { items: [
+        { _id: "A1", case_id: "C1", status: "pending", title: "Engagement letter", signed_count: 1, total_parties: 2,
+          parties: [{ user_id: "L1", signed: true }, { user_id: "u1", signed: false }] },
+    ] } });
+    nav().params.clear();
+    nav().params.set("case", "C1");
+    const Module7 = (await import("../src/components/client/ModTracking.jsx")).default;
+    const { CaseCtx } = await import("../src/components/shared/CaseContext.jsx");
+    const { AuthProvider } = await import("../src/context/AuthContext.jsx");
+    const { broadcastNotification } = await import("../src/lib/notificationTarget.js");
+    const container = dom.window.document.createElement("div");
+    dom.window.document.body.appendChild(container);
+    const root = createRoot(container);
+    const ctx = { notifications: [], markNotificationDone: () => {}, markAllNotificationsDone: () => {}, appointmentMilestones: [] };
+    await act(async () => { root.render(h(AuthProvider, null, h(CaseCtx.Provider, { value: ctx }, h(Module7, { isDark: true })))); });
+    await act(async () => { await new Promise(r => realSetTimeout(r, 120)); });
+    assert.ok(container.querySelector('[data-todo="agreements"]'), "precondition: the Sign to-do is there");
+
+    // The agreement is no longer pending (signed by everyone, or declined).
+    api.__respond("listAgreements", { data: { items: [] } });
+    await act(async () => { broadcastNotification({ type: "agreement_declined", payload: { agreement_id: "A1", case_id: "C1" } }); });
+    await act(async () => { await new Promise(r => realSetTimeout(r, 120)); });
+    assert.equal(container.querySelector('[data-todo="agreements"]'), null, "the stale Sign to-do is still shown");
+    await act(async () => root.unmount()); container.remove();
+});
+
 test("the Documents tab hands off to the Vault", async () => {
     api.__respond("myDocumentsV2", { data: { items: [{ id: "D2", title: "Plaint", review_status: "approved", case_id: "C1", downloadable: true }] } });
     const ui = await mountTracking({ case: "C1", tab: "documents" });
@@ -1048,5 +1304,94 @@ test("switching case re-reads the hire requests for the new case", async () => {
     await click([...ui.container.querySelectorAll("[data-case-option]")].find(b => /Rent dispute/.test(b.textContent)));
     await act(async () => { await new Promise(r => realSetTimeout(r, 40)); });
     assert.ok(argsOf("listEngagements").filter(a => a?.caseId === "C2").length > before, "Case B's hire requests were not read");
+    await ui.unmount();
+});
+
+/* ── terms to answer live in the hero's lawyer panel, not a second card (2026-11-25) ── */
+
+test("terms to answer show once, in the lawyer panel, not again as a to-do card", async () => {
+    api.__respond("listPayments", { data: [] });
+    const ui = await mountTracking({ case: "C2" });
+    const panel = ui.container.querySelector("[data-hero-person]");
+    assert.ok(panel.querySelector("[data-person-waiting]"), "the panel does not say it is waiting on the client");
+    assert.match(panel.textContent, /Adv Sana/);
+    assert.ok(panel.querySelector('[data-person-action="engagement"]'), "no Review terms in the panel");
+    const box = ui.container.querySelector("[data-case-todos]");
+    assert.equal(box.querySelector('[data-todo="engagement"]'), null, "the terms were listed twice");
+    assert.match(box.textContent, /Nothing else is waiting on you/);
+    await ui.unmount();
+});
+
+/* ── Documents tab layout A (2026-11-25): one column, actions in the header ── */
+
+test("Documents tab: one column, Draft/Vault in the Documents header, agreements after the files", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [{ id: "D2", title: "Plaint", review_status: "approved", case_id: "C1", downloadable: true }] } });
+    const ui = await mountTracking({ case: "C1", tab: "documents" });
+    assert.equal(ui.container.querySelector('aside[aria-label="Need a new document"]'), null, "the side rail is still there");
+    const docs = ui.container.querySelector('section[aria-label="All documents"]');
+    assert.ok(docs.querySelector("[data-draft-document]") && docs.querySelector("[data-open-vault]"), "Draft / Vault are not in the Documents header");
+    const agr = ui.container.querySelector("[data-matter-agreements]");
+    assert.ok(docs.compareDocumentPosition(agr) & Node.DOCUMENT_POSITION_FOLLOWING, "agreements are not after the files");
+    await ui.unmount();
+});
+
+/* ── My matters, 2026-11-25: one progress line, the lawyer's full name ─────── */
+
+test("My matters reads every card as 'Stage N of 5', even with lawyer milestones, and names the lawyer in full", async () => {
+    api.__respond("listEngagements", { data: [
+        { id: "E9", case_id: "C1", status: "accepted", lawyer_name: "Test Lawyer", accepted_at: "2026-11-10T09:00:00Z" },
+    ] });
+    api.__respond("listCases", { data: { items: [{ ...caseRow("C1", "Newest matter"), lawyer_id: "L1",
+        milestones: [{ title: "Notice sent", completed: true }] }] } });
+    const ui = await mountTracking({});
+    const card = ui.container.querySelector('[data-matter="C1"]');
+    assert.ok(card, "no card for C1");
+    assert.doesNotMatch(card.textContent, /steps done/, "a milestone count is back on My matters");
+    assert.match(card.querySelector("[data-matter-stage]").textContent, /^Stage \d of 5 · /);
+    assert.equal(card.querySelector("[data-matter-headline]").textContent, "Test Lawyer is working on your case");
+    await ui.unmount();
+});
+
+test("colour roles: Open case and All my payments are the teal outline, the case number is teal (2026-11-25)", async () => {
+    const ui = await mountTracking({});
+    const open = ui.container.querySelector('[data-matter="C2"] [data-open-matter]') || ui.container.querySelector("[data-open-matter]");
+    const styles = [...ui.container.querySelectorAll("[data-open-matter]")].map(b => b.getAttribute("style"));
+    assert.ok(styles.some(st => /#8AE7F2|rgb\(138, 231, 242\)/i.test(st)), "no Open case button has the chosen cyan gradient");
+    assert.match(ui.container.querySelector("[data-open-all-payments]").getAttribute("style"), /--teal-ink/);
+    assert.match(ui.container.querySelector("[data-matter-number]").getAttribute("style"), /--teal-ink/);
+    assert.ok(open);
+    await ui.unmount();
+});
+
+test("documents: Open is the teal tonal button, Download a round icon button with its name (2026-11-25)", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [{ id: "D2", title: "Plaint", review_status: "approved", case_id: "C1", downloadable: true }] } });
+    const ui = await mountTracking({ case: "C1", tab: "documents" });
+    const row = ui.container.querySelector('[data-doc="D2"]');
+    const [open, dl] = row.querySelectorAll("button");
+    assert.match(open.getAttribute("style"), /color-mix\(in srgb, var\(--teal-ink/, "Open is not the tonal teal");
+    assert.ok(dl.hasAttribute("data-doc-download"));
+    assert.match(dl.getAttribute("style"), /border-radius: 50%/, "Download is not a round icon button");
+    assert.equal(dl.getAttribute("title"), "Download");
+    assert.equal(dl.textContent, "Download", "the icon button lost its accessible name");
+    await ui.unmount();
+});
+
+test("matter flow: no transparent buttons on the Documents tab or the case bar (2026-11-25)", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [{ id: "D2", title: "Plaint", review_status: "approved", case_id: "C1", downloadable: true }] } });
+    const ui = await mountTracking({ case: "C1", tab: "documents" });
+    const picks = [ui.container.querySelector("[data-open-vault]"), ui.container.querySelector("[data-doc-download]"),
+        ui.container.querySelector("[data-case-switch]"), ...ui.container.querySelectorAll('[data-doc="D2"] button')].filter(Boolean);
+    assert.ok(picks.length >= 4, "buttons not found");
+    for (const b of picks) {
+        const bg = b.style.background || b.style.backgroundColor || "";
+        assert.ok(bg && !/^(transparent|none)$/.test(bg), `a button has no fill: ${b.textContent || b.getAttribute("title")}`);
+    }
+    await ui.unmount();
+});
+
+test("Open Vault wears the same cyan gradient as Open case (2026-11-25)", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [{ id: "D2", title: "Plaint", review_status: "approved", case_id: "C1", downloadable: true }] } });
+    const ui = await mountTracking({ case: "C1", tab: "documents" });
+    assert.match(ui.container.querySelector("[data-open-vault]").getAttribute("style"), /#8AE7F2|rgb\(138, 231, 242\)/i);
     await ui.unmount();
 });

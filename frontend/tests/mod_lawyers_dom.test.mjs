@@ -1360,3 +1360,55 @@ test("View on Map opens the app's map page on this lawyer, not Google Maps", asy
     assert.match(pop.textContent, /12 Mall Road, Lahore/);
     await ui.unmount();
 });
+
+/* ── profile layout A (2026-11-25): one action bar for what the client can do ── */
+
+test("profile: engaged shows a status, Message opens the case's messages", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    api.__respond("listEngagements", { data: [{ id: "E1", status: "accepted", lawyer_id: "L1", case_id: "C7", case_title: "Rent dispute", lawyer_name: "Adv L1" }] });
+    const ui = await mountLawyers();
+    await ui.settle();
+    await openProfile(ui);
+    const bar = ui.container.querySelector("[data-lawyer-actions]");
+    assert.equal(bar.getAttribute("data-lawyer-actions"), "accepted");
+    assert.match(bar.querySelector("[data-lawyer-status]").textContent, /Engaged on your case/);
+    assert.equal(bar.querySelectorAll("button[disabled]").length, 0, "a status is shown as a dead button");
+    nav().pushed.length = 0;
+    await act(async () => { bar.querySelector("[data-lawyer-message]").click(); });
+    assert.equal(nav().pushed.at(-1), "/tracking?case=C7&tab=messages");
+    await ui.unmount();
+});
+
+test("profile: terms received lead to the hire request on the case", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    api.__respond("listEngagements", { data: [{ id: "E2", status: "terms_proposed", lawyer_id: "L1", case_id: "C7", lawyer_name: "Adv L1" }] });
+    const ui = await mountLawyers();
+    await ui.settle();
+    await openProfile(ui);
+    const bar = ui.container.querySelector("[data-lawyer-actions]");
+    nav().pushed.length = 0;
+    await act(async () => { bar.querySelector("[data-lawyer-review-terms]").click(); });
+    assert.equal(nav().pushed.at(-1), "/tracking?case=C7&engagement=E2");
+    await ui.unmount();
+});
+
+test("describe your problem opens inside the match card, not below the toolbar (2026-11-25)", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    const ui = await mountLawyers();
+    await ui.settle();
+    await act(async () => { ui.container.querySelector("[data-open-ask]").click(); });
+    const box = ui.container.querySelector("[data-ai-ask]");
+    assert.ok(box, "the box did not open");
+    assert.ok(box.closest("[data-lawyers-hero]"), "the box opened outside the card");
+    await ui.unmount();
+});
+
+test("profile header shows a real middle dot, never an escape code (2026-11-25)", async () => {
+    api.__respond("searchLawyers", { data: { items: [lawyer("L1")] } });
+    const ui = await mountLawyers();
+    await ui.settle();
+    await openProfile(ui);
+    assert.ok(!ui.text().includes(String.fromCharCode(92) + "u00"), "an escape code is printed as text");
+    assert.match(ui.container.querySelector("[data-lawyer-header]").textContent, /4\.5 · 5 reviews/);
+    await ui.unmount();
+});

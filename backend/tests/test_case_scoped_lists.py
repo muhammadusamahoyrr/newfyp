@@ -38,6 +38,10 @@ async def seeded(mongo):
         {"_id": "CS-G3", "case_id": "CS-A", "status": "pending", "created_by": lawyer, "parties": [party(lawyer), party(other)], "created_at": NOW, "title": "C"},
         # a draft is private to its author even when the case matches
         {"_id": "CS-G4", "case_id": "CS-A", "status": "draft", "created_by": lawyer, "parties": [party(lawyer), party(client)], "created_at": NOW, "title": "D"},
+        # on NO matter: the list's "Not linked" filter (2026-11-25)
+        {"_id": "CS-G5", "status": "executed", "created_by": client, "parties": [party(client), party(other)], "created_at": NOW, "title": "E"},
+        # someone else's unlinked agreement: never the client's
+        {"_id": "CS-G6", "case_id": None, "status": "pending", "created_by": other, "parties": [party(other), party(lawyer)], "created_at": NOW, "title": "F"},
     ]
     appts = [
         {"_id": "CS-A1", "client_id": client, "lawyer_id": lawyer, "case_id": "CS-A", "status": "pending",
@@ -98,6 +102,17 @@ async def test_agreements_filter_to_one_case_without_widening_visibility(seeded)
     assert ids(await ag.list_agreements(seeded["client"], case_id="CS-A")) == ["CS-G1"]
 
 
+async def test_agreements_on_no_matter_inside_the_callers_own(seeded):
+    from app.core.exceptions import AppValidationError
+    from app.services import agreement_service as ag
+    ids = lambda res: sorted(r["_id"] if "_id" in r else r["id"] for r in res["items"])
+    # only the client's own agreement with no case; another user's unlinked one never
+    assert ids(await ag.list_agreements(seeded["client"], unlinked=True)) == ["CS-G5"]
+    assert ids(await ag.list_agreements(seeded["client"], status="pending", unlinked=True)) == []
+    with pytest.raises(AppValidationError):
+        await ag.list_agreements(seeded["client"], case_id="CS-A", unlinked=True)
+
+
 async def test_appointment_actions_filter_to_one_case_inside_the_callers_own(seeded):
     from app.repositories.appointment_repo import AppointmentRepository
     repo = AppointmentRepository()
@@ -113,4 +128,5 @@ def test_the_routes_accept_case_id():
     for fn in (payments.list_mine, engagements.list_engagements, agreements.list_agreements,
                appointments.list_appointments):
         assert "case_id" in inspect.signature(fn).parameters, fn.__name__
+    assert "unlinked" in inspect.signature(agreements.list_agreements).parameters
     assert "needs_action" in inspect.signature(appointments.list_appointments).parameters

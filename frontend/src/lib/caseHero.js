@@ -33,6 +33,9 @@ export function pickEngagement(list = [], caseId = null) {
 const dayWords = n => (n === 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} days`);
 const shortDate = iso => (iso ? formatPkt(iso, { day: "numeric", month: "short" }) : null);
 const firstName = name => String(name || "").replace(/^(adv\.?|advocate)\s+/i, "").split(" ")[0] || "your lawyer";
+// The name as the lawyer gave it, without the title: "Test Lawyer", "Hina
+// Tariq". A first name alone read "Test is working on your case" (2026-11-25).
+const fullName = name => String(name || "").replace(/^(adv\.?|advocate)\s+/i, "").trim() || "Your lawyer";
 
 /** Up to five steps around the current one: the last two done, the one in
  *  progress ("now"), then what follows. `steps` are mapped milestones
@@ -51,6 +54,37 @@ export function stageWindow(steps = []) {
             state: at < now ? "done" : at === now ? "now" : "next",
         };
     });
+}
+
+/** The case's JOURNEY, for a case whose lawyer has added no milestones yet
+ *  (2026-11-25, as the approved preview draws it). Five fixed stages, each
+ *  marked done only from a real fact -- never guessed:
+ *    Problem described   always (the case exists), dated by its creation
+ *    Choosing a lawyer / Lawyer hired   done once a hire request is accepted
+ *                        (or a lawyer is assigned)
+ *    Case filed          done once the court has a hearing for it, or it closed
+ *    Hearings            dated by the next hearing; done when it closed
+ *    Decision            done when it closed
+ *  The first stage not done is "now" ("You are here"). */
+export function journeyStages({ caseInfo = null, engagement = null, nextHearing = null, hadHearing = false } = {}) {
+    const closed = CLOSED.has(String(caseInfo?.status || ""));
+    const hired = engagement?.status === "accepted" || !!caseInfo?.lawyerAssigned;
+    const created = caseInfo?.filed && caseInfo.filed !== "—" ? caseInfo.filed : "";
+    const list = [
+        { title: "Problem described", when: created, done: true },
+        { title: hired ? "Lawyer hired" : "Choosing a lawyer",
+          when: engagement?.status === "accepted" && engagement.accepted_at ? shortDate(engagement.accepted_at) : "", done: hired },
+        { title: "Case filed", when: "", done: !!(nextHearing || hadHearing || closed) },
+        { title: "Hearings", when: nextHearing ? shortDate(nextHearing.date) : "", done: closed },
+        { title: "Decision", when: "", done: closed },
+    ];
+    let now = list.findIndex(s => !s.done);
+    if (now === -1) now = list.length;
+    return list.map((s, i) => ({
+        title: s.title,
+        when: i === now ? "You are here" : s.when,
+        state: i < now ? "done" : i === now ? "now" : "next",
+    }));
 }
 
 /** What the card says. `actions` are names the page maps to handlers:
@@ -76,6 +110,8 @@ function heroCore({ caseInfo, nextHearing = null, engagement = null, feeText = "
     } : e?.status === "terms_proposed" ? {
         label: "Offering to take your case", name: lawyer || "A lawyer",
         sub: feeText ? `Proposed fee ${feeText}` : "Sent you terms",
+        // The to-do's "Answer the terms" lives here now, not in a second card.
+        waiting: true, note: "Read the scope and fee, then accept or decline.",
         actions: [{ label: "Review terms", action: "engagement" }],
     } : e?.status === "requested" ? {
         label: "You asked", name: lawyer || "A lawyer",
@@ -100,7 +136,8 @@ function heroCore({ caseInfo, nextHearing = null, engagement = null, feeText = "
     if (e?.status === "terms_proposed") {
         return { ...base, tone: "warn", headline: `${lawyer || "A lawyer"} sent you terms`,
             sub: `${feeText ? `${feeText}${e.scope_note ? ` · ${e.scope_note}` : ""}. ` : ""}Nothing is agreed until you accept.`,
-            primary: { label: "Review terms", action: "engagement" }, secondary: null };
+            // Review terms is the lawyer panel's button: not a second one here (2026-11-25).
+            primary: null, secondary: null };
     }
     if (engaged && e.completion_proposed_by === "lawyer") {
         return { ...base, tone: "warn", headline: `${lawyer || "Your lawyer"} says the work is finished`,
@@ -132,7 +169,7 @@ function heroCore({ caseInfo, nextHearing = null, engagement = null, feeText = "
             sub: "Find a lawyer and ask them to take it on. You see their fee before anything is agreed.",
             primary: { label: "Find a lawyer", action: "find-lawyer" }, secondary: null };
     }
-    return { ...base, headline: `${engaged ? firstName(lawyer) : "Your lawyer"} is working on your case`,
+    return { ...base, headline: `${engaged ? fullName(lawyer) : "Your lawyer"} is working on your case`,
         sub: "No hearing date yet. It appears here as soon as the court sets one.",
         primary: { label: `Message ${engaged ? firstName(lawyer) : "your lawyer"}`, action: "messages" },
         secondary: { label: "Open timeline", action: "timeline" } };

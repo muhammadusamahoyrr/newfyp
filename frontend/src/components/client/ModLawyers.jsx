@@ -450,7 +450,7 @@ const REQUEST_TIMES = Array.from({ length: 24 }, (_, i) => {
 const MLP_CSS = `.mlp-btn{height:42px;padding:0 18px;border-radius:12px;font:inherit;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;white-space:nowrap;box-sizing:border-box;transition:background .15s,border-color .15s,color .15s,filter .15s,transform .12s}
 .mlp-btn:active:not(:disabled){transform:scale(.97)}
 .mlp-btn:disabled{opacity:.55;cursor:not-allowed}
-.mlp-primary{border:0;color:#fff;background:linear-gradient(135deg,#12897f,#1c9c66);box-shadow:0 10px 22px -14px rgba(28,156,102,.9)}
+.mlp-primary{border:0;color:var(--on-brand,#04212A);background:var(--brand-solid,linear-gradient(135deg,#3EE0A1,#2EC4D6));box-shadow:0 10px 22px -14px rgba(46,196,214,.8)}
 .mlp-primary:hover:not(:disabled){filter:brightness(1.1)}
 .mlp-outline{border:1px solid var(--mlp-line);background:transparent;color:var(--mlp-ink)}
 .mlp-outline:hover:not(:disabled){border-color:var(--mlp-accent);color:var(--mlp-accent);background:color-mix(in srgb,var(--mlp-accent) 8%,transparent)}
@@ -1986,148 +1986,108 @@ const ModLawyers = () => {
                     <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.primary} strokeWidth="2"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
                     Back to Lawyers
                 </button>
-                <div className="rgrid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <Card>
-                            <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                                <div style={{ width: 72, height: 72, borderRadius: 20, background: ac.light, border: `2px solid ${ac.solid}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: ac.solid, flexShrink: 0 }}>
-                                    {l.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                                        <span style={{ fontWeight: 800, color: t.text, fontSize: 17 }}>{l.name}</span>
-                                        <Badge type={l.avail ? "success" : "gray"}>{l.avail ? "Available" : "Busy"}</Badge>
-                                    </div>
-                                    <div style={{ fontSize: 13, color: ac.solid, fontWeight: 600, marginTop: 2 }}>{l.spec}</div>
-                                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>Bar No: {l.bar || UNAVAILABLE}</div>
-                                    <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
-                                        <StarRow rating={l.rating} color={ac.solid} size={13} />
-                                        <span style={{ fontSize: 12, color: t.textMuted, marginLeft: 4 }}>{l.rating} · {l.reviews} reviews</span>
-                                    </div>
-                                </div>
+                <style>{MLP_CSS}</style>
+                {/* Layout A (canvas board LawyerProfileA, 2026-11-25): a wide
+                    header with the facts, one action bar for what the client can
+                    do with this lawyer, then credentials + reviews beside a slim
+                    office rail. */}
+                <section data-lawyer-header style={{ display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap", padding: "24px 26px", borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, marginBottom: 14 }}>
+                    <span aria-hidden="true" style={{ width: 84, height: 84, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 28, fontWeight: 800,
+                        background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" }}>
+                        {l.name.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                    </span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0, flex: "1 1 320px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                            <h1 style={{ margin: 0, font: "800 26px/1.15 Nunito, 'Hanken Grotesk', sans-serif", color: t.text }}>{l.name}</h1>
+                            <Badge type={l.avail ? "success" : "gray"}>{l.avail ? "Available" : "Busy"}</Badge>
+                        </div>
+                        <span style={{ fontSize: 14, color: t.textMuted }}>
+                            {[l.spec ? `${l.spec} lawyer` : null, l.city || null, `Bar No: ${l.bar || UNAVAILABLE}`].filter(Boolean).join(" \u00b7 ")}
+                        </span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: t.textMuted }}>
+                            {l.reviews > 0
+                                ? <><StarRow rating={l.rating} color={t.warn} size={13} /><span>{l.rating} · {l.reviews} review{l.reviews === 1 ? "" : "s"}</span></>
+                                : <><Ic n="star" s={14} c={t.warn} /><span>No reviews yet</span></>}
+                        </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                        {[["Experience", `${l.exp} yrs`, null], ["Fee", l.fee ? fmtFee(l.fee) : "On request", l.fee ? "per hour" : "ask when you book"], ["Location", l.city || UNAVAILABLE, null]].map(([k, v, sub]) => (
+                            <div key={k} data-lawyer-stat={k} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 22px", borderLeft: `1px solid ${t.border}` }}>
+                                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.textMuted }}>{k}</span>
+                                <b style={{ fontSize: 18, color: t.text }}>{v}</b>
+                                {sub && <span style={{ fontSize: 12.5, color: t.textMuted }}>{sub}</span>}
                             </div>
-                            {l.bio && (
-                                <p style={{ fontSize: 13, color: t.textDim, margin: "12px 0 0", lineHeight: 1.6 }}>{l.bio}</p>
+                        ))}
+                    </div>
+                </section>
+                {(() => {
+                    const engState = engagementWith(l._id);
+                    const eng = engState ? myEngagements.find(e => e.lawyer_id === l._id && e.status === engState) : null;
+                    const caseQ = eng?.case_id ? `case=${encodeURIComponent(eng.case_id)}` : "";
+                    const first = String(l.name || "This lawyer").split(" ")[0];
+                    const status = engState === "accepted" ? { label: "\u2713 Engaged on your case", note: eng?.case_title ? `${l.name} is working on \u201c${eng.case_title}\u201d` : `${l.name} is working on your case` }
+                        : engState === "terms_proposed" ? { label: "Terms received", note: `${first} sent you terms. Nothing is agreed until you accept.`, warn: true }
+                        : engState === "requested" ? { label: "Request pending", note: `Waiting for ${first} to reply to your hire request.` }
+                        : null;
+                    const sample = l._id?.startsWith("api-");
+                    const book = (
+                        <button type="button" className={`mlp-btn ${engState ? "mlp-primary" : "mlp-outline"}`} style={mlpVars}
+                            disabled={!l.avail || sample} onClick={() => openBooking(l)}>
+                            <Ic n="clock" s={15} c="currentColor" />Book Appointment
+                        </button>
+                    );
+                    return (
+                        <div data-lawyer-actions={engState || "none"} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "12px 16px", borderRadius: 16, marginBottom: 20,
+                            background: status ? (status.warn ? `color-mix(in srgb, ${t.warn} 12%, transparent)` : "var(--brand-soft, rgba(62,224,161,.13))") : t.card,
+                            border: status ? 0 : `1px solid ${t.border}` }}>
+                            {status ? (<>
+                                <span data-lawyer-status style={{ display: "inline-flex", alignItems: "center", height: 42, padding: "0 16px", borderRadius: 999, fontWeight: 700, fontSize: 14,
+                                    background: status.warn ? `color-mix(in srgb, ${t.warn} 18%, transparent)` : "var(--brand-soft, rgba(62,224,161,.13))", color: status.warn ? t.warn : t.primary }}>{status.label}</span>
+                                <span style={{ fontSize: 13.5, color: t.textMuted, flex: "1 1 200px", minWidth: 0 }}>{status.note}</span>
+                            </>) : (
+                                <span style={{ fontSize: 13.5, color: t.textMuted, flex: "1 1 200px", minWidth: 0 }}>Book a consultation first, or ask {String(l.name || "this lawyer").split(" ")[0]} to take your case.</span>
                             )}
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 16, background: t.inputBg, borderRadius: 12, padding: 14 }}>
-                                {[["Experience", `${l.exp} yrs`], ["Fee/hr", fmtFee(l.fee)], ["City", l.city]].map(([k, v]) => (
-                                    <div key={k} style={{ textAlign: "center" }}>
-                                        <div style={{ fontSize: 10, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>{k}</div>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: t.text, marginTop: 3 }}>{v}</div>
-                                    </div>
-                                ))}
-                            </div>
-                            <style>{MLP_CSS}</style>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-                                <button type="button" className="mlp-btn mlp-outline" style={mlpVars}
-                                    disabled={!l.avail || l._id?.startsWith("api-")}
-                                    onClick={() => openBooking(l)}>
-                                    <Ic n="clock" s={15} c="currentColor" />Book Appointment
-                                </button>
-                                {(() => {
-                                    const engState = engagementWith(l._id);
-                                    if (engState === "accepted") return (
-                                        <button type="button" className="mlp-btn mlp-primary" disabled>✓ Engaged on Your Case</button>
-                                    );
-                                    if (engState === "requested") return (
-                                        <button type="button" className="mlp-btn mlp-primary" disabled>Request Pending…</button>
-                                    );
-                                    if (engState === "terms_proposed") return (
-                                        <button type="button" className="mlp-btn mlp-primary" disabled
-                                            title="This lawyer sent you terms. Review them under My Hire Requests on the Tracking page.">
-                                            Terms Received — Review in Hire Requests
-                                        </button>
-                                    );
-                                    return (
-                                        <button type="button" className="mlp-btn mlp-primary"
-                                            disabled={l._id?.startsWith("api-")}
-                                            onClick={() => openHire(l)}
-                                            title={l._id?.startsWith("api-") ? "Sample profile — cannot be hired" : "Ask this lawyer to take your case"}
-                                        >Request to Hire</button>
-                                    );
-                                })()}
-                            </div>
-                        </Card>
+                            {engState === "accepted" && caseQ && (
+                                <button type="button" data-lawyer-message className="mlp-btn mlp-outline" style={mlpVars}
+                                    onClick={() => router.push(`/tracking?${caseQ}&tab=messages`)}>Message</button>
+                            )}
+                            {engState === "terms_proposed" && caseQ ? (
+                                <button type="button" data-lawyer-review-terms className="mlp-btn mlp-primary"
+                                    onClick={() => router.push(`/tracking?${caseQ}&engagement=${encodeURIComponent(eng.id)}`)}>Review terms</button>
+                            ) : book}
+                            {!engState && (
+                                <button type="button" className="mlp-btn mlp-primary"
+                                    disabled={sample}
+                                    onClick={() => openHire(l)}
+                                    title={sample ? "Sample profile \u2014 cannot be hired" : "Ask this lawyer to take your case"}
+                                >Request to Hire</button>
+                            )}
+                        </div>
+                    );
+                })()}
+                <div className="rgrid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 20, alignItems: "start" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
                         <Card>
-                            <div style={{ fontWeight: 700, color: t.text, fontSize: 14, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                                <Ic n="shield" s={15} c={t.primary} /> Credentials & Qualifications
+                            <div style={{ fontWeight: 700, color: t.text, fontSize: 16, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                                <Ic n="shield" s={16} c={t.primary} /> Credentials &amp; practice areas
                             </div>
+                            {l.bio && <p style={{ fontSize: 14, color: t.textDim, margin: "0 0 12px", lineHeight: 1.6 }}>{l.bio}</p>}
+                            {l.credentials.length > 0 && (
+                                <div data-lawyer-credentials style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                                    {l.credentials.map((c, i) => (
+                                        <span key={i} style={{ display: "inline-flex", alignItems: "center", height: 30, padding: "0 12px", borderRadius: 999, fontSize: 13, fontWeight: 700,
+                                            background: "var(--brand-soft, rgba(62,224,161,.13))", color: t.primary }}>{c}</span>
+                                    ))}
+                                </div>
+                            )}
                             {/* The platform reviews what a lawyer submits; it does not
                                 confirm enrolment with any Bar Council — no such check
                                 exists in the system. Saying so here is the difference
                                 between a listing and a guarantee. */}
-                            <div style={{ fontSize: 11.5, color: t.textMuted, lineHeight: 1.5, marginBottom: 12, padding: "8px 10px", borderRadius: 8, background: `color-mix(in srgb, ${t.border} 25%, transparent)` }}>
-                                Credentials below are provided by the lawyer. Attorney.AI does not check them.
-                                We do not independently confirm Bar Council enrolment — please verify
-                                directly before engaging.
-                            </div>
-                            {l.credentials.map((c, i) => (
-                                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < l.credentials.length - 1 ? `1px solid ${t.border}` : "none" }}>
-                                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: ac.solid, flexShrink: 0 }} />
-                                    <span style={{ fontSize: 13, color: t.text }}>{c}</span>
-                                </div>
-                            ))}
-                        </Card>
-                        <Card>
-                            <div style={{ fontWeight: 700, color: t.text, fontSize: 14, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                                <Ic n="clock" s={15} c={t.primary} /> Office Info
-                            </div>
-                            {[["Working Hours", l.hours || UNAVAILABLE], ["Office Address", l.address || UNAVAILABLE], ["Consultation Fee", l.fee ? `${fmtFee(l.fee)} / hour` : UNAVAILABLE]].map(([k, v]) => (
-                                <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
-                                    <span style={{ fontSize: 12, color: t.textMuted, flexShrink: 0 }}>{k}</span>
-                                    <span style={{ fontSize: 13, color: t.text, fontWeight: 600, textAlign: "right" }}>{v}</span>
-                                </div>
-                            ))}
-                        </Card>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <Card style={{ padding: 0, overflow: "hidden" }}>
-                            {/* Real embedded map centred on this lawyer */}
-                            <LeafletMap
-                                lawyers={profileMapLawyers} dark={t.mode === "dark"}
-                                height={200}
-                                onSelect={() => { }}
-                            />
-                            <div style={{ padding: "10px 14px", borderTop: `1px solid ${t.border}` }}>
-                                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 8 }}>
-                                    <strong style={{ color: t.text }}>{l.address || UNAVAILABLE}</strong>
-                                    {l.city && l.address !== l.city && (
-                                        <span> · {l.city}</span>
-                                    )}
-                                </div>
-                                {/* Navigation is offered ONLY for a real address.
-                                    Both buttons used to fall back to the pin, and the pin is a
-                                    province centre plus an invented offset of up to ~44 km
-                                    whenever the lawyer never entered an address — so "Get
-                                    Directions" routed a client to a fabricated destination, with
-                                    nothing on screen suggesting it was not their lawyer's office.
-                                    The address fallback was no better: `l.address` is null for
-                                    such a lawyer, and `encodeURIComponent(null)` is the string
-                                    "null", which was being sent to Google Maps as a search term. */}
-                                {l.precision === "exact" ? (
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                                        {/* View on Map: the app's own map page on this lawyer.
-                                            Get Directions: Google Maps, which routes from the
-                                            client's current location -- the app cannot draw a
-                                            turn-by-turn route itself (2026-10-19). */}
-                                        <button type="button" className="mlp-btn mlp-outline" style={mlpVars}
-                                            onClick={() => openOnMap(l)}>
-                                            <Ic n="map" s={14} c="currentColor" /> View on Map
-                                        </button>
-                                        <button type="button" className="mlp-btn mlp-primary"
-                                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}`, "_blank", "noopener")}>
-                                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" /></svg>
-                                            Get Directions
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.6 }}>
-                                        This lawyer has not published an office address, so the pin
-                                        above shows {l.city ? <strong style={{ color: t.text }}>{l.city}</strong> : "their province"} only
-                                        and directions are not available. Ask them for the address
-                                        when you book.
-                                    </div>
-                                )}
+                            <div data-credentials-note style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 12, padding: "10px 12px", borderRadius: 12, fontSize: 12.5, lineHeight: 1.5,
+                                background: `color-mix(in srgb, ${t.warn} 10%, transparent)`, color: t.warn }}>
+                                <Ic n="shield" s={14} c="currentColor" />
+                                <span>Credentials are provided by the lawyer. Attorney.AI does not check them and does not confirm Bar Council enrolment — please verify directly before engaging.</span>
                             </div>
                         </Card>
                         <Card>
@@ -2226,6 +2186,68 @@ const ModLawyers = () => {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+                        </Card>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <Card style={{ padding: 0, overflow: "hidden" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px 10px", fontWeight: 700, fontSize: 15, color: t.text }}>
+                                <Ic n="map" s={15} c={t.primary} /> Office
+                            </div>
+                            {/* Real embedded map centred on this lawyer */}
+                            <LeafletMap
+                                lawyers={profileMapLawyers} dark={t.mode === "dark"}
+                                height={200}
+                                onSelect={() => { }}
+                            />
+                            <div style={{ padding: "10px 14px", borderTop: `1px solid ${t.border}` }}>
+                                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 8 }}>
+                                    <strong style={{ color: t.text }}>{l.address || UNAVAILABLE}</strong>
+                                    {l.city && l.address !== l.city && (
+                                        <span> · {l.city}</span>
+                                    )}
+                                </div>
+                                {/* Navigation is offered ONLY for a real address.
+                                    Both buttons used to fall back to the pin, and the pin is a
+                                    province centre plus an invented offset of up to ~44 km
+                                    whenever the lawyer never entered an address — so "Get
+                                    Directions" routed a client to a fabricated destination, with
+                                    nothing on screen suggesting it was not their lawyer's office.
+                                    The address fallback was no better: `l.address` is null for
+                                    such a lawyer, and `encodeURIComponent(null)` is the string
+                                    "null", which was being sent to Google Maps as a search term. */}
+                                {l.precision === "exact" ? (
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                                        {/* View on Map: the app's own map page on this lawyer.
+                                            Get Directions: Google Maps, which routes from the
+                                            client's current location -- the app cannot draw a
+                                            turn-by-turn route itself (2026-10-19). */}
+                                        <button type="button" className="mlp-btn mlp-outline" style={mlpVars}
+                                            onClick={() => openOnMap(l)}>
+                                            <Ic n="map" s={14} c="currentColor" /> View on Map
+                                        </button>
+                                        <button type="button" className="mlp-btn mlp-primary"
+                                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}`, "_blank", "noopener")}>
+                                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" /></svg>
+                                            Get Directions
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.6 }}>
+                                        This lawyer has not published an office address, so the pin
+                                        above shows {l.city ? <strong style={{ color: t.text }}>{l.city}</strong> : "their province"} only
+                                        and directions are not available. Ask them for the address
+                                        when you book.
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ padding: "4px 14px 14px" }}>
+                                {[["Working Hours", l.hours || UNAVAILABLE], ["Consultation fee", l.fee ? `${fmtFee(l.fee)} / hour` : UNAVAILABLE]].map(([k, v]) => (
+                                    <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingTop: 8 }}>
+                                        <span style={{ fontSize: 12.5, color: t.textMuted, flexShrink: 0 }}>{k}</span>
+                                        <span style={{ fontSize: 13, color: t.text, fontWeight: 600, textAlign: "right" }}>{v}</span>
+                                    </div>
+                                ))}
                             </div>
                         </Card>
                     </div>
@@ -2531,13 +2553,140 @@ const ModLawyers = () => {
                             <button type="button" className="lh-ai-ask" data-open-ask onClick={() => {
                                 setAskOpen(true);
                                 setTimeout(() => {
-                                    document.querySelector("[data-ai-ask]")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                                    document.querySelector("[data-ai-ask]")?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
                                     askRef.current?.focus();
                                 }, 0);
                             }}>or describe your problem →</button>
                         </div>
                     </div>
                 </div>
+
+                {/* The describe-your-problem box opens INSIDE this card, under the
+                    match panel, so the card grows where the client clicked
+                    instead of the box appearing below the toolbar (2026-11-25). */}
+                {/* AI Match box (2026-10-10). "Find My Match" turns the text into a
+                    message box; what the client writes is read in the browser into
+                    the list's own filters (area of law, province), which they can
+                    see and clear. Nothing typed here is sent to the server. */}
+                {askOpen && (
+                <section data-ai-ask data-open={askOpen ? "" : undefined} aria-label="Describe your problem" style={{ margin: "0 22px 20px" }}>
+                    <style>{AI_ASK_CSS}</style>
+                    {!askOpen ? (
+                    <div className="aa-row">
+                        <div style={{ width: 42, height: 42, borderRadius: 13, background: `${t.primary}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Ic n="zap" s={20} c={t.primary} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            {/* A listing is not a recommendation, so it does not get the
+                                recommendation heading. */}
+                            <div style={{ fontWeight: 700, color: t.text, fontSize: 13 }}>
+                                {!aiMatch && matchKind === "case_draft" ? "Finish your Legal Intake first"
+                                    : !aiMatch && matchKind === "case_missing" ? "Your earlier case is no longer available"
+                                    : !aiMatch && (matchKind === "general_listing" || matchKind === "none")
+                                    ? "No strong match yet"
+                                    : "AI-Recommended Match"}
+                            </div>
+                            <div style={{ fontSize: 12, color: t.textMuted }}>
+                                {aiMatch
+                                    // No `|| 0.97` fallback. A missing score used to
+                                    // render as "97% case compatibility" on lawyers the
+                                    // matcher had never scored against the case.
+                                    ? [
+                                        aiMatch.name,
+                                        aiMatch.spec,
+                                        // "match score", not "case compatibility".
+                                        // match_score is a weighted blend of five
+                                        // factors — semantic fit is only half of it,
+                                        // the rest is specialization, province, rating,
+                                        // availability and experience. A lawyer with no
+                                        // measured relevance to the case still scores
+                                        // ~0.48 on the other factors alone, and calling
+                                        // that "48% case compatibility" claims a
+                                        // measurement of fit the number does not carry.
+                                        aiMatch.match_score != null
+                                            ? `${Math.round(aiMatch.match_score * 100)}% match score`
+                                            : null,
+                                        aiMatch.match_reason || null,
+                                    ].filter(Boolean).join(" — ")
+                                    : matchNotice
+                                        ? matchNotice
+                                        : getCaseId()
+                                            ? "Describe your problem to filter the list, or match from your intake case"
+                                            : "Describe your problem and we'll filter the list for you"}
+                            </div>
+                        </div>
+                        <BtnPrimary
+                            disabled={loadingMatch}
+                            onClick={aiMatch
+                                ? () => { setSelectedLawyer(aiMatch); setActiveView("profile"); }
+                                : (matchKind === "case_draft" || matchKind === "case_missing")
+                                    ? () => router.push("/intake")
+                                    : () => { setAskOpen(true); setTimeout(() => askRef.current?.focus(), 0); }
+                            }
+                            style={{ fontSize: 12, padding: "10px 18px", flexShrink: 0, opacity: loadingMatch ? 0.7 : 1 }}
+                        >
+                            {loadingMatch ? "Matching…" : aiMatch ? "View Match"
+                                : matchKind === "case_draft" ? "Finish intake"
+                                : matchKind === "case_missing" ? "Start intake" : "Find My Match"}
+                        </BtnPrimary>
+                    </div>
+                    ) : (
+                        <form className="aa-row" onSubmit={e => {
+                            e.preventDefault();
+                            const text = askText.trim();
+                            if (!text) return;
+                            const read = readProblem(text);
+                            setAskResult({ ...read, text });
+                            if (read.area || read.province) {
+                                setFilters(f => ({
+                                    ...f,
+                                    specialization: read.area || "All",
+                                    city: read.province || "All",
+                                }));
+                            }
+                        }}>
+                            <span className="aa-ic" aria-hidden="true"><Ic n="zap" s={20} c={t.primary} /></span>
+                            <label className="aa-field">
+                                <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Describe your problem</span>
+                                <input ref={askRef} type="text" value={askText} maxLength={PROBLEM_MAX_LENGTH}
+                                    onChange={e => setAskText(e.target.value)}
+                                    onKeyDown={e => { if (e.key === "Escape") setAskOpen(false); }}
+                                    placeholder="Apna masla likhein… e.g. mere bhai ne plot par qabza kar liya hai (Lahore)" />
+                                <span className="aa-hint" aria-hidden="true">Enter ↵</span>
+                            </label>
+                            <button type="submit" className="aa-send" disabled={!askText.trim()}>
+                                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                                Send
+                            </button>
+                            <button type="button" className="aa-x" aria-label="Close" onClick={() => setAskOpen(false)}>
+                                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                            </button>
+                        </form>
+                    )}
+
+                    {askOpen && askResult && (
+                        <div className="aa-out" role="status">
+                            {askResult.area || askResult.province ? (<>
+                                <span>Filtered the list for:</span>
+                                {askResult.area && <span className="aa-tag">{askResult.areaLabel}</span>}
+                                {askResult.province && <span className="aa-tag">{askResult.province}</span>}
+                                <span>· {pageInfo.total} lawyer{pageInfo.total === 1 ? "" : "s"}</span>
+                                <button type="button" className="aa-link" onClick={() => {
+                                    setAskResult(null);
+                                    setFilters(f => ({ ...f, specialization: "All", city: "All" }));
+                                }}>Clear</button>
+                            </>) : (
+                                <span>Could not tell the area of law from that. Try words like "divorce", "FIR", "plot" or "salary", or pick an area above.</span>
+                            )}
+                            {getCaseId() && (
+                                <button type="button" className="aa-link" disabled={loadingMatch} onClick={handleAiMatch}>
+                                    {loadingMatch ? "Matching…" : "Or match from my intake case"}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </section>
+                )}
 
                 {/* Removed 2026-11-23 at the user's request: the running-request
                     line ("Waiting for … to answer your request") and the trust-tick
@@ -2691,129 +2840,6 @@ const ModLawyers = () => {
 
             {/* My hire requests moved to Tracking (2026-11-23): components/client/HireRequests.jsx. */}
 
-            {/* AI Match box (2026-10-10). "Find My Match" turns the text into a
-                message box; what the client writes is read in the browser into
-                the list's own filters (area of law, province), which they can
-                see and clear. Nothing typed here is sent to the server. */}
-            {askOpen && (
-            <section data-ai-ask data-open={askOpen ? "" : undefined} aria-label="Describe your problem">
-                <style>{AI_ASK_CSS}</style>
-                {!askOpen ? (
-                <div className="aa-row">
-                    <div style={{ width: 42, height: 42, borderRadius: 13, background: `${t.primary}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Ic n="zap" s={20} c={t.primary} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        {/* A listing is not a recommendation, so it does not get the
-                            recommendation heading. */}
-                        <div style={{ fontWeight: 700, color: t.text, fontSize: 13 }}>
-                            {!aiMatch && matchKind === "case_draft" ? "Finish your Legal Intake first"
-                                : !aiMatch && matchKind === "case_missing" ? "Your earlier case is no longer available"
-                                : !aiMatch && (matchKind === "general_listing" || matchKind === "none")
-                                ? "No strong match yet"
-                                : "AI-Recommended Match"}
-                        </div>
-                        <div style={{ fontSize: 12, color: t.textMuted }}>
-                            {aiMatch
-                                // No `|| 0.97` fallback. A missing score used to
-                                // render as "97% case compatibility" on lawyers the
-                                // matcher had never scored against the case.
-                                ? [
-                                    aiMatch.name,
-                                    aiMatch.spec,
-                                    // "match score", not "case compatibility".
-                                    // match_score is a weighted blend of five
-                                    // factors — semantic fit is only half of it,
-                                    // the rest is specialization, province, rating,
-                                    // availability and experience. A lawyer with no
-                                    // measured relevance to the case still scores
-                                    // ~0.48 on the other factors alone, and calling
-                                    // that "48% case compatibility" claims a
-                                    // measurement of fit the number does not carry.
-                                    aiMatch.match_score != null
-                                        ? `${Math.round(aiMatch.match_score * 100)}% match score`
-                                        : null,
-                                    aiMatch.match_reason || null,
-                                ].filter(Boolean).join(" — ")
-                                : matchNotice
-                                    ? matchNotice
-                                    : getCaseId()
-                                        ? "Describe your problem to filter the list, or match from your intake case"
-                                        : "Describe your problem and we'll filter the list for you"}
-                        </div>
-                    </div>
-                    <BtnPrimary
-                        disabled={loadingMatch}
-                        onClick={aiMatch
-                            ? () => { setSelectedLawyer(aiMatch); setActiveView("profile"); }
-                            : (matchKind === "case_draft" || matchKind === "case_missing")
-                                ? () => router.push("/intake")
-                                : () => { setAskOpen(true); setTimeout(() => askRef.current?.focus(), 0); }
-                        }
-                        style={{ fontSize: 12, padding: "10px 18px", flexShrink: 0, opacity: loadingMatch ? 0.7 : 1 }}
-                    >
-                        {loadingMatch ? "Matching…" : aiMatch ? "View Match"
-                            : matchKind === "case_draft" ? "Finish intake"
-                            : matchKind === "case_missing" ? "Start intake" : "Find My Match"}
-                    </BtnPrimary>
-                </div>
-                ) : (
-                    <form className="aa-row" onSubmit={e => {
-                        e.preventDefault();
-                        const text = askText.trim();
-                        if (!text) return;
-                        const read = readProblem(text);
-                        setAskResult({ ...read, text });
-                        if (read.area || read.province) {
-                            setFilters(f => ({
-                                ...f,
-                                specialization: read.area || "All",
-                                city: read.province || "All",
-                            }));
-                        }
-                    }}>
-                        <span className="aa-ic" aria-hidden="true"><Ic n="zap" s={20} c={t.primary} /></span>
-                        <label className="aa-field">
-                            <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Describe your problem</span>
-                            <input ref={askRef} type="text" value={askText} maxLength={PROBLEM_MAX_LENGTH}
-                                onChange={e => setAskText(e.target.value)}
-                                onKeyDown={e => { if (e.key === "Escape") setAskOpen(false); }}
-                                placeholder="Apna masla likhein… e.g. mere bhai ne plot par qabza kar liya hai (Lahore)" />
-                            <span className="aa-hint" aria-hidden="true">Enter ↵</span>
-                        </label>
-                        <button type="submit" className="aa-send" disabled={!askText.trim()}>
-                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
-                            Send
-                        </button>
-                        <button type="button" className="aa-x" aria-label="Close" onClick={() => setAskOpen(false)}>
-                            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                        </button>
-                    </form>
-                )}
-
-                {askOpen && askResult && (
-                    <div className="aa-out" role="status">
-                        {askResult.area || askResult.province ? (<>
-                            <span>Filtered the list for:</span>
-                            {askResult.area && <span className="aa-tag">{askResult.areaLabel}</span>}
-                            {askResult.province && <span className="aa-tag">{askResult.province}</span>}
-                            <span>· {pageInfo.total} lawyer{pageInfo.total === 1 ? "" : "s"}</span>
-                            <button type="button" className="aa-link" onClick={() => {
-                                setAskResult(null);
-                                setFilters(f => ({ ...f, specialization: "All", city: "All" }));
-                            }}>Clear</button>
-                        </>) : (
-                            <span>Could not tell the area of law from that. Try words like "divorce", "FIR", "plot" or "salary", or pick an area above.</span>
-                        )}
-                        {getCaseId() && (
-                            <button type="button" className="aa-link" disabled={loadingMatch} onClick={handleAiMatch}>
-                                {loadingMatch ? "Matching…" : "Or match from my intake case"}
-                            </button>
-                        )}
-                    </div>
-                )}
-            </section>
-            )}
 
             {/* Results count.
                 Reports the page AND the total, because `filtered.length` alone

@@ -13,10 +13,13 @@ export const CLIENT_VAULT_CSS = `[data-client-vault]{color:var(--ink);font:15px/
 [data-client-vault] .cv-crumbs b{color:var(--ink);font-weight:600}
 [data-client-vault] .cv-crumbs button{background:none;border:0;padding:0;color:var(--muted);cursor:pointer}
 [data-client-vault] .cv-crumbs button:hover{color:var(--hover-ink)}
-[data-client-vault] .cv-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+[data-client-vault] .cv-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:20px}
+[data-client-vault] .cv-head>div:first-child{display:contents}
+[data-client-vault] .cv-head>div:last-child{grid-column:2;grid-row:1}
+[data-client-vault] .cv-head p{grid-column:1/-1}
 [data-client-vault] .cv-head h1{margin:0;font:600 clamp(28px,3.4vw,38px)/1.1 "Literata",Georgia,serif;letter-spacing:-.01em}
 [data-client-vault] .cv-accent{background:linear-gradient(90deg,var(--brand-text),var(--teal-ink));-webkit-background-clip:text;background-clip:text;color:transparent}
-[data-client-vault] .cv-head p{margin:8px 0 0;color:var(--muted);max-width:62ch}
+[data-client-vault] .cv-head p{margin:8px 0 0;color:var(--muted);white-space:nowrap}
 [data-client-vault] .cv-btn{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line-strong);background:var(--surface);font-weight:600;font-size:14px;white-space:nowrap;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
 [data-client-vault] .cv-btn:hover:not(:disabled){border-color:var(--hover-line);background:var(--hover-tint);color:var(--hover-ink)}
 [data-client-vault] .cv-btn:disabled{opacity:.5;cursor:not-allowed}

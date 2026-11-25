@@ -1,6 +1,6 @@
 'use client';
 // Paste your ModAgreements.jsx code here
-import React, { useState, Fragment, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useT } from "./theme.js";
@@ -10,13 +10,20 @@ import { LIcon } from "./documents/icons.jsx";
 // The Documents module's typeface (Nunito Sans), so the two paperwork
 // modules read as one product (2026-10-11).
 import { DOCS_FONT as AG_FONT } from "./documents/ui.jsx";
+// The client theme's body face (clientTheme.js), as the Overview reads.
+// Declared up here: CSS strings below interpolate it at module load.
+const CLIENT_BODY_FONT = `"Hanken Grotesk", system-ui, sans-serif`;
 import { Card, BtnPrimary, BtnOutline, ThemedInput, Badge } from "@/components/shared/shared.jsx";
 import SignaturePad from "@/components/shared/SignaturePad.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import AgreementBody from "@/components/shared/AgreementBody.jsx";
 import { textToAgreementHtml, agreementPlainText } from "@/lib/agreementHtml.js";
-import { AGREEMENTS_DIY_ENABLED, AGREEMENTS_VIEW_EVENT, takePendingAgreementsView, announceAgreementsView } from "@/lib/agreementsNav.js";
-import { previewAgreementBody, createAgreement, getAgreement, signAgreement, declineAgreement, listAgreements, searchLawyers, downloadExecutedAgreement, idempotencyKey, reissueAgreementInvitation, archiveAgreement, unarchiveAgreement } from "@/lib/api.js";
+import { AGREEMENTS_VIEW_EVENT, takePendingAgreementsView, announceAgreementsView } from "@/lib/agreementsNav.js";
+import { useAgreementBuilderOn } from "./useAgreementBuilder.js";
+import { shortMatterTitle, fullMatterTitle } from "@/lib/matterTitle.js";
+import { onNotification, matterHref } from "@/lib/notificationTarget.js";
+import { useClientRouter } from "./clientNav.js";
+import { getCase, listCases, listEngagements, previewAgreementBody, createAgreement, getAgreement, signAgreement, declineAgreement, listAgreements, searchLawyers, downloadExecutedAgreement, idempotencyKey, reissueAgreementInvitation, archiveAgreement, unarchiveAgreement } from "@/lib/api.js";
 
 /* ══════════════════════════════════════════════════════
    MODULE: AGREEMENTS — 5-Step Wizard
@@ -264,7 +271,31 @@ const mapAgreement = (a, myId) => {
         // signature" for agreements that were already executed. It now comes
         // from the fetched document.
         isEngagementLetter: !!a.engagement_id,
+        // Who declined, when and why (2026-11-25). The server derives it from
+        // its audit log without the IP address; it was never sent before, so a
+        // declined agreement said "Rejected" and nothing else.
+        declined: a.declined || null,
+        // The matter it is for (board 7); shown by NAME, never the raw id.
+        caseId: a.case_id || null,
     };
+};
+
+/* The client's own matters by id -> title, for the matter chip and filter
+ * (board 7). Read once; a matter that cannot be named is shown generically. */
+const useMatterNames = () => {
+    const [names, setNames] = useState(null);   // null = loading/unknown
+    useEffect(() => {
+        let live = true;
+        (async () => {
+            const read = await readAllMatters();
+            if (!read.ok) return;
+            const out = {};
+            read.cases.forEach(c => { if (c) out[String(c._id || c.id)] = c.title || "Untitled matter"; });
+            if (live) setNames(out);
+        })().catch(() => {});
+        return () => { live = false; };
+    }, []);
+    return names;
 };
 
 // Fetch + map the user's real agreements; returns [items, loading, reload]
@@ -278,7 +309,9 @@ const AGREEMENTS_PAGE_SIZE = 25;
  * `total` is returned alongside the rows because a list that stops at its
  * page size is indistinguishable from a complete one. Asking for 50 and
  * ignoring the total is how somebody's 51st agreement stops existing. */
-const useMyAgreements = (userId, status = null, archived = false) => {
+const AGREEMENTS_RETRY_MS = 1500;   // one retry after "could not reach the server"
+const NOT_LINKED = "__not_linked";   // the Matter filter's "Not linked to a matter"
+const useMyAgreements = (userId, status = null, archived = false, caseId = null) => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
@@ -291,14 +324,32 @@ const useMyAgreements = (userId, status = null, archived = false) => {
     // slice -- so an older executed agreement simply is not there, with no
     // indication anything was withheld. Changing the filter is a new query, so
     // the page resets with it.
-    useEffect(() => { setPage(1); }, [status, archived]);
+    useEffect(() => { setPage(1); }, [status, archived, caseId]);
 
+    // Only the LAST read may land: a live refresh and a filter change can
+    // overlap, and an older answer must not replace a newer one.
+    const readSeq = useRef(0);
+    const pageRef = useRef(page);
+    pageRef.current = page;
     const reload = useCallback(() => {
         setLoading(true);
-        listAgreements({ page, page_size: AGREEMENTS_PAGE_SIZE, status, archived })
-            .then(({ data, error: readError }) => {
+        const token = ++readSeq.current;
+        // The matter filter is the server's too (case_id), for the same reason.
+        // NOT_LINKED asks the server for agreements on no matter.
+        const slice = caseId === NOT_LINKED ? { unlinked: true } : { case_id: caseId };
+        // ONE quiet retry when the server could not be reached at all (status
+        // 0: a dropped connection, the backend restarting). A live notice can
+        // ask for a re-read at exactly that moment, and the list then showed
+        // "Network error" over data that was fine a second later.
+        const run = (attempt) => listAgreements({ page, page_size: AGREEMENTS_PAGE_SIZE, status, archived, ...slice })
+            .then(({ data, error: readError, status: httpStatus }) => {
+                if (token !== readSeq.current) return;
                 const rows = data?.items;
                 if (readError || !Array.isArray(rows)) {
+                    if (httpStatus === 0 && attempt === 0) {
+                        setTimeout(() => { if (token === readSeq.current) run(1); }, AGREEMENTS_RETRY_MS);
+                        return;
+                    }
                     setError(readError?.message || "Could not load agreements.");
                     setLoading(false);
                     return;
@@ -309,9 +360,21 @@ const useMyAgreements = (userId, status = null, archived = false) => {
                 setTotal(data.total ?? mapped.length);
                 setError(null);
                 setLoading(false);
-            }).catch(() => { setError("Could not load agreements."); setLoading(false); });
-    }, [userId, page, status, archived]);
+            }).catch(() => { if (token !== readSeq.current) return; setError("Could not load agreements."); setLoading(false); });
+        run(0);
+    }, [userId, page, status, archived, caseId]);
     useEffect(() => { reload(); }, [reload]);
+
+    // LIVE (2026-11-25): a lawyer signing or declining used to leave this page
+    // saying "Pending" until a manual reload. Any agreement notice re-reads
+    // from page 1 (re-reading a later page would append it a second time).
+    const reloadRef = useRef(reload);
+    reloadRef.current = reload;
+    useEffect(() => onNotification(n => {
+        if (!String(n?.type || "").startsWith("agreement_")) return;
+        if (pageRef.current === 1) reloadRef.current();
+        else setPage(1);
+    }), []);
 
     const loadMore = useCallback(() => {
         setLoading(true);
@@ -322,47 +385,37 @@ const useMyAgreements = (userId, status = null, archived = false) => {
 };
 
 // ── STEP PROGRESS BAR ────────────────────────
-const StepBar = ({ steps, current }) => {
-    const t = useTheme();
-    return (
-        <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 28 }}>
-            {steps.map((s, i) => {
-                const done = i < current, active = i === current;
-                return (
-                    <Fragment key={s}>
-                        <div style={{
-                            display: "flex", alignItems: "center", gap: 8,
-                            background: active ? t.primaryGlow : done ? "transparent" : "transparent",
-                            border: active ? `1.5px solid ${t.primary}` : done ? `1.5px solid ${t.border}` : `1.5px solid ${t.border}`,
-                            borderRadius: 12, padding: "8px 16px", transition: "all 0.25s",
-                        }}>
-                            <div style={{
-                                width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: 10, fontWeight: 800, flexShrink: 0,
-                                background: done ? t.primary : active ? t.primary : t.border,
-                                color: done || active ? "#1A2E35" : t.textMuted,
-                            }}>
-                                {done ? "✓" : i + 1}
-                            </div>
-                            <span style={{
-                                fontSize: 13, fontWeight: active ? 700 : 500,
-                                color: active ? t.primary : done ? t.text : t.textMuted, whiteSpace: "nowrap"
-                            }}>
-                                {s}
-                            </span>
-                        </div>
-                        {i < steps.length - 1 && (
-                            <div style={{
-                                flex: 1, height: 2, background: done ? t.primary : t.border,
-                                margin: "0 4px", minWidth: 24, transition: "background 0.3s"
-                            }} />
-                        )}
-                    </Fragment>
-                );
-            })}
-        </div>
-    );
-};
+/* SEGMENTED (option D, chosen 2026-11-25): one rounded bar per step --
+ * finished in the brand colour, the current one in the brand gradient, the
+ * rest muted -- with the label under it. In the theme's own tokens, so Light
+ * and Dark both work. */
+const StepBar = ({ steps, current }) => (
+    <ol aria-label="Steps" data-step-bar style={{
+        listStyle: "none", margin: "0 0 28px", padding: 0,
+        display: "grid", gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`, gap: 10,
+    }}>
+        {steps.map((s, i) => {
+            const done = i < current, active = i === current;
+            return (
+                <li key={s} data-step={done ? "done" : active ? "current" : "todo"} aria-current={active ? "step" : undefined}
+                    style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
+                    <span aria-hidden="true" style={{
+                        height: 8, borderRadius: 8, transition: "background .3s",
+                        background: active ? "var(--brand-solid, linear-gradient(90deg,#3EE0A1,#2EC4D6))"
+                            : done ? "var(--brand-text, #5EE6B0)" : "var(--line-strong, rgba(150,215,220,.22))",
+                    }} />
+                    <span style={{
+                        fontSize: 14.5, fontWeight: active ? 800 : 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        color: active ? "var(--ink, #F1F5F6)" : done ? "var(--brand-text, #5EE6B0)" : "var(--muted, #BFCACC)",
+                    }}>
+                        {s}
+                        {done && <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}> (completed)</span>}
+                    </span>
+                </li>
+            );
+        })}
+    </ol>
+);
 
 // ── PAGE: DASHBOARD ──────────────────────────
 /* The Agreements dashboard (2026-10-11), in the Overview's look: its own
@@ -399,8 +452,8 @@ const AG_DASH_CSS = `[data-ag-dash]{display:flex;flex-direction:column;gap:18px;
 [data-ag-dash] .ad-act b{display:block;font-size:15.5px}
 [data-ag-dash] .ad-act small{display:block;margin-top:3px;font-size:13px;color:var(--muted)}
 [data-ag-dash] .ad-act .ad-ic{width:48px;height:48px}
-[data-ag-dash] .ad-arrow{margin-left:auto;width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);transition:background .2s,color .2s,transform .2s}
-[data-ag-dash] .ad-act:hover .ad-arrow{background:var(--c);color:#04262c;transform:translateX(3px)}
+[data-ag-dash] .ad-arrow{margin-left:auto;width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;color:#04212A;background:var(--g,var(--c));box-shadow:0 8px 18px -10px color-mix(in srgb,var(--c) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.35);transition:filter .2s,transform .2s,box-shadow .2s}
+[data-ag-dash] .ad-act:hover .ad-arrow{filter:brightness(1.08);transform:translateX(3px);box-shadow:0 10px 22px -10px color-mix(in srgb,var(--c) 85%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
 [data-ag-dash] .ad-recent{padding:0;overflow:hidden}
 [data-ag-dash] .ad-recent-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
 [data-ag-dash] .ad-recent-head h2{margin:0;font-size:16px;font-weight:700;font-family:inherit}
@@ -493,6 +546,7 @@ const rowLook = (a) => {
 const PageDashboard = ({ onNavigate }) => {
     const { user } = useAuth();
     const toast = useToast();
+    const DIY_BUILDER_ENABLED = useAgreementBuilderOn() === true;   // the server's switch
     const [agmts, loading, , meta] = useMyAgreements(user?._id);
     const waitingMe = agmts.filter(a => a.needsMySig);
     const stats = [
@@ -553,13 +607,13 @@ const PageDashboard = ({ onNavigate }) => {
                     shown and redirected: a card that advertises a feature and
                     then lands somewhere else is its own small lie. */}
                 {DIY_BUILDER_ENABLED && (
-                    <button type="button" className="ad-card ad-act" style={{ "--c": AD_MINT }} onClick={() => onNavigate("templates")}>
+                    <button type="button" className="ad-card ad-act" style={{ "--c": AD_MINT, "--g": "linear-gradient(135deg,#3EE0A1,#2EC4D6)" }} onClick={() => onNavigate("templates")}>
                         <span className="ad-ic"><AdIcon d={AD_PATH.plus} s={22} w={2.4} /></span>
                         <span><b>Create an agreement</b><small>Start from a template or a blank page</small></span>
                         <span className="ad-arrow"><AdIcon d={AD_PATH.arrow} s={17} /></span>
                     </button>
                 )}
-                <button type="button" className="ad-card ad-act" style={{ "--c": AD_GOLD }} onClick={() => onNavigate("all", { filter: "Pending" })}>
+                <button type="button" className="ad-card ad-act" style={{ "--c": AD_GOLD, "--g": "linear-gradient(135deg,#F6D27A,#EEA24E)" }} onClick={() => onNavigate("all", { filter: "Pending" })}>
                     <span className="ad-ic"><AdIcon d={AD_PATH.pen} s={22} /></span>
                     <span><b>Sign what's waiting</b><small>Opens your agreements that are still pending</small></span>
                     <span className="ad-arrow"><AdIcon d={AD_PATH.arrow} s={17} /></span>
@@ -789,11 +843,11 @@ const AG_TB_CSS = `[data-ag-tb]{position:sticky;top:0;z-index:6;display:flex;ali
 [data-ag-tb] .tb-pk .v{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 [data-ag-tb] .tb-pk .chev{display:inline-flex;color:var(--muted);transition:transform .2s}
 [data-ag-tb] .tb-pk[aria-expanded="true"] .chev{transform:rotate(180deg)}
-.tb-pk-menu{position:fixed;z-index:80;font-family:${AG_FONT};max-height:260px;overflow-y:auto;padding:5px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 36px -14px rgba(0,0,0,.75);scrollbar-width:thin}
+.tb-pk-menu{position:fixed;z-index:80;font-family:${CLIENT_BODY_FONT};max-height:260px;overflow-y:auto;padding:5px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:0 18px 36px -14px rgba(0,0,0,.75);scrollbar-width:thin}
 .tb-pk-menu button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:7px 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);font-size:13px;text-align:left;cursor:pointer;white-space:nowrap}
 .tb-pk-menu button:hover{background:var(--hover)}
 .tb-pk-menu button[aria-selected="true"]{background:color-mix(in srgb,#3fd0e0 18%,transparent);color:#3fd0e0;font-weight:700}
-.tb-pk-menu .hint{font-size:11px;color:var(--faint);font-family:${AG_FONT};font-weight:500}
+.tb-pk-menu .hint{font-size:11px;color:var(--faint);font-family:${CLIENT_BODY_FONT};font-weight:500}
 [data-ag-tb] .tb-color input{position:absolute;inset:0;opacity:0;cursor:pointer}
 [data-ag-tb] .tb-color i{position:absolute;left:9px;right:9px;bottom:5px;height:3px;border-radius:2px}
 [data-ag-tb] .tb-drop{position:relative;flex:none}
@@ -818,6 +872,43 @@ const AG_TB_CSS = `[data-ag-tb]{position:sticky;top:0;z-index:6;display:flex;ali
 [data-ag-paper] a{color:#1a5fb4;text-decoration:underline}`;
 
 /* The header's title field: reads as the page's subtitle until touched. */
+/* The builder in the Documents module's typeface (Nunito Sans), as the
+ * Documents screens apply it (DOCS_FONT_CSS): forced, because client-wide
+ * heading styles would otherwise win. NOT on the agreement's own text -- the
+ * editor's paper ([data-ag-paper]) and anything marked [data-keep-font] (the
+ * Review copy of the agreement, the typed signature) keep their faces. */
+/* MATCHED TO THE CLIENT OVERVIEW (2026-11-25), not to Documents: the
+ * Overview reads in the client theme's body face (Hanken Grotesk,
+ * clientTheme.js) with Nunito Sans only for its big page heading. This module
+ * had been all Nunito Sans, so it read differently from the dashboard. Applied
+ * once, at the module root, so the dashboard, list, builder and the open
+ * agreement all agree. */
+/* The builder's small actions (Change, Done, Invite by email): a soft brand
+ * tint that stands apart from the dark cards, in the theme's own tokens so
+ * Light and Dark both work (2026-11-25). */
+const TINT_BTN = {
+    display: "inline-flex", alignItems: "center", justifyContent: "center", border: 0, borderRadius: 999,
+    background: "var(--brand-soft, rgba(62,224,161,.13))", color: "var(--brand-text, #5EE6B0)",
+    fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+};
+const AG_FONT_CSS = `[data-ag-font], [data-ag-font] *:not([data-ag-paper]):not([data-ag-paper] *):not([data-keep-font]):not([data-keep-font] *) { font-family: ${CLIENT_BODY_FONT} !important; }
+[data-ag-font] h1, [data-ag-font] [data-ag-page-title] { font-family: ${AG_FONT} !important; }
+[data-ag-font] select option { background: var(--surface, #183840); color: var(--ink, #F1F5F6); }
+[data-ag-font] .ag-tint { transition: background .15s, color .15s, transform .12s, box-shadow .15s; }
+[data-ag-font] .ag-tint:hover { background: color-mix(in srgb, var(--brand-text, #5EE6B0) 24%, transparent) !important; color: var(--hover-ink, var(--brand-text)) !important; box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-text, #5EE6B0) 40%, transparent); }
+[data-ag-font] .ag-tint:active { transform: scale(.96); }
+[data-ag-font] .ag-tint:focus-visible, [data-ag-font] .ag-danger:focus-visible { outline: 2px solid var(--focus, #5EE6B0); outline-offset: 2px; }
+[data-ag-font] .ag-danger { transition: background .15s, border-color .15s, transform .12s; }
+[data-ag-font] .ag-danger:hover { background: color-mix(in srgb, var(--danger, #FF8A80) 24%, transparent) !important; border-color: var(--danger, #FF8A80) !important; }
+[data-ag-font] .ag-danger:active { transform: scale(.96); }
+[data-ag-font] .ag-pick { transition: border-color .15s, background .15s; }
+[data-ag-font] .ag-pick:hover { border-color: color-mix(in srgb, var(--brand-text, #5EE6B0) 55%, transparent) !important; background: var(--hover-tint, rgba(62,224,161,.10)) !important; }
+[data-ag-font] .ag-add { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; transition: background .15s, color .15s; }
+[data-ag-font] .ag-pick:hover .ag-add { background: var(--brand-soft, rgba(62,224,161,.13)); }
+[data-ag-font] .ag-pick:active .ag-add { transform: scale(.96); }`;
+/* ^ The native dropdown list (Windows) drew white with the light theme text on
+ * it -- unreadable. Options take the theme's surface and ink, in both modes. */
+
 const AG_TITLE_CSS = `.ag-nav{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 20px;border-radius:999px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s,border-color .2s,color .2s,filter .2s,transform .12s}
 .ag-nav svg{transition:transform .2s}
 .ag-nav:active{transform:scale(.96)}
@@ -828,15 +919,17 @@ const AG_TITLE_CSS = `.ag-nav{display:inline-flex;align-items:center;gap:8px;hei
 .ag-nav.next{border:0;background:linear-gradient(135deg,#12897f,#1c9c66);color:#fff;box-shadow:0 8px 20px -10px rgba(28,156,102,.85)}
 .ag-nav.next:hover{filter:brightness(1.08)}
 .ag-nav.next:hover svg{transform:translateX(3px)}
-.ag-back{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;transition:background .2s,border-color .2s,color .2s,transform .12s}
+.ag-back{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid color-mix(in srgb,var(--brand-text,#5EE6B0) 30%,transparent);background:var(--brand-soft,rgba(62,224,161,.13));color:var(--brand-text,#5EE6B0);cursor:pointer;transition:background .2s,border-color .2s,color .2s,transform .12s,box-shadow .2s}
 .ag-back svg{transition:transform .2s}
-.ag-back:hover{background:#3ee0a1;border-color:transparent;color:#06261c}
+.ag-back:hover{background:var(--brand-solid,linear-gradient(135deg,#3EE0A1,#2EC4D6));border-color:transparent;color:var(--on-brand,#04212A);box-shadow:0 8px 20px -10px color-mix(in srgb,var(--brand-text,#5EE6B0) 80%,transparent)}
 .ag-back:hover svg{transform:translateX(-3px)}
 .ag-back:active{transform:scale(.93)}
 .ag-back:focus-visible{outline:2px solid #3fd0e0;outline-offset:2px}
-.ag-title{display:block;width:min(560px,60vw);margin-top:2px;padding:2px 6px;margin-left:-6px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;outline:none;transition:border-color .15s,background .15s}
-.ag-title:hover{border-color:var(--line)}
-.ag-title:focus{border-color:#3fd0e0;background:var(--surface);color:var(--ink)}`;
+.ag-title{display:block;field-sizing:content;width:auto;min-width:160px;max-width:min(560px,60vw);margin-top:2px;padding:3px 8px;margin-left:-8px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);font:inherit;font-size:14px;font-weight:600;outline:none;transition:border-color .15s,background .15s,color .15s}
+.ag-title:hover{border-color:var(--line);color:var(--ink)}
+.ag-title:focus{border-color:var(--hover-line,#3fd0e0);background:var(--surface-2,var(--surface));color:var(--ink)}`;
+/* ^ The title edits IN PLACE (2026-11-25): it stays the width of its text and
+ * the same size focused or not -- it used to jump to a 560px box on focus. */
 
 // [command, Lucide icon, title, the state that lights it]
 const TB_MARKS = [
@@ -1143,11 +1236,83 @@ const AgreementEditor = ({ html, onChange }) => {
     );
 };
 
-const PageCreate = ({ template, onNavigate, onDone }) => {
+/* The matters an agreement can be FOR (board 4, 2026-11-25): the client's live
+ * matters that have a lawyer. A matter without one cannot be offered -- the
+ * server refuses a linked agreement without its lawyer -- and how many were
+ * left out is said, so a missing matter is not a mystery. */
+const MATTER_OVER = new Set(["draft", "closed", "dismissed"]);
+/* Every one of the client's matters, page by page to the END (the server's
+ * page size is 50). The cap is only a runaway guard far beyond any real
+ * client; reaching it is REPORTED (`truncated`), never silent. */
+const MATTER_PAGE_GUARD = 200;
+export async function readAllMatters() {
+    const cases = [];
+    let page = 1, pages = 1;
+    do {
+        const r = await listCases({ page, page_size: 50 });
+        if (r?.error || !Array.isArray(r?.data?.items)) return { ok: false, cases, truncated: false };
+        cases.push(...r.data.items);
+        pages = Number.isInteger(r.data.pages) ? r.data.pages : 1;
+        page += 1;
+    } while (page <= pages && page <= MATTER_PAGE_GUARD);
+    return { ok: true, cases, truncated: page <= pages };
+}
+/* A matter's title is often the client's whole intake question (several
+ * lines, mixed scripts). In a dropdown or a dialog heading it is cut short;
+ * the full title stays in the chip's tooltip. */
+export const shortTitle = (s, n = 60) => shortMatterTitle(s, n);   // the shared rule (lib/matterTitle.js)
+/* How many matters were left out (no lawyer), as a COUNT: listing their
+ * titles printed whole intake questions under the select. */
+const hiddenNote = (n) => (n ? ` ${n} matter${n === 1 ? "" : "s"} without a lawyer ${n === 1 ? "isn't" : "aren't"} listed.` : "");
+
+export async function loadMatterOptions() {
+    const read = await readAllMatters();
+    if (!read.ok) return { state: "error" };
+    const cases = read.cases;
+    const e = await listEngagements();
+    const engs = Array.isArray(e?.data) ? e.data : [];
+    const live = cases.filter(c => c && !MATTER_OVER.has(c.status));
+    const options = live.filter(c => c.lawyer_id).map(c => {
+        const id = String(c._id || c.id);
+        const hired = engs.find(x => x && x.lawyer_id === c.lawyer_id && String(x.case_id || "") === id && x.lawyer_name)
+            || engs.find(x => x && x.lawyer_id === c.lawyer_id && x.lawyer_name);
+        return { caseId: id, title: c.title || "Untitled matter", caseNumber: c.case_number || null,
+            lawyerId: c.lawyer_id, lawyerName: hired?.lawyer_name || "Your lawyer" };
+    });
+    return { state: "ready", options, hidden: live.filter(c => !c.lawyer_id).map(c => c.title || "A matter"), truncated: read.truncated };
+}
+
+/* `matter` (board 2, 2026-11-25): when the builder is opened from a matter
+ * ({caseId, title, caseNumber, lawyerId, lawyerName}), the agreement is for
+ * that matter from the start: its lawyer is already a REQUIRED signer and the
+ * send carries `case_id`. Null = a standalone agreement, as before. */
+const PageCreate = ({ template, onNavigate, onDone, matter: startMatter = null, onBackToMatter = null }) => {
     const t = useTheme();
     const toast = useToast();
     const { user } = useAuth();
     const [step, setStep] = useState(0);
+    // The matter is the builder's own state (board 4): set by where the client
+    // came from, or chosen with "For:", and changeable before sending.
+    const [matter, setMatter] = useState(startMatter);
+    const cameFromMatter = !!startMatter;
+    const [matterOptions, setMatterOptions] = useState(null);   // null = not loaded
+    const [choosingMatter, setChoosingMatter] = useState(false);
+    const [matterNote, setMatterNote] = useState(null);
+    // Where a sent agreement goes next (board 6): its matter's Documents tab,
+    // or the Agreements list. With no choice made, back where they started.
+    const router = useClientRouter();
+    // The agreement just sent, so the matter page can highlight it.
+    const sentIdRef = useRef(null);
+    const finish = (where = (cameFromMatter && matter ? "matter" : "list")) => {
+        if (where === "matter" && matter?.caseId) router.push(matterHref(matter.caseId, { tab: "documents", agreement: sentIdRef.current }));
+        else onDone();
+    };
+    useEffect(() => {
+        let live = true;
+        loadMatterOptions().then(r => { if (live) setMatterOptions(r); })
+            .catch(() => { if (live) setMatterOptions({ state: "error" }); });
+        return () => { live = false; };
+    }, []);
     const [title, setTitle] = useState(template?.name || "New Agreement");
     // HTML from here on (the rich editor). A template's plain text becomes one
     // paragraph per line, every character escaped.
@@ -1181,7 +1346,10 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
     // Restored from the original builder design, which offered "Add Signers"
     // with an email option before the backend could honour either; the step was
     // narrowed to one registered counterparty in the meantime.
-    const [signers, setSigners] = useState([]);   // {kind:'user'|'email', ...}
+    const [signers, setSigners] = useState(() => (matter?.lawyerId
+        ? [{ kind: "user", user_id: matter.lawyerId, name: matter.lawyerName || "Your lawyer",
+             spec: "Your lawyer on this matter", required: true }]
+        : []));   // {kind:'user'|'email', ...}
     const [cpList, setCpList] = useState([]);
     const [cpLoading, setCpLoading] = useState(true);
     const [cpSearch, setCpSearch] = useState("");
@@ -1230,7 +1398,67 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
     const updateSigner = (i, patch) => setSigners(prev =>
         prev.map((x, n) => (n === i ? { ...x, ...patch } : x)));
 
-    const removeSigner = (i) => setSigners(prev => prev.filter((_, n) => n !== i));
+    // The matter's lawyer cannot be removed while the agreement is for that
+    // matter: the server refuses a linked agreement without them.
+    const removeSigner = (i) => setSigners(prev => (prev[i]?.required ? prev : prev.filter((_, n) => n !== i)));
+
+    /* Choose what the agreement is FOR (board 4). The previous matter's lawyer
+     * goes (signers added by hand stay); the new matter's lawyer comes in as
+     * REQUIRED -- already in the list, they are marked required instead of
+     * added twice. No room for them: nothing changes, and it is said. A change
+     * of matter is a different request, so it gets a fresh idempotency key. */
+    /* What choosing `next` does to the signers, worked out BEFORE anything
+     * changes (board 5): who goes, who comes in as required, who stays. */
+    const planMatter = (next) => {
+        const required = signers.find(s => s.required) || null;
+        const others = signers.filter(s => !s.required).map(s => ({ ...s, required: false }));
+        const nameOf = s => s.name || s.email || "An invited signer";
+        if (!next) return { ok: true, signers: others, removed: required ? [nameOf(required)] : [], added: null, kept: others.map(nameOf) };
+        if (required && required.user_id === next.lawyerId) {
+            // Same lawyer on both matters: they simply stay required.
+            return { ok: true, signers: [{ ...required, name: next.lawyerName || required.name }, ...others], removed: [], added: null,
+                kept: [`${nameOf(required)} (required)`, ...others.map(nameOf)] };
+        }
+        const already = others.find(s => s.kind === "user" && s.user_id === next.lawyerId);
+        if (!already && others.length >= MAX_SIGNERS) {
+            return { ok: false, note: `${next.lawyerName} must sign an agreement on "${next.title}". Remove a signer first to link it.` };
+        }
+        const rest = already ? others.filter(s => s !== already) : others;
+        return {
+            ok: true,
+            signers: [{ ...(already || { kind: "user", user_id: next.lawyerId }), name: next.lawyerName, spec: "Your lawyer on this matter", required: true }, ...rest],
+            removed: required ? [nameOf(required)] : [], added: next.lawyerName, kept: rest.map(nameOf),
+        };
+    };
+    // A change of a matter ALREADY chosen waits for a yes (board 5); the first
+    // choice applies at once (nothing is taken away).
+    const [pendingMatter, setPendingMatter] = useState(null);   // {next, plan}
+    // The FOR select shows on step 1 (nothing chosen yet) or after "Change";
+    // every other moment a compact chip says what it is for (2026-11-25).
+    const showForSelect = choosingMatter || (step === 0 && !matter);
+    // The one-line note under the FOR select: short, so it fits on one line.
+    const forHelp = !matterOptions ? "Loading your matters…"
+        : matterOptions.state !== "ready" ? "Couldn't load your matters. It can still be sent unlinked."
+        : matterOptions.options.length
+            ? `Its lawyer signs too.${hiddenNote(matterOptions.hidden.length)}`
+            : "None of your matters has a lawyer yet.";
+    const requestMatter = (next) => {
+        setMatterNote(null);
+        if ((matter?.caseId || null) === (next?.caseId || null)) { setChoosingMatter(false); return; }
+        const plan = planMatter(next);
+        if (!plan.ok) { setMatterNote(plan.note); return; }
+        if (matter) { setPendingMatter({ next, plan }); return; }
+        chooseMatter(next, plan);
+    };
+    const chooseMatter = (next, plan = planMatter(next)) => {
+        setMatterNote(null);
+        if (!plan.ok) { setMatterNote(plan.note); return false; }
+        setSigners(plan.signers);
+        if ((matter?.caseId || null) !== (next?.caseId || null)) sendKeyRef.current = idempotencyKey();
+        setMatter(next);
+        setChoosingMatter(false);
+        return true;
+    };
 
     // A party the server will accept: an email signer needs a plausible address.
     const signersReady = signers.length > 0 && signers.every(sg =>
@@ -1285,14 +1513,14 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
     return (
         <div>
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <button type="button" className="ag-back" onClick={() => onNavigate("templates")}
-                        aria-label="Back to templates" title="Back to templates">
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, marginBottom: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                    <button type="button" className="ag-back" onClick={() => (cameFromMatter && onBackToMatter ? onBackToMatter() : onNavigate("templates"))}
+                        aria-label={cameFromMatter ? "Back to the matter" : "Back to templates"} title={cameFromMatter ? "Back to the matter" : "Back to templates"}>
                         <LIcon name="back" size={18} stroke={2} />
                     </button>
                     <div>
-                        <h2 style={{ fontSize: 21, fontWeight: 800, color: t.text, margin: 0, fontFamily: "inherit", letterSpacing: "-.01em" }}>Create Agreement</h2>
+                        <h2 data-ag-page-title="" style={{ fontSize: 21, fontWeight: 800, color: t.text, margin: 0, letterSpacing: "-.01em" }}>Create Agreement</h2>
                         {/* The agreement's title, edited in place: the separate
                             title box above the editor was removed (2026-10-11)
                             so the editor's toolbar sits where it was. */}
@@ -1307,8 +1535,107 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                     persistence that does not exist. Removed rather than made
                     inert, because a disabled Save Draft still promises the
                     feature. Real draft persistence is Phase 3 (§3.4). */}
+                {/* FOR (boards 2/4, moved to the header 2026-11-25 so the editor
+                    keeps its width). The select is shown on step 1, or when
+                    "Change" is pressed; every other step shows a compact chip. */}
+                <div data-agreement-for-slot style={{ width: 360, maxWidth: "42%", flexShrink: 0, display: "flex", justifyContent: "flex-end" }}>
+                    {showForSelect ? (
+                        <section aria-label="What this agreement is for" data-agreement-for style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, maxWidth: "100%" }}>
+                            {/* THE SAME PILL as the chip (2026-11-25): one rounded
+                                container, the select and Done inside it, so the
+                                two states keep one shape. */}
+                            <div data-agreement-for-pill style={{
+                                display: "inline-flex", alignItems: "center", gap: 6, maxWidth: "100%", height: 42, padding: "0 6px 0 4px",
+                                borderRadius: 999, background: t.inputBg, border: `1px solid ${t.border}`,
+                            }}>
+                                <select id="ag-for" aria-label="Which matter this agreement is for" data-agreement-for-select value={matter?.caseId || ""}
+                                    disabled={!matterOptions || matterOptions.state !== "ready"}
+                                    onChange={e => {
+                                        const id = e.target.value;
+                                        requestMatter(id ? (matterOptions?.options || []).find(o => o.caseId === id) || null : null);
+                                    }}
+                                    style={{ fieldSizing: "content", minWidth: 0, maxWidth: 300, height: 34, padding: "0 10px", borderRadius: 999, border: 0, background: "transparent", color: t.text, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
+                                    <option value="">Not linked to a matter</option>
+                                    {(matterOptions?.options || []).map(o => (
+                                        <option key={o.caseId} value={o.caseId}>{shortTitle(o.title)}{o.caseNumber ? ` · ${o.caseNumber}` : ""} — {o.lawyerName} signs too</option>
+                                    ))}
+                                </select>
+                                {choosingMatter && (
+                                    <button type="button" onClick={() => { setMatterNote(null); setChoosingMatter(false); }}
+                                        className="ag-tint" style={{ ...TINT_BTN, height: 30, padding: "0 14px", flexShrink: 0 }}>Done</button>
+                                )}
+                            </div>
+                            {/* ONE line (2026-11-25): short wording, cut with an
+                                ellipsis if it must be; the whole sentence is the tooltip. */}
+                            <span data-agreement-for-help title={forHelp} style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.5, maxWidth: "100%",
+                                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{forHelp}</span>
+                            {matterOptions?.truncated && (
+                                <span data-agreement-for-truncated style={{ fontSize: 12, color: t.warn, fontWeight: 600, paddingLeft: 14 }}>
+                                    Only your first {MATTER_PAGE_GUARD * 50} matters could be listed here.
+                                </span>
+                            )}
+                            {matterNote && <span role="alert" data-agreement-for-note style={{ fontSize: 12.5, color: t.warn, fontWeight: 600 }}>{matterNote}</span>}
+                        </section>
+                    ) : (
+                        <section aria-label={matter ? "Linked matter" : "Not linked to a matter"}
+                            {...(matter ? { "data-agreement-matter": matter.caseId } : { "data-agreement-unlinked": "" })}
+                            title={matter ? `${fullMatterTitle(matter.title)} — ${matter.lawyerName || "Your lawyer"}, your lawyer on this matter, signs it too.` : "A standalone agreement"}
+                            style={{
+                                display: "inline-flex", alignItems: "center", gap: 10, maxWidth: "100%", height: 42, padding: "0 6px 0 14px",
+                                borderRadius: 999, background: matter ? t.primaryGlow : t.inputBg, border: `1px solid ${matter ? `${t.primary}59` : t.border}`,
+                            }}>
+                            <b style={{ minWidth: 0, fontSize: 13.5, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {matter ? shortTitle(matter.title, 36) : "Not linked to a matter"}{matter?.caseNumber ? <span style={{ fontWeight: 500, color: t.textMuted }}> · {matter.caseNumber}</span> : null}
+                            </b>
+                            <button type="button" className="ag-tint" data-agreement-matter-change onClick={() => setChoosingMatter(true)}
+                                style={{ ...TINT_BTN, height: 30, padding: "0 12px", gap: 6, flexShrink: 0 }}>
+                                <LIcon name="pencil" size={13} stroke={2.2} />Change</button>
+                        </section>
+                    )}
+                </div>
             </div>
 
+            {pendingMatter && typeof document !== "undefined" && createPortal(
+                <div onClick={() => setPendingMatter(null)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "grid", placeItems: "center", padding: 20 }}>
+                    <section role="dialog" aria-modal="true" aria-labelledby="ag-change-matter" data-change-matter
+                        onClick={e => e.stopPropagation()}
+                        style={{ width: "100%", maxWidth: 520, borderRadius: 18, background: t.card, border: `1px solid ${t.border}`, boxShadow: "0 24px 64px rgba(0,0,0,0.4)", padding: "22px 24px", display: "flex", flexDirection: "column", gap: 14, fontFamily: CLIENT_BODY_FONT, color: t.text }}>
+                        <h3 id="ag-change-matter" style={{ margin: 0, fontSize: 18, fontWeight: 800, lineHeight: 1.3 }}>
+                            {pendingMatter.next ? `Link it to "${shortTitle(pendingMatter.next.title)}" instead?` : "Send it without a matter?"}
+                        </h3>
+                        <p style={{ margin: 0, fontSize: 13.5, color: t.textMuted }}>
+                            {pendingMatter.next ? "The lawyer on the new matter has to sign, so the signers change:" : "It will no longer be on any matter's page, and the signers change:"}
+                        </p>
+                        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8, fontSize: 14 }}>
+                            {pendingMatter.plan.removed.map(n => (
+                                <li key={`r-${n}`} data-change-removed style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                    <b aria-hidden="true" style={{ width: 22, height: 22, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", background: `${t.danger}22`, color: t.danger }}>−</b>
+                                    <span><b>{n}</b> is removed</span></li>
+                            ))}
+                            {pendingMatter.plan.added && (
+                                <li data-change-added style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                    <b aria-hidden="true" style={{ width: 22, height: 22, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", background: `${t.primary}26`, color: t.primary }}>+</b>
+                                    <span><b>{pendingMatter.plan.added}</b> is added as a required signer</span></li>
+                            )}
+                            {pendingMatter.plan.kept.map(n => (
+                                <li key={`k-${n}`} data-change-kept style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                    <b aria-hidden="true" style={{ width: 22, height: 22, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", background: t.inputBg, color: t.textMuted }}>=</b>
+                                    <span><b>{n}</b> stays</span></li>
+                            ))}
+                        </ul>
+                        <p style={{ margin: 0, fontSize: 12.5, color: t.textMuted }}>Your wording is kept. Nothing has been sent yet.</p>
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                            <button type="button" data-change-keep onClick={() => setPendingMatter(null)}
+                                style={{ height: 40, padding: "0 18px", borderRadius: 999, border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                Keep {matter?.title ? `"${shortTitle(matter.title, 32)}"` : "it as it is"}</button>
+                            <button type="button" data-change-confirm onClick={() => { const p = pendingMatter; setPendingMatter(null); chooseMatter(p.next, p.plan); }}
+                                style={{ height: 40, padding: "0 20px", borderRadius: 999, border: 0, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+                                {pendingMatter.next ? "Change matter" : "Remove the link"}</button>
+                        </div>
+                    </section>
+                </div>,
+                document.body,
+            )}
             {/* Steps */}
             <StepBar steps={STEPS} current={step} />
 
@@ -1331,9 +1658,13 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                 Add the people who need to sign, besides you. Up to {MAX_SIGNERS}.
                             </div>
                         </div>
-                        <Btn onClick={addEmailSigner} disabled={signers.length >= MAX_SIGNERS}
-                            style={{ padding: "8px 14px", fontSize: 12, opacity: signers.length >= MAX_SIGNERS ? 0.5 : 1 }}>
-                            ✉️ Invite by email
+                        {/* Soft brand tint, no border: an "add" action, in the
+                            same colour as each lawyer's "+ Add" (2026-11-25). */}
+                        <Btn onClick={addEmailSigner} disabled={signers.length >= MAX_SIGNERS} data-invite-email className="ag-tint"
+                            style={{ height: 38, padding: "0 18px", borderRadius: 999, gap: 8, fontSize: 13, fontWeight: 700, border: 0,
+                                background: "var(--brand-soft, rgba(62,224,161,.13))", color: "var(--brand-text, #5EE6B0)",
+                                opacity: signers.length >= MAX_SIGNERS ? 0.5 : 1 }}>
+                            <LIcon name="mail" size={16} stroke={2} /> Invite by email
                         </Btn>
                     </div>
 
@@ -1345,26 +1676,41 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                         }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                 <div style={{
-                                    width: 32, height: 32, borderRadius: "50%",
-                                    background: sg.kind === "user" ? t.primary : t.warn,
+                                    width: 36, height: 36, borderRadius: "50%",
+                                    background: sg.kind === "user" ? `${t.primary}26` : `${t.warn}26`,
+                                    color: sg.kind === "user" ? t.primary : t.warn,
                                     display: "flex", alignItems: "center", justifyContent: "center",
-                                    fontSize: 13, fontWeight: 800,
-                                    color: t.mode === "dark" ? "#1A2E35" : "#fff", flexShrink: 0,
-                                }}>{sg.kind === "user" ? "👤" : "✉️"}</div>
+                                    fontSize: 12.5, fontWeight: 800, flexShrink: 0,
+                                }} aria-hidden="true">
+                                    {sg.kind === "user"
+                                        ? (sg.name || "?").replace(/^(adv\.?|advocate)\s+/i, "").split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase()
+                                        : <LIcon name="mail" size={16} stroke={2} />}
+                                </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>
                                         {sg.kind === "user" ? sg.name : (sg.name || "Invited signer")}
                                     </div>
-                                    <div style={{ fontSize: 11, color: sg.kind === "user" ? t.primary : t.warn }}>
+                                    <div style={{ fontSize: 12.5, color: sg.kind === "user" ? t.primary : t.warn }}>
                                         {sg.kind === "user"
                                             ? `${sg.spec} · signs from their account`
                                             : "Invited by email · gets a one-time signing link"}
                                     </div>
                                 </div>
-                                <button onClick={() => removeSigner(i)} style={{
-                                    background: "none", border: `1px solid ${t.border}`, borderRadius: 8,
-                                    padding: "5px 12px", color: t.textMuted, fontSize: 11, cursor: "pointer",
-                                }}>Remove</button>
+                                {sg.required ? (
+                                    <span data-signer-required title="Required while the agreement is for this matter" style={{
+                                        display: "inline-flex", alignItems: "center", height: 30, borderRadius: 999, padding: "0 14px", fontSize: 12.5, fontWeight: 800,
+                                        color: t.primary, background: `${t.primary}1F`, border: `1px solid ${t.primary}55`,
+                                    }}>Required</span>
+                                ) : (
+                                    <button type="button" className="ag-danger" onClick={() => removeSigner(i)} data-remove-signer
+                                        /* Destructive, so it reads as one: the theme's danger
+                                           colour on a soft danger tint (2026-11-25). */
+                                        style={{
+                                        display: "inline-flex", alignItems: "center", gap: 6, height: 34, padding: "0 16px",
+                                        background: "var(--danger-soft, rgba(255,138,128,.14))", border: "1px solid color-mix(in srgb, var(--danger, #FF8A80) 35%, transparent)", borderRadius: 999,
+                                        color: "var(--danger, #FF8A80)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                                    }}><LIcon name="x" size={14} stroke={2.2} />Remove</button>
+                                )}
                             </div>
 
                             {sg.kind === "email" && (
@@ -1372,12 +1718,12 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                     display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12,
                                 }}>
                                     <div>
-                                        <div style={{ fontSize: 10.5, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 4 }}>Full name</div>
+                                        <div style={{ fontSize: 11.5, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 4 }}>Full name</div>
                                         <Input value={sg.name} placeholder="Their name"
                                             onChange={e => updateSigner(i, { name: e.target.value })} />
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: 10.5, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 4 }}>Email address</div>
+                                        <div style={{ fontSize: 11.5, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 4 }}>Email address</div>
                                         <Input value={sg.email} placeholder="signer@example.com"
                                             onChange={e => updateSigner(i, { email: e.target.value })} />
                                     </div>
@@ -1417,11 +1763,11 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
 
                     {signers.length < MAX_SIGNERS && (
                         <>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.7px", margin: "18px 0 8px" }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.7px", margin: "18px 0 8px" }}>
                                 Or choose a registered lawyer
                             </div>
                             <div style={{ position: "relative", marginBottom: 12 }}>
-                                <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: t.textMuted }}>🔍</span>
+                                <span aria-hidden="true" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: t.textMuted, display: "flex" }}><LIcon name="search" size={16} stroke={2} /></span>
                                 <Input placeholder="Search lawyers…" value={cpSearch} onChange={e => setCpSearch(e.target.value)} style={{ paddingLeft: 38 }} />
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 300, overflowY: "auto" }}>
@@ -1431,7 +1777,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                     .filter(l => l.name.toLowerCase().includes(cpSearch.toLowerCase()))
                                     .filter(l => !signers.some(sg => sg.user_id === l._id))
                                     .map(l => (
-                                        <div key={l._id} onClick={() => addUserSigner(l)} style={{
+                                        <div key={l._id} className="ag-pick" onClick={() => addUserSigner(l)} style={{
                                             display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
                                             borderRadius: 12, background: t.card, border: `1.5px solid ${t.border}`,
                                             cursor: "pointer",
@@ -1443,9 +1789,9 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                             }}>{l.avatar}</div>
                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{l.name}</div>
-                                                <div style={{ fontSize: 11, color: t.textMuted, textTransform: "capitalize" }}>{l.spec}</div>
+                                                <div style={{ fontSize: 12.5, color: t.textMuted, textTransform: "capitalize" }}>{l.spec}</div>
                                             </div>
-                                            <span style={{ fontSize: 11, color: t.primary, fontWeight: 600 }}>+ Add</span>
+                                            <span className="ag-add" style={{ fontSize: 13, color: "var(--brand-text, #5EE6B0)", fontWeight: 700 }}>+ Add</span>
                                         </div>
                                     ))}
                                 {!cpLoading && !cpList.length && (
@@ -1489,7 +1835,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                 }}><LIcon name="pencil" size={16} /></div>
                                 <div>
                                     <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>Your Signature</div>
-                                    <div style={{ fontSize: 10, color: t.textMuted }}>
+                                    <div style={{ fontSize: 12, color: t.textMuted }}>
                                         {sig.data ? "✓ Signature captured" : "Draw, type or upload below"}
                                     </div>
                                 </div>
@@ -1497,7 +1843,8 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
 
                         </div>
 
-                        <div style={{ padding: "16px 18px" }}>
+                        {/* The typed signature keeps its script face. */}
+                        <div data-keep-font="" style={{ padding: "16px 18px" }}>
                             <SignaturePad height={260} onChange={setSig} />
                         </div>
 
@@ -1508,16 +1855,16 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                             display: "flex", alignItems: "center", justifyContent: "space-between",
                             background: t.surface,
                         }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: t.textMuted }}>
-                                <LIcon name="shield" size={13} />
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: t.textMuted }}>
+                                <LIcon name="shield" size={14} />
                                 <span>Signature encrypted at rest with AES-256-GCM · timestamped on submission</span>
                             </div>
                             {sig.data && (
                                 <div style={{
                                     display: "flex", alignItems: "center", gap: 6,
-                                    fontSize: 11, fontWeight: 700, color: t.success,
+                                    fontSize: 12.5, fontWeight: 700, color: t.success,
                                 }}>
-                                    <span>✓</span> Signature ready
+                                    <LIcon name="checkCircle" size={14} stroke={2} /> Signature ready
                                 </div>
                             )}
                         </div>
@@ -1527,7 +1874,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                   <aside style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {/* ── Full name ── */}
                     <div style={{ padding: "14px 16px", borderRadius: 16, background: t.card, border: `1px solid ${t.border}` }}>
-                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
+                        <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8 }}>
                             Your full name
                         </label>
                         <div style={{ position: "relative" }}>
@@ -1592,17 +1939,33 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
             {/* ── STEP 3: Review & Send ── */}
             {step === 3 && (
                 <div>
+                    {/* The last place to see, and change, what it is for (board 6). */}
+                    {matter && (
+                        <div data-review-linked style={{
+                            display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", marginBottom: 16,
+                            borderRadius: 14, background: t.primaryGlow, border: `1px solid ${t.primary}59`,
+                        }}>
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                                <span style={{ display: "block", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.primary }}>Linked to</span>
+                                <b title={matter.title} style={{ fontSize: 14, color: t.text }}>{shortTitle(matter.title, 80)}</b>
+                                {matter.caseNumber && <span style={{ fontSize: 12.5, color: t.textMuted }}> · {matter.caseNumber}</span>}
+                            </span>
+                            <button type="button" data-review-change onClick={() => { setChoosingMatter(true); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
+                                style={{ height: 34, padding: "0 16px", borderRadius: 999, border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Change</button>
+                        </div>
+                    )}
                     <Card style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
                         <div style={{
                             display: "flex", alignItems: "center", gap: 10, padding: "14px 20px",
                             borderBottom: `1px solid ${t.border}`, background: t.surface
                         }}>
-                            <span style={{ fontSize: 16 }}>📄</span>
+                            <LIcon name="fileText" size={18} stroke={2} style={{ color: t.primary }} />
                             <span style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{title}</span>
                         </div>
                         {/* The server's canonical form: exactly what will be
                             hashed and signed, not the editor's raw markup. */}
-                        <div style={{ padding: "20px 24px", maxHeight: 420, overflowY: "auto" }}>
+                        {/* The agreement itself keeps its document (serif) face. */}
+                        <div data-keep-font="" style={{ padding: "20px 24px", maxHeight: 420, overflowY: "auto" }}>
                             {review?.loading ? (
                                 <div style={{ fontSize: 13, color: t.textMuted }}>Checking the text…</div>
                             ) : review?.error ? (
@@ -1617,7 +1980,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                     {/* Signing order */}
                     <Card style={{ marginBottom: 16 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                            <span style={{ fontSize: 16 }}>👥</span>
+                            <LIcon name="users" size={18} stroke={2} style={{ color: t.primary }} />
                             <span style={{ fontSize: 14, fontWeight: 700, color: t.text }}>Signing Order</span>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -1642,11 +2005,11 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                                         <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{fullName || "You"}</span>
                                         <span style={{
-                                            fontSize: 10, fontWeight: 700, color: t.primary, background: t.primaryGlow,
-                                            border: `1px solid ${t.primary}40`, borderRadius: 5, padding: "2px 7px"
+                                            fontSize: 11.5, fontWeight: 700, color: t.primary, background: t.primaryGlow,
+                                            border: `1px solid ${t.primary}40`, borderRadius: 6, padding: "3px 9px"
                                         }}>SIGNS ON SEND</span>
                                     </div>
-                                    <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 8 }}>
+                                    <div style={{ fontSize: 12.5, color: t.textMuted, marginBottom: 8 }}>
                                         Creator · your signature is applied when this is sent
                                     </div>
                                     {/* Rendered from the captured signature. The
@@ -1659,7 +2022,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                             justifyContent: "center", overflow: "hidden",
                                         }}>
                                             {sig.method === "typed" ? (
-                                                <span style={{
+                                                <span data-keep-font="" style={{
                                                     fontFamily: "'Brush Script MT','Segoe Script',cursive",
                                                     fontSize: 20, color: t.primary,
                                                 }}>{sig.data}</span>
@@ -1690,14 +2053,14 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                                 {sg.name || sg.email || "Signer"}
                                             </span>
                                             <span style={{
-                                                fontSize: 10, fontWeight: 700,
+                                                fontSize: 11.5, fontWeight: 700,
                                                 color: sg.kind === "user" ? t.info : t.warn,
                                                 background: sg.kind === "user" ? "rgba(90,179,255,0.12)" : t.warn + "1F",
                                                 border: `1px solid ${sg.kind === "user" ? "rgba(90,179,255,0.25)" : t.warn + "40"}`,
                                                 borderRadius: 5, padding: "2px 7px"
                                             }}>{sg.kind === "user" ? "IN-APP" : "EMAIL LINK"}</span>
                                         </div>
-                                        <div style={{ fontSize: 11, color: t.textMuted }}>
+                                        <div style={{ fontSize: 12.5, color: t.textMuted }}>
                                             {sg.kind === "user"
                                                 ? "Notified on send · counter-signs from their Agreements page"
                                                 : `One-time link for ${sg.email} · identity not verified by us`}
@@ -1711,7 +2074,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                     {/* Security notice */}
                     <Card style={{ background: t.primaryGlow2, borderColor: `${t.primary}30`, marginBottom: 16 }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                            <span style={{ fontSize: 18 }}>🛡️</span>
+                            <LIcon name="shield" size={20} stroke={2} style={{ color: t.primary, marginTop: 1 }} />
                             <div>
                                 {/* Same two unsupported claims as the signature
                                     panel above. See the note there. */}
@@ -1732,7 +2095,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                     padding: "13px 16px", borderRadius: 12, marginTop: 20,
                     background: `${t.danger}14`, border: `1.5px solid ${t.danger}55`,
                 }}>
-                    <span style={{ fontSize: 16 }}>⚠️</span>
+                    <LIcon name="alertTriangle" size={18} stroke={2} style={{ color: t.danger, marginTop: 1 }} />
                     <div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: t.danger, marginBottom: 3 }}>
                             The agreement was not sent
@@ -1781,6 +2144,8 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                 party_ids: signers.map(sg => sg.kind === "user"
                                     ? { user_id: sg.user_id }
                                     : { email: sg.email.trim(), full_name: sg.name?.trim() || null }),
+                                // The matter it is for (board 2); absent = standalone.
+                                ...(matter?.caseId ? { case_id: matter.caseId } : {}),
                                 method: sig.method,
                                 signature_data: sig.data,
                                 consent: true,
@@ -1801,6 +2166,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                 toast.show("❌ " + why, "danger", 6000);
                                 setSubmitting(false); return;
                             }
+                            sentIdRef.current = res.data?._id || res.data?.id || null;
                             const waiting = signers.map(sg => sg.name || sg.email).join(" and ");
                             toast.show(`✅ Signed & sent — awaiting ${waiting}`, "success", 4000);
 
@@ -1837,7 +2203,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                 setAccountNotifs(accounts);
                                 return;
                             }
-                            onDone();
+                            finish();
                         } catch {
                             toast.show("❌ Network error — check backend", "danger");
                         } finally {
@@ -1856,12 +2222,13 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                     display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
                 }}>
                     <Card style={{ maxWidth: 560, width: "100%", maxHeight: "86vh", overflowY: "auto" }}>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: t.text, marginBottom: 6 }}>
+                        <div data-sent-title style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 17, fontWeight: 800, color: t.text, marginBottom: 6 }}>
+                            <LIcon name="checkCircle" size={22} stroke={2.2} style={{ color: t.success }} />
                             {(sentLinks || []).every(l => l.emailed)
-                                ? "✅ Sent — invitations emailed"
+                                ? "Sent — invitations emailed"
                                 : (sentLinks || []).some(l => l.emailed)
-                                    ? "✅ Sent — some invitations need sending by hand"
-                                    : "✅ Sent — share these signing links"}
+                                    ? "Sent — some invitations need sending by hand"
+                                    : "Sent — share these signing links"}
                         </div>
                         <div style={{ fontSize: 12.5, color: t.textMuted, lineHeight: 1.7, marginBottom: 16 }}>
                             {(sentLinks || []).every(l => l.emailed)
@@ -1888,7 +2255,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                             ? "notified in the app and emailed"
                                             : `notified in the app; ${deliveryReason(u.reason)}`}
                                         {u.was_invited_by_email && (
-                                            <span style={{ display: "block", color: t.warn, fontSize: 11.5 }}>
+                                            <span style={{ display: "block", color: t.warn, fontSize: 12.5 }}>
                                                 You entered this address as an email invite, but it
                                                 belongs to an account \u2014 so they sign by logging in,
                                                 and no one-time link was issued.
@@ -1896,7 +2263,7 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                         )}
                                     </div>
                                 ))}
-                                <div style={{ fontSize: 11, color: t.textMuted, marginTop: 7, lineHeight: 1.6 }}>
+                                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 7, lineHeight: 1.6 }}>
                                     Account holders sign from their own Agreements page. Their
                                     email carries no signing link, so forwarding it gives nobody
                                     access.
@@ -1920,34 +2287,54 @@ const PageCreate = ({ template, onNavigate, onDone }) => {
                                     "emailed" over a failed send is the exact class
                                     of false claim this screen exists to avoid. */}
                                 <div style={{
-                                    fontSize: 11, marginBottom: 8, lineHeight: 1.6,
+                                    fontSize: 12.5, marginBottom: 8, lineHeight: 1.6,
                                     color: l.emailed ? t.success : t.warn,
                                 }}>
                                     {l.emailed
-                                        ? "✉️ Emailed to this address — no action needed unless it does not arrive."
-                                        : `⚠️ Not emailed — ${deliveryReason(l.reason)}. Send this link yourself.`}
+                                        ? <><LIcon name="mail" size={14} stroke={2} style={{ verticalAlign: "-2px", marginRight: 6 }} />Emailed to this address — no action needed unless it does not arrive.</>
+                                        : <><LIcon name="alertTriangle" size={14} stroke={2} style={{ verticalAlign: "-2px", marginRight: 6 }} />{`Not emailed — ${deliveryReason(l.reason)}. Send this link yourself.`}</>}
                                 </div>
                                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                                     <input readOnly value={l.url} onFocus={e => e.target.select()} style={{
                                         flex: 1, minWidth: 0, padding: "8px 11px", borderRadius: 9,
                                         background: t.card, border: `1px solid ${t.border}`,
-                                        color: t.textMuted, fontSize: 11, fontFamily: "monospace",
+                                        color: t.textMuted, fontSize: 12.5, fontFamily: "monospace",
                                     }} />
                                     <Btn onClick={() => {
                                         navigator.clipboard?.writeText(l.url)
                                             .then(() => toast.show("📋 Link copied", "success"))
                                             .catch(() => toast.show("⚠️ Copy failed — select the text and copy it", "warn"));
-                                    }} style={{ padding: "8px 14px", fontSize: 12 }}>Copy</Btn>
+                                    }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700 }}>Copy</Btn>
                                 </div>
                             </div>
                         ))}
 
-                        <Btn primary onClick={() => { setSentLinks(null); setAccountNotifs([]); onDone(); }}
-                            style={{ width: "100%", padding: "11px 20px", marginTop: 6 }}>
-                            {(sentLinks || []).every(l => l.emailed)
-                                ? "Done"
-                                : "I have copied the links — done"}
-                        </Btn>
+                        {/* Back where they started (board 6): a matter they came from
+                            gets the primary button; a matter chosen here is one
+                            click away; a standalone agreement goes to the list. */}
+                        {(() => {
+                            const copied = (sentLinks || []).every(l => l.emailed) ? "" : "I have copied the links — ";
+                            const close = () => { setSentLinks(null); setAccountNotifs([]); };
+                            const second = { flex: 1, padding: "11px 20px", marginTop: 6 };
+                            if (matter && cameFromMatter) return (
+                                <div style={{ display: "flex", gap: 10 }}>
+                                    <Btn primary data-sent-back-to-matter onClick={() => { close(); finish("matter"); }} style={second}>{copied}Back to matter</Btn>
+                                    <Btn data-sent-back-to-agreements onClick={() => { close(); finish("list"); }} style={second}>Back to Agreements</Btn>
+                                </div>
+                            );
+                            if (matter) return (
+                                <div style={{ display: "flex", gap: 10 }}>
+                                    <Btn primary data-sent-done onClick={() => { close(); finish("list"); }} style={second}>{copied ? "I have copied the links — done" : "Done"}</Btn>
+                                    <Btn data-sent-open-matter onClick={() => { close(); finish("matter"); }} style={second}>Open matter</Btn>
+                                </div>
+                            );
+                            return (
+                                <Btn primary data-sent-done onClick={() => { close(); finish("list"); }}
+                                    style={{ width: "100%", padding: "11px 20px", marginTop: 6 }}>
+                                    {copied ? "I have copied the links — done" : "Done"}
+                                </Btn>
+                            );
+                        })()}
                     </Card>
                 </div>
             )}
@@ -2044,14 +2431,18 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
     const t = useTheme();
     const toast = useToast();
     const { user } = useAuth();
+    const DIY_BUILDER_ENABLED = useAgreementBuilderOn() === true;   // the server's switch
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState(initialFilter);
     // "Archived" is a VIEW, not a status: it crosses the four real ones, so
     // it cannot be another pill in the same group without implying an
     // agreement is either pending or archived rather than both.
     const archivedView = filter === "Archived";
+    // Matter filter (board 7): "" = all matters; otherwise one case_id.
+    const [matterFilter, setMatterFilter] = useState("");
+    const matterNames = useMatterNames();
     const [agmts, loading, reload, paging] = useMyAgreements(
-        user?._id, AG_FILTER_STATUS[filter] || null, archivedView);
+        user?._id, AG_FILTER_STATUS[filter] || null, archivedView, matterFilter || null);
     const [viewing, setViewing] = useState(null);       // mapped agreement being viewed
     // {method, data} from SignaturePad, in the server's own vocabulary.
     // This was a typed name only; the person RECEIVING an agreement could
@@ -2076,6 +2467,24 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
     const [doc, setDoc] = useState(null);
     const openSeq = useRef(0);
     const focusDone = useRef(null);
+
+    // The OPEN agreement follows live changes too (2026-11-25): the list
+    // refreshes itself, but the open view is a copy of the row it was opened
+    // from, and the row may not even be in the current filter any more. A
+    // notice about the agreement on screen re-reads it by id.
+    const viewingRef = useRef(null);
+    viewingRef.current = viewing;
+    // Only the LAST re-read may land: two notices in quick succession must not
+    // let the older answer replace the newer status.
+    const liveSeq = useRef(0);
+    useEffect(() => onNotification(async (n) => {
+        const id = n?.payload?.agreement_id;
+        if (!String(n?.type || "").startsWith("agreement_") || !id || viewingRef.current?.id !== id) return;
+        const token = ++liveSeq.current;
+        const { data } = await getAgreement(id);
+        if (token !== liveSeq.current) return;
+        if (data && viewingRef.current?.id === id) setViewing(mapAgreement(data, user?._id));
+    }), [user?._id]);
 
     /* Open a row: fetch the document, never trust the row. Sign and decline
        are gated on this having succeeded, so a failed load cannot leave
@@ -2284,10 +2693,23 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                         <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>{f}</button>
                     ))}
                 </div>
-                <button type="button" className="al-arch" aria-pressed={archivedView}
-                    onClick={() => setFilter(archivedView ? "All" : "Archived")}>
-                    <AdIcon d="M3 5h18v4H3zM5 9v10h14V9M10 13h4" s={15} />Archived
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    {matterNames && Object.keys(matterNames).length > 0 && (
+                        <select aria-label="Filter by matter" data-matter-filter value={matterFilter}
+                            onChange={e => setMatterFilter(e.target.value)} className="al-arch"
+                            style={{ appearance: "auto", paddingRight: 10, color: matterFilter ? "var(--ink)" : undefined, maxWidth: 260 }}>
+                            <option value="">All matters</option>
+                            <option value={NOT_LINKED}>Not linked to a matter</option>
+                            {Object.entries(matterNames).sort((x, y) => x[1].localeCompare(y[1])).map(([id, name]) => (
+                                <option key={id} value={id}>{shortTitle(name)}</option>
+                            ))}
+                        </select>
+                    )}
+                    <button type="button" className="al-arch" aria-pressed={archivedView}
+                        onClick={() => setFilter(archivedView ? "All" : "Archived")}>
+                        <AdIcon d="M3 5h18v4H3zM5 9v10h14V9M10 13h4" s={15} />Archived
+                    </button>
+                </div>
             </div>
 
             {/* ── Table ── */}
@@ -2317,6 +2739,16 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                                 <div style={{ minWidth: 0 }}>
                                     <div className="al-title">{a.name}</div>
                                     <div className="al-sub">{a.isEngagementLetter ? "Engagement letter" : "Agreement"}{a.date ? ` · ${a.date}` : ""}</div>
+                                    {/* The matter chip (board 7): its NAME from the
+                                        client's own matters, never a raw id. */}
+                                    <span data-matter-chip={a.caseId || "none"} style={{
+                                        display: "inline-flex", alignItems: "center", marginTop: 5, height: 22, padding: "0 9px", borderRadius: 999,
+                                        fontSize: 11.5, fontWeight: 700, whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis",
+                                        background: a.caseId ? "var(--brand-soft, rgba(62,224,161,.13))" : "var(--chip-n, rgba(255,255,255,.08))",
+                                        color: a.caseId ? "var(--brand-text, #5EE6B0)" : "var(--muted)",
+                                    }}>
+                                        {a.caseId ? shortTitle(matterNames?.[String(a.caseId)] || "On a matter", 40) : "Not linked"}
+                                    </span>
                                 </div>
                             </div>
 
@@ -2414,16 +2846,32 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                         boxShadow: "0 24px 64px rgba(0,0,0,0.4)", overflow: "hidden",
                     }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 22px", borderBottom: `1px solid ${t.border}` }}>
-                            <span style={{ fontSize: 20 }}>{viewing.isEngagementLetter ? "⚖️" : "📄"}</span>
+                            <LIcon name={viewing.isEngagementLetter ? "scale" : "fileText"} size={22} stroke={2} style={{ color: t.primary }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: 15, fontWeight: 800, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{viewing.name}</div>
-                                <div style={{ fontSize: 11, color: t.textMuted }}>{doc?.eto || "Awaiting first signature"}</div>
+                                <div style={{ fontSize: 12.5, color: t.textMuted }}>{doc?.eto || "Awaiting first signature"}</div>
                             </div>
                             <StatusBadge status={viewing.status} />
-                            <button onClick={() => setViewing(null)} style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 8, width: 30, height: 30, cursor: "pointer", color: t.textMuted, fontSize: 15 }}>✕</button>
+                            <button type="button" aria-label="Close" onClick={() => setViewing(null)} style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 10, width: 34, height: 34, cursor: "pointer", color: t.textMuted, display: "grid", placeItems: "center" }}><LIcon name="x" size={16} stroke={2.2} /></button>
                         </div>
 
                         <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px" }}>
+                            {viewing.declined && (
+                                <div role="note" data-agreement-declined style={{
+                                    padding: "12px 14px", borderRadius: 12, marginBottom: 16,
+                                    background: `${t.danger || "#FF6B7A"}14`, border: `1px solid ${t.danger || "#FF6B7A"}45`,
+                                }}>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>
+                                        {viewing.declined.by_user_id && viewing.declined.by_user_id === user?._id
+                                            ? "You declined this agreement"
+                                            : `Declined by ${viewing.declined.by_name || "a party"}`}
+                                        {viewing.declined.at ? ` on ${new Date(viewing.declined.at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : ""}
+                                    </div>
+                                    <div data-decline-reason style={{ fontSize: 12.5, color: t.textMuted, marginTop: 4, whiteSpace: "pre-wrap" }}>
+                                        {viewing.declined.reason ? `Reason: ${viewing.declined.reason}` : "No reason was given."}
+                                    </div>
+                                </div>
+                            )}
                             {/* Parties */}
                             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
                                 {/* KEYED BY WHATEVER IDENTIFIES THE PARTY. An
@@ -2433,8 +2881,8 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                                     all of them and their signed states swap. */}
                                 {viewing.parties.map((p, i) => (
                                     <div key={p.user_id || p.party_id || p.email || i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 10, background: p.signed ? `${t.success}12` : t.inputBg, border: `1px solid ${p.signed ? t.success + "40" : t.border}` }}>
-                                        <span style={{ fontSize: 12 }}>{p.signed ? "✅" : "⏰"}</span>
-                                        <span style={{ fontSize: 12, fontWeight: 600, color: t.text }}>
+                                        <LIcon name={p.signed ? "checkCircle" : "clock"} size={15} stroke={2} style={{ color: p.signed ? t.success : t.warn }} />
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>
                                             {p.full_name || p.email || "Invited signer"}
                                         </span>
                                         {p.external && (
@@ -2444,12 +2892,12 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                                                went to an address; we did not check who
                                                opened it. */
                                             <span title="Invited by email — identity not verified by us" style={{
-                                                fontSize: 9.5, fontWeight: 700, color: t.warn,
+                                                fontSize: 11, fontWeight: 700, color: t.warn,
                                                 background: t.warn + "1F", border: `1px solid ${t.warn}40`,
-                                                borderRadius: 5, padding: "1px 5px",
+                                                borderRadius: 6, padding: "2px 7px",
                                             }}>EMAIL{p.invitation_status === "revoked" ? " · REVOKED" : p.invitation_status === "expired" ? " · EXPIRED" : ""}</span>
                                         )}
-                                        <span style={{ fontSize: 10, color: p.signed ? t.success : t.textMuted }}>
+                                        <span style={{ fontSize: 12, color: p.signed ? t.success : t.textMuted }}>
                                             {p.signed ? `signed ${p.signed_at ? new Date(p.signed_at).toLocaleDateString() : ""}` : "pending"}
                                         </span>
                                         {/* ONLY for an invited signer who has not
@@ -2464,8 +2912,8 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                                                 title="Send this person a new one-time link. The old link stops working."
                                                 style={{
                                                     background: "none", border: `1px solid ${t.primary}55`,
-                                                    borderRadius: 7, padding: "2px 8px", fontSize: 10,
-                                                    color: t.primary, cursor: "pointer", fontWeight: 600,
+                                                    borderRadius: 999, padding: "4px 12px", fontSize: 12,
+                                                    color: t.primary, cursor: "pointer", fontWeight: 700, fontFamily: "inherit",
                                                 }}>
                                                 {reissuing === p.party_id ? "Sending\u2026" : "Resend link"}
                                             </button>
@@ -2484,26 +2932,26 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                                         New link for {reissued.email}
                                     </div>
                                     <div style={{
-                                        fontSize: 11, marginBottom: 8, lineHeight: 1.6,
+                                        fontSize: 12.5, marginBottom: 8, lineHeight: 1.6,
                                         color: reissued.emailed ? t.success : t.warn,
                                     }}>
                                         {reissued.emailed
-                                            ? "\u2709\ufe0f Emailed again. The previous link no longer works."
-                                            : `\u26a0\ufe0f Not emailed \u2014 ${deliveryReason(reissued.reason)}. Send this link yourself. The previous link no longer works.`}
+                                            ? "Emailed again. The previous link no longer works."
+                                            : `Not emailed \u2014 ${deliveryReason(reissued.reason)}. Send this link yourself. The previous link no longer works.`}
                                     </div>
                                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                                         <input readOnly value={reissued.url} onFocus={e => e.target.select()} style={{
                                             flex: 1, minWidth: 0, padding: "7px 10px", borderRadius: 8,
                                             background: t.card, border: `1px solid ${t.border}`,
-                                            color: t.textMuted, fontSize: 10.5, fontFamily: "monospace",
+                                            color: t.textMuted, fontSize: 12, fontFamily: "monospace",
                                         }} />
                                         <Btn onClick={() => {
                                             navigator.clipboard?.writeText(reissued.url)
                                                 .then(() => toast.show("\ud83d\udccb Link copied", "success"))
                                                 .catch(() => toast.show("\u26a0\ufe0f Copy failed \u2014 select the text", "warn"));
-                                        }} style={{ padding: "7px 12px", fontSize: 11 }}>Copy</Btn>
+                                        }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700 }}>Copy</Btn>
                                     </div>
-                                    <div style={{ fontSize: 10.5, color: t.textMuted, marginTop: 7 }}>
+                                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 7 }}>
                                         Shown once \u2014 only its hash is stored, so it cannot be displayed again.
                                     </div>
                                 </div>
@@ -2547,8 +2995,8 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                                     </div>
                                 </div>
                             ) : (
-                                <AgreementBody body={doc?.body} format={doc?.format}
-                                    style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", fontSize: 13, lineHeight: 1.85, color: t.text, fontFamily: "Georgia,serif" }} />
+                                <div data-keep-font=""><AgreementBody body={doc?.body} format={doc?.format}
+                                    style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", fontSize: 13, lineHeight: 1.85, color: t.text, fontFamily: "Georgia,serif" }} /></div>
                             )}
 
                             {/* Only once EXECUTED. Before both parties have
@@ -2560,9 +3008,9 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                                 <div style={{ marginTop: 16 }}>
                                     <button type="button" disabled={downloading} onClick={doDownload}
                                         style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "9px 15px", cursor: downloading ? "not-allowed" : "pointer", fontSize: 12.5, color: t.text, fontWeight: 600, fontFamily: "inherit" }}>
-                                        {downloading ? "Preparing…" : "⬇ Download signed copy"}
+                                        {downloading ? "Preparing…" : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><LIcon name="download" size={15} stroke={2} />Download signed copy</span>}
                                     </button>
-                                    <div style={{ fontSize: 11, color: t.textFaint, marginTop: 7, lineHeight: 1.5 }}>
+                                    <div style={{ fontSize: 12, color: t.textFaint, marginTop: 7, lineHeight: 1.5 }}>
                                         Includes the signature record: who signed, how, when the
                                         server recorded it, and the digest of the signed text.
                                     </div>
@@ -2573,10 +3021,10 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                         {/* GATED ON THE BODY: no signing text nobody saw. */}
                         {viewing.needsMySig && doc && !doc.loading && !doc.error && (
                             <div style={{ padding: "14px 22px", borderTop: `1px solid ${t.border}`, background: t.surface }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 8 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 8 }}>
                                     Sign — draw, type or upload
                                 </div>
-                                <SignaturePad height={150} onChange={setSignSig} />
+                                <div data-keep-font=""><SignaturePad height={150} onChange={setSignSig} /></div>
                                 <label style={{ display: "flex", gap: 9, alignItems: "flex-start", marginTop: 10, fontSize: 12, color: t.textMuted, lineHeight: 1.5, cursor: "pointer" }}>
                                     <input type="checkbox" checked={signConsent}
                                         onChange={e => setSignConsent(e.target.checked)} />
@@ -2584,7 +3032,7 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                                 </label>
                                 <Btn primary disabled={signBusy || !signConsent} onClick={doSign}
                                     style={{ padding: "11px 22px", marginTop: 10, width: "100%" }}>
-                                    {signBusy ? "Signing…" : "✍️ Sign Agreement"}
+                                    {signBusy ? "Signing…" : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><LIcon name="squarePen" size={16} stroke={2} />Sign Agreement</span>}
                                 </Btn>
                                 {/* WHAT IS RECORDED, not what it amounts to in law.
                                     This said the signature was "classified under the
@@ -2678,21 +3126,63 @@ const AgmtIc = ({ name, s = 18, c = "currentColor" }) => {
    from a lawyer the client hired live in this same list, and an agreement
    somebody is already a party to must never become unreachable because a
    different feature was parked. */
-const DIY_BUILDER_ENABLED = AGREEMENTS_DIY_ENABLED;   // read in lib/agreementsNav.js
+/* The switch is the SERVER's (agreements_diy_builder_enabled), read at run
+   time with useAgreementBuilderOn() in each screen -- there is no frontend
+   copy that could disagree with it (2026-11-25). */
 
 /* Page navigation lives in the client sidebar, under "Agreements"
    (2026-10-11), the way Documents' sections do: lib/agreementsNav.js. The
    module's own inner sidebar and its collapse bar were removed with it. */
 
 // ── ModAgreements ─────────────────────────────
+/* The matter a new agreement is for (board 2): the case, and its lawyer's name
+ * from the hire request. Only a matter WITH a lawyer can be used -- the server
+ * refuses a linked agreement without its lawyer as a signer. */
+export async function loadAgreementMatter(caseId) {
+    const c = await getCase(caseId);
+    const row = c?.data;
+    if (c?.error || !row) return { state: "error", message: c?.error?.message || "This matter could not be opened." };
+    const lawyerId = row.lawyer_id || null;
+    if (!lawyerId) return { state: "no_lawyer", title: row.title || "This matter" };
+    const e = await listEngagements({ caseId });
+    const hired = (Array.isArray(e?.data) ? e.data : []).find(x => x && x.lawyer_id === lawyerId && x.lawyer_name);
+    return { state: "ready", matter: { caseId: String(row._id || row.id || caseId), title: row.title || "This matter",
+        caseNumber: row.case_number || null, lawyerId, lawyerName: hired?.lawyer_name || "Your lawyer" } };
+}
+
 function ModAgreements() {
     const t = useTheme();
-    const agreementParam = useSearchParams()?.get("agreement") || null;
+    const searchParams = useSearchParams();
+    const agreementParam = searchParams?.get("agreement") || null;
+    // The server's builder switch: null while asking, then true/false.
+    const builderOn = useAgreementBuilderOn();
+    const DIY_BUILDER_ENABLED = builderOn === true;
+    const builderRef = useRef(builderOn);
+    builderRef.current = builderOn;
+    // Started from a matter: /agreements?case=… opens the builder FOR it.
+    const caseParam = builderOn === false ? null : (searchParams?.get("case") || null);
+    const router = useClientRouter();
+    const [matterState, setMatterState] = useState(caseParam ? { state: "loading" } : null);
+    useEffect(() => {
+        if (!caseParam) { setMatterState(null); return undefined; }
+        let live = true;
+        setMatterState({ state: "loading" });
+        loadAgreementMatter(caseParam).then(r => { if (live) setMatterState(r); })
+            .catch(() => { if (live) setMatterState({ state: "error", message: "This matter could not be opened." }); });
+        return () => { live = false; };
+    }, [caseParam]);
+    const backToMatter = () => router.push(matterHref(caseParam, { tab: "documents" }));
     const [page, setPage] = useState(() => {
         if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("agreement")) return "all";
+        // The builder pages are allowed here; once the server answers "off",
+        // the effect below moves off them (it cannot be known synchronously).
+        if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("case")) return "create";
         const p = takePendingAgreementsView();
-        return p && (DIY_BUILDER_ENABLED || (p !== "create" && p !== "templates")) ? p : "dashboard";
+        return p || "dashboard";
     });
+    useEffect(() => {
+        if (builderOn === false && (page === "create" || page === "templates")) setPage("dashboard");
+    }, [builderOn, page]);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
 
     /* Parked pages are unreachable by ROUTE, not merely unlinked. Removing the
@@ -2702,7 +3192,8 @@ function ModAgreements() {
     const [allFilter, setAllFilter] = useState("All");   // the list's opening filter
     const navigate = (p, opts) => {
         setAllFilter(opts?.filter || "All");
-        setPage(!DIY_BUILDER_ENABLED && (p === "create" || p === "templates")
+        // A ref, not the render's value: the sidebar listener below is set once.
+        setPage(builderRef.current === false && (p === "create" || p === "templates")
             ? "all" : p);
     };
 
@@ -2716,19 +3207,45 @@ function ModAgreements() {
     useEffect(() => { announceAgreementsView(page); }, [page]);
 
     return (
-        <div style={{
-            display: "flex", height: "100%", background: t.bg, fontFamily: AG_FONT,
+        <div data-ag-font="" style={{
+            display: "flex", height: "100%", background: t.bg, fontFamily: CLIENT_BODY_FONT,
             color: t.text, overflow: "hidden",
         }}>
+            {/* The Overview's typefaces, for the whole module (2026-11-25). */}
+            <style>{AG_FONT_CSS}</style>
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 {/* Page content */}
                 <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
                     {page === "dashboard" && <PageDashboard onNavigate={navigate} />}
+                    {builderOn === null && (page === "create" || page === "templates") && (
+                        <div role="status" data-agreement-builder-checking style={{ fontSize: 14, color: t.textMuted }}>Checking the agreement builder…</div>
+                    )}
                     {DIY_BUILDER_ENABLED && page === "templates" && (
                         <PageTemplates onNavigate={navigate} onSelectTemplate={t => setSelectedTemplate(t)} />
                     )}
-                    {DIY_BUILDER_ENABLED && page === "create" && (
-                        <PageCreate template={selectedTemplate} onNavigate={navigate} onDone={() => navigate("all")} />
+                    {DIY_BUILDER_ENABLED && page === "create" && caseParam && matterState?.state !== "ready" && (
+                        <div role={matterState?.state === "loading" ? "status" : "alert"} data-agreement-matter-state={matterState?.state || "loading"} style={{
+                            maxWidth: 640, borderRadius: 16, background: t.card, border: `1px solid ${t.border}`, padding: "18px 20px",
+                            display: "flex", flexDirection: "column", gap: 10, color: t.text, fontSize: 14,
+                        }}>
+                            {matterState?.state === "no_lawyer" ? (<>
+                                <b>{matterState.title} has no lawyer yet</b>
+                                <span style={{ color: t.textMuted }}>Agreements on a matter need a lawyer on it. You can still write a standalone agreement.</span>
+                            </>) : matterState?.state === "error" ? (<>
+                                <b>Couldn&rsquo;t open this matter</b>
+                                <span style={{ color: t.textMuted }}>{matterState.message}</span>
+                            </>) : <span style={{ color: t.textMuted }}>Opening the agreement for this matter…</span>}
+                            {matterState?.state !== "loading" && (
+                                <div style={{ display: "flex", gap: 10 }}>
+                                    <button type="button" onClick={backToMatter} style={{ height: 36, padding: "0 16px", borderRadius: 999, border: `1px solid ${t.border}`, background: "transparent", color: t.text, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Back to the matter</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {DIY_BUILDER_ENABLED && page === "create" && (!caseParam || matterState?.state === "ready") && (
+                        <PageCreate key={matterState?.matter?.caseId || "standalone"} template={selectedTemplate}
+                            onNavigate={navigate} onDone={() => navigate("all")}
+                            matter={caseParam ? matterState.matter : null} onBackToMatter={backToMatter} />
                     )}
                     {page === "all" && <PageAllAgreements key={allFilter} onNavigate={navigate} initialFilter={allFilter} focusAgreementId={agreementParam} />}
                 </div>

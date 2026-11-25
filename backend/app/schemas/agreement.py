@@ -148,6 +148,15 @@ class PartyOut(BaseModel):
     invitation_status: str | None = None
 
 
+class DeclineOut(BaseModel):
+    """Who declined, when and why (derived from the audit log, without the IP
+    address it also records). Present only on a declined agreement."""
+    by_user_id: str | None = None
+    by_name: str | None = None
+    at: datetime | None = None
+    reason: str | None = None
+
+
 class AgreementOut(BaseModel):
     """An agreement (create / list / get / sign). STRICT — ``audit_log`` is
     dropped because it records signer IP addresses (never shown, and a
@@ -185,6 +194,7 @@ class AgreementOut(BaseModel):
     total_parties: int | None = None
     partially_signed: bool | None = None
     expires_at: datetime | None = None
+    declined: DeclineOut | None = None
 
 
 class InvitationDelivery(BaseModel):
@@ -294,6 +304,7 @@ class AgreementListItem(BaseModel):
     parties: list[PartyOut] = Field(default_factory=list)
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    declined: DeclineOut | None = None
 
 
 # ── Gate 3C: draft lifecycle ─────────────────────────────────────────────────

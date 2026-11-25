@@ -116,3 +116,15 @@ test("long lines truncate rather than push the layout on a narrow screen", async
     assert.ok(ui.need().querySelector("[data-need-sub]").classList.contains("ov-clip"));
     await ui.unmount();
 });
+
+test("hero colours (option 1, 2026-11-25): the appointment box is the teal one, Book a meeting the cyan button", async () => {
+    const ui = await mount();
+    const appt = ui.container.querySelector("[data-ov-appt]");
+    assert.ok(appt, "no appointment box");
+    assert.ok(appt.classList.contains("ov-appt"));
+    const book = [...appt.querySelectorAll("button")].find(b => /Book a meeting/.test(b.textContent));
+    assert.ok(book && book.classList.contains("cy"), "Book a meeting is not the cyan button");
+    const css = [...ui.container.querySelectorAll("style")].map(s => s.textContent).join("");
+    assert.match(css, /\.ov-need:not\(\.calm\)\{border-color:color-mix\(in srgb,var\(--gold\)/, "the needs-you box is not gold");
+    await ui.unmount();
+});

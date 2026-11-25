@@ -60,7 +60,11 @@ test("the list endpoint is scoped by the server, not by a user id from the brows
     // narrows MY agreements to one case and cannot reach anybody else's —
     // backend/tests/test_case_scoped_lists.py proves a co-party's agreement and
     // someone else's draft on the same case stay out.
-    const ALLOWED = ["page", "page_size", "status", "archived", "case_id"];
+    // `unlinked` (2026-11-25) is a slice the same way: the server ANDs
+    // `case_id: null` with visible_to(requester) (page_for_user), so it narrows
+    // MY agreements to those on no matter; backend/tests/test_case_scoped_lists.py
+    // proves another user's unlinked agreement stays out.
+    const ALLOWED = ["page", "page_size", "status", "archived", "case_id", "unlinked"];
     for (const [, name] of params.matchAll(/([A-Za-z_][A-Za-z0-9_]*)\s*=/g)) {
         assert.ok(ALLOWED.includes(name),
             `listAgreements takes ${name}: a list parameter may describe the ` +
@@ -81,7 +85,11 @@ test("neither screen asks for another user's agreements", () => {
             // Paging arguments are fine; an identity is not. The screens know
             // who the viewer is (they render "me" differently) and must never
             // be tempted to pass that to the server as a filter.
-            assert.ok(!/user|_id|client_id|lawyer_id|created_by/i.test(call),
+            // `case_id` is the one allowed slice (see ALLOWED above: the server
+            // ANDs it with visible_to(requester)), so it is taken out before
+            // looking for an identity; anything else ending in _id still fails.
+            const slice = call.replace(/\bcase_id\b/g, "");
+            assert.ok(!/user|_id|client_id|lawyer_id|created_by/i.test(slice),
                 `${name} view passes an identity to listAgreements: ${call}`);
             const args = call.slice("listAgreements(".length, -1).trim();
             assert.ok(args === "" || /^\{[^}]*\}$/.test(args),

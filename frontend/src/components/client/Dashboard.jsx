@@ -14,7 +14,8 @@ import { CaseProvider, useCase } from "./CaseContext.jsx";
 import { LangProvider, useLang, useIsMobile } from "@/lib/i18n.jsx";
 import { useAuth } from "@/context/AuthContext.jsx";
 import { requestDocumentsView, requestOpenDocument, DOCUMENTS_SHOWN_EVENT } from "@/lib/documentsNav.js";
-import { requestAgreementsView, AGREEMENTS_SHOWN_EVENT, AGREEMENTS_DIY_ENABLED } from "@/lib/agreementsNav.js";
+import { requestAgreementsView, AGREEMENTS_SHOWN_EVENT } from "@/lib/agreementsNav.js";
+import { useAgreementBuilderOn } from "./useAgreementBuilder.js";
 import Ic from "./Ic.jsx";
 import { clientNotificationTarget } from "@/lib/notificationTarget.js";
 import { requestNewMatter } from "./newMatter.js";
@@ -129,9 +130,8 @@ const SUB_ITEMS = {
     // two were one route listed twice (2026-10-11).
     agreements: [
         { view: "dashboard", label: "Dashboard", ur: "ڈیش بورڈ" },
-        ...(AGREEMENTS_DIY_ENABLED ? [
-            { view: "templates", label: "Templates", ur: "ٹیمپلیٹس" },
-        ] : []),
+        // Shown only while the server's builder switch is on (see below).
+        { view: "templates", label: "Templates", ur: "ٹیمپلیٹس", builder: true },
         { view: "all", label: "All agreements", ur: "تمام معاہدے" },
     ],
 };
@@ -378,6 +378,8 @@ const CLIENT_SIDE_CSS = `
 `;
 
 const DashboardInner = ({ go, isDark, toggleTheme, themePref, setThemePref, refined = CLIENT_THEME_REFINED, initialTab = "overview" }) => {
+    // The server's builder switch, for the Agreements > Templates entry.
+    const builderOn = useAgreementBuilderOn();
     // The lawyer documents' palette, as the client's own copy (clientTheme.js):
     // neutral colours read CSS tokens that <body> carries while this is mounted,
     // so dialogs portalled to <body> are themed too. No layout changes.
@@ -654,7 +656,8 @@ const DashboardInner = ({ go, isDark, toggleTheme, themePref, setThemePref, refi
                                 const isAg = item.id === "agreements";
                                 const menuOpen = isAg ? agMenuOpen : docMenuOpen;
                                 const section = isAg ? agSection : docSection;
-                                const subItems = !isCollapsed && hasMenu && menuOpen ? SUB_ITEMS[item.id] : [];
+                                const subItems = !isCollapsed && hasMenu && menuOpen
+                                    ? SUB_ITEMS[item.id].filter(s => !s.builder || builderOn === true) : [];
                                 return (
                                     <React.Fragment key={item.id}>
                                     <button

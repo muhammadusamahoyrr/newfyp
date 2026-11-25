@@ -144,7 +144,10 @@ test("the review step claims no signature before the send has happened", () => {
 // ── several signers, registered or invited ──────────────────────────────────
 
 test("the wizard carries a list of signers, not one counterparty", () => {
-    assert.ok(/const \[signers, setSigners\] = useState\(\[\]\)/.test(BUILDER));
+    // A list either way: empty, or (started from a matter, 2026-11-25) the
+    // matter's lawyer as its first, required entry.
+    assert.ok(/const \[signers, setSigners\] = useState\(\(\) => \(matter\?\.lawyerId\s*\?\s*\[\{[\s\S]*?required: true \}\]\s*:\s*\[\]\)\)/.test(BUILDER),
+              "signers should start as a list: [] or [the matter's required lawyer]");
     assert.ok(!/const \[counterparty, setCounterparty\]/.test(BUILDER),
               "the single-counterparty state should be gone");
     assert.ok(BUILDER.includes('"Add Signers"'),

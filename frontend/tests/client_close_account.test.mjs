@@ -85,3 +85,25 @@ test("a refused closure shows the server's structured reason", async () => {
     await act(async () => root.unmount());
     container.remove();
 });
+
+test("profile (option A, 2026-11-25): done items are chips, only missing ones get a gold Add row", async () => {
+    api.__reset();
+    api.__respond("bootstrapAuth", true);
+    api.__respond("getMe", { data: { _id: "c1", role: "client", full_name: "Ayesha Khan", email: "a@x.pk" }, error: null });
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+        root.render(h(AuthProvider, null, h(ToastCtx.Provider, { value: { show: () => {} } }, h(ModProfile))));
+    });
+    await settle(120);
+    const done = container.querySelector("[data-profile-done]");
+    assert.ok(done, "no done chips");
+    assert.match(done.textContent, /name/i);
+    assert.match(done.textContent, /email/i);
+    const todos = [...container.querySelectorAll("[data-profile-todo]")].map(n => n.getAttribute("data-profile-todo"));
+    assert.deepEqual(todos, ["phone", "province"], "a finished item is listed as a to-do, or a missing one is not");
+    assert.ok(container.querySelector('[data-profile-todo="phone"] button.gd'), "the Add button is not the gold one");
+    assert.ok(container.querySelector("[data-province-unset]"), "the header does not flag the missing province");
+    await act(async () => root.unmount()); container.remove();
+});

@@ -8,12 +8,10 @@
 export const AGREEMENTS_VIEW_EVENT = "attorney:agreements-view";
 export const AGREEMENTS_SHOWN_EVENT = "attorney:agreements-shown";
 
-/* The DIY builder (Templates, Create) is parked behind this flag -- see the
- * note at its use in ModAgreements.jsx. Here so the sidebar and the module
- * read the same switch. */
-export const AGREEMENTS_DIY_ENABLED =
-    (typeof process !== "undefined" &&
-        process.env?.NEXT_PUBLIC_AGREEMENTS_DIY_ENABLED === "true") || false;
+/* Whether the DIY builder (Templates, Create) is on is the SERVER's switch
+ * (agreements_diy_builder_enabled), read at run time by
+ * components/client/useAgreementBuilder.js. There is no frontend copy: a
+ * build-time variable here could disagree with the server (2026-11-25). */
 
 export const AGREEMENTS_VIEWS = ["dashboard", "templates", "create", "all"];
 

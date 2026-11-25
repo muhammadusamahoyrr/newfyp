@@ -1558,12 +1558,36 @@ def signing_progress(agreement: dict) -> dict:
     }
 
 
+def decline_record(agreement: dict) -> dict | None:
+    """Who declined, when, and why -- for the other parties to SEE (2026-11-25).
+
+    The reason was recorded only in `audit_log`, which never leaves the server
+    because it holds signer IP addresses, and in the notification text. So the
+    agreement itself said "cancelled" and nothing more: a client who missed the
+    notification could not learn why. DERIVED from the audit entry, like the
+    signing progress, so agreements declined before this existed show it too.
+    Only the fields below are copied: never the IP address or the digest.
+    """
+    if agreement.get("status") != AgreementStatus.CANCELLED.value:
+        return None
+    entry = next((e for e in reversed(agreement.get("audit_log") or [])
+                  if isinstance(e, dict) and e.get("action") == "declined"), None)
+    if not entry:
+        return None
+    actor = entry.get("actor_id")
+    name = next((p.get("full_name") for p in agreement.get("parties") or []
+                 if actor and p.get("user_id") == actor), None)
+    return {"by_user_id": actor, "by_name": name or "A party",
+            "at": entry.get("timestamp"), "reason": entry.get("reason") or None}
+
+
 def with_derived(agreement: dict | None) -> dict | None:
     """An agreement plus its derived signing state, for a response."""
     if not agreement:
         return agreement
     out = dict(agreement)
     out.update(signing_progress(agreement))
+    out["declined"] = decline_record(agreement)
     return out
 
 
@@ -1801,6 +1825,8 @@ def _list_row(a: dict) -> dict:
     """
     row = dict(a)
     row.update(signing_progress(a))
+    # Read from the audit log BEFORE it is dropped; carries no IP.
+    row["declined"] = decline_record(a)
     row["id"] = row.pop("_id")
     row.pop("audit_log", None)
     row.pop("body_html", None)
@@ -1816,8 +1842,12 @@ async def list_agreements(user_id: str, page: int = 1,
                           page_size: int = 20,
                           status: str | None = None,
                           archived: bool = False,
-                          case_id: str | None = None) -> dict:
+                          case_id: str | None = None,
+                          unlinked: bool = False) -> dict:
     """One page of the agreements this user may see, newest first.
+
+    `unlinked` = only agreements on no matter. With `case_id` too it is a
+    contradiction, refused rather than one silently winning.
 
     DRAFTS STAY PRIVATE, including when `status="draft"` is asked for
     explicitly. The visibility rule lives in `AgreementRepository.visible_to`
@@ -1841,8 +1871,13 @@ async def list_agreements(user_id: str, page: int = 1,
             f"page_size may not exceed {MAX_PAGE_SIZE}."
         )
 
+    if case_id and unlinked:
+        raise AppValidationError(
+            "Ask for one matter (case_id) or for agreements on no matter "
+            "(unlinked), not both.")
+
     result = await agreement_repo.page_for_user(
-        user_id, page, page_size, status, archived, case_id)
+        user_id, page, page_size, status, archived, case_id, unlinked)
     return {
         "items": [_list_row(a) for a in result.items],
         "total": result.total,

@@ -60,7 +60,9 @@ const pageOfPath = path => Object.keys(PAGE_PATH).find(p => PAGE_PATH[p] === pat
  * is kept. Whatever asks for one (a notification, an old link, the address
  * bar) lands on the dashboard instead. To bring one back, take it out of this
  * set and restore its nav item in layout.jsx and its src/app/lawyer route. */
-export const HIDDEN_PAGES = new Set(["payments", "agreements"]);
+// Agreements came back 2026-11-25: a client can send a lawyer an agreement to
+// sign, and with the page hidden there was nowhere to sign it.
+export const HIDDEN_PAGES = new Set(["payments"]);
 
 export default function App({ initialPage = "dashboard" }) {
     const [isDark, setIsDark] = useState(true);
@@ -265,6 +267,18 @@ export default function App({ initialPage = "dashboard" }) {
                     if (target.thread) sessionStorage.setItem("attorney:lawyer-open-appointment-thread", target.appointmentId);
                 } catch { /* storage off */ }
                 window.dispatchEvent(new CustomEvent("attorney:open-appointment", { detail: target.appointmentId }));
+            }
+            // An agreement notification opens THAT agreement (2026-11-25), not
+            // just the list, where it could sit on another page or filter.
+            if (target.agreementId) {
+                // The ADDRESS names it (refresh, copied link, Back/Forward);
+                // the stored id is only the hand-over if the page mounts later.
+                try {
+                    const next = `${PAGE_PATH.agreements}?agreement=${encodeURIComponent(target.agreementId)}`;
+                    if (window.location.pathname + window.location.search !== next) window.history.pushState({ lawyerPage: "agreements" }, "", next);
+                } catch { /* history unavailable */ }
+                try { sessionStorage.setItem("attorney:lawyer-open-agreement", target.agreementId); } catch { /* storage off */ }
+                window.dispatchEvent(new CustomEvent("attorney:open-agreement", { detail: target.agreementId }));
             }
             setPage(target.page);
             return true;
