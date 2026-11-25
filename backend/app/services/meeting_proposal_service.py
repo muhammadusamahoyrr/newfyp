@@ -362,17 +362,46 @@ async def propose(lawyer_id: str, data: dict) -> dict:
     return _out(doc, now=now)
 
 
-async def list_for(user_id: str, role: str, case_id: str | None = None,
-                   status: str | None = None) -> list[dict]:
+async def _list_query(user_id: str, role: str, case_id: str | None,
+                      status: str | None) -> dict:
     query: dict = {"client_id": user_id} if role == "client" else {"lawyer_id": user_id}
     await _expire_stale(dict(query))
     if case_id:
         query["case_id"] = case_id
     if status:
         query["status"] = status
-    rows = await get_meeting_proposals_col().find(query).sort("created_at", -1).to_list(length=100)
+    return query
+
+
+async def list_for(user_id: str, role: str, case_id: str | None = None,
+                   status: str | None = None) -> list[dict]:
+    """Complete internal listing retained for service callers and maintenance."""
+    query = await _list_query(user_id, role, case_id, status)
+    # This list feeds the client's cross-case "waiting on you" summary. A hard
+    # cap made the 101st open proposal disappear while the UI claimed its count
+    # was complete. Open proposals are already bounded to one per case by the
+    # unique index, so return the caller's complete actionable set.
+    rows = [row async for row in
+            get_meeting_proposals_col().find(query).sort("created_at", -1)]
     now = datetime.now(timezone.utc)
     return [_out(r, now=now) for r in rows]
+
+
+async def list_page_for(user_id: str, role: str, case_id: str | None = None,
+                        status: str | None = None, *, page: int = 1,
+                        page_size: int = 100) -> dict:
+    """Bounded public listing. Open-action clients can page to completion;
+    case history consumers request only the newest rows they actually use."""
+    query = await _list_query(user_id, role, case_id, status)
+    col = get_meeting_proposals_col()
+    total = await col.count_documents(query)
+    cursor = (col.find(query).sort("created_at", -1)
+              .skip((page - 1) * page_size).limit(page_size))
+    now = datetime.now(timezone.utc)
+    items = [_out(row, now=now) async for row in cursor]
+    return {"items": items, "total": total, "page": page,
+            "page_size": page_size,
+            "pages": max((total + page_size - 1) // page_size, 1)}
 
 
 async def _load(proposal_id: str, *, client_id: str | None = None, lawyer_id: str | None = None) -> dict:

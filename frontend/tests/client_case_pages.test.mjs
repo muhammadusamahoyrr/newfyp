@@ -313,7 +313,9 @@ test("the case lists its V2 documents too, and opens/downloads the exact revisio
     await ui.openPage("Documents");
     const row = ui.container.querySelector('[data-doc="v1"]');
     assert.ok(row, "the V2 document is missing from the case");
-    assert.equal(api.__calls("myDocumentsV2")[0].args[0].caseId !== undefined, true, "not narrowed to the case");
+    // My matters reads all of the client's documents (to count what waits on
+    // each case); the case's own Documents tab reads only that case.
+    assert.ok(api.__calls("myDocumentsV2").some(c => c.args[0]?.caseId), "the case's documents were not narrowed to the case");
     assert.ok(row.querySelector("[data-doc-status]"), "its review status is not shown");
     await ui.click([...row.querySelectorAll("button")].find(b => b.textContent.includes("Download")));
     assert.deepEqual(api.__calls("downloadDocumentFile").map(c => c.args),

@@ -1579,7 +1579,10 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
     // Meeting proposals on this case: the open one is shown under the header.
     const [proposals, setProposals] = useState([]);
     const [pmOpen, setPmOpen] = useState(false);
-    const loadProposals = () => Promise.resolve().then(() => listMeetingProposals({ case_id: realId }))
+    // Only the open proposal and newest finished proposal are used below.
+    // The public endpoint is paginated so a long-running case never downloads
+    // its entire proposal history just to render these two facts.
+    const loadProposals = () => Promise.resolve().then(() => listMeetingProposals({ case_id: realId, page_size: 2 }))
         .then(res => { if (res && !res.error && Array.isArray(res.data)) setProposals(res.data); })
         .catch(() => {});
     useEffect(() => {

@@ -90,7 +90,7 @@ const SIDE_ITEMS = [
     { id: "overview", icon: "home", label: "Overview", ur: "جائزہ", group: "matters" },
     { id: "intake", icon: "brief", label: "Legal Intake", ur: "قانونی درخواست", group: "matters" },
     { id: "appointments", icon: "cal", label: "Appointments", ur: "ملاقاتیں", group: "matters" },
-    { id: "tracking", icon: "clock", label: "Tracking", ur: "کیس ٹریکنگ", group: "matters" },
+    { id: "tracking", icon: "clock", label: "My Matters", ur: "میرے مقدمات", group: "matters" },
     { id: "chatbot", icon: "bot", label: "AI Chat", ur: "اے آئی چیٹ", group: "help" },
     // OUT OF SCOPE, 2026-09-23. "Legal Tools" (`tools`) and "Property Dispute"
     // (`disputes`) are hidden from navigation at the owner's decision: neither

@@ -30,6 +30,7 @@ return 26" is the claim that matters.
 from __future__ import annotations
 
 import secrets
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -366,3 +367,36 @@ async def test_the_owner_listing_is_bounded_and_unsorted_in_memory(seeded):
     assert not stats["blocking_sort"], stats["plan"]
     assert stats["docs"] <= BOUNDED
     assert "v2_owner_documents" in stats["indexes"]
+
+
+async def test_the_owner_action_listing_uses_its_filtered_index(seeded):
+    from app.api.v1.routes import documents_v2 as v2api
+
+    owner = "scale-action-owner"
+    now = datetime.now(timezone.utc)
+    rows = []
+    for i in range(300):
+        rows.append({
+            "_id": secrets.token_urlsafe(16), "client_id": owner,
+            "schema_version": 2, "title": f"Owner document {i}",
+            "template_type": "legal_notice",
+            # Actions are deliberately OLD. The general owner index would
+            # scan almost the whole vault before finding them.
+            "review_status": "returned" if i >= 270 else "none",
+            "created_at": now - timedelta(minutes=i),
+            "current_revision_id": None, "current_version": 0,
+        })
+    await get_documents_col().insert_many(rows)
+    try:
+        query, projection = v2api.mine_page_query(owner, None, needs_action=True)
+        stats = _summarize(await (get_documents_col()
+                                  .find(query, projection)
+                                  .sort(v2api.MINE_SORT)
+                                  .limit(PAGE + 1)
+                                  .explain()))
+        assert not stats["collscan"]
+        assert not stats["blocking_sort"], stats["plan"]
+        assert stats["docs"] <= BOUNDED
+        assert "v2_owner_action_documents" in stats["indexes"]
+    finally:
+        await get_documents_col().delete_many({"client_id": owner})

@@ -871,12 +871,14 @@ export async function bookAppointment({ lawyer_id, case_id, scheduled_at, durati
   });
 }
 
-export async function listAppointments({ status, page, page_size, starts_from, starts_before, upcoming_only, order } = {}) {
+export async function listAppointments({ status, page, page_size, starts_from, starts_before, upcoming_only, order, case_id, needs_action } = {}) {
   const p = new URLSearchParams();
   if (status) p.set('status', status);
   // Lawyer list (2026-10-20): Upcoming = not yet ended; order=action = "All" as it is worked.
   if (upcoming_only) p.set('upcoming_only', 'true');
   if (order) p.set('order', order);
+  if (case_id) p.set('case_id', case_id);
+  if (needs_action) p.set('needs_action', 'true');
   // Optional start-time window, ISO instants with an offset.
   if (starts_from) p.set('starts_from', starts_from);
   if (starts_before) p.set('starts_before', starts_before);
@@ -916,12 +918,26 @@ export async function proposeMeeting({ case_id, options, duration_minutes = 60, 
   });
 }
 
-export async function listMeetingProposals({ case_id, status } = {}) {
-  const p = new URLSearchParams();
-  if (case_id) p.set('case_id', case_id);
-  if (status) p.set('status', status);
-  const qs = p.toString();
-  return apiFetch(`/meeting-proposals${qs ? `?${qs}` : ''}`);
+export async function listMeetingProposals({ case_id, status, page = 1, page_size = 100, all = false } = {}) {
+  const read = async (pageNumber) => {
+    const p = new URLSearchParams();
+    if (case_id) p.set('case_id', case_id);
+    if (status) p.set('status', status);
+    p.set('page', String(pageNumber));
+    p.set('page_size', String(page_size));
+    return apiFetch(`/meeting-proposals?${p}`);
+  };
+  const first = await read(page);
+  if (!first || first.error || !Array.isArray(first.data?.items)) return first;
+  if (!all) return { ...first, data: first.data.items, page: first.data };
+  const out = [...first.data.items];
+  const pages = Number.isInteger(first.data.pages) ? first.data.pages : 1;
+  for (let next = page + 1; next <= pages; next += 1) {
+    const result = await read(next);
+    if (!result || result.error || !Array.isArray(result.data?.items)) return result;
+    out.push(...result.data.items);
+  }
+  return { ...first, data: out, page: first.data };
 }
 
 export async function acceptMeetingProposal(id, option_index) {
@@ -1131,8 +1147,10 @@ export async function createFeeRequest({ case_id, amount, purpose, note, hearing
   });
 }
 
-export async function listPayments() {
-  return apiFetch('/payments');
+// `caseId` (2026-11-23): one case's fees, filtered by the server inside the
+// caller's own fees. Omitted, every fee (All my payments, My matters).
+export async function listPayments({ caseId = null } = {}) {
+  return apiFetch(caseId ? `/payments?case_id=${encodeURIComponent(caseId)}` : '/payments');
 }
 
 export async function paymentSummary() {
@@ -1469,8 +1487,13 @@ const _engagementReads = new Map();
 export function invalidateEngagements() { _engagementReads.clear(); }
 const _ownCopy = (res) => (res && res.data && typeof structuredClone === 'function'
   ? { ...res, data: structuredClone(res.data) } : res);
-export async function listEngagements({ status } = {}) {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+export async function listEngagements({ status, caseId = null } = {}) {
+  // `caseId` (2026-11-23): one case's requests, filtered by the server. It is
+  // part of the reuse key, so a case read never stands in for the full list.
+  const p = new URLSearchParams();
+  if (status) p.set('status', status);
+  if (caseId) p.set('case_id', caseId);
+  const qs = p.toString() ? `?${p}` : '';
   const hit = _engagementReads.get(qs);
   if (hit && Date.now() - hit.at < ENGAGEMENTS_REUSE_MS) return hit.request.then(_ownCopy);
   const request = apiFetch(`/engagements${qs}`).then(res => {
@@ -1737,9 +1760,10 @@ export async function updateLawyerProfile(updates) {
  *
  * The rows carry no `body_html`. Open an agreement to read it. */
 export async function listAgreements({ page = 1, page_size = 20, status = null,
-                                       archived = false } = {}) {
+                                       archived = false, case_id = null } = {}) {
   const p = new URLSearchParams({ page, page_size });
   if (status) p.set('status', status);
+  if (case_id) p.set('case_id', case_id);
   if (archived) p.set('archived', 'true');
   return apiFetch(`/agreements?${p}`);
 }
@@ -2949,13 +2973,14 @@ export async function reviewQueueV2({ status = 'submitted', cursor = null, limit
  * downloadDocumentFile needs to fetch the right bytes. `downloadable` is false
  * for a document whose render never produced any.
  */
-export async function myDocumentsV2({ cursor = null, limit = 25, folder = null, caseId = null } = {}) {
+export async function myDocumentsV2({ cursor = null, limit = 25, folder = null, caseId = null, needsAction = false } = {}) {
   const params = new URLSearchParams({ limit: String(limit) });
   if (cursor) params.set('cursor', cursor);
   // A lawyer's Vault folder: an id, or "none" for documents in no folder.
   if (folder) params.set('folder', folder);
   // One case's documents, still only the caller's own (the case Tracking page).
   if (caseId) params.set('case', caseId);
+  if (needsAction) params.set('needs_action', 'true');
   return apiFetch(`/documents/v2/mine?${params.toString()}`);
 }
 

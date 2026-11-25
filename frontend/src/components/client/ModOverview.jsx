@@ -173,7 +173,7 @@ const ModOverview = ({ onOpenNotifications }) => {
     const [proposalsSeq, setProposalsSeq] = useState(0);
     useEffect(() => {
         let live = true;
-        Promise.resolve().then(() => listMeetingProposals({ status: "open" })).then(res => {
+        Promise.resolve().then(() => listMeetingProposals({ status: "open", all: true })).then(res => {
             if (!live) return;
             if (!res || res.error || !Array.isArray(res.data)) { setProposals(p => ({ state: "error", items: p.items })); return; }
             setProposals({ state: "ready", items: res.data.filter(p => p.status === "open") });

@@ -869,7 +869,7 @@ MINE_PROJECTION = {
 
 
 def mine_page_query(owner_id: str, cursor: str | None, folder: str | None = None,
-                    case: str | None = None) -> tuple[dict, dict]:
+                    case: str | None = None, needs_action: bool = False) -> tuple[dict, dict]:
     """Filter and projection for one page of a caller's own documents.
 
     Keyed on `(created_at DESC, _id ASC)` — the order the caller is promised,
@@ -888,6 +888,12 @@ def mine_page_query(owner_id: str, cursor: str | None, folder: str | None = None
     # caller's OWN documents: this narrows ownership, it never widens it.
     if case:
         query["case_id"] = case
+    if needs_action:
+        query["review_status"] = {"$in": [
+            "returned",
+            migration.STATUS_NEEDS_REAPPROVAL,
+            migration.STATUS_UNRECOVERABLE,
+        ]}
     if cursor:
         created, doc_id = _decode_mine_cursor(cursor)
         if created is None:
@@ -924,13 +930,15 @@ async def my_documents_v2(
     limit: int = 25,
     folder: str | None = None,
     case: str | None = None,
+    needs_action: bool = False,
     current_user: dict = Depends(get_current_user),
 ):
     """Documents this caller owns, newest first, cursor-paginated.
 
     `folder` narrows the list to one Vault folder ("none": no folder), and
-    `case` to one case's documents. The cursor of a narrowed list is only
-    valid with the same `folder` and `case`.
+    `case` to one case's documents. `needs_action` returns only documents the
+    owner can act on. The cursor of a narrowed list is only valid with the
+    same `folder`, `case`, and `needs_action` value.
 
     WHY THIS EXISTS
 
@@ -959,7 +967,7 @@ async def my_documents_v2(
     owner_id = str(current_user["_id"])
     limit = max(1, min(int(limit), 100))
 
-    query, projection = mine_page_query(owner_id, cursor, folder, case)
+    query, projection = mine_page_query(owner_id, cursor, folder, case, needs_action)
     rows = await (get_documents_col()
                   .find(query, projection)
                   .sort(MINE_SORT).limit(limit + 1)

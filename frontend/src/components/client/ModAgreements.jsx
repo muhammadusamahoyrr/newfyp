@@ -1,6 +1,7 @@
 'use client';
 // Paste your ModAgreements.jsx code here
 import React, { useState, Fragment, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useT } from "./theme.js";
 import { useToast } from "@/components/shared/Toast.jsx";
@@ -282,6 +283,7 @@ const useMyAgreements = (userId, status = null, archived = false) => {
     const [loading, setLoading] = useState(true);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
+    const [error, setError] = useState(null);
 
     // THE FILTER GOES TO THE SERVER. Filtering the loaded page client-side
     // means "Signed" shows only the executed agreements that happen to be in
@@ -292,17 +294,22 @@ const useMyAgreements = (userId, status = null, archived = false) => {
     useEffect(() => { setPage(1); }, [status, archived]);
 
     const reload = useCallback(() => {
+        setLoading(true);
         listAgreements({ page, page_size: AGREEMENTS_PAGE_SIZE, status, archived })
-            .then(({ data }) => {
+            .then(({ data, error: readError }) => {
                 const rows = data?.items;
-                if (Array.isArray(rows)) {
-                    const mapped = rows.map(a => mapAgreement(a, userId));
-                    // Page 1 replaces, later pages append.
-                    setItems(prev => (page === 1 ? mapped : [...prev, ...mapped]));
-                    setTotal(data.total ?? mapped.length);
+                if (readError || !Array.isArray(rows)) {
+                    setError(readError?.message || "Could not load agreements.");
+                    setLoading(false);
+                    return;
                 }
+                const mapped = rows.map(a => mapAgreement(a, userId));
+                // Page 1 replaces, later pages append.
+                setItems(prev => (page === 1 ? mapped : [...prev, ...mapped]));
+                setTotal(data.total ?? mapped.length);
+                setError(null);
                 setLoading(false);
-            }).catch(() => setLoading(false));
+            }).catch(() => { setError("Could not load agreements."); setLoading(false); });
     }, [userId, page, status, archived]);
     useEffect(() => { reload(); }, [reload]);
 
@@ -311,7 +318,7 @@ const useMyAgreements = (userId, status = null, archived = false) => {
         setPage(p => p + 1);
     }, []);
 
-    return [items, loading, reload, { total, loadMore, hasMore: items.length < total }];
+    return [items, loading, reload, { total, loadMore, hasMore: items.length < total, error }];
 };
 
 // ── STEP PROGRESS BAR ────────────────────────
@@ -2033,7 +2040,7 @@ const RowMenu = ({ agreement, archivedView, onOpen, onDownload, onArchive, onUna
     );
 };
 
-const PageAllAgreements = ({ onNavigate, initialFilter = "All" }) => {
+const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId = null }) => {
     const t = useTheme();
     const toast = useToast();
     const { user } = useAuth();
@@ -2068,6 +2075,7 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All" }) => {
     // from `viewing` (the list row) so one can never be mistaken for the other.
     const [doc, setDoc] = useState(null);
     const openSeq = useRef(0);
+    const focusDone = useRef(null);
 
     /* Open a row: fetch the document, never trust the row. Sign and decline
        are gated on this having succeeded, so a failed load cannot leave
@@ -2094,6 +2102,18 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All" }) => {
                  eto: data.eto_classification,
                  expiresAt: data.expires_at || null, error: null });
     };
+    useEffect(() => {
+        if (!focusAgreementId || focusDone.current === focusAgreementId || loading || paging.error) return;
+        const row = agmts.find(a => String(a.id) === String(focusAgreementId));
+        if (!row && paging.hasMore) { paging.loadMore(); return; }
+        if (!row) return;
+        focusDone.current = focusAgreementId;
+        openAgreement(row);
+    // `openAgreement` intentionally reads the row that was just loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusAgreementId, loading, agmts, paging.hasMore, paging.loadMore, paging.error]);
+    const focusAgreementMissing = !!focusAgreementId && !loading && !paging.error && !paging.hasMore
+        && !agmts.some(a => String(a.id) === String(focusAgreementId));
 
     const doArchive = async (a) => {
         const { error } = await archiveAgreement(a.id);
@@ -2244,6 +2264,18 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All" }) => {
                 </div>
             </header>
 
+            {paging.error && (
+                <div role="alert" data-agreements-error style={{ marginBottom: 14, padding: "13px 16px", borderRadius: 12, border: `1px solid ${t.warn}66`, background: t.card, color: t.text, fontSize: 13.5 }}>
+                    {paging.error} {agmts.length ? "The agreements shown may be incomplete." : "An agreement may still need your signature."}{" "}
+                    <button type="button" onClick={reload} style={{ border: 0, background: "none", padding: 0, color: t.primary, fontWeight: 700, cursor: "pointer" }}>Try again</button>
+                </div>
+            )}
+            {focusAgreementMissing && (
+                <div role="status" data-agreement-missing style={{ marginBottom: 14, padding: "13px 16px", borderRadius: 12, border: `1px solid ${t.border}`, background: t.card, color: t.textMuted, fontSize: 13.5 }}>
+                    The agreement this link points to is no longer available in your list.
+                </div>
+            )}
+
             {/* Status filters in one group; Archived apart, because it is a
                 view across all four statuses, not a fifth one. */}
             <div className="al-bar">
@@ -2276,7 +2308,8 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All" }) => {
                     const pct = a.totalParties ? Math.round((a.signedCount / a.totalParties) * 100) : 0;
                     const ini = n => (n || "?").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
                     return (
-                        <div key={a.id} className="al-grid al-tr" style={{ "--c": look.c }} onClick={() => openAgreement(a)}>
+                        <div key={a.id} data-agreement={a.id} data-focused={String(a.id) === String(focusAgreementId) ? "" : undefined}
+                            className="al-grid al-tr" style={{ "--c": look.c, outline: String(a.id) === String(focusAgreementId) ? `2px solid ${t.primary}` : "none", outlineOffset: -2 }} onClick={() => openAgreement(a)}>
                             {/* DOCUMENT — the icon is tinted by state, so the
                                 column reads at a glance without the chip. */}
                             <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
@@ -2654,7 +2687,9 @@ const DIY_BUILDER_ENABLED = AGREEMENTS_DIY_ENABLED;   // read in lib/agreementsN
 // ── ModAgreements ─────────────────────────────
 function ModAgreements() {
     const t = useTheme();
+    const agreementParam = useSearchParams()?.get("agreement") || null;
     const [page, setPage] = useState(() => {
+        if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("agreement")) return "all";
         const p = takePendingAgreementsView();
         return p && (DIY_BUILDER_ENABLED || (p !== "create" && p !== "templates")) ? p : "dashboard";
     });
@@ -2695,7 +2730,7 @@ function ModAgreements() {
                     {DIY_BUILDER_ENABLED && page === "create" && (
                         <PageCreate template={selectedTemplate} onNavigate={navigate} onDone={() => navigate("all")} />
                     )}
-                    {page === "all" && <PageAllAgreements key={allFilter} onNavigate={navigate} initialFilter={allFilter} />}
+                    {page === "all" && <PageAllAgreements key={allFilter} onNavigate={navigate} initialFilter={allFilter} focusAgreementId={agreementParam} />}
                 </div>
             </div>
         </div>

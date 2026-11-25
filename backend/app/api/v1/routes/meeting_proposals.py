@@ -26,13 +26,17 @@ async def propose_meeting(
 async def list_meeting_proposals(
     case_id: str | None = Query(None, max_length=64),
     status: str | None = Query(None, pattern="^(open|accepted|declined|withdrawn|expired|cancelled)$"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=100),
     current_user: dict = Depends(get_current_user),
 ):
     """The caller's own proposals: those they sent (lawyer) or received (client)."""
     role = current_user.get("role")
     if role not in ("client", "lawyer"):
         return []
-    return await meeting_proposal_service.list_for(current_user["_id"], role, case_id, status)
+    return await meeting_proposal_service.list_page_for(
+        current_user["_id"], role, case_id, status,
+        page=page, page_size=page_size)
 
 
 @router.post("/{proposal_id}/accept")

@@ -156,6 +156,10 @@ async def test_the_manifest_is_exactly_these_ten(mongo):
          (("client_id", 1), ("schema_version", 1), ("created_at", -1),
           ("_id", 1)),
          False, False, None, QUERY),
+        ("documents", "v2_owner_action_documents",
+         (("client_id", 1), ("schema_version", 1), ("review_status", 1),
+          ("created_at", -1), ("_id", 1)),
+         False, False, None, QUERY),
     }
 
 

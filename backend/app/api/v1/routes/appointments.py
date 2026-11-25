@@ -88,6 +88,8 @@ async def list_appointments(
     # upcoming, then history).
     upcoming_only: bool = Query(default=False),
     order: Literal["time", "action"] = Query(default="time"),
+    case_id: str | None = Query(default=None, max_length=64),
+    needs_action: bool = Query(default=False),
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -104,6 +106,8 @@ async def list_appointments(
         starts_before=starts_before,
         upcoming_only=upcoming_only,
         order=order,
+        case_id=case_id,
+        needs_action=needs_action,
     )
 
 

@@ -11,7 +11,7 @@ test("an appointment notice opens that appointment", () => {
 });
 
 test("a meeting proposal opens Appointments, and once accepted its appointment", () => {
-    assert.equal(to("appointment_proposed", { proposal_id: "P1", case_id: "C1" }), "/appointments");
+    assert.equal(to("appointment_proposed", { proposal_id: "P1", case_id: "C1" }), "/appointments?section=proposals&proposal=P1");
     assert.equal(to("appointment_proposal_withdrawn", { proposal_id: "P1" }), "/appointments");
     assert.equal(to("appointment_proposal_accepted", { appointment_id: "a9" }), "/appointments?appointment=a9");
 });
@@ -27,10 +27,15 @@ test("hiring opens the exact request on its case in My Matters (2026-11-23)", ()
         "/tracking?case=C3&tab=summary&engagement=E3");
     assert.equal(to("lawyer_assigned", { case_id: "C4" }), "/tracking?case=C4&tab=summary");
     // No case id in an old notification: My Matters, never a wrong case.
-    assert.equal(to("engagement_declined", {}), "/tracking?tab=summary");
+    assert.equal(to("engagement_declined", {}), "/tracking");
     for (const t of ["engagement_terms_proposed", "engagement_declined", "engagement_accepted"]) {
         assert.doesNotMatch(to(t, { engagement_id: "E", case_id: "C" }), /^\/lawyers/);
     }
+});
+
+test("an agreement notice opens the exact agreement", () => {
+    assert.equal(to("agreement_created", { agreement_id: "A 1" }), "/agreements?agreement=A%201");
+    assert.equal(to("agreement_executed", {}), "/agreements");
 });
 
 test("case notices open their tab on the exact case", () => {

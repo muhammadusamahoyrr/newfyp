@@ -28,10 +28,11 @@ async def request_engagement(
 @router.get("", response_model=list[EngagementOut])
 async def list_engagements(
     status: str | None = Query(default=None),
+    case_id: str | None = Query(default=None, min_length=1, max_length=64),
     current_user: dict = Depends(require_client_or_lawyer),
 ):
     return await engagement_service.list_engagements(
-        current_user["_id"], current_user["role"], status
+        current_user["_id"], current_user["role"], status, case_id
     )
 
 

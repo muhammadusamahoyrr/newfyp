@@ -600,8 +600,10 @@ async def _meeting_proposal_indexes() -> None:
     from app.db.collections import get_meeting_proposals_col
     col = get_meeting_proposals_col()
     await col.create_indexes([
-        IndexModel([("client_id", ASCENDING), ("status", ASCENDING)]),
-        IndexModel([("lawyer_id", ASCENDING), ("case_id", ASCENDING)]),
+        IndexModel([("client_id", ASCENDING), ("status", ASCENDING),
+                    ("created_at", DESCENDING)]),
+        IndexModel([("lawyer_id", ASCENDING), ("case_id", ASCENDING),
+                    ("created_at", DESCENDING)]),
     ])
     await _try_unique_partial(
         col, [("case_id", ASCENDING)], "uniq_open_meeting_proposal", ["open", "accepting"])
@@ -1086,6 +1088,15 @@ async def _appointments_indexes() -> None:
         IndexModel([("scheduled_at", ASCENDING)]),
         # Compound: check double-booking — lawyer + time slot + active statuses
         IndexModel([("lawyer_id", ASCENDING), ("scheduled_at", ASCENDING)]),
+        # My Matters and a case summary ask only for this client's appointment
+        # actions, optionally narrowed to one case.
+        IndexModel([("client_id", ASCENDING), ("case_id", ASCENDING),
+                    ("status", ASCENDING), ("scheduled_at", DESCENDING)]),
+        # The My Matters aggregate has no case id. Without this sibling index,
+        # the case_id field in the index above breaks the useful prefix before
+        # status/sort and forces a scan plus blocking sort across appointment history.
+        IndexModel([("client_id", ASCENDING), ("status", ASCENDING),
+                    ("scheduled_at", DESCENDING)]),
         IndexModel([("created_at", DESCENDING)]),
     ])
 
@@ -1164,6 +1175,12 @@ async def _payments_indexes() -> None:
     await get_payments_col().create_indexes([
         IndexModel([("payer_id", ASCENDING)]),
         IndexModel([("payee_id", ASCENDING), ("status", ASCENDING)]),
+        IndexModel([("payer_id", ASCENDING), ("kind", ASCENDING),
+                    ("status", ASCENDING), ("created_at", DESCENDING)],
+                   name="payments_payer_actionable_recent"),
+        IndexModel([("payee_id", ASCENDING), ("kind", ASCENDING),
+                    ("status", ASCENDING), ("created_at", DESCENDING)],
+                   name="payments_payee_actionable_recent"),
         IndexModel([("case_id", ASCENDING)], sparse=True),
         IndexModel([("kind", ASCENDING)]),
         IndexModel([("status", ASCENDING)]),

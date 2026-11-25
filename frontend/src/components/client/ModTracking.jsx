@@ -11,7 +11,7 @@ import ReviewLawyerDialog from "./ReviewLawyerDialog.jsx";
 import HireDialog from "./HireDialog.jsx";
 import HireRequests, { feeLabel } from "./HireRequests.jsx";
 import { caseHero, pickEngagement, stageWindow } from "@/lib/caseHero.js";
-import { caseTodos } from "@/lib/caseTodos.js";
+import { appointmentTodos, caseTodos } from "@/lib/caseTodos.js";
 import { caseUpdates, groupByDay, caseDetails } from "@/lib/caseUpdates.js";
 import { getReviewEligibility, errorCode } from "@/lib/api.js";
 
@@ -26,11 +26,13 @@ const CASE_MEETING_BLUE = "#5ab3ff";
 const NEXT_STEP_STATES = new Set(["none", "terms_proposed"]);
 const isRecentCompleted = (a, now = Date.now()) => a.status === "completed"
     && a.scheduled_at && now - new Date(a.scheduled_at).getTime() <= NEXT_STEP_DAYS * 864e5;
-import { confirmedCases, caseStatusLabel } from "@/lib/caseStatus.js";
-import { listCases, getCase, getCaseTimeline, listAppointments, cancelAppointment as apiCancelAppointment, getAppointment as apiGetAppointment, rescheduleAppointment as apiRescheduleAppointment, listMessages as apiListMessages, sendMessage as apiSendMessage, listDocuments as apiListDocuments, downloadDocument as apiDownloadDocument, fetchDocumentPreviewUrl, myDocumentsV2, fetchRevisionPreview, downloadDocumentFile, listPayments, startCheckout, mockPay, downloadReceipt, openAppointmentDispute, listAppointmentDisputes, getBookableSlots, listMeetingProposals, acceptMeetingProposal, declineMeetingProposal, listEngagements, listAppointmentFiles as apiListAppointmentFiles, uploadAppointmentFile as apiUploadAppointmentFile, openAppointmentFile as apiOpenAppointmentFile, deleteAppointmentFile as apiDeleteAppointmentFile, acceptAppointmentSuggestion as apiAcceptAppointmentSuggestion, proposeNewTime as apiProposeNewTime, withdrawNewTime as apiWithdrawNewTime, declineNewTime as apiDeclineNewTime, acceptNewTime as apiAcceptNewTime, getSummaryDraft as apiGetSummaryDraft, readSharedSummary as apiReadSharedSummary, shareSummary as apiShareSummary, revokeSummary as apiRevokeSummary } from "@/lib/api.js";
+import { confirmedCases, caseStatusLabel, isDraftCase } from "@/lib/caseStatus.js";
+import { listAgreements, listCases, getCase, getCaseTimeline, listAppointments, cancelAppointment as apiCancelAppointment, getAppointment as apiGetAppointment, rescheduleAppointment as apiRescheduleAppointment, listMessages as apiListMessages, sendMessage as apiSendMessage, listDocuments as apiListDocuments, downloadDocument as apiDownloadDocument, fetchDocumentPreviewUrl, myDocumentsV2, fetchRevisionPreview, downloadDocumentFile, listPayments, startCheckout, mockPay, downloadReceipt, openAppointmentDispute, listAppointmentDisputes, getBookableSlots, listMeetingProposals, acceptMeetingProposal, declineMeetingProposal, listEngagements, listAppointmentFiles as apiListAppointmentFiles, uploadAppointmentFile as apiUploadAppointmentFile, openAppointmentFile as apiOpenAppointmentFile, deleteAppointmentFile as apiDeleteAppointmentFile, acceptAppointmentSuggestion as apiAcceptAppointmentSuggestion, proposeNewTime as apiProposeNewTime, withdrawNewTime as apiWithdrawNewTime, declineNewTime as apiDeclineNewTime, acceptNewTime as apiAcceptNewTime, getSummaryDraft as apiGetSummaryDraft, readSharedSummary as apiReadSharedSummary, shareSummary as apiShareSummary, revokeSummary as apiRevokeSummary } from "@/lib/api.js";
 import { formatPkt, pktToday, pktDayKey, pktHourMinute, pktSlotToUtcISO, isPktSlotPast } from "@/lib/bookingTime.js";
 import { onNotification, matterHref } from "@/lib/notificationTarget.js";
 import { useClientRouter } from "./clientNav.js";
+import { useAuth } from "@/context/AuthContext.jsx";
+import { requestDocumentsView } from "@/lib/documentsNav.js";
 import { AppointmentThread } from "@/components/shared/AppointmentThread.jsx";
 import { documentStatusView } from "@/lib/documentStatus.js";
 
@@ -295,13 +297,13 @@ function CaseBar({ t, page, onNavigate, activeCase, cases, onCaseSwitch, onMatte
                     </div>
                 )}
             </nav>
-            <nav aria-label="Case sections" style={{ marginLeft: "auto", display: "flex", gap: 2, padding: 4, borderRadius: 999, background: t.cardHi }}>
+            <nav aria-label="Case sections" className="case-tabs" style={{ marginLeft: "auto", display: "flex", gap: 2, padding: 4, borderRadius: 999, background: t.cardHi, maxWidth: "100%", overflowX: "auto" }}>
                 {CASE_TABS.map(tab => {
                     const on = page === tab.key;
                     return (
                         <button key={tab.key} type="button" data-case-tab={tab.key} aria-current={on ? "page" : undefined}
                             onClick={() => onNavigate(tab.key)}
-                            style={{ height: 32, padding: "0 14px", borderRadius: 999, border: 0, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                            style={{ height: 32, padding: "0 14px", flexShrink: 0, borderRadius: 999, border: 0, cursor: "pointer", fontSize: 13, fontWeight: 700,
                                 background: on ? "var(--chip-on-bg, #F3F2F4)" : "transparent", color: on ? "var(--chip-on-ink, #2A282C)" : t.textMuted }}>
                             {tab.label}
                         </button>
@@ -343,11 +345,75 @@ function useSource(read, deps) {
 }
 
 const listOf = r => { if (!r || r.error || !Array.isArray(r.data)) throw new Error("read failed"); return r.data; };
+const itemsOf = r => { if (!r || r.error || !Array.isArray(r.data?.items)) throw new Error("read failed"); return r.data.items; };
+
+/** The signed-in user's id, or null outside an AuthProvider (a test, a preview). */
+function useMyId() {
+    let user = null;
+    try { user = useAuth()?.user || null; } catch { user = null; }
+    return user?._id || user?.id || null;
+}
+
+/** Read every pending agreement. A first-page-only read could incorrectly say
+ *  nothing needs signing when the client's agreement is on a later page. */
+const readPendingAgreements = async (caseId = null) => {
+    const out = [];
+    let page = 1, pages = 1;
+    do {
+        const r = await listAgreements({ page, page_size: 50, status: "pending", case_id: caseId });
+        const rows = itemsOf(r);
+        out.push(...rows);
+        pages = Number.isInteger(r.data?.pages) ? r.data.pages : 1;
+        page += 1;
+    } while (page <= pages);
+    return out;
+};
+
+/** Read every appointment needed to calculate client actions. Case pages ask
+ * the server for one case; My Matters pages through the caller's whole list. */
+const readAllAppointments = async (caseId = null) => {
+    const out = [];
+    let page = 1, pages = 1;
+    do {
+        const r = await listAppointments({ page, page_size: 50, needs_action: true,
+            ...(caseId ? { case_id: caseId } : {}) });
+        const rows = itemsOf(r);
+        out.push(...rows);
+        pages = Number.isInteger(r.data?.pages) ? r.data.pages : 1;
+        page += 1;
+    } while (page <= pages);
+    return out;
+};
+
+/** Read the cursor-paginated V2 vault completely for authoritative case and
+ *  My Matters action counts. Feature-disabled is a valid empty source. */
+const readAllV2Documents = async (caseId = null, { needsAction = false } = {}) => {
+    const out = [];
+    let cursor = null;
+    const seenCursors = new Set();
+    let pages = 0;
+    do {
+        const r = await myDocumentsV2({ caseId, cursor, limit: 100, needsAction });
+        if (r?.status === 404 && errorCode(r.error) === "feature_disabled") return [];
+        if (!r || r.error || !Array.isArray(r.data?.items)) throw new Error(r?.error?.message || "Could not load drafted documents.");
+        out.push(...r.data.items);
+        if (!r.data.has_more) break;
+        cursor = r.data.next_cursor;
+        if (!cursor) throw new Error("The document list was incomplete.");
+        if (seenCursors.has(cursor)) throw new Error("The document list repeated a page cursor.");
+        seenCursors.add(cursor);
+        pages += 1;
+        if (pages >= 1000) throw new Error("The document list was too large to verify safely.");
+    } while (cursor);
+    return out;
+};
 
 /** The client's hire requests, read once for the page and re-read when one
  *  changes. `{ data, state, reload }`. */
-function useEngagements() {
-    const src = useSource(() => Promise.resolve(listEngagements()).then(listOf), []);
+function useEngagements(caseId = null) {
+    // With a case: only that case's requests, filtered by the server (review
+    // item 5). Without: every request (My matters).
+    const src = useSource(() => Promise.resolve(listEngagements(caseId ? { caseId } : undefined)).then(listOf), [caseId]);
     const { reload } = src;
     useEffect(() => onNotification(n => {
         const type = String(n?.type || "");
@@ -457,16 +523,14 @@ function CaseStatusHero({ t, activeCase, hearings = [], steps = [], engagements 
 // details: the client's fees, meeting proposals, this case's documents and
 // its messages. Each re-reads when a matching notification arrives.
 function useCaseOverviewData(caseId) {
-    const payments = useSource(() => (caseId ? Promise.resolve(listPayments()).then(listOf) : []), [caseId]);
-    const proposals = useSource(() => (caseId ? Promise.resolve(listMeetingProposals({ status: "open" })).then(listOf) : []), [caseId]);
+    const payments = useSource(() => (caseId ? Promise.resolve(listPayments({ caseId })).then(listOf) : []), [caseId]);
+    const proposals = useSource(() => (caseId ? Promise.resolve(listMeetingProposals({ case_id: caseId, status: "open", all: true })).then(listOf) : []), [caseId]);
     // V2 documents switched off answer 404 feature_disabled: that is "none", not a failure.
-    const v2Docs = useSource(() => (caseId ? Promise.resolve(myDocumentsV2({ caseId, limit: 100 })).then(r => {
-        if (r?.status === 404 && errorCode(r.error) === "feature_disabled") return [];
-        if (!r || r.error || !Array.isArray(r.data?.items)) throw new Error("read failed");
-        return r.data.items;
-    }) : []), [caseId]);
+    const v2Docs = useSource(() => (caseId ? readAllV2Documents(caseId) : []), [caseId]);
     const legacyDocs = useSource(() => (caseId ? Promise.resolve(apiListDocuments(caseId)).then(listOf) : []), [caseId]);
     const messages = useSource(() => (caseId ? Promise.resolve(apiListMessages(caseId)).then(listOf) : []), [caseId]);
+    const agreements = useSource(() => (caseId ? readPendingAgreements(caseId) : []), [caseId]);
+    const appointments = useSource(() => (caseId ? readAllAppointments(caseId) : []), [caseId]);
     const reloads = { payments: payments.reload, proposals: proposals.reload, v2: v2Docs.reload, legacy: legacyDocs.reload, messages: messages.reload };
     useEffect(() => onNotification(n => {
         const type = String(n?.type || "");
@@ -474,8 +538,10 @@ function useCaseOverviewData(caseId) {
         if (type.startsWith("appointment_propos")) reloads.proposals();
         if (type.startsWith("document_") || type.startsWith("review_request_")) { reloads.v2(); reloads.legacy(); }
         if (type === "case_message" && String(n.payload?.case_id || "") === String(caseId)) reloads.messages();
+        if (type.startsWith("agreement_")) agreements.reload();
+        if (type.startsWith("appointment_")) appointments.reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }), [caseId, payments.reload, proposals.reload, v2Docs.reload, legacyDocs.reload, messages.reload]);
+    }), [caseId, payments.reload, proposals.reload, v2Docs.reload, legacyDocs.reload, messages.reload, agreements.reload, appointments.reload]);
     // One row per document: V2 first, the legacy listing without the V2 ids.
     const v2Rows = (v2Docs.data || []).map(_mapV2Doc);
     const seen = new Set(v2Rows.map(d => d.id));
@@ -483,23 +549,26 @@ function useCaseOverviewData(caseId) {
     const casePayments = (payments.data || []).filter(p => String(p.case_id || "") === String(caseId));
     const docsState = v2Docs.state === "error" || legacyDocs.state === "error" ? "error"
         : v2Docs.state === "ready" && legacyDocs.state === "ready" ? "ready" : "loading";
-    return { payments, proposals, v2Docs, legacyDocs, messages, docRows, casePayments, docsState,
+    return { payments, proposals, v2Docs, legacyDocs, messages, agreements, appointments, docRows, casePayments, docsState,
         reloadDocs: () => { v2Docs.reload(); legacyDocs.reload(); } };
 }
 
 // ─── YOUR TO-DO (Tracking v2, 2026-11-23) ────────────────────────────────────
 // Only what the client can move on this case, each with one button: fees due,
 // terms to answer, documents back from the lawyer, meeting times to choose.
-function CaseTodos({ t, caseId, sources, onAction }) {
+function CaseTodos({ t, caseId, sources, userId = null, onAction }) {
+    const [showAll, setShowAll] = useState(false);
     // sources: { name: { data, state, reload } } for hire requests, fees, meeting times, documents.
     const get = k => sources[k] || { data: [], state: "ready", reload: () => {} };
     const engagement = pickEngagement(get("hire requests").data, caseId);
     const items = caseTodos({ caseId, engagement, feeText: engagement ? feeLabel(engagement) : "",
-        payments: get("fees").data, proposals: get("meeting times").data, docs: get("documents").data });
+        payments: get("fees").data, proposals: get("meeting times").data, appointments: get("appointments").data,
+        docs: get("documents").data,
+        agreements: get("agreements").data, userId });
     const failed = Object.keys(sources).filter(k => sources[k].state === "error");
     const loading = Object.keys(sources).some(k => sources[k].state === "loading");
     const status = failed.length ? "error" : loading ? "loading" : "ready";
-    const shown = items.slice(0, 3);
+    const shown = showAll ? items : items.slice(0, 3);
     const outline = { display: "inline-flex", alignItems: "center", height: 36, padding: "0 16px", borderRadius: 999, cursor: "pointer",
         border: `1px solid ${t.primary}73`, background: "transparent", color: t.primary, fontWeight: 700, fontSize: 13 };
     const solid = { ...outline, border: 0, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)" };
@@ -512,7 +581,10 @@ function CaseTodos({ t, caseId, sources, onAction }) {
                 {status === "error" && <CheckFailed t={t} what={andList(failed)} onRetry={() => failed.forEach(k => sources[k].reload())} />}
                 {status === "loading" && !items.length && <span style={{ fontSize: 13, color: t.textMuted }}>Checking what's waiting on you…</span>}
                 {status === "ready" && !items.length && <span style={{ fontSize: 13, color: t.textMuted }}>Nothing is waiting on you right now.</span>}
-                {items.length > shown.length && <span style={{ fontSize: 13, color: t.textMuted }}>· showing the first {shown.length}</span>}
+                {items.length > 3 && <button type="button" data-toggle-all-todos onClick={() => setShowAll(v => !v)}
+                    style={{ border: 0, background: "none", padding: 0, cursor: "pointer", color: t.primary, fontSize: 13, fontWeight: 700 }}>
+                    {showAll ? "Show fewer" : `Show all ${items.length}`}
+                </button>}
             </div>
             {shown.length > 0 && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
@@ -645,23 +717,44 @@ function CaseDetails({ t, groups, onTab }) {
 // same sentence as its status card), its steps, its lawyer, and what is
 // waiting on the client. Replaces the case dropdown that named cases by their
 // database id, and the silent "open the newest case" on /tracking.
-function MyMatters({ t, cases, casesState, onRetry, onOpen, onAllPayments = null }) {
+function MyMatters({ t, cases, casesState, onRetry, onOpen, onOpenAppointment, onAllPayments = null }) {
     const engagements = useEngagements();
     const payments = useSource(() => Promise.resolve(listPayments()).then(listOf), []);
-    const proposals = useSource(() => Promise.resolve(listMeetingProposals({ status: "open" })).then(listOf), []);
-    const sources = { "hire requests": engagements, fees: payments, "meeting times": proposals };
+    const proposals = useSource(() => Promise.resolve(listMeetingProposals({ status: "open", all: true })).then(listOf), []);
+    // The client's actionable documents across cases, so one sent back or
+    // needing approval again counts on its case too (review item 6, 2026-11-23).
+    const docs = useSource(() => readAllV2Documents(null, { needsAction: true }), []);
+    const agreements = useSource(() => readPendingAgreements(), []);
+    const appointments = useSource(() => readAllAppointments(), []);
+    useEffect(() => onNotification(n => {
+        const type = String(n?.type || "");
+        if (type.startsWith("payment_")) payments.reload();
+        if (type.startsWith("appointment_propos")) proposals.reload();
+        if (type.startsWith("document_") || type.startsWith("review_request_")) docs.reload();
+        if (type.startsWith("agreement_")) agreements.reload();
+        if (type.startsWith("appointment_")) appointments.reload();
+    }), [payments.reload, proposals.reload, docs.reload, agreements.reload, appointments.reload]);
+    const myId = useMyId();
+    const sources = { "hire requests": engagements, fees: payments, "meeting times": proposals, appointments, documents: docs,
+        ...(myId ? { agreements } : {}) };
     const failed = Object.keys(sources).filter(k => sources[k].state === "error");
     const checking = Object.keys(sources).some(k => sources[k].state === "loading");
     const rows = cases.map(c => {
         const engagement = pickEngagement(engagements.data, c.id);
         const feeText = engagement ? feeLabel(engagement) : "";
         const hero = caseHero({ caseInfo: c, nextHearing: c.nextHearingRaw || null, engagement, feeText, engagementState: engagements.state });
-        const todos = caseTodos({ caseId: c.id, engagement, feeText, payments: payments.data, proposals: proposals.data });
+        const todos = caseTodos({ caseId: c.id, engagement, feeText, payments: payments.data, proposals: proposals.data,
+            appointments: appointments.data,
+            docs: (docs.data || []).filter(d => String(d.case_id || "") === String(c.id)), agreements: agreements.data, userId: myId });
         return { c, engagement, hero, todos };
     });
     // What waits on the client comes first; otherwise the server's order (newest).
     const ordered = [...rows.filter(r => r.todos.length), ...rows.filter(r => !r.todos.length)];
-    const waiting = rows.reduce((n, r) => n + r.todos.length, 0);
+    // Initial consultations may intentionally have no case. They still need a
+    // visible home here or the cross-matter summary can claim there is nothing
+    // waiting while Appointments is asking the client to choose a time.
+    const otherActions = appointmentTodos({ appointments: appointments.data, caseId: null });
+    const waiting = rows.reduce((n, r) => n + r.todos.length, 0) + otherActions.length;
     const solid = { display: "inline-flex", alignItems: "center", justifyContent: "center", height: 38, padding: "0 18px", borderRadius: 999, border: 0, cursor: "pointer",
         fontWeight: 700, fontSize: 13.5, background: "var(--brand-solid, linear-gradient(135deg,#3EE0A1,#2EC4D6))", color: "var(--on-brand, #04212A)", textDecoration: "none" };
     const outline = { ...solid, background: "transparent", border: `1px solid ${t.primary}73`, color: t.primary };
@@ -698,6 +791,25 @@ function MyMatters({ t, cases, casesState, onRetry, onOpen, onAllPayments = null
                     <div style={{ fontSize: 13.5, color: t.textMuted, margin: "6px 0 14px" }}>Describe your problem in Legal Intake. Once you confirm it, it opens here as a case.</div>
                     <a href="/intake" style={solid}>Start a new matter</a>
                 </div>
+            )}
+
+            {otherActions.length > 0 && (
+                <section aria-label="Other actions" data-other-actions style={{ marginBottom: 16 }}>
+                    <h2 style={{ margin: "0 0 9px", fontSize: 16, fontWeight: 800, color: t.text }}>Other actions</h2>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+                        {otherActions.map(action => (
+                            <article key={action.key} data-other-action={action.id} style={{ padding: "15px 17px", borderRadius: 16,
+                                background: t.card, border: `1px solid ${t.warn}55`, display: "flex", alignItems: "center", gap: 14 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 11.5, fontWeight: 800, color: t.warn, textTransform: "uppercase", letterSpacing: ".06em" }}>Appointment · Waiting on you</div>
+                                    <b style={{ display: "block", marginTop: 3, fontSize: 14.5, color: t.text }}>{action.title}</b>
+                                    <span style={{ display: "block", marginTop: 2, fontSize: 12.5, color: t.textMuted }}>{action.sub}</span>
+                                </div>
+                                <button type="button" onClick={() => onOpenAppointment?.(action.id)} style={solid}>{action.cta}</button>
+                            </article>
+                        ))}
+                    </div>
+                </section>
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -741,9 +853,6 @@ function MyMatters({ t, cases, casesState, onRetry, onOpen, onAllPayments = null
                     );
                 })}
             </div>
-            {casesState === "ready" && cases.length >= 20 && (
-                <div style={{ marginTop: 12, fontSize: 13, color: t.textMuted }}>Showing your 20 most recent matters.</div>
-            )}
         </div>
     );
 }
@@ -867,8 +976,9 @@ function HearingUpdates({ hearings, caseTitle, court }) {
 function PageOverview({ setPage, activeCase, hearings, steps = [], onHeroAction = null, afterHero = null, casesState = "ready", onRetryCases = null }) {
     const t = useT();
     const { T } = useLang();
-    const engagements = useEngagements();
+    const engagements = useEngagements(activeCase?.id || null);
     const data = useCaseOverviewData(activeCase?.id || null);
+    const myId = useMyId();
     const overviewEngagement = activeCase ? pickEngagement(engagements.data, activeCase.id) : null;
 
     // Every field below reads off activeCase. Before the mock CASES array was
@@ -901,7 +1011,11 @@ function PageOverview({ setPage, activeCase, hearings, steps = [], onHeroAction 
             <CaseStatusHero t={t} activeCase={activeCase} hearings={hearings} steps={steps} engagements={engagements.data} engagementState={engagements.state}
                 onAction={(a, e) => (a === "retry-engagements" ? engagements.reload() : (onHeroAction || (() => {}))(a, e))} />
             <CaseTodos t={t} caseId={activeCase.id} onAction={onHeroAction || (() => {})}
-                sources={{ "hire requests": engagements, fees: data.payments, "meeting times": data.proposals, documents: data.v2Docs }} />
+                userId={myId}
+                sources={{ "hire requests": engagements, fees: data.payments, "meeting times": data.proposals,
+                    appointments: data.appointments, documents: data.v2Docs,
+                    // Whose signature is missing needs the client's id: checked only when it is known.
+                    ...(myId ? { agreements: data.agreements } : {}) }} />
             {afterHero}
 
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 320px", gap: 18, alignItems: "start" }}>
@@ -1107,41 +1221,62 @@ const DOC_SORTS = {
 // sort from 2: a toolbar over nothing was most of the old screen.
 const DOC_TONE = t => ({ ok: t.primary, info: t.info || t.primary, warn: t.warn, danger: t.danger, muted: t.textMuted });
 
-function PageDocuments({ activeCaseId }) {
+function PageDocuments({ activeCaseId, focusDocumentId = null }) {
     const t = useT();
     const router = useClientRouter();
     const [search, setSearch] = useState("");
     const [sort, setSort] = useState("date");
     const [apiDocs, setApiDocs] = useState(null);   // null = loading
     const [loadError, setLoadError] = useState(null);
+    const [loadWarning, setLoadWarning] = useState(null);
     const [busy, setBusy] = useState(null);         // `${id}:open|download`
     const [docError, setDocError] = useState({});   // id -> message
 
     const load = useCallback(() => {
-        if (!activeCaseId) { setApiDocs([]); setLoadError(null); return () => {}; }
+        if (!activeCaseId) { setApiDocs([]); setLoadError(null); setLoadWarning(null); return () => {}; }
         let off = false;
         setApiDocs(null);
         setLoadError(null);
+        setLoadWarning(null);
         Promise.all([
             apiListDocuments(activeCaseId),
-            // Off (feature_disabled) or failing, V2 adds nothing: the legacy
-            // list still stands on its own.
-            myDocumentsV2({ caseId: activeCaseId, limit: 100 }).catch(() => ({ data: null })),
+            readAllV2Documents(activeCaseId)
+                .then(items => ({ data: { items } }))
+                .catch(error => ({ data: null, error })),
         ]).then(([legacy, v2]) => {
             if (off) return;
+            const v2Disabled = v2?.status === 404 && errorCode(v2.error) === "feature_disabled";
             const v2Rows = Array.isArray(v2?.data?.items) ? v2.data.items.map(_mapV2Doc) : [];
             const legacyRows = !legacy.error && Array.isArray(legacy.data) ? legacy.data.map(_mapApiDoc) : null;
-            if (!legacyRows && !v2Rows.length) {
-                setLoadError(legacy.error?.message || "Could not load this case's documents.");
+            const failed = [
+                legacyRows === null ? "uploaded documents" : null,
+                !v2Disabled && (v2?.error || !Array.isArray(v2?.data?.items)) ? "drafted documents" : null,
+            ].filter(Boolean);
+            if (failed.length && !v2Rows.length && !(legacyRows || []).length) {
+                const cause = legacy.error?.message || v2?.error?.message;
+                setLoadError(`${cause ? `${cause}. ` : ""}Could not load this case's ${andList(failed)}. Documents may still exist.`);
                 setApiDocs([]);
                 return;
             }
             const seen = new Set(v2Rows.map(d => d.id));
             setApiDocs([...v2Rows, ...(legacyRows || []).filter(d => !seen.has(d.id))]);
+            if (failed.length) setLoadWarning(`Could not refresh the ${andList(failed)}. This list may be incomplete.`);
         });
         return () => { off = true; };
     }, [activeCaseId]);
     useEffect(() => load(), [load]);
+    useEffect(() => {
+        if (!focusDocumentId || apiDocs === null) return;
+        const el = [...document.querySelectorAll("[data-doc]")]
+            .find(node => node.getAttribute("data-doc") === String(focusDocumentId));
+        el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }, [focusDocumentId, apiDocs]);
+    useEffect(() => onNotification(n => {
+        const type = String(n?.type || "");
+        const noticeCase = n?.payload?.case_id;
+        if ((type.startsWith("document_") || type.startsWith("review_request_"))
+            && (!noticeCase || String(noticeCase) === String(activeCaseId))) load();
+    }), [activeCaseId, load]);
 
     const openDoc = async (doc) => {
         setBusy(`${doc.id}:open`);
@@ -1176,6 +1311,8 @@ function PageDocuments({ activeCaseId }) {
     };
 
     const docSource = apiDocs ?? [];
+    const focusDocumentMissing = !!focusDocumentId && apiDocs !== null
+        && !docSource.some(doc => String(doc.id) === String(focusDocumentId));
     const viewOf = d => (d.v2 ? documentStatusView(d._raw) : null);
     // Needs you: sent back by the lawyer, or needing approval again. Nothing else.
     const needsYou = docSource.filter(d => { const v = viewOf(d); return v && (v.isRecovery || d._raw?.review_status === "returned"); });
@@ -1198,11 +1335,15 @@ function PageDocuments({ activeCaseId }) {
         </span>
     );
     const label = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", margin: 0 };
+    // Every document the client keeps, beyond this case: the Vault (Documents).
+    const openVault = () => { requestDocumentsView("vault"); router.push("/documents"); };
     const draftCard = (
         <aside aria-label="Need a new document" style={{ borderRadius: 18, background: "var(--brand-soft, rgba(62,224,161,.13))", border: `1px solid ${t.border}`, padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
             <b style={{ fontSize: 15.5, color: t.text }}>Need a new document?</b>
             <span style={{ fontSize: 13.5, color: t.textMuted }}>Draft it from a template, then send it to your lawyer to review. Drafts linked to this case show here.</span>
             <button type="button" data-draft-document onClick={() => router.push("/documents")} style={{ ...solid, alignSelf: "flex-start", height: 38, fontSize: 13.5 }}>Draft a document</button>
+            <button type="button" data-open-vault onClick={openVault}
+                style={{ alignSelf: "flex-start", border: 0, background: "none", padding: 0, cursor: "pointer", color: t.primary, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit" }}>Open your Vault →</button>
         </aside>
     );
 
@@ -1213,7 +1354,10 @@ function PageDocuments({ activeCaseId }) {
             <button type="button" onClick={load} style={pill("brand", false)}>Retry</button>
         </div>
     );
-    if (!docSource.length) return (
+    if (!docSource.length) return (<>
+        {focusDocumentMissing && <div role="status" data-document-missing style={{ marginBottom: 14, borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, padding: "12px 16px", color: t.text, fontSize: 13.5 }}>
+            The document this link points to is no longer available on this matter.
+        </div>}
         <section aria-label="Documents on this case" data-docs-empty
             style={{ borderRadius: 20, background: t.card, border: `1px solid ${t.border}`, padding: "40px 40px", display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 40, alignItems: "center" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1232,10 +1376,16 @@ function PageDocuments({ activeCaseId }) {
                 ))}
             </ol>
         </section>
-    );
+    </>);
 
     return (
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 300px", gap: 24, alignItems: "start" }}>
+            {loadWarning && <div role="alert" data-documents-warning style={{ gridColumn: "1 / -1", borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, padding: "12px 16px", color: t.text, fontSize: 13.5 }}>
+                {loadWarning} <button type="button" onClick={load} style={{ border: 0, background: "none", padding: 0, color: t.primary, fontWeight: 700, cursor: "pointer" }}>Try again</button>
+            </div>}
+            {focusDocumentMissing && <div role="status" data-document-missing style={{ gridColumn: "1 / -1", borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, padding: "12px 16px", color: t.text, fontSize: 13.5 }}>
+                The document this link points to is no longer available on this matter.
+            </div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 22, minWidth: 0 }}>
                 {needsYou.length > 0 && (
                     <section aria-label="Needs you" data-docs-needs-you style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1348,7 +1498,7 @@ function PagePayments({ t, caseId = null, focusPaymentId = null, onAllPayments =
     // fee that is due (2026-11-23).
     const [loadError, setLoadError] = useState(null);
     // The engagement on this case, for the agreed-fee line (case view only).
-    const engagements = useEngagements();
+    const engagements = useEngagements(caseId);
     const engagement = caseId ? (engagements.data || []).find(e => String(e.case_id || "") === String(caseId) && e.status === "accepted") || null : null;
     // A link to one payment (a fee notification): scroll to it once it is on screen.
     const focusDone = useRef(null);
@@ -1365,13 +1515,33 @@ function PagePayments({ t, caseId = null, focusPaymentId = null, onAllPayments =
     const [payingId, setPayingId] = useState(null);
     const [payError, setPayError] = useState({});   // payment id -> message
 
-    const load = async () => {
-        const { data, error } = await listPayments();
+    // As in HireRequests: the case on screen now, and only the newest read lands.
+    const caseRef = useRef(caseId);
+    caseRef.current = caseId;
+    const readSeq = useRef(0);
+    const load = useCallback(async () => {
+        const mine = ++readSeq.current;
+        const forCase = caseRef.current;
+        const { data, error } = await listPayments(forCase ? { caseId: forCase } : undefined);
+        if (mine !== readSeq.current) return;
         if (Array.isArray(data)) { setItems(data); setLoadError(null); }
         else setLoadError(error?.message || "Couldn't load your payments.");
         setLoading(false);
-    };
-    useEffect(() => { load(); }, []);
+    }, []);
+    // A different case is a fresh read, never the previous case's fees.
+    useEffect(() => { setItems([]); setLoadError(null); setLoading(true); load(); }, [caseId, load]);
+    // Checkout finishes in another tab. Webhook notifications are the primary
+    // refresh; focus is a fallback when the socket was briefly disconnected.
+    useEffect(() => onNotification(n => {
+        const type = String(n?.type || "");
+        const noticeCase = n?.payload?.case_id;
+        if (type.startsWith("payment_") && (!caseId || !noticeCase || String(noticeCase) === String(caseId))) load();
+    }), [caseId, load]);
+    useEffect(() => {
+        const refresh = () => load();
+        window.addEventListener("focus", refresh);
+        return () => window.removeEventListener("focus", refresh);
+    }, [load]);
 
     const pay = async (p) => {
         setPayingId(p.id);
@@ -1434,7 +1604,7 @@ function PagePayments({ t, caseId = null, focusPaymentId = null, onAllPayments =
             <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
                 <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: t.text }}>{T("Payments", "ادائیگیاں")}</h1>
                 <span style={{ fontSize: 13.5, color: t.textMuted }}>
-                    {caseId ? T("Fees your lawyer requested on this case", "اس کیس پر آپ کے وکیل کی مانگی گئی فیس") : T("Every fee across your matters", "آپ کے تمام کیسز کی فیس")}
+                    {caseId ? T("Fees your lawyer requested on this case", "اس کیس پر آپ کے وکیل کی مانگی گئی فیس") : T("Fees requiring action and recent payment history", "واجب فیس اور حالیہ ادائیگیوں کی تاریخ")}
                 </span>
             </div>
 
@@ -3265,13 +3435,23 @@ function MiniCalendar({ t, appointments, picked, onPick, bare = false }) {
  * here makes it a confirmed appointment. Nothing is booked before that. */
 function MeetingProposals({ t, onChosen }) {
     const [items, setItems] = useState([]);
+    const [loadState, setLoadState] = useState("loading");
+    const [loadError, setLoadError] = useState(null);
     const [busy, setBusy] = useState(null);
     const [error, setError] = useState({});
     const [declining, setDeclining] = useState(null);
     const [reason, setReason] = useState("");
-    const load = useCallback(() => Promise.resolve().then(() => listMeetingProposals({ status: "open" }))
-        .then(res => { if (res && !res.error && Array.isArray(res.data)) setItems(res.data.filter(p => p.status === "open")); })
-        .catch(() => {}), []);
+    let focusProposalId = null;
+    try { focusProposalId = new URLSearchParams(window.location.search).get("proposal"); } catch { focusProposalId = null; }
+    const load = useCallback(() => Promise.resolve().then(() => listMeetingProposals({ status: "open", all: true }))
+        .then(res => {
+            if (!res || res.error || !Array.isArray(res.data)) {
+                setLoadState("error"); setLoadError(res?.error?.message || "Could not load proposed meeting times."); return;
+            }
+            setItems(res.data.filter(p => p.status === "open"));
+            setLoadState("ready"); setLoadError(null);
+        })
+        .catch(() => { setLoadState("error"); setLoadError("Could not load proposed meeting times."); }), []);
     useEffect(() => { load(); }, [load]);
     useEffect(() => onNotification((n) => {
         if (String(n.type || "").startsWith("appointment_propos")) load();
@@ -3281,9 +3461,25 @@ function MeetingProposals({ t, onChosen }) {
         if (!items.length) return;
         try {
             if (new URLSearchParams(window.location.search).get("section") !== "proposals") return;
-            document.querySelector("[data-proposals]")?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+            const exact = focusProposalId ? [...document.querySelectorAll("[data-proposal]")]
+                .find(node => node.getAttribute("data-proposal") === String(focusProposalId)) : null;
+            (exact || document.querySelector("[data-proposals]"))?.scrollIntoView?.({ block: "center", behavior: "smooth" });
         } catch { /* not in a browser */ }
-    }, [items.length]);
+    }, [items.length, focusProposalId]);
+    const focusMissing = !!focusProposalId && loadState === "ready"
+        && !items.some(p => String(p.id) === String(focusProposalId));
+    if (!items.length && loadState === "loading") return null;
+    if (!items.length && loadState === "error") return (
+        <div role="alert" data-proposals-error style={{ marginTop: 6, padding: "14px 16px", borderRadius: 14, background: t.card, border: `1px solid ${t.warn}66`, color: t.text, fontSize: 13.5 }}>
+            {loadError} A meeting time may still be waiting for you.{" "}
+            <button type="button" onClick={load} style={{ border: 0, background: "none", padding: 0, color: t.primary, fontWeight: 700, cursor: "pointer" }}>Try again</button>
+        </div>
+    );
+    if (!items.length && focusMissing) return (
+        <div role="status" data-proposal-missing style={{ marginTop: 6, padding: "14px 16px", borderRadius: 14, background: t.card, border: `1px solid ${t.border}`, color: t.textMuted, fontSize: 13.5 }}>
+            The proposed meeting this link points to is no longer waiting for a response.
+        </div>
+    );
     if (!items.length) return null;
 
     const choose = async (p, i) => {
@@ -3313,11 +3509,18 @@ function MeetingProposals({ t, onChosen }) {
 
     return (
         <section aria-label="Meetings your lawyer proposed" data-proposals style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 6 }}>
+            {loadState === "error" && <div role="alert" data-proposals-error style={{ padding: "12px 14px", borderRadius: 12, border: `1px solid ${t.warn}66`, color: t.text, fontSize: 13 }}>
+                {loadError} This list may be out of date.{" "}<button type="button" onClick={load} style={{ border: 0, background: "none", padding: 0, color: t.primary, fontWeight: 700, cursor: "pointer" }}>Try again</button>
+            </div>}
+            {focusMissing && <div role="status" data-proposal-missing style={{ padding: "12px 14px", borderRadius: 12, border: `1px solid ${t.border}`, color: t.textMuted, fontSize: 13 }}>
+                The proposed meeting this link points to is no longer waiting for a response.
+            </div>}
             {items.map(p => {
                 const word = MODE_WORDS[p.mode] || p.mode;
                 const mins = p.duration_minutes || 60;
                 return (
-                    <article key={p.id} data-proposal={p.id} style={{ padding: "18px 20px", borderRadius: 18, border: `1px solid ${t.primary}66`,
+                    <article key={p.id} data-proposal={p.id} data-focused={String(p.id) === String(focusProposalId) ? "" : undefined} style={{ padding: "18px 20px", borderRadius: 18, border: `1px solid ${t.primary}66`,
+                        outline: String(p.id) === String(focusProposalId) ? `2px solid ${t.primary}` : "none", outlineOffset: 2,
                         background: `linear-gradient(120deg, color-mix(in srgb, ${t.primary} 12%, ${t.card}) 0%, ${t.card} 60%)` }}>
                         <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: t.primary }}>Meeting proposed</div>
                         <div style={{ font: `700 18px/1.3 ${HUB_SERIF}`, color: t.text, marginTop: 4 }}>
@@ -4055,11 +4258,14 @@ export default function Module7({ isDark, standalone = null }) {
     const tabParam = standalone ? null : (searchParams?.get("tab") || null);
     const engagementParam = standalone ? null : (searchParams?.get("engagement") || null);
     const paymentParam = standalone ? null : (searchParams?.get("payment") || null);
+    const documentParam = standalone ? null : (searchParams?.get("document") || null);
     // The status card's "Review terms" opens the request below it (v2).
     const [focusEngagement, setFocusEngagement] = useState(null);
     const [focusPayment, setFocusPayment] = useState(null);
     const clientRouter = useClientRouter();
     const [caseLinkError, setCaseLinkError] = useState(null);   // null | "missing" | "draft"
+    const [caseLinkLoading, setCaseLinkLoading] = useState(() => !!caseParam);
+    const [caseLinkTry, setCaseLinkTry] = useState(0);
     // My matters (v2): shown when /tracking names no case and no tab; a link
     // that names either opens the case as before.
     // All my payments (2026-11-23): every fee across cases, with NO case
@@ -4068,11 +4274,12 @@ export default function Module7({ isDark, standalone = null }) {
     const viewParam = standalone ? null : (searchParams?.get("view") || null);
     const globalPayments = !standalone && !caseParam && (viewParam === "payments" || (tabParam === "payments" && !!paymentParam));
     const [showAllPayments, setShowAllPayments] = useState(() => globalPayments);
-    const [showMatters, setShowMatters] = useState(() => !standalone && !caseParam && !tabParam && !globalPayments);
+    const [showMatters, setShowMatters] = useState(() => !standalone && !caseParam && !globalPayments);
     useEffect(() => {
         if (globalPayments) { setShowAllPayments(true); setShowMatters(false); }
-        else if (caseParam || tabParam) { setShowAllPayments(false); setShowMatters(false); }
-    }, [globalPayments, caseParam, tabParam]);
+        else if (caseParam) { setShowAllPayments(false); setShowMatters(false); }
+        else if (!standalone) { setShowAllPayments(false); setShowMatters(true); }
+    }, [standalone, globalPayments, caseParam]);
     useEffect(() => {
         if (tabParam && TAB_TO_PAGE[tabParam]) setPage(TAB_TO_PAGE[tabParam]);
     }, [tabParam]);
@@ -4106,55 +4313,73 @@ export default function Module7({ isDark, standalone = null }) {
     const [apptLoadingMore, setApptLoadingMore] = useState(false);
     const [apptMoreError, setApptMoreError] = useState(null);
     const apptMoreInFlight = useRef(false);
+    const casesReadSeq = useRef(0);
     const setCancelError = useCallback((id, message) => {
         setCancelErrors(prev => ({ ...prev, [id]: message }));
     }, []);
 
     // Load cases from API on mount (and again from "Try again").
-    const loadCases = useCallback(() => {
+    const loadCases = useCallback(async () => {
+        const mine = ++casesReadSeq.current;
         setCasesState("loading");
-        return listCases({ page_size: 20 }).then(({ data, error }) => {
-            if (error) { setCasesState("error"); return; }
-            setCasesState("ready");
-            // Drafts are filtered out BEFORE mapping. `mapApiCase` stamps a
-            // "Filed" date from `created_at`, and a draft has not been filed
-            // anywhere — it has not even been confirmed. Worse, cases arrive
-            // newest-first and the first one becomes the active case, so a
-            // fresh draft became the client's headline matter and displaced a
-            // real one.
-            const real = confirmedCases(data?.items);
-            if (real.length) {
-                setApiCases(real.map(mapApiCase));
-            }
-        });
+        const all = [];
+        let pageNumber = 1;
+        let pages = 1;
+        do {
+            const { data, error } = await listCases({ page: pageNumber, page_size: 50 });
+            if (mine !== casesReadSeq.current) return false;
+            if (error || !Array.isArray(data?.items)) { setCasesState("error"); return false; }
+            all.push(...data.items);
+            pages = Number.isInteger(data.pages) ? data.pages : 1;
+            pageNumber += 1;
+        } while (pageNumber <= pages);
+        // A successful empty read must clear stale rows from a prior refresh.
+        if (mine !== casesReadSeq.current) return false;
+        const unique = [...new Map(confirmedCases(all).map(row => [String(row?._id || row?.id || ""), row])).values()];
+        setApiCases(unique.map(mapApiCase));
+        setCasesState("ready");
+        return true;
     }, []);
     useEffect(() => { loadCases(); }, [loadCases]);
+    useEffect(() => onNotification(n => {
+        const type = String(n?.type || "");
+        if (type === "case_update" || type === "lawyer_assigned" || type.startsWith("engagement_") || type.startsWith("hearing_")) loadCases();
+        if ((type === "case_update" || type.startsWith("hearing_"))
+            && (!n?.payload?.case_id || String(n.payload.case_id) === String(activeCaseId))) setTimelineTry(v => v + 1);
+    }), [activeCaseId, loadCases]);
 
     // Which case is open. With ?case= it is THAT case: from the loaded page
     // when it is there, else read directly (the list holds the newest 20 only).
     // Without it, the newest confirmed case, as before.
     useEffect(() => {
-        if (casesState !== "ready") return undefined;
+        if (casesState === "loading") return undefined;
         // (The standalone Appointments page has no ?case=, so it takes the
         // newest case as before.)
         if (!caseParam) {
+            setCaseLinkLoading(false);
             setCaseLinkError(null);
             setActiveCaseId(cur => (cur && apiCases.some(c => c.id === cur)) ? cur : (apiCases[0]?.id ?? null));
             return undefined;
         }
-        if (apiCases.some(c => c.id === caseParam)) { setCaseLinkError(null); setActiveCaseId(caseParam); return undefined; }
+        if (apiCases.some(c => c.id === caseParam)) { setCaseLinkLoading(false); setCaseLinkError(null); setActiveCaseId(caseParam); return undefined; }
         let off = false;
-        getCase(caseParam).then(({ data, error }) => {
+        setCaseLinkLoading(true);
+        getCase(caseParam).then(({ data, error, status }) => {
             if (off) return;
-            if (error || !data) { setActiveCaseId(null); setCaseLinkError("missing"); return; }
-            if (data.status === "draft") { setActiveCaseId(null); setCaseLinkError("draft"); return; }
+            setCaseLinkLoading(false);
+            if (error || !data) {
+                setActiveCaseId(null);
+                setCaseLinkError(status === 404 ? "missing" : "load");
+                return;
+            }
+            if (isDraftCase(data)) { setActiveCaseId(null); setCaseLinkError("draft"); return; }
             const one = mapApiCase(data);
             setApiCases(list => (list.some(c => c.id === one.id) ? list : [...list, one]));
             setActiveCaseId(one.id);
             setCaseLinkError(null);
         });
         return () => { off = true; };
-    }, [standalone, casesState, caseParam, apiCases]);
+    }, [standalone, casesState, caseParam, apiCases, caseLinkTry]);
 
     // Keep the address on what is on screen (refresh, share). This only
     // TIDIES the current entry (replace); a move the client makes is a new
@@ -4162,7 +4387,7 @@ export default function Module7({ isDark, standalone = null }) {
     useEffect(() => {
         if (standalone || typeof window === "undefined") return;
         // Only while the page really is /tracking: never rewrite another route.
-        if (!window.location.pathname.startsWith("/tracking")) return;
+        if (!["/tracking", "/cases"].includes(window.location.pathname)) return;
         if (showAllPayments) {
             const want = paymentParam && globalPayments ? `/tracking?view=payments&payment=${encodeURIComponent(paymentParam)}` : "/tracking?view=payments";
             if (window.location.pathname + window.location.search !== want) window.history.replaceState(null, "", want);
@@ -4180,9 +4405,10 @@ export default function Module7({ isDark, standalone = null }) {
             engagement: activeCaseId === caseParam ? engagementParam : null,
             // The payment a link named stays in the address while its tab is open.
             payment: page === "payments" ? paymentParam : null,
+            document: page === "documents" ? documentParam : null,
         });
         if (window.location.pathname + window.location.search !== href) window.history.replaceState(null, "", href);
-    }, [standalone, showAllPayments, globalPayments, showMatters, caseLinkError, activeCaseId, page, caseParam, engagementParam, paymentParam]);
+    }, [standalone, showAllPayments, globalPayments, showMatters, caseLinkError, activeCaseId, page, caseParam, engagementParam, paymentParam, documentParam]);
 
     // One loader, reused.
     //
@@ -4334,51 +4560,77 @@ export default function Module7({ isDark, standalone = null }) {
     // No silent fallback when a link named a case: an unknown id shows the
     // "cannot be opened" state instead of the newest case.
     const activeCase = displayCases.find(c => c.id === activeCaseId) || (caseParam ? null : displayCases[0]);
+    let addressCaseParam = caseParam;
+    try {
+        if (["/tracking", "/cases"].includes(window.location.pathname)) addressCaseParam = new URLSearchParams(window.location.search).get("case");
+    } catch { /* server render */ }
+    const caseIsOpening = !!addressCaseParam && !caseLinkError
+        && (caseLinkLoading || String(activeCaseId || "") !== String(addressCaseParam));
 
     // BACK / FORWARD (review item 3, 2026-11-23). Every move between views
     // (a tab, a case, My matters, All my payments) is a browser history entry,
     // and Back/Forward put the view back from the address. The address used
     // to be rewritten in place, so Back left Tracking altogether.
     const pushHref = (href) => {
-        if (standalone || typeof window === "undefined" || !window.location.pathname.startsWith("/tracking")) return;
+        if (standalone || typeof window === "undefined" || !["/tracking", "/cases"].includes(window.location.pathname)) return;
         if (window.location.pathname + window.location.search !== href) window.history.pushState(null, "", href);
     };
     const goPage = (key) => {
+        setFocusEngagement(null); setFocusPayment(null);
         setPage(key);
         if (activeCaseId && PAGE_TO_TAB[key]) pushHref(matterHref(activeCaseId, { tab: PAGE_TO_TAB[key] }));
     };
     const goCase = (id) => {
+        setFocusEngagement(null); setFocusPayment(null);
         setCaseLinkError(null); setActiveCaseId(id); setPage("overview");
         setShowMatters(false); setShowAllPayments(false);
         pushHref(matterHref(id, { tab: "summary" }));
     };
-    const goMatters = () => { setShowAllPayments(false); setShowMatters(true); pushHref("/tracking"); };
-    const goAllPayments = () => { setShowMatters(false); setShowAllPayments(true); pushHref("/tracking?view=payments"); };
+    const goMatters = () => { setFocusEngagement(null); setFocusPayment(null); setShowAllPayments(false); setShowMatters(true); pushHref("/tracking"); };
+    const goAllPayments = () => { setFocusEngagement(null); setFocusPayment(null); setShowMatters(false); setShowAllPayments(true); pushHref("/tracking?view=payments"); };
     useEffect(() => {
         if (standalone || typeof window === "undefined") return undefined;
         const onPop = () => {
-            if (!window.location.pathname.startsWith("/tracking")) return;
+            if (!["/tracking", "/cases"].includes(window.location.pathname)) return;
             const q = new URLSearchParams(window.location.search);
             const c = q.get("case"), tab = q.get("tab"), view = q.get("view"), pay = q.get("payment");
+            setFocusEngagement(q.get("engagement")); setFocusPayment(pay);
             if (!c && (view === "payments" || (tab === "payments" && pay))) { setShowMatters(false); setShowAllPayments(true); return; }
-            if (!c && !tab) { setShowAllPayments(false); setShowMatters(true); return; }
+            if (!c) { setShowAllPayments(false); setShowMatters(true); return; }
             setShowAllPayments(false); setShowMatters(false);
-            if (c) { setCaseLinkError(null); setActiveCaseId(c); }
+            if (c) {
+                const known = apiCases.some(item => String(item.id) === String(c));
+                setCaseLinkError(null);
+                setCaseLinkLoading(!known);
+                setActiveCaseId(known ? c : null);
+            }
             setPage(TAB_TO_PAGE[tab] || "overview");
         };
         window.addEventListener("popstate", onPop);
         return () => window.removeEventListener("popstate", onPop);
-    }, [standalone]);
+    }, [standalone, apiCases]);
 
     // What the status card's buttons do (v2). "Review terms" opens and
     // highlights the request in the list just below the card.
     const heroAction = (action, eng) => {
         if (action === "timeline") goPage("timeline");
         else if (action === "messages") goPage("communication");
-        else if (action === "engagement" && eng) setFocusEngagement(eng.id);
-        else if (action === "pay" && eng) { setFocusPayment(eng.id); goPage("payments"); }
-        else if (action === "documents") goPage("documents");
-        else if (action === "proposals") clientRouter.push("/appointments?section=proposals");
+        else if (action === "engagement" && eng) {
+            setFocusEngagement(eng.id);
+            if (activeCaseId) pushHref(matterHref(activeCaseId, { tab: "summary", engagement: eng.id }));
+        }
+        else if (action === "pay" && eng) {
+            setFocusPayment(eng.id); setPage("payments");
+            if (activeCaseId) pushHref(matterHref(activeCaseId, { tab: "payments", payment: eng.id }));
+        }
+        else if (action === "documents") {
+            const documentId = eng?.action === "documents" ? eng.id : null;
+            setPage("documents");
+            if (activeCaseId) pushHref(matterHref(activeCaseId, { tab: "documents", document: documentId }));
+        }
+        else if (action === "proposals") clientRouter.push(`/appointments?section=proposals${eng?.action === "proposals" && eng.id ? `&proposal=${encodeURIComponent(eng.id)}` : ""}`);
+        else if (action === "agreements") clientRouter.push(`/agreements${eng?.action === "agreements" && eng.id ? `?agreement=${encodeURIComponent(eng.id)}` : ""}`);
+        else if (action === "appointment" && eng?.id) clientRouter.push(`/appointments?appointment=${encodeURIComponent(eng.id)}`);
         else if (action === "find-lawyer") clientRouter.push("/lawyers");
         else if (action === "book" && eng) clientRouter.push(lawyerHref({ lawyer_id: eng.lawyer_id, lawyer_name: eng.lawyer_name }, "book"));
     };
@@ -4386,7 +4638,7 @@ export default function Module7({ isDark, standalone = null }) {
     const pages = {
         // My hire requests sit on top of the overview (moved here from the
         // Lawyers page, 2026-11-23): with or without a case selected.
-        overview: (props) => <><PageOverview      {...props} steps={displayMilestones} onHeroAction={heroAction} afterHero={<HireRequests caseId={activeCase?.id || null} focusEngagementId={focusEngagement || engagementParam} />} activeCase={activeCase} hearings={apiHearings} casesState={casesState} onRetryCases={loadCases} /></>,
+        overview: (props) => <><PageOverview      {...props} steps={displayMilestones} onHeroAction={heroAction} afterHero={<HireRequests caseId={activeCase?.id || null} focusEngagementId={focusEngagement || engagementParam} />} activeCase={activeCase} hearings={apiHearings} casesState={caseIsOpening ? "loading" : casesState} onRetryCases={loadCases} /></>,
         appointments: (props) => <AppointmentsPage standalone={Boolean(standalone)} {...props} appointments={apiAppointments} loading={apptLoading} onReload={reloadAppointments} cancelErrors={cancelErrors} setCancelError={setCancelError}
             refreshError={apptRefreshError}
             onLoadMore={loadMoreAppointments} loadingMore={apptLoadingMore}
@@ -4396,7 +4648,7 @@ export default function Module7({ isDark, standalone = null }) {
             standalone={Boolean(standalone)} focusId={focusAppt} openThreadId={openThreadId} />,
         timeline: (props) => <PageTimeline      {...props} activeCase={activeCase} milestones={allMilestones} hearings={apiHearings}
             loadState={activeCaseId ? timelineState : "ready"} onRetry={() => setTimelineTry(n => n + 1)} />,
-        documents: (props) => <PageDocuments     {...props} activeCaseId={activeCaseId} />,
+        documents: (props) => <PageDocuments     {...props} activeCaseId={activeCaseId} focusDocumentId={documentParam} />,
         payments: (props) => <PagePayments      {...props} caseId={activeCase?.id || null} focusPaymentId={focusPayment || paymentParam} onAllPayments={goAllPayments} />,
         communication: (props) => <PageCommunication {...props} caseId={activeCaseId} activeCase={activeCase} />,
     };
@@ -4415,18 +4667,29 @@ export default function Module7({ isDark, standalone = null }) {
     const pageFn = pages[page] || pages.overview;
     // A link named a case that cannot be opened: say so on every tab, with a
     // way back to all matters, instead of showing another case's data.
-    const renderPage = (props) => caseLinkError ? (
+    const renderPage = (props) => caseIsOpening ? (
+        <div role="status" data-case-link-loading style={{ maxWidth: 640, margin: "40px auto", padding: "22px 24px", borderRadius: 16, background: t.card, border: `1px solid ${t.border}`, color: t.textMuted }}>
+            Opening this matter…
+        </div>
+    ) : caseLinkError ? (
         <div role="alert" data-case-link-error={caseLinkError} style={{ maxWidth: 640, margin: "40px auto", padding: "22px 24px", borderRadius: 16, background: t.card, border: `1px solid ${t.border}`, color: t.text }}>
             <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>
-                {caseLinkError === "draft" ? "This case is still a draft" : "This case could not be opened"}
+                {caseLinkError === "draft" ? "This case is still a draft"
+                    : caseLinkError === "load" ? "This matter could not be loaded"
+                    : "This case could not be opened"}
             </div>
             <div style={{ fontSize: 13.5, color: t.textMuted, marginBottom: 14 }}>
                 {caseLinkError === "draft"
                     ? "Confirm it at the end of your Legal Intake first; it opens here after that."
+                    : caseLinkError === "load"
+                        ? "The connection failed, so the matter may still exist. Try again before assuming it is unavailable."
                     : "It may have been removed, or it is not on your account. Nothing from another case is shown instead."}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
                 {caseLinkError === "draft" && <a href="/intake" style={{ ...hubBtn("prim", t), textDecoration: "none" }}>Go to Legal Intake</a>}
+                {caseLinkError === "load" && <button type="button" data-retry-case-link onClick={() => {
+                    setCaseLinkError(null); setCaseLinkLoading(true); setCaseLinkTry(v => v + 1); loadCases();
+                }} style={hubBtn("prim", t)}>Try again</button>}
                 <a href="/tracking" style={{ ...hubBtn("ghost", t), textDecoration: "none" }}>Show all my matters</a>
             </div>
         </div>
@@ -4442,6 +4705,8 @@ export default function Module7({ isDark, standalone = null }) {
         textarea::placeholder,input::placeholder{color:${t.textFaint};}
         @media (max-width:768px){
           .tracking-root [style*="grid-template-columns"]{grid-template-columns:1fr !important;}
+          .tracking-root .case-tabs{width:100%;margin-left:0 !important;justify-content:flex-start;scrollbar-width:none;}
+          .tracking-root .case-tabs::-webkit-scrollbar{display:none;}
         }
         select option{background:${t.card};}
         .tracking-root button,.tracking-root input,.tracking-root select,.tracking-root textarea{font-family:inherit}
@@ -4465,9 +4730,10 @@ export default function Module7({ isDark, standalone = null }) {
                         <PagePayments t={t} caseId={null} focusPaymentId={globalPayments ? paymentParam : null} />
                     </>) : showMatters ? (
                         <MyMatters t={t} cases={displayCases} casesState={casesState} onRetry={loadCases}
-                            onAllPayments={goAllPayments} onOpen={goCase} />
+                            onAllPayments={goAllPayments} onOpen={goCase}
+                            onOpenAppointment={id => clientRouter.push(`/appointments?appointment=${encodeURIComponent(id)}`)} />
                     ) : (<>
-                        <CaseBar t={t} page={page} onNavigate={goPage} activeCase={caseLinkError ? null : activeCase}
+                        <CaseBar t={t} page={page} onNavigate={goPage} activeCase={caseLinkError || caseIsOpening ? null : activeCase}
                             cases={displayCases} onCaseSwitch={goCase} onMatters={goMatters} />
                         {renderPage({ setPage: goPage, t })}
                     </>)}

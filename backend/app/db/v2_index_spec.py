@@ -257,6 +257,18 @@ V2_INDEX_REQUIREMENTS: tuple[IndexSpec, ...] = (
              "index matched the query and the query was not the one the "
              "caller had been promised."),
     ),
+    # 8 — only owner documents that require an action, for My Matters.
+    IndexSpec(
+        collection="documents",
+        name="v2_owner_action_documents",
+        keys=(("client_id", ASCENDING), ("schema_version", ASCENDING),
+              ("review_status", ASCENDING), ("created_at", DESCENDING),
+              ("_id", ASCENDING)),
+        kind=QUERY,
+        why=("My Matters asks only for returned or recovery documents. "
+             "Keeping review_status in the equality prefix avoids downloading "
+             "and scanning the owner's entire vault to build an action count."),
+    ),
 )
 
 

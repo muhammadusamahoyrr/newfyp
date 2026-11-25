@@ -172,13 +172,24 @@ export default function HireRequests({ caseId = null, focusEngagementId = null }
     const focusedOnce = useRef(null);
     const [note, setNote] = useState(null);   // { kind, engagement } while a dialog is open
 
+    // The case on screen now, for reads started by a notification listener that
+    // was created earlier; and a number per read, so only the newest answer
+    // lands (a slow read for the previous case must not overwrite this one).
+    const caseRef = useRef(caseId);
+    caseRef.current = caseId;
+    const readSeq = useRef(0);
     const refresh = async () => {
-        const res = await listEngagements().catch(e => ({ error: e }));
+        const mine = ++readSeq.current;
+        const forCase = caseRef.current;
+        // One case: the server returns only that case's requests (review item 5).
+        const res = await listEngagements(forCase ? { caseId: forCase } : undefined).catch(e => ({ error: e }));
+        if (mine !== readSeq.current) return;
         if (Array.isArray(res?.data)) { setEngagements(res.data); setLoadState("ready"); }
         // A failed RE-read keeps the list but says it may be out of date.
         else setLoadState(s => (s === "ready" || s === "stale" ? "stale" : "error"));
     };
-    useEffect(() => { refresh(); }, []);
+    // A different case is a fresh read, never the previous case's list.
+    useEffect(() => { setEngagements([]); setLoadState("loading"); refresh(); }, [caseId]);
     // A lawyer proposing terms, or an engagement ending, arrives live.
     useEffect(() => onNotification((n) => {
         const type = String(n.type || "");

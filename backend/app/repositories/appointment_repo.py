@@ -22,6 +22,21 @@ def _window(q: dict, starts_from, starts_before) -> None:
         q["scheduled_at"] = rng
 
 
+def _client_action(q: dict, now: datetime) -> None:
+    """Only appointments on which the client must choose a time."""
+    q["$or"] = [
+        {"status": AppointmentStatus.PENDING.value,
+         "time_suggestion.options.0": {"$exists": True}},
+        {"status": AppointmentStatus.CONFIRMED.value,
+         "reschedule_proposal.by": "lawyer",
+         "$or": [
+             {"reschedule_proposal.expires_at": {"$gt": now}},
+             {"reschedule_proposal.expires_at": {"$exists": False}},
+             {"reschedule_proposal.expires_at": None},
+         ]},
+    ]
+
+
 class AppointmentRepository(BaseRepository):
     def __init__(self):
         super().__init__(get_appointments_col)
@@ -57,10 +72,16 @@ class AppointmentRepository(BaseRepository):
         page_size: int,
         starts_from: datetime | None = None,
         starts_before: datetime | None = None,
+        case_id: str | None = None,
+        needs_action: bool = False,
     ) -> PaginatedResponse:
         q: dict = {"client_id": client_id}
         if status:
             q["status"] = status
+        if case_id:
+            q["case_id"] = case_id
+        if needs_action:
+            _client_action(q, datetime.now(timezone.utc))
         _window(q, starts_from, starts_before)
         return await self.paginate(
             q, page=page, page_size=page_size,
@@ -78,11 +99,14 @@ class AppointmentRepository(BaseRepository):
         upcoming_only: bool = False,
         order: str = "time",
         now: datetime | None = None,
+        case_id: str | None = None,
     ) -> PaginatedResponse:
         now = now or datetime.now(timezone.utc)
         q: dict = {"lawyer_id": lawyer_id}
         if status:
             q["status"] = status
+        if case_id:
+            q["case_id"] = case_id
         # "Upcoming" (2026-10-20) is a confirmed meeting that has NOT ended. An
         # ended one waits for its outcome and is listed under Needs outcome.
         if upcoming_only:

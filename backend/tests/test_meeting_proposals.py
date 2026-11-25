@@ -74,6 +74,23 @@ async def test_a_proposal_asks_the_client_and_holds_nothing(world):
         await svc.propose(world["lawyer"], _body(world))
 
 
+async def test_public_proposal_history_is_paginated(world):
+    from app.db.collections import get_meeting_proposals_col
+    from app.services import meeting_proposal_service as svc
+    now = datetime.now(timezone.utc)
+    rows = [{"_id": f"MP-PAGE-{i}-{world['lawyer']}", "lawyer_id": world["lawyer"],
+             "client_id": world["client"], "case_id": world["case"],
+             "status": "declined", "options": [_aligned(3 + i)],
+             "created_at": now - timedelta(minutes=i)} for i in range(3)]
+    await get_meeting_proposals_col().insert_many(rows)
+    first = await svc.list_page_for(world["lawyer"], "lawyer", world["case"],
+                                    page=1, page_size=2)
+    second = await svc.list_page_for(world["lawyer"], "lawyer", world["case"],
+                                     page=2, page_size=2)
+    assert first["total"] == 3 and first["pages"] == 2 and len(first["items"]) == 2
+    assert len(second["items"]) == 1
+
+
 async def test_only_the_cases_own_lawyer_with_a_platform_client_may_propose(world):
     from app.services import meeting_proposal_service as svc
     with pytest.raises(ForbiddenError):

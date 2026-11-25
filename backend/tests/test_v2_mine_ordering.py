@@ -227,6 +227,15 @@ def test_an_index_declares_this_sort():
         "client_id", "schema_version", "created_at", "_id"]
 
 
+def test_needs_action_query_excludes_the_rest_of_the_vault():
+    from app.api.v1.routes import documents_v2 as v2api
+
+    query, _ = v2api.mine_page_query("client-1", None, needs_action=True)
+    assert query["client_id"] == "client-1"
+    assert set(query["review_status"]["$in"]) == {
+        "returned", "needs_reapproval", "migration_unrecoverable"}
+
+
 # ── undated documents page correctly ─────────────────────────────────────────
 
 async def _undated(n, owner=CLIENT):

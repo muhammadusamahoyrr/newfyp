@@ -18,16 +18,22 @@ class EngagementRepository(BaseRepository):
     async def find_by_id(self, engagement_id: str) -> dict | None:
         return await self.find_one({"_id": engagement_id})
 
-    async def find_for_client(self, client_id: str, status: str | None = None) -> list[dict]:
+    async def find_for_client(self, client_id: str, status: str | None = None,
+                              case_id: str | None = None) -> list[dict]:
         f = {"client_id": client_id}
         if status:
             f["status"] = status
+        if case_id:
+            f["case_id"] = case_id
         return await self.find_many(f, sort=[("created_at", DESCENDING)])
 
-    async def find_for_lawyer(self, lawyer_id: str, status: str | None = None) -> list[dict]:
+    async def find_for_lawyer(self, lawyer_id: str, status: str | None = None,
+                              case_id: str | None = None) -> list[dict]:
         f = {"lawyer_id": lawyer_id}
         if status:
             f["status"] = status
+        if case_id:
+            f["case_id"] = case_id
         return await self.find_many(f, sort=[("created_at", DESCENDING)])
 
     async def find_pending_for_case(self, case_id: str) -> dict | None:

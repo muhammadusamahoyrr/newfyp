@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -48,8 +48,11 @@ async def summary(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("", response_model=list[PaymentOut])
-async def list_mine(current_user: dict = Depends(get_current_user)):
-    return await payment_service.list_payments(current_user["_id"], current_user["role"])
+async def list_mine(
+    case_id: str | None = Query(default=None, min_length=1, max_length=64),
+    current_user: dict = Depends(get_current_user),
+):
+    return await payment_service.list_payments(current_user["_id"], current_user["role"], case_id)
 
 
 @router.get("/{payment_id}", response_model=PaymentOut)

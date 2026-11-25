@@ -589,15 +589,35 @@ async def get_payment(payment_id: str, user_id: str) -> dict:
     return _public(payment)
 
 
-async def list_payments(user_id: str, role: str) -> list[dict]:
+async def list_payments(user_id: str, role: str, case_id: str | None = None) -> list[dict]:
     field = "payer_id" if role == "client" else "payee_id"
-    cursor = get_payments_col().find(
-        {field: user_id, "kind": PaymentKind.FEE.value}
-    ).sort("created_at", -1).limit(200)
+    query = {field: user_id, "kind": PaymentKind.FEE.value}
+    # One case (2026-11-23, review item 5): the client's case page used to
+    # download every record and filter in the browser, so a cap (200 fees,
+    # 50 agreements) could drop a case's own records. Filtered here, inside
+    # the caller's own scope: it can only narrow what they already see.
+    if case_id:
+        query["case_id"] = case_id
+    # Tracking may say "nothing is due", so every actionable record must be
+    # included even when it is older than the bounded recent-history window.
+    # The UI labels the remainder as recent history; a paginated history API
+    # can replace this bounded portion later without risking hidden fees.
+    actionable_query = dict(query)
+    actionable_query["status"] = {"$in": list(_PAYABLE_STATUSES)}
+    cursors = (
+        get_payments_col().find(actionable_query).sort("created_at", -1),
+        get_payments_col().find(query).sort("created_at", -1).limit(200),
+    )
     out = []
-    async for d in cursor:
-        d = await _maybe_expire(d)
-        out.append(_public(d))
+    seen: set[str] = set()
+    for cursor in cursors:
+        async for d in cursor:
+            payment_id = str(d.get("_id", ""))
+            if payment_id in seen:
+                continue
+            seen.add(payment_id)
+            d = await _maybe_expire(d)
+            out.append(_public(d))
     return out
 
 

@@ -93,6 +93,7 @@ async def list_agreements(
     page_size: int = Query(20, ge=1, le=agreement_service.MAX_PAGE_SIZE),
     status: str | None = Query(None),
     archived: bool = Query(False),
+    case_id: str | None = Query(None, min_length=1, max_length=64),
     current_user: dict = Depends(get_current_user),
 ):
     """One page of the agreements the current user may see, newest first.
@@ -104,7 +105,7 @@ async def list_agreements(
     """
     return await agreement_service.list_agreements(
         current_user["_id"], page=page, page_size=page_size, status=status,
-        archived=archived)
+        archived=archived, case_id=case_id)
 
 
 # ── Step 4: invited signers, who have no account ─────────────────────────────

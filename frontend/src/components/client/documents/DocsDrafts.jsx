@@ -2027,7 +2027,7 @@ export default function DocsDrafts({ seed, templates, cases, onBack, onOpenView,
                         ))}
                     </ol>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                        <Btn kind="primary" onClick={() => router.push("/tracking")} style={{ minHeight: 44, borderRadius: 999 }}>Track it in Tracking</Btn>
+                        <Btn kind="primary" onClick={() => router.push("/tracking")} style={{ minHeight: 44, borderRadius: 999 }}>Open My Matters</Btn>
                         <Btn data-sent-back onClick={() => setSentInfo(null)} style={{ minHeight: 44, borderRadius: 999 }}>Back to the document</Btn>
                         <span style={{ flex: 1 }} />
                         <button type="button" onClick={async () => { await withdrawFromReview(); setSentInfo(null); }}

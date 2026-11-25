@@ -55,7 +55,12 @@ test("the list endpoint is scoped by the server, not by a user id from the brows
     // AgreementRepository.visible_to), so it selects among my agreements and
     // cannot name anybody else's. A parameter that carried a user id would
     // still fail this test, which is the rule that matters.
-    const ALLOWED = ["page", "page_size", "status", "archived"];
+    // `case_id` (2026-11-23) is a slice too: the server ANDs it with the same
+    // `visible_to(requester)` rule (AgreementRepository.page_for_user), so it
+    // narrows MY agreements to one case and cannot reach anybody else's —
+    // backend/tests/test_case_scoped_lists.py proves a co-party's agreement and
+    // someone else's draft on the same case stay out.
+    const ALLOWED = ["page", "page_size", "status", "archived", "case_id"];
     for (const [, name] of params.matchAll(/([A-Za-z_][A-Za-z0-9_]*)\s*=/g)) {
         assert.ok(ALLOWED.includes(name),
             `listAgreements takes ${name}: a list parameter may describe the ` +

@@ -83,6 +83,45 @@ test("a case outside the loaded list is read directly", async () => {
     await ui.unmount();
 });
 
+test("a direct case link still opens when the case-list request fails", async () => {
+    api.__respond("listCases", { data: null, error: { message: "Offline" }, status: 0 });
+    api.__respond("getCase", { data: caseRow("C9", "Direct matter") });
+    const ui = await mountTracking({ case: "C9" });
+    assert.match(ui.text(), /Direct matter/);
+    assert.equal(ui.container.querySelector("[data-case-link-loading]"), null);
+    await ui.unmount();
+});
+
+test("a failed direct case read is retryable, never a permanent opening spinner", async () => {
+    api.__respond("listCases", { data: null, error: { message: "Offline" }, status: 0 });
+    api.__respond("getCase", { data: null, error: { message: "Offline" }, status: 0 });
+    const ui = await mountTracking({ case: "C9" });
+    assert.equal(ui.container.querySelector("[data-case-link-loading]"), null);
+    assert.equal(ui.container.querySelector("[data-case-link-error]")?.getAttribute("data-case-link-error"), "load");
+    assert.ok(ui.container.querySelector("[data-retry-case-link]"), "no retry for the failed direct read");
+    await ui.unmount();
+});
+
+test("an older case-list refresh cannot overwrite a newer notification refresh", async () => {
+    let call = 0, releaseOld;
+    api.__respond("listCases", () => {
+        call += 1;
+        if (call === 1) return { data: { items: [caseRow("C1", "Original")] } };
+        if (call === 2) return new Promise(resolve => { releaseOld = resolve; });
+        return { data: { items: [caseRow("C1", "Newest server title")] } };
+    });
+    const ui = await mountTracking({ case: "C1" });
+    await notify({ type: "case_update", payload: { case_id: "C1" } });
+    await notify({ type: "case_update", payload: { case_id: "C1" } });
+    await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
+    assert.match(ui.text(), /Newest server title/);
+    await act(async () => { releaseOld({ data: { items: [caseRow("C1", "Stale title")] } }); });
+    await act(async () => { await new Promise(r => realSetTimeout(r, 30)); });
+    assert.match(ui.text(), /Newest server title/);
+    assert.doesNotMatch(ui.text(), /Stale title/);
+    await ui.unmount();
+});
+
 test("a case that cannot be opened says so, and shows no other case instead", async () => {
     api.__respond("getCase", { data: null, error: { message: "Case not found" }, status: 404 });
     const ui = await mountTracking({ case: "GONE" });
@@ -513,6 +552,14 @@ test("/tracking with no case opens My matters, not silently the newest case", as
     await ui.unmount();
 });
 
+test("the old /cases alias canonicalizes to My Matters and keeps navigation working", async () => {
+    dom.window.history.replaceState(null, "", "/cases");
+    const ui = await mountTracking({});
+    assert.ok(ui.container.querySelector("[data-my-matters]"));
+    assert.equal(dom.window.location.pathname, "/tracking");
+    await ui.unmount();
+});
+
 test("Open case opens that case, and My matters in the case bar goes back to the list", async () => {
     const ui = await mountTracking({});
     await click(ui.container.querySelector('[data-open-matter="C1"]'));
@@ -523,10 +570,35 @@ test("Open case opens that case, and My matters in the case bar goes back to the
     await ui.unmount();
 });
 
-test("a link naming only a tab still opens a case (old notices without a case id)", async () => {
+test("a link naming only a tab opens My matters, never an unrelated case", async () => {
     const ui = await mountTracking({ tab: "payments" });
-    assert.equal(ui.container.querySelector("[data-my-matters]"), null);
-    assert.equal(ui.container.querySelector('[data-case-tab][aria-current="page"]').textContent, "Payments");
+    assert.ok(ui.container.querySelector("[data-my-matters]"));
+    assert.equal(ui.container.querySelector("[data-case-hero]"), null);
+    await ui.unmount();
+});
+
+test("My matters counts appointment times that require the client", async () => {
+    api.__respond("listAppointments", { data: { items: [
+        { id: "A-WAIT", case_id: "C1", status: "pending", lawyer_name: "Adv Noor",
+            time_suggestion: { options: ["2026-12-01T10:00:00Z"] } },
+    ], page: 1, pages: 1, total: 1 } });
+    const ui = await mountTracking({});
+    assert.match(ui.container.querySelector("[data-matters-summary]").textContent, /2 things are waiting on you/);
+    const row = ui.container.querySelector('[data-matter="C1"]');
+    assert.match(row.textContent, /Choose a consultation time/);
+    await ui.unmount();
+});
+
+test("a case-less appointment action is shown under Other actions and opens exactly", async () => {
+    api.__respond("listAppointments", { data: { items: [
+        { id: "A-FREE", case_id: null, status: "pending", lawyer_name: "Adv Noor",
+            time_suggestion: { options: ["2026-12-01T10:00:00Z"] } },
+    ], page: 1, pages: 1, total: 1 } });
+    const ui = await mountTracking({});
+    assert.ok(ui.container.querySelector("[data-other-actions]"));
+    assert.match(ui.container.querySelector("[data-matters-summary]").textContent, /2 things are waiting on you/);
+    await click(ui.container.querySelector('[data-other-action="A-FREE"] button'));
+    assert.equal(nav().pushed.at(-1), "/appointments?appointment=A-FREE");
     await ui.unmount();
 });
 
@@ -867,5 +939,114 @@ test("payments: the agreed-fee line counts professional fees only, and only for 
     const rate = ui.container.querySelector("[data-agreed-fee]");
     assert.match(rate.textContent, /Agreed rate: PKR 3,000\/hearing/);
     assert.doesNotMatch(rate.textContent, /left/, "a per-hearing rate showed an amount left");
+    await ui.unmount();
+});
+
+/* ── review item 6: documents and agreements count; Vault hand-off ──────── */
+
+test("My matters counts a document sent back on its case", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [
+        { id: "D1", title: "Written statement", review_status: "returned", case_id: "C1" },
+        { id: "D2", title: "Plaint", review_status: "approved", case_id: "C2" },
+    ] } });
+    const ui = await mountTracking({});
+    const c1 = ui.container.querySelector('[data-matter="C1"]');
+    assert.equal(c1.getAttribute("data-waiting"), "1", "the returned document did not count on its case");
+    assert.match(c1.textContent, /Read \u201cWritten statement\u201d|Read "Written statement"/);
+    await ui.unmount();
+});
+
+test("with the client signed in, an agreement waiting for their signature is on the to-do", async () => {
+    api.__respond("bootstrapAuth", true);
+    api.__respond("getMe", { data: { _id: "u1", role: "client", full_name: "Test Client" } });
+    api.__respond("listAgreements", { data: { items: [
+        { _id: "A1", case_id: "C1", status: "pending", title: "Engagement letter", signed_count: 1, total_parties: 2,
+          parties: [{ user_id: "L1", signed: true }, { user_id: "u1", signed: false }] },
+    ] } });
+    nav().params.clear();
+    nav().params.set("case", "C1");
+    const Module7 = (await import("../src/components/client/ModTracking.jsx")).default;
+    const { CaseCtx } = await import("../src/components/shared/CaseContext.jsx");
+    const { AuthProvider } = await import("../src/context/AuthContext.jsx");
+    const container = dom.window.document.createElement("div");
+    dom.window.document.body.appendChild(container);
+    const root = createRoot(container);
+    const ctx = { notifications: [], markNotificationDone: () => {}, markAllNotificationsDone: () => {}, appointmentMilestones: [] };
+    await act(async () => { root.render(h(AuthProvider, null, h(CaseCtx.Provider, { value: ctx }, h(Module7, { isDark: true })))); });
+    await act(async () => { await new Promise(r => realSetTimeout(r, 120)); });
+    const box = container.querySelector("[data-case-todos]");
+    assert.ok(box, "no to-do");
+    const card = box.querySelector('[data-todo="agreements"]');
+    assert.ok(card, "the agreement waiting for the client's signature is missing");
+    assert.match(card.textContent, /Sign .Engagement letter./);
+    await click([...card.querySelectorAll("button")].find(b => /Review & sign/.test(b.textContent)));
+    assert.equal(nav().pushed.at(-1), "/agreements?agreement=A1");
+    await act(async () => root.unmount()); container.remove();
+});
+
+test("the Documents tab hands off to the Vault", async () => {
+    api.__respond("myDocumentsV2", { data: { items: [{ id: "D2", title: "Plaint", review_status: "approved", case_id: "C1", downloadable: true }] } });
+    const ui = await mountTracking({ case: "C1", tab: "documents" });
+    await click(ui.container.querySelector("[data-open-vault]"));
+    assert.equal(nav().pushed.at(-1), "/documents");
+    await ui.unmount();
+});
+
+/* ── review item 5: case pages ask the server for one case (2026-11-23) ──── */
+
+const argsOf = name => api.__calls(name).map(c => c.args[0]);
+
+test("a case page asks the server for that case's fees, hire requests, appointments and agreements only", async () => {
+    api.__respond("bootstrapAuth", true);
+    const ui = await mountTracking({ case: "C1" });
+    assert.ok(argsOf("listPayments").some(a => a?.caseId === "C1"), "fees were not narrowed to the case");
+    assert.ok(argsOf("listEngagements").some(a => a?.caseId === "C1"), "hire requests were not narrowed to the case");
+    assert.ok(argsOf("listAppointments").some(a => a?.case_id === "C1" && a?.needs_action === true), "appointment actions were not narrowed to the case");
+    assert.ok(argsOf("listPayments").every(a => a?.caseId === "C1"), "a case page read every fee");
+    await ui.unmount();
+});
+
+test("My matters and All my payments still read everything", async () => {
+    const ui = await mountTracking({});
+    assert.ok(argsOf("listPayments").some(a => !a?.caseId), "My matters narrowed the fees to one case");
+    assert.ok(argsOf("listEngagements").some(a => !a?.caseId), "My matters narrowed the hire requests to one case");
+    assert.ok(argsOf("myDocumentsV2").some(a => a?.needsAction === true), "My matters downloaded the whole document vault instead of action items");
+    assert.ok(argsOf("listAppointments").some(a => !a?.case_id && a?.needs_action === true), "My matters did not request all appointment actions");
+    api.__reset();
+    api.__respond("bootstrapAuth", true);
+    api.__respond("getMe", { data: { _id: "u1", role: "client" } });
+    api.__respond("listCases", { data: { items: [caseRow("C1", "Newest matter"), caseRow("C2", "Rent dispute")] } });
+    api.__respond("listPayments", { data: [] });
+    await click(ui.container.querySelector("[data-open-all-payments]"));
+    await act(async () => { await new Promise(r => realSetTimeout(r, 40)); });
+    assert.ok(argsOf("listPayments").some(a => !a?.caseId), "All my payments read one case only");
+    await ui.unmount();
+});
+
+test("switching case on the Payments tab reads the new case, and a late answer for the old one is dropped", async () => {
+    let releaseOld;
+    api.__respond("listPayments", (arg) => {
+        if (arg?.caseId === "C1") return new Promise(r => { releaseOld = () => r({ data: [{ id: "OLD", case_id: "C1", amount: 1111, status: "created" }] }); });
+        return { data: [{ id: "NEW", case_id: "C2", amount: 2222, status: "created" }] };
+    });
+    const ui = await mountTracking({ case: "C1", tab: "payments" });
+    await click(ui.container.querySelector("[data-case-switch]"));
+    await click([...ui.container.querySelectorAll("[data-case-option]")].find(b => /Rent dispute/.test(b.textContent)));
+    await act(async () => { await new Promise(r => realSetTimeout(r, 40)); });
+    assert.ok(argsOf("listPayments").some(a => a?.caseId === "C2"), "the new case was not read");
+    // the old case's answer arrives late
+    await act(async () => { releaseOld?.(); await new Promise(r => realSetTimeout(r, 40)); });
+    assert.match(ui.text(), /PKR 2,222/);
+    assert.doesNotMatch(ui.text(), /PKR 1,111/, "the previous case's late answer replaced this case's fees");
+    await ui.unmount();
+});
+
+test("switching case re-reads the hire requests for the new case", async () => {
+    const ui = await mountTracking({ case: "C1" });
+    const before = argsOf("listEngagements").filter(a => a?.caseId === "C2").length;
+    await click(ui.container.querySelector("[data-case-switch]"));
+    await click([...ui.container.querySelectorAll("[data-case-option]")].find(b => /Rent dispute/.test(b.textContent)));
+    await act(async () => { await new Promise(r => realSetTimeout(r, 40)); });
+    assert.ok(argsOf("listEngagements").filter(a => a?.caseId === "C2").length > before, "Case B's hire requests were not read");
     await ui.unmount();
 });

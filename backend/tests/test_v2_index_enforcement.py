@@ -137,7 +137,8 @@ def test_a_missing_review_event_uniqueness_is_rejected():
 
 
 @pytest.mark.parametrize("name", ["v2_queue_pending", "v2_queue_cycles",
-                                  "v2_queue_cycles_any", "v2_owner_documents"])
+                                  "v2_queue_cycles_any", "v2_owner_documents",
+                                  "v2_owner_action_documents"])
 def test_a_missing_query_index_is_rejected(name):
     spec = _spec(name)
     assert spec.kind == QUERY
@@ -442,6 +443,9 @@ async def test_the_test_database_adds_no_v2_index_production_lacks(mongo):
         # the previous code, reported by the preflight, and dropped only in a
         # reviewed maintenance step — never by a test.
         "documents": {"_id_", "case_id_1", "client_id_1", "created_at_-1",
+                      # Declared by the production Vault-folder index builder,
+                      # outside the V2 manifest this test is validating.
+                      "documents_owner_folder_recent",
                       "v2_reviewed_queue", "v2_review_queue",
                       "v2_review_cycles"},
         "document_revisions": {"_id_", "document_id_1_created_at_-1",

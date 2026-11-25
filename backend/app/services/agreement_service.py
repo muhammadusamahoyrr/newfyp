@@ -1815,7 +1815,8 @@ def _list_row(a: dict) -> dict:
 async def list_agreements(user_id: str, page: int = 1,
                           page_size: int = 20,
                           status: str | None = None,
-                          archived: bool = False) -> dict:
+                          archived: bool = False,
+                          case_id: str | None = None) -> dict:
     """One page of the agreements this user may see, newest first.
 
     DRAFTS STAY PRIVATE, including when `status="draft"` is asked for
@@ -1841,7 +1842,7 @@ async def list_agreements(user_id: str, page: int = 1,
         )
 
     result = await agreement_repo.page_for_user(
-        user_id, page, page_size, status, archived)
+        user_id, page, page_size, status, archived, case_id)
     return {
         "items": [_list_row(a) for a in result.items],
         "total": result.total,

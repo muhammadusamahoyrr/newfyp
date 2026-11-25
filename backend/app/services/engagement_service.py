@@ -198,11 +198,16 @@ async def request_engagement(client_id: str, data: dict) -> dict:
     return doc
 
 
-async def list_engagements(user_id: str, role: str, status: str | None = None) -> list[dict]:
+async def list_engagements(user_id: str, role: str, status: str | None = None,
+                           case_id: str | None = None) -> list[dict]:
+    # One case (2026-11-23, review item 5): the client's case page used to
+    # download every record and filter in the browser, so a cap (200 fees,
+    # 50 agreements) could drop a case's own records. Filtered here, inside
+    # the caller's own scope: it can only narrow what they already see.
     if role == "client":
-        items = await engagement_repo.find_for_client(user_id, status)
+        items = await engagement_repo.find_for_client(user_id, status, case_id)
     elif role == "lawyer":
-        items = await engagement_repo.find_for_lawyer(user_id, status)
+        items = await engagement_repo.find_for_lawyer(user_id, status, case_id)
     else:
         raise ForbiddenError("Only clients and lawyers have engagements")
 
