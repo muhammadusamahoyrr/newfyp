@@ -67,10 +67,13 @@ export const DRAFTING_HOME_CSS = `[data-drafting-home] [data-preview-text] ol{li
 [data-drafting-home] .dh-avatar{width:32px;height:32px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:#5B7BE0;color:#fff}
 [data-drafting-home] .dh-crumbs{font-size:13px;color:var(--muted)}
 [data-drafting-home] .dh-crumbs b{color:var(--ink);font-weight:600}
-[data-drafting-home] .dh-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+[data-drafting-home] .dh-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:20px}
+[data-drafting-home] .dh-head>div:first-child{display:contents}
+[data-drafting-home] .dh-head>:last-child{grid-column:2;grid-row:1}
+[data-drafting-home] .dh-head p{grid-column:1/-1}
 [data-drafting-home] .dh-head h1{font-family:"Literata",Georgia,serif;font-weight:600;font-size:clamp(28px,3.4vw,38px);line-height:1.1;margin:0;letter-spacing:-.01em}
 [data-drafting-home] .dh-accent{background:linear-gradient(90deg,var(--brand-text),var(--teal-ink));-webkit-background-clip:text;background-clip:text;color:transparent}
-[data-drafting-home] .dh-head p{margin:8px 0 0;color:var(--muted);max-width:62ch}
+[data-drafting-home] .dh-head p{margin:8px 0 0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-drafting-home] .dh-head p b{color:var(--ink)}
 [data-drafting-home] .dh-btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);font-weight:600;font-size:14px;white-space:nowrap}
 [data-drafting-home] .dh-btn:hover:not(:disabled){border-color:var(--hover-line);background:var(--hover-tint);color:var(--hover-ink)}
@@ -304,25 +307,12 @@ export default function DraftingHome({ onSelect, drafts = [], onOpenDraft, onDel
             <div className="dh-wrap">
                 <div className="dh-topbar">
                     <nav className="dh-crumbs" aria-label="Breadcrumb">Documents <span aria-hidden="true">/</span> <b>Legal drafting</b></nav>
-                    <div className="dh-topbar-right">
-                        <button type="button" className="dh-btn dh-pill" data-theme-toggle onClick={toggle}
-                            aria-label={mode === "dark" ? "Switch to light theme" : "Switch to dark theme"}>
-                            <Icon d={mode === "dark" ? I.sun : I.moon} size={16} />Theme
-                        </button>
-                        <div className="dh-acct" data-account>
-                            <span className="dh-avatar" aria-hidden="true">{initials}</span>
-                            <span style={{ minWidth: 0 }}>
-                                <b>{displayName}</b>
-                                <small>Advocate</small>
-                            </span>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="dh-head">
                     <div>
                         <h1>Document <span className="dh-accent">templates</span></h1>
-                        <p>Starting points for Pakistani practice, each naming the law it is drafted under — review every draft before filing. <b>{TEMPLATES.length}</b> templates across {cats.length} categories.</p>
+                        <p>Pakistani drafts, each citing its law — review before filing. <b>{TEMPLATES.length}</b> templates in {cats.length} categories.</p>
                     </div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                         <button type="button" className="dh-btn" disabled data-upload-template

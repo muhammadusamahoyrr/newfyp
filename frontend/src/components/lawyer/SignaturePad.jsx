@@ -19,6 +19,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 // The lawyer theme (its own palette, light/dark toggle): lawyer/theme.js.
 import { useTheme } from "./theme.js";
+import { Icon, I } from "./icons.jsx";
+
+/* V1, "draw on paper" (2026-11-26): the pad is the agreement's own cream paper
+ * and the ink its dark blue, so what you draw is what lands on the document.
+ * It used to be a dark box with cyan ink that looked nothing like the paper. */
+const INK = "#1A3E8C";             // what lands on the agreement
+const INK_RGB = [26, 62, 140];
 
 /* WHAT THE SERVER WILL ACTUALLY TAKE.
  *
@@ -35,10 +42,48 @@ const MAX_IMAGE_BYTES = Math.floor((MAX_SIGNATURE_CHARS - 64) * 3 / 4);
 const MAX_IMAGE_LABEL = `${Math.floor(MAX_IMAGE_BYTES / 1024)} KB`;
 
 const MODES = [
-    ["draw", "✏️", "Draw"],
-    ["type", "Aa", "Type"],
-    ["upload", "📎", "Upload"],
+    ["draw", "edit", "Draw"],
+    ["type", null, "Type"],
+    ["upload", "upload", "Upload"],
 ];
+
+/* The drawn image, cut down to the ink plus a small margin. Falls back to the
+ * whole canvas when pixels cannot be read (e.g. no 2D context). */
+function trimToInk(canvas, margin = 10) {
+    // Cropped to the ink AND recoloured to the paper's ink: the pad is drawn in
+    // a light colour that reads on the dark theme.
+    try {
+        const ctx = canvas.getContext("2d");
+        const { width: w, height: h } = canvas;
+        const px = ctx.getImageData(0, 0, w, h).data;
+        let top = h, left = w, right = -1, bottom = -1;
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                if (px[(y * w + x) * 4 + 3] > 8) {
+                    if (x < left) left = x;
+                    if (x > right) right = x;
+                    if (y < top) top = y;
+                    if (y > bottom) bottom = y;
+                }
+            }
+        }
+        if (right < 0) return canvas.toDataURL();
+        const x0 = Math.max(0, left - margin), y0 = Math.max(0, top - margin);
+        const cw = Math.min(w, right + margin + 1) - x0, ch = Math.min(h, bottom + margin + 1) - y0;
+        const out = document.createElement("canvas");
+        out.width = cw; out.height = ch;
+        const octx = out.getContext("2d");
+        octx.drawImage(canvas, x0, y0, cw, ch, 0, 0, cw, ch);
+        const img = octx.getImageData(0, 0, cw, ch);
+        for (let i = 0; i < img.data.length; i += 4) {
+            if (img.data[i + 3] > 0) { img.data[i] = INK_RGB[0]; img.data[i + 1] = INK_RGB[1]; img.data[i + 2] = INK_RGB[2]; }
+        }
+        octx.putImageData(img, 0, 0);
+        return out.toDataURL();
+    } catch {
+        return canvas.toDataURL();
+    }
+}
 
 /* The server's vocabulary, not ours. */
 const METHOD = { draw: "canvas", type: "typed", upload: "image_upload" };
@@ -97,20 +142,22 @@ export default function SignaturePad({ onChange, height = 200 }) {
         ctx.beginPath();
         ctx.moveTo(lastPos.current.x, lastPos.current.y);
         ctx.lineTo(p.x, p.y);
-        ctx.strokeStyle = t.primary;
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = t.mode === "dark" ? "#E6F4F1" : INK;
+        ctx.lineWidth = 2.6;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctx.stroke();
         lastPos.current = p;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t.primary]);
+    }, [t.mode]);
 
     const stopDraw = useCallback(() => {
         if (drawing.current && canvasRef.current) {
             // At the end of a stroke, not on every movement: toDataURL
             // serialises the whole bitmap and is far too costly per pixel.
-            setDrawn(canvasRef.current.toDataURL());
+            // Cropped to the ink (2026-11-26), so the signature fills its line
+            // on the agreement instead of shrinking inside an empty canvas.
+            setDrawn(trimToInk(canvasRef.current));
         }
         drawing.current = false;
     }, []);
@@ -158,46 +205,62 @@ export default function SignaturePad({ onChange, height = 200 }) {
     };
 
     const pane = {
-        position: "relative", background: t.inputBg,
-        borderRadius: 12, border: `1px solid ${t.border}`, overflow: "hidden",
+        position: "relative", background: t.inputBg, borderRadius: 14,
+        border: `1px solid ${t.border}`, overflow: "hidden",
     };
+    // The sign-here line, with an "×" at its start, like a paper form.
+    const baseline = (
+        <>
+            <div aria-hidden="true" style={{
+                position: "absolute", left: 24, right: 24, bottom: 44, height: 0,
+                borderTop: `1.5px dashed ${t.textMuted}66`, pointerEvents: "none", zIndex: 0,
+            }} />
+            <span aria-hidden="true" style={{
+                position: "absolute", left: 24, bottom: 48, color: t.textMuted, fontSize: 18,
+                fontWeight: 700, fontFamily: "Georgia, serif", pointerEvents: "none", zIndex: 0,
+            }}>×</span>
+        </>
+    );
+    const hint = (text) => (
+        <span style={{ position: "absolute", left: 24, bottom: 14, fontSize: 12, color: t.textMuted, pointerEvents: "none", zIndex: 2 }}>{text}</span>
+    );
+    const hasSomething = mode === "draw" ? !!drawn : mode === "type" ? !!typed : !!uploaded;
+    const clearBtn = hasSomething && (
+        <button type="button" onClick={clear} style={{
+            position: "absolute", right: 12, top: 12, zIndex: 3,
+            display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 12px",
+            borderRadius: 8, border: `1px solid ${t.border}`, background: `${t.text}14`, color: t.text,
+            fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+        }}>↺ Clear</button>
+    );
 
     return (
         <div>
-            {/* Mode tabs + clear */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                <div style={{
-                    display: "flex", background: t.inputBg,
-                    border: `1px solid ${t.border}`, borderRadius: 10, padding: 3, gap: 2,
-                }}>
-                    {MODES.map(([m, ico, lbl]) => (
-                        <button key={m} type="button"
-                            onClick={() => { setMode(m); setUploadError(null); }}
-                            style={{
-                                display: "flex", alignItems: "center", gap: 5,
-                                padding: "6px 12px", borderRadius: 8, fontSize: 12,
-                                fontWeight: mode === m ? 700 : 500, border: "none",
-                                background: mode === m ? t.primary : "transparent",
-                                color: mode === m ? (t.mode === "dark" ? "#1A2E35" : "#fff") : t.textMuted,
-                                cursor: "pointer", transition: "all 0.2s",
-                            }}>
-                            <span style={{ fontSize: 13 }}>{ico}</span>{lbl}
-                        </button>
-                    ))}
-                </div>
-                <button type="button" onClick={clear} style={{
-                    padding: "7px 13px", borderRadius: 9, fontSize: 12,
-                    border: `1px solid ${t.border}`, background: "transparent",
-                    color: t.textMuted, cursor: "pointer",
-                }}>↺ Clear</button>
+            {/* Three equal tabs, each with its icon. */}
+            <div role="tablist" aria-label="How to sign" style={{
+                display: "flex", gap: 4, padding: 4, marginBottom: 10,
+                background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 13,
+            }}>
+                {MODES.map(([m, ico, lbl]) => (
+                    <button key={m} type="button" role="tab" aria-selected={mode === m}
+                        onClick={() => { setMode(m); setUploadError(null); }}
+                        style={{
+                            flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+                            height: 40, borderRadius: 10, fontSize: 14, fontFamily: "inherit",
+                            fontWeight: 700, border: "none",
+                            background: mode === m ? `${t.primary}29` : "transparent",
+                            color: mode === m ? t.primary : t.textMuted,
+                            boxShadow: mode === m ? `inset 0 0 0 1px ${t.primary}66` : "none",
+                            cursor: "pointer", transition: "background .15s, color .15s",
+                        }}>
+                        {ico ? <Icon d={I[ico]} size={15} /> : <span style={{ fontSize: 13, fontWeight: 800 }}>Aa</span>}{lbl}
+                    </button>
+                ))}
             </div>
 
             {mode === "draw" && (
                 <div style={pane}>
-                    <div style={{
-                        position: "absolute", left: 20, right: 20, bottom: Math.round(height * 0.26),
-                        height: 1, background: `${t.primary}40`, pointerEvents: "none",
-                    }} />
+                    {baseline}
                     <canvas
                         ref={canvasRef} width={760} height={height}
                         onMouseDown={startDraw} onMouseMove={draw}
@@ -209,75 +272,61 @@ export default function SignaturePad({ onChange, height = 200 }) {
                             position: "relative", zIndex: 1,
                         }}
                     />
-                    {!drawn && (
-                        <div style={{
-                            position: "absolute", inset: 0, zIndex: 2, gap: 6,
-                            display: "flex", flexDirection: "column",
-                            alignItems: "center", justifyContent: "center",
-                            pointerEvents: "none",
-                        }}>
-                            <div style={{ fontSize: 24, opacity: 0.25 }}>✍️</div>
-                            <div style={{ fontSize: 12.5, color: t.textFaint }}>Draw your signature here</div>
-                            <div style={{ fontSize: 11, color: t.textFaint, opacity: 0.7 }}>Mouse or touch</div>
-                        </div>
-                    )}
+                    {clearBtn}
+                    {hint(drawn ? "Looks good — click “Use this signature”" : "Sign above the line with your mouse or finger")}
                 </div>
             )}
 
             {mode === "type" && (
                 <div style={pane}>
-                    <div style={{
-                        position: "absolute", left: 20, right: 20, bottom: Math.round(height * 0.26),
-                        height: 1, background: `${t.primary}40`, pointerEvents: "none",
-                    }} />
+                    {baseline}
                     <input
                         value={typed}
                         onChange={e => setTyped(e.target.value)}
                         placeholder="Type your name…"
+                        aria-label="Type your name"
                         style={{
+                            position: "relative", zIndex: 1,
                             display: "block", width: "100%", height,
                             background: "transparent", border: "none", outline: "none",
-                            color: t.primary, fontSize: Math.round(height * 0.2),
+                            color: t.mode === "dark" ? "#E6F4F1" : INK, fontSize: Math.round(height * 0.22),
                             textAlign: "center", boxSizing: "border-box",
-                            fontFamily: "'Brush Script MT','Segoe Script',cursive",
-                            padding: "0 20px",
+                            fontFamily: "'Brush Script MT','Segoe Script',cursive", fontStyle: "italic",
+                            padding: "0 24px 26px",
                         }}
                     />
+                    {clearBtn}
+                    {hint(typed ? "Looks good — click “Use this signature”" : "Type your full name")}
                 </div>
             )}
 
             {mode === "upload" && (
                 <div style={{ ...pane, minHeight: height, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {uploaded ? (
-                        <div style={{ width: "100%", padding: "14px 20px", textAlign: "center" }}>
-                            <img src={uploaded} alt="Your signature" style={{
-                                maxHeight: height - 60, maxWidth: "100%", objectFit: "contain",
-                                filter: t.mode === "dark" ? "invert(1) brightness(1.5)" : "none",
-                            }} />
-                            <div style={{ marginTop: 8, fontSize: 11, color: t.success }}>
-                                ✓ Signature image ready
-                            </div>
+                        <div style={{ width: "100%", padding: "14px 20px 34px", textAlign: "center" }}>
+                            <img src={uploaded} alt="Your signature" style={{ maxHeight: height - 70, maxWidth: "100%", objectFit: "contain",
+                                filter: t.mode === "dark" ? "invert(1) brightness(1.5)" : "none" }} />
+                            {clearBtn}
+                            {hint("✓ Signature image ready")}
                         </div>
                     ) : (
                         <label style={{
                             display: "flex", flexDirection: "column", alignItems: "center",
                             justifyContent: "center", gap: 10, width: "100%",
                             minHeight: height, cursor: "pointer", padding: "14px 20px",
-                            boxSizing: "border-box",
+                            boxSizing: "border-box", color: t.text,
                         }}>
                             <input type="file" accept="image/*" style={{ display: "none" }} onChange={onFile} />
                             <div style={{
-                                width: 48, height: 48, borderRadius: 14,
-                                background: t.primaryGlow, border: `1.5px dashed ${t.primary}`,
-                                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 21,
-                            }}>📎</div>
+                                width: 48, height: 48, borderRadius: 14, color: t.primary,
+                                background: `${t.primary}1A`, border: `1.5px dashed ${t.primary}`,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                            }}><Icon d={I.upload} size={20} /></div>
                             <div style={{ textAlign: "center" }}>
-                                <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text }}>
-                                    Upload a signature image
-                                </div>
+                                <div style={{ fontSize: 14, fontWeight: 700 }}>Upload a signature image</div>
                                 {/* The REAL limit. The old drop zone said 2MB, which the
                                     server rejects with a 422 nobody could interpret. */}
-                                <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 3 }}>
+                                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>
                                     PNG or JPG · up to {MAX_IMAGE_LABEL}
                                 </div>
                             </div>

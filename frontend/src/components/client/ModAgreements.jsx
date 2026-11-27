@@ -2450,6 +2450,12 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
     const [signSig, setSignSig] = useState({ method: "canvas", data: "" });
     const [signConsent, setSignConsent] = useState(false);
     const [signBusy, setSignBusy] = useState(false);
+    // The lawyer-style window (2026-11-27): "Sign here" on the paper opens the
+    // pad, the chosen signature is shown on the paper, Finish signs.
+    const [signOpen, setSignOpen] = useState(false);
+    const [adopted, setAdopted] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [doneInfo, setDoneInfo] = useState(null);
     // Declining ends the agreement for everyone and cannot be undone, so it is
     // deliberately two steps: reveal, then confirm. A single button beside
     // "Sign" is one mis-click away from cancelling a contract.
@@ -2493,6 +2499,8 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
         setViewing(row);
         setSignSig({ method: "canvas", data: "" });
         setSignConsent(false);
+        setSignOpen(false); setAdopted(null); setMenuOpen(false); setDoneInfo(null);
+        setDeclineOpen(false); setDeclineReason("");
         setDoc({ loading: true, body: null, error: null });
 
         // Only the latest open counts -- a late reply for a previously opened
@@ -2610,6 +2618,12 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
     );
     const needMine = agmts.filter(a => a.needsMySig).length;
 
+    const closeView = () => {
+        openSeq.current += 1; setViewing(null); setDoc(null);
+        setSignOpen(false); setAdopted(null); setMenuOpen(false); setDoneInfo(null);
+        setDeclineOpen(false); setDeclineReason(""); setSignConsent(false);
+    };
+
     const doSign = async () => {
         if (!signSig.data) {
             toast.show("⚠️ Add your signature first — draw, type or upload", "warn");
@@ -2624,10 +2638,11 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
             viewing.id, signSig.method, signSig.data, true);
         setSignBusy(false);
         if (error) { toast.show("❌ " + (error.message || "Failed to sign"), "danger"); return; }
-        toast.show(data?.status === "executed" ? "🎉 Agreement fully executed!" : "✅ Signed — awaiting the other parties", "success", 4000);
-        openSeq.current += 1; setViewing(null); setDoc(null);
-        setSignSig({ method: "canvas", data: "" });
-        setSignConsent(false);
+        // The window stays open and says so (like the lawyer side): the
+        // header behind it takes the server's answer, not the old Pending.
+        setDoneInfo({ executed: data?.status === "executed" });
+        if (data && Array.isArray(data.parties)) setViewing(mapAgreement(data, user?._id));
+        if (data && "eto_classification" in data) setDoc(d => (d ? { ...d, eto: data.eto_classification } : d));
         reload();
     };
 
@@ -2637,9 +2652,7 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
         setDeclineBusy(false);
         if (error) { toast.show("❌ " + (error.message || "Failed to decline"), "danger"); return; }
         toast.show("Agreement declined — the other party has been notified", "info", 4000);
-        openSeq.current += 1; setViewing(null); setDoc(null);
-        setDeclineOpen(false);
-        setDeclineReason("");
+        closeView();
         reload();
     };
     return (
@@ -2834,265 +2847,322 @@ const PageAllAgreements = ({ onNavigate, initialFilter = "All", focusAgreementId
                 )}
             </div>
 
-            {/* View / Sign modal */}
-            {viewing && (
-                <div onClick={() => setViewing(null)} style={{
-                    position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.65)",
-                    backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
-                }}>
-                    <div onClick={e => e.stopPropagation()} style={{
-                        background: t.card, borderRadius: 20, border: `1.5px solid ${t.border}`,
-                        width: "100%", maxWidth: 640, maxHeight: "88vh", display: "flex", flexDirection: "column",
-                        boxShadow: "0 24px 64px rgba(0,0,0,0.4)", overflow: "hidden",
+            {/* View / Sign window — the same layout as the lawyer side
+                (2026-11-27): one top bar, the agreement as a paper, "Sign
+                here" on the paper, a signature popup, Finish in the top bar. */}
+            {viewing && (() => {
+                const myId = user?._id;
+                const names = list => list.map(p => p.full_name || p.email || "Invited signer").join(", ");
+                const others = (viewing.parties || []).filter(p => p.user_id !== myId);
+                const waitingFor = others.filter(p => !p.signed);
+                const statusLine = viewing.rawStatus === "executed" ? "Signed by everyone"
+                    : viewing.rawStatus === "cancelled" ? "Declined — this agreement has ended"
+                    : viewing.needsMySig ? `From ${names(others) || "the other party"} — waiting for your signature`
+                    : waitingFor.length ? `You signed — waiting for ${names(waitingFor)}` : "Waiting for the other signatures";
+                // GATED ON THE BODY: no signing text nobody saw.
+                const signing = !!(viewing.needsMySig && doc && !doc.loading && !doc.error);
+                const reading = signing && !doneInfo;
+                const signedOn = iso => iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+                const chipBtn = { height: 40, padding: "0 16px", borderRadius: 10, border: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, whiteSpace: "nowrap" };
+                const mint = { ...chipBtn, background: "linear-gradient(135deg,#3EE0A1,#2EC4D6)", color: "#04212A" };
+                const neutral = { ...chipBtn, background: `${t.text}1A`, color: t.text, border: `1px solid ${t.text}24` };
+                const overlay = { position: "fixed", inset: 0, zIndex: 10001, background: "rgba(5,15,18,.55)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "56px 20px 20px", overflowY: "auto" };
+                const dialog = { width: "min(740px, 100%)", borderRadius: 20, background: t.surface, border: `1px solid ${t.border}`, padding: "22px 24px", boxShadow: "0 30px 60px -20px rgba(0,0,0,.85)" };
+                // The pad draws in the theme colour; on the paper it reads as dark ink.
+                const sigMark = sig => sig?.method === "typed"
+                    ? <span style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive", fontStyle: "italic", fontSize: 30, color: "#1A3E8C" }}>{sig.data}</span>
+                    : <img src={sig?.data} alt="Your signature" style={{ height: 50, maxWidth: 280, objectFit: "contain", objectPosition: "left bottom",
+                        filter: sig?.method === "canvas" ? "brightness(0.3) saturate(1.6)" : "none" }} />;
+
+                return (
+                <div onClick={closeView} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "stretch" }}>
+                    <div data-agreement-window onClick={e => { e.stopPropagation(); if (menuOpen) setMenuOpen(false); }} style={{
+                        background: t.card, width: "100%", height: "100%", display: "flex", flexDirection: "column", overflowY: "auto", position: "relative",
                     }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 22px", borderBottom: `1px solid ${t.border}` }}>
-                            <LIcon name={viewing.isEngagementLetter ? "scale" : "fileText"} size={22} stroke={2} style={{ color: t.primary }} />
+                        {/* ONE TOP BAR: title and where it stands, the actions right. */}
+                        <div data-agreement-topbar style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", alignItems: "center", gap: 12, padding: "12px 22px", borderBottom: `1px solid ${t.border}`, background: t.surface }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 15, fontWeight: 800, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{viewing.name}</div>
-                                <div style={{ fontSize: 12.5, color: t.textMuted }}>{doc?.eto || "Awaiting first signature"}</div>
+                                <div style={{ fontSize: 16, fontWeight: 700, color: t.text, fontFamily: "Literata, Georgia, serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{viewing.name}</div>
+                                <div data-agreement-subtitle style={{ fontSize: 12.5, color: t.textMuted }}>
+                                    {[statusLine, doc?.eto ? `Signing method: ${doc.eto}` : null].filter(Boolean).join(" · ")}
+                                </div>
                             </div>
-                            <StatusBadge status={viewing.status} />
-                            <button type="button" aria-label="Close" onClick={() => setViewing(null)} style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 10, width: 34, height: 34, cursor: "pointer", color: t.textMuted, display: "grid", placeItems: "center" }}><LIcon name="x" size={16} stroke={2.2} /></button>
+                            <div data-topbar-actions style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                {reading ? (<>
+                                    <button type="button" data-finish disabled={!adopted || signBusy} onClick={doSign}
+                                        title={adopted ? "Sign the agreement" : "Add your signature on the agreement first"}
+                                        style={{ ...mint, height: 32, minWidth: 84, padding: "0 16px", fontSize: 13, opacity: !adopted || signBusy ? 0.5 : 1, cursor: !adopted || signBusy ? "not-allowed" : "pointer",
+                                            boxShadow: adopted ? "0 0 0 3px rgba(94,230,176,.25)" : "none" }}>{signBusy ? "Signing…" : "Finish"}</button>
+                                    <div style={{ position: "relative" }}>
+                                        <button type="button" data-more-actions aria-label="More actions" aria-expanded={menuOpen}
+                                            onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }} style={{ ...neutral, height: 32, width: 32, padding: 0, fontSize: 16, lineHeight: 1 }}>⋯</button>
+                                        {menuOpen && (
+                                            <div role="menu" onClick={e => e.stopPropagation()} style={{ position: "absolute", right: 0, top: 38, zIndex: 4, width: 230, padding: 6, borderRadius: 12,
+                                                background: t.surface, border: `1px solid ${t.border}`, boxShadow: "0 20px 40px -16px rgba(0,0,0,.8)" }}>
+                                                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setDeclineOpen(true); }}
+                                                    style={{ width: "100%", height: 40, padding: "0 12px", borderRadius: 8, border: 0, background: `${t.danger}14`, textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: t.danger }}>
+                                                    Decline to sign…
+                                                </button>
+                                                <button type="button" role="menuitem" onClick={closeView}
+                                                    style={{ width: "100%", height: 40, marginTop: 4, padding: "0 12px", borderRadius: 8, border: 0, background: `${t.text}0F`, textAlign: "left", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: t.text }}>
+                                                    Finish later
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>) : (
+                                    <StatusBadge status={viewing.status} />
+                                )}
+                                <span aria-hidden="true" style={{ width: 1, height: 20, background: t.border, margin: "0 2px" }} />
+                                <button type="button" aria-label="Close" onClick={closeView} style={{ background: `${t.text}12`, border: `1px solid ${t.border}`, borderRadius: 7, width: 26, height: 26, padding: 0, cursor: "pointer", color: t.textMuted, display: "grid", placeItems: "center" }}><LIcon name="x" size={13} stroke={2.2} /></button>
+                            </div>
                         </div>
 
-                        <div style={{ flex: 1, overflowY: "auto", padding: "18px 22px" }}>
-                            {viewing.declined && (
-                                <div role="note" data-agreement-declined style={{
-                                    padding: "12px 14px", borderRadius: 12, marginBottom: 16,
-                                    background: `${t.danger || "#FF6B7A"}14`, border: `1px solid ${t.danger || "#FF6B7A"}45`,
-                                }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>
-                                        {viewing.declined.by_user_id && viewing.declined.by_user_id === user?._id
-                                            ? "You declined this agreement"
-                                            : `Declined by ${viewing.declined.by_name || "a party"}`}
-                                        {viewing.declined.at ? ` on ${new Date(viewing.declined.at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : ""}
-                                    </div>
-                                    <div data-decline-reason style={{ fontSize: 12.5, color: t.textMuted, marginTop: 4, whiteSpace: "pre-wrap" }}>
-                                        {viewing.declined.reason ? `Reason: ${viewing.declined.reason}` : "No reason was given."}
-                                    </div>
-                                </div>
-                            )}
-                            {/* Parties */}
-                            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-                                {/* KEYED BY WHATEVER IDENTIFIES THE PARTY. An
-                                    external signer has no user_id, so keying on
-                                    it alone gave every invited signer the key
-                                    `undefined` — React then reuses one row for
-                                    all of them and their signed states swap. */}
-                                {viewing.parties.map((p, i) => (
-                                    <div key={p.user_id || p.party_id || p.email || i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 10, background: p.signed ? `${t.success}12` : t.inputBg, border: `1px solid ${p.signed ? t.success + "40" : t.border}` }}>
-                                        <LIcon name={p.signed ? "checkCircle" : "clock"} size={15} stroke={2} style={{ color: p.signed ? t.success : t.warn }} />
-                                        <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>
-                                            {p.full_name || p.email || "Invited signer"}
-                                        </span>
-                                        {p.external && (
-                                            /* Said on the party itself, because this
-                                               is where someone decides how much to
-                                               trust the signature. We can show a link
-                                               went to an address; we did not check who
-                                               opened it. */
-                                            <span title="Invited by email — identity not verified by us" style={{
-                                                fontSize: 11, fontWeight: 700, color: t.warn,
-                                                background: t.warn + "1F", border: `1px solid ${t.warn}40`,
-                                                borderRadius: 6, padding: "2px 7px",
-                                            }}>EMAIL{p.invitation_status === "revoked" ? " · REVOKED" : p.invitation_status === "expired" ? " · EXPIRED" : ""}</span>
-                                        )}
-                                        <span style={{ fontSize: 12, color: p.signed ? t.success : t.textMuted }}>
-                                            {p.signed ? `signed ${p.signed_at ? new Date(p.signed_at).toLocaleDateString() : ""}` : "pending"}
-                                        </span>
-                                        {/* ONLY for an invited signer who has not
-                                            signed. A registered party never had a
-                                            link, and reissuing to someone who has
-                                            signed would invite a second signature. */}
-                                        {p.external && !p.signed && viewing.rawStatus === "pending"
-                                            && viewing.createdBy === user?._id && (
-                                            <button
-                                                disabled={reissuing === p.party_id}
-                                                onClick={() => doReissue(p)}
-                                                title="Send this person a new one-time link. The old link stops working."
-                                                style={{
-                                                    background: "none", border: `1px solid ${t.primary}55`,
-                                                    borderRadius: 999, padding: "4px 12px", fontSize: 12,
-                                                    color: t.primary, cursor: "pointer", fontWeight: 700, fontFamily: "inherit",
-                                                }}>
-                                                {reissuing === p.party_id ? "Sending\u2026" : "Resend link"}
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Shown ONCE, right where the button was pressed. */}
-                            {reissued && (
-                                <div style={{
-                                    padding: "12px 14px", borderRadius: 12, marginBottom: 14,
-                                    background: t.primaryGlow2, border: `1.5px solid ${t.primary}55`,
-                                }}>
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: t.text, marginBottom: 4 }}>
-                                        New link for {reissued.email}
-                                    </div>
-                                    <div style={{
-                                        fontSize: 12.5, marginBottom: 8, lineHeight: 1.6,
-                                        color: reissued.emailed ? t.success : t.warn,
+                        <div data-agreement-doc style={{ flex: "1 0 auto", padding: "24px", background: "rgba(0,0,0,.16)" }}>
+                            <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+                                {viewing.declined && (
+                                    <div role="note" data-agreement-declined style={{
+                                        padding: "12px 14px", borderRadius: 12, marginBottom: 14,
+                                        background: `${t.danger || "#FF6B7A"}14`, border: `1px solid ${t.danger || "#FF6B7A"}45`,
                                     }}>
-                                        {reissued.emailed
-                                            ? "Emailed again. The previous link no longer works."
-                                            : `Not emailed \u2014 ${deliveryReason(reissued.reason)}. Send this link yourself. The previous link no longer works.`}
-                                    </div>
-                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                        <input readOnly value={reissued.url} onFocus={e => e.target.select()} style={{
-                                            flex: 1, minWidth: 0, padding: "7px 10px", borderRadius: 8,
-                                            background: t.card, border: `1px solid ${t.border}`,
-                                            color: t.textMuted, fontSize: 12, fontFamily: "monospace",
-                                        }} />
-                                        <Btn onClick={() => {
-                                            navigator.clipboard?.writeText(reissued.url)
-                                                .then(() => toast.show("\ud83d\udccb Link copied", "success"))
-                                                .catch(() => toast.show("\u26a0\ufe0f Copy failed \u2014 select the text", "warn"));
-                                        }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700 }}>Copy</Btn>
-                                    </div>
-                                    <div style={{ fontSize: 12, color: t.textMuted, marginTop: 7 }}>
-                                        Shown once \u2014 only its hash is stored, so it cannot be displayed again.
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* FROM THE FETCHED DOCUMENT, not the list row: the
-                                list carries no expiry, and reading one off it
-                                would show "no expiry" for everything. Only
-                                shown while it still matters — an executed or
-                                declined agreement cannot expire. */}
-                            {viewing.rawStatus === "pending" && doc?.expiresAt && (
-                                <div style={{
-                                    display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
-                                    padding: "9px 13px", borderRadius: 10,
-                                    background: t.warn + "12", border: `1px solid ${t.warn}35`,
-                                    fontSize: 11.5, color: t.textMuted,
-                                }}>
-                                    <span>⏰</span>
-                                    <span>
-                                        Signatures can be added until{" "}
-                                        <strong style={{ color: t.text }}>
-                                            {new Date(doc.expiresAt).toLocaleDateString()}
-                                        </strong>. After that a new agreement has to be sent.
-                                    </span>
-                                </div>
-                            )}
-                            {/* Body */}
-                            {/* THE DOCUMENT, fetched by id. "No content." is
-                                only ever a body the server really returned
-                                empty -- never a stand-in for a field the list
-                                did not carry. */}
-                            {doc?.loading ? (
-                                <div style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "22px 20px", fontSize: 13, color: t.textMuted, textAlign: "center" }}>
-                                    Loading the agreement…
-                                </div>
-                            ) : doc?.error ? (
-                                <div style={{ background: `${t.danger}12`, border: `1px solid ${t.danger}40`, borderRadius: 12, padding: "18px 20px", fontSize: 13, lineHeight: 1.7, color: t.danger }}>
-                                    {doc.error}
-                                    <div style={{ color: t.textMuted, marginTop: 6, fontSize: 12 }}>
-                                        Nothing can be signed until the wording is on screen.
-                                    </div>
-                                </div>
-                            ) : (
-                                <div data-keep-font=""><AgreementBody body={doc?.body} format={doc?.format}
-                                    style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "18px 20px", fontSize: 13, lineHeight: 1.85, color: t.text, fontFamily: "Georgia,serif" }} /></div>
-                            )}
-
-                            {/* Only once EXECUTED. Before both parties have
-                                signed there is no document to download, and
-                                the server refuses one -- offering the button
-                                early would promise a file that does not
-                                exist. */}
-                            {viewing.rawStatus === "executed" && doc && !doc.loading && !doc.error && (
-                                <div style={{ marginTop: 16 }}>
-                                    <button type="button" disabled={downloading} onClick={doDownload}
-                                        style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "9px 15px", cursor: downloading ? "not-allowed" : "pointer", fontSize: 12.5, color: t.text, fontWeight: 600, fontFamily: "inherit" }}>
-                                        {downloading ? "Preparing…" : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><LIcon name="download" size={15} stroke={2} />Download signed copy</span>}
-                                    </button>
-                                    <div style={{ fontSize: 12, color: t.textFaint, marginTop: 7, lineHeight: 1.5 }}>
-                                        Includes the signature record: who signed, how, when the
-                                        server recorded it, and the digest of the signed text.
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* GATED ON THE BODY: no signing text nobody saw. */}
-                        {viewing.needsMySig && doc && !doc.loading && !doc.error && (
-                            <div style={{ padding: "14px 22px", borderTop: `1px solid ${t.border}`, background: t.surface }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 8 }}>
-                                    Sign — draw, type or upload
-                                </div>
-                                <div data-keep-font=""><SignaturePad height={150} onChange={setSignSig} /></div>
-                                <label style={{ display: "flex", gap: 9, alignItems: "flex-start", marginTop: 10, fontSize: 12, color: t.textMuted, lineHeight: 1.5, cursor: "pointer" }}>
-                                    <input type="checkbox" checked={signConsent}
-                                        onChange={e => setSignConsent(e.target.checked)} />
-                                    <span>I have read this document and intend the signature above to be my signature on it.</span>
-                                </label>
-                                <Btn primary disabled={signBusy || !signConsent} onClick={doSign}
-                                    style={{ padding: "11px 22px", marginTop: 10, width: "100%" }}>
-                                    {signBusy ? "Signing…" : <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><LIcon name="squarePen" size={16} stroke={2} />Sign Agreement</span>}
-                                </Btn>
-                                {/* WHAT IS RECORDED, not what it amounts to in law.
-                                    This said the signature was "classified under the
-                                    Electronic Transactions Ordinance 2002" -- a legal
-                                    conclusion no lawyer has reviewed, and the same
-                                    class of claim that was stripped from the rest of
-                                    this module. Phase 4.1 owns that question. */}
-                                <div style={{ fontSize: 10.5, color: t.textMuted, marginTop: 8, lineHeight: 1.5 }}>
-                                    We record your account, the time, your IP address where it
-                                    can be determined, and a digest of the text you signed.
-                                    {/* KEPT ON ONE LINE. The claim guard allowlists this exact
-                                        sentence and scans line by line, so wrapping it splits
-                                        "Signature" from the rest and the remainder reads as an
-                                        unqualified AES claim. */}
-                                    {" "}Signature encrypted at rest with AES-256-GCM.
-                                </div>
-
-                                {!declineOpen ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setDeclineOpen(true)}
-                                        style={{ marginTop: 12, background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12, color: t.textMuted, textDecoration: "underline" }}
-                                    >
-                                        I do not want to sign this
-                                    </button>
-                                ) : (
-                                    <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${t.border}` }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, color: t.danger, textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 8 }}>
-                                            Decline — this ends the agreement and cannot be undone
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>
+                                            {viewing.declined.by_user_id && viewing.declined.by_user_id === user?._id
+                                                ? "You declined this agreement"
+                                                : `Declined by ${viewing.declined.by_name || "a party"}`}
+                                            {viewing.declined.at ? ` on ${new Date(viewing.declined.at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}` : ""}
                                         </div>
-                                        <Input
-                                            placeholder="Reason (optional — the other party will see this)"
-                                            value={declineReason}
-                                            maxLength={2000}
-                                            onChange={e => setDeclineReason(e.target.value)}
-                                            style={{ width: "100%" }}
-                                        />
-                                        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-                                            <Btn
-                                                disabled={declineBusy}
-                                                onClick={doDecline}
-                                                style={{ padding: "10px 18px", background: t.danger, color: "#fff", borderColor: t.danger }}
-                                            >
-                                                {declineBusy ? "Declining…" : "Confirm decline"}
-                                            </Btn>
-                                            <Btn
-                                                disabled={declineBusy}
-                                                onClick={() => { setDeclineOpen(false); setDeclineReason(""); }}
-                                                style={{ padding: "10px 18px" }}
-                                            >
-                                                Keep reviewing
-                                            </Btn>
+                                        <div data-decline-reason style={{ fontSize: 12.5, color: t.textMuted, marginTop: 4, whiteSpace: "pre-wrap" }}>
+                                            {viewing.declined.reason ? `Reason: ${viewing.declined.reason}` : "No reason was given."}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* FROM THE FETCHED DOCUMENT, not the list row; only
+                                    while it still matters. */}
+                                {viewing.rawStatus === "pending" && doc?.expiresAt && (
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, padding: "9px 13px", borderRadius: 10,
+                                        background: t.warn + "12", border: `1px solid ${t.warn}35`, fontSize: 12.5, color: t.textMuted }}>
+                                        <LIcon name="clock" size={15} stroke={2} style={{ color: t.warn }} />
+                                        <span>
+                                            Signatures can be added until{" "}
+                                            <strong style={{ color: t.text }}>{signedOn(doc.expiresAt)}</strong>. After that a new agreement has to be sent.
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Resend: ONLY for an invited signer who has not signed,
+                                    and only by the agreement's creator. */}
+                                {viewing.rawStatus === "pending" && viewing.createdBy === user?._id && viewing.parties.some(p => p.external && !p.signed) && (
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                                        {viewing.parties.filter(p => p.external && !p.signed).map((p, i) => (
+                                            <button key={p.party_id || p.email || i} type="button" disabled={reissuing === p.party_id} onClick={() => doReissue(p)}
+                                                title="Send this person a new one-time link. The old link stops working."
+                                                style={{ ...neutral, height: 34, fontSize: 13 }}>
+                                                <LIcon name="mail" size={14} stroke={2} />
+                                                {reissuing === p.party_id ? "Sending…" : `Resend link to ${p.email || p.full_name || "invited signer"}`}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                {/* Shown ONCE, right where the button was pressed. */}
+                                {reissued && (
+                                    <div style={{ padding: "12px 14px", borderRadius: 12, marginBottom: 14, background: t.primaryGlow2, border: `1.5px solid ${t.primary}55` }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: t.text, marginBottom: 4 }}>New link for {reissued.email}</div>
+                                        <div style={{ fontSize: 12.5, marginBottom: 8, lineHeight: 1.6, color: reissued.emailed ? t.success : t.warn }}>
+                                            {reissued.emailed
+                                                ? "Emailed again. The previous link no longer works."
+                                                : `Not emailed — ${deliveryReason(reissued.reason)}. Send this link yourself. The previous link no longer works.`}
+                                        </div>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                            <input readOnly value={reissued.url} onFocus={e => e.target.select()} style={{
+                                                flex: 1, minWidth: 0, padding: "7px 10px", borderRadius: 8,
+                                                background: t.card, border: `1px solid ${t.border}`, color: t.textMuted, fontSize: 12, fontFamily: "monospace",
+                                            }} />
+                                            <Btn onClick={() => {
+                                                navigator.clipboard?.writeText(reissued.url)
+                                                    .then(() => toast.show("📋 Link copied", "success"))
+                                                    .catch(() => toast.show("⚠️ Copy failed — select the text", "warn"));
+                                            }} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700 }}>Copy</Btn>
+                                        </div>
+                                        <div style={{ fontSize: 12, color: t.textMuted, marginTop: 7 }}>
+                                            Shown once — only its hash is stored, so it cannot be displayed again.
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* THE DOCUMENT, fetched by id. "No content." is only
+                                    ever a body the server really returned empty. */}
+                                {doc?.loading ? (
+                                    <div style={{ background: t.inputBg, border: `1px solid ${t.border}`, borderRadius: 12, padding: "22px 20px", fontSize: 13, color: t.textMuted, textAlign: "center" }}>
+                                        Loading the agreement…
+                                    </div>
+                                ) : doc?.error ? (
+                                    <div style={{ background: `${t.danger}12`, border: `1px solid ${t.danger}40`, borderRadius: 12, padding: "18px 20px", fontSize: 13, lineHeight: 1.7, color: t.danger }}>
+                                        {doc.error}
+                                        <div style={{ color: t.textMuted, marginTop: 6, fontSize: 12 }}>
+                                            Nothing can be signed until the wording is on screen.
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <article data-agreement-paper data-keep-font="" style={{ padding: "56px 72px", borderRadius: 4,
+                                        background: "#FBFAF6", color: "#1E1C21", fontFamily: "Literata, Georgia, serif", boxShadow: "0 1px 3px rgba(0,0,0,.4), 0 24px 50px -24px rgba(0,0,0,.7)" }}>
+                                        <div style={{ textAlign: "center", fontFamily: "'Hanken Grotesk', system-ui, sans-serif", fontSize: 11.5, fontWeight: 700, letterSpacing: ".18em", color: "#7F7B85" }}>
+                                            {viewing.isEngagementLetter ? "ENGAGEMENT LETTER" : "AGREEMENT"}
+                                        </div>
+                                        <h2 style={{ margin: "8px 0 18px", textAlign: "center", fontSize: 22, fontWeight: 600, lineHeight: 1.3, color: "#1E1C21" }}>{viewing.name}</h2>
+                                        {viewing.parties.length > 0 && (
+                                            <p style={{ margin: "0 0 16px", fontSize: 14.5, color: "#5A5660" }}>
+                                                Between {viewing.parties.map((p, i) => (
+                                                    <span key={p.user_id || p.party_id || p.email || i}>{i > 0 && (i === viewing.parties.length - 1 ? " and " : ", ")}<b style={{ color: "#1E1C21" }}>{p.full_name || p.email || "Invited signer"}</b></span>
+                                                ))}.
+                                            </p>
+                                        )}
+                                        <AgreementBody body={doc?.body} format={doc?.format}
+                                            style={{ background: "transparent", border: 0, padding: 0, fontSize: 17, lineHeight: 1.85, color: "#1E1C21", fontFamily: "Literata, Georgia, serif" }} />
+                                        {/* The signature lines. KEYED BY WHATEVER IDENTIFIES THE
+                                            PARTY: an external signer has no user_id. */}
+                                        <div data-signature-lines style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(3, Math.max(1, viewing.parties.length))}, minmax(0, 1fr))`, gap: 28, marginTop: 30 }}>
+                                            {viewing.parties.map((p, i) => {
+                                                const mine = !!myId && p.user_id === myId;
+                                                return (
+                                                    <div key={p.user_id || p.party_id || p.email || i} data-party-line={p.signed ? "signed" : mine ? "you" : "waiting"}
+                                                        style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "'Hanken Grotesk', system-ui, sans-serif" }}>
+                                                        <div style={{ height: 50, display: "flex", alignItems: "flex-end" }}>
+                                                            {p.signed ? (
+                                                                <span style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive", fontStyle: "italic", fontSize: 26, color: "#1A3E8C" }}>{p.full_name || "Signed"}</span>
+                                                            ) : mine && reading && adopted ? (
+                                                                <button type="button" data-adopted-signature onClick={() => setSignOpen(true)} title="Change your signature"
+                                                                    style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}>{sigMark(adopted)}</button>
+                                                            ) : mine && reading ? (
+                                                                <button type="button" data-sign-here onClick={() => setSignOpen(true)}
+                                                                    style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 18px", borderRadius: 6,
+                                                                        background: "#FFF3B8", border: "2px solid #E0B400", color: "#3A2A00", fontSize: 14, fontWeight: 700, fontFamily: "inherit",
+                                                                        cursor: "pointer", boxShadow: "0 6px 14px -6px rgba(180,130,0,.6)" }}>
+                                                                    <LIcon name="squarePen" size={15} stroke={2} /> Sign here<span aria-hidden="true" style={{ position: "absolute", top: -10, right: -7, color: "#D92D20", fontSize: 18 }}>*</span>
+                                                                </button>
+                                                            ) : null}
+                                                        </div>
+                                                        <div style={{ borderTop: "1px solid #C9C5CE", paddingTop: 6, fontSize: 13, color: "#1E1C21" }}>
+                                                            <b>{p.full_name || p.email || "Invited signer"}</b>{mine ? " (you)" : ""}
+                                                            {p.external && (
+                                                                /* Said on the party itself: this is where someone
+                                                                   decides how much to trust the signature. */
+                                                                <span title="Invited by email — identity not verified by us" style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: "#92650B", background: "#F6E7C1", borderRadius: 5, padding: "1px 5px" }}>
+                                                                    EMAIL{p.invitation_status === "revoked" ? " · REVOKED" : p.invitation_status === "expired" ? " · EXPIRED" : ""}</span>
+                                                            )}
+                                                        </div>
+                                                        <span style={{ fontSize: 12, fontWeight: 700, color: p.signed || (mine && adopted) ? "#0E7A55" : mine && viewing.needsMySig ? "#92650B" : "#7F7B85" }}>
+                                                            {p.signed ? `✓ Signed${p.signed_at ? ` ${signedOn(p.signed_at)}` : ""}`
+                                                                : mine && adopted ? "✓ Your signature — click Finish to complete"
+                                                                : mine && viewing.needsMySig ? "Waiting for you" : "Waiting"}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </article>
+                                )}
+
+                                {/* Only once EXECUTED: the server refuses a PDF before. */}
+                                {viewing.rawStatus === "executed" && doc && !doc.loading && !doc.error && (
+                                    <div style={{ marginTop: 16 }}>
+                                        <button type="button" disabled={downloading} onClick={doDownload} style={{ ...mint, cursor: downloading ? "not-allowed" : "pointer" }}>
+                                            <LIcon name="download" size={15} stroke={2} />{downloading ? "Preparing…" : "Download signed copy"}
+                                        </button>
+                                        <div style={{ fontSize: 12, color: t.textFaint, marginTop: 7, lineHeight: 1.5 }}>
+                                            Includes the signature record: who signed, how, when the
+                                            server recorded it, and the digest of the signed text.
                                         </div>
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        {/* The signature popup, from "Sign here". */}
+                        {reading && signOpen && (
+                            <div style={overlay} onClick={() => setSignOpen(false)}>
+                                <div data-agreement-sign onClick={e => e.stopPropagation()} style={dialog}>
+                                    <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
+                                        <div>
+                                            <div style={{ fontSize: 20, fontWeight: 800, color: t.text, lineHeight: 1.25 }}>Add your signature</div>
+                                            <div style={{ fontSize: 13.5, color: t.textMuted, marginTop: 2, lineHeight: 1.4 }}>It goes on the agreement in dark ink</div>
+                                        </div>
+                                        <button type="button" aria-label="Cancel" onClick={() => setSignOpen(false)}
+                                            style={{ marginLeft: "auto", width: 30, height: 30, borderRadius: 8, border: `1px solid ${t.border}`, background: `${t.text}12`, color: t.textMuted, cursor: "pointer", display: "grid", placeItems: "center" }}>
+                                            <LIcon name="x" size={14} stroke={2.2} />
+                                        </button>
+                                    </div>
+                                    <div data-keep-font=""><SignaturePad height={200} onChange={setSignSig} /></div>
+                                    <label data-sign-consent style={{ display: "flex", gap: 12, alignItems: "flex-start", marginTop: 14, padding: "12px 14px", borderRadius: 12,
+                                        background: signConsent ? `${t.success}14` : `${t.text}0D`, border: `1px solid ${signConsent ? `${t.success}66` : t.border}`,
+                                        fontSize: 14, color: t.text, lineHeight: 1.5, cursor: "pointer" }}>
+                                        <input type="checkbox" checked={signConsent} onChange={e => setSignConsent(e.target.checked)}
+                                            style={{ width: 18, height: 18, marginTop: 2, accentColor: "#3EE0A1", flexShrink: 0 }} />
+                                        <span>I have read this agreement and intend the signature above to be my signature on it.</span>
+                                    </label>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 16 }}>
+                                        {/* WHAT IS RECORDED, not what it amounts to in law. */}
+                                        <span title="We record your account, the time, your IP address where it can be determined, and a digest of the text you signed."
+                                            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: t.textMuted, maxWidth: 300, lineHeight: 1.4 }}>
+                                            <LIcon name="shield" size={14} stroke={2} /> Time, method and a digest of the text are recorded
+                                        </span>
+                                        <span style={{ flex: 1 }} />
+                                        <button type="button" onClick={() => setSignOpen(false)} style={neutral}>Cancel</button>
+                                        <button type="button" data-use-signature disabled={!signSig.data || !signConsent}
+                                            onClick={() => { setAdopted({ ...signSig }); setSignOpen(false); }}
+                                            style={{ ...mint, opacity: !signSig.data || !signConsent ? 0.45 : 1, cursor: !signSig.data || !signConsent ? "not-allowed" : "pointer" }}>
+                                            Use this signature
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Decline, from the ⋯ menu: still two deliberate steps. */}
+                        {reading && declineOpen && (
+                            <div style={overlay} onClick={() => { setDeclineOpen(false); setDeclineReason(""); }}>
+                                <div data-decline-dialog onClick={e => e.stopPropagation()} style={dialog}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: t.danger, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>
+                                        Decline — this ends the agreement and cannot be undone
+                                    </div>
+                                    <Input placeholder="Reason (optional — the other party will see this)" value={declineReason} maxLength={2000}
+                                        onChange={e => setDeclineReason(e.target.value)} style={{ width: "100%" }} />
+                                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 14 }}>
+                                        <button type="button" disabled={declineBusy} onClick={() => { setDeclineOpen(false); setDeclineReason(""); }} style={neutral}>Keep reviewing</button>
+                                        <button type="button" disabled={declineBusy} onClick={doDecline}
+                                            style={{ ...chipBtn, background: t.danger, color: "#fff" }}>{declineBusy ? "Declining…" : "Confirm decline"}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Done. */}
+                        {doneInfo && (
+                            <div style={overlay}>
+                                <div data-sign-done style={{ ...dialog, width: "min(520px, 100%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center", padding: 30 }}>
+                                    <span aria-hidden="true" style={{ width: 64, height: 64, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#3EE0A1,#2EC4D6)", color: "#04212A" }}>
+                                        <LIcon name="check" size={30} stroke={2.4} />
+                                    </span>
+                                    <div style={{ fontFamily: "Literata, Georgia, serif", fontSize: 24, fontWeight: 600, color: t.text }}>
+                                        {doneInfo.executed ? "You’re all set" : "Signed"}
+                                    </div>
+                                    <div style={{ fontSize: 14.5, color: t.textMuted }}>
+                                        {doneInfo.executed
+                                            ? `Everyone has signed. The agreement is final and ${names(others) || "the other party"} has been told.`
+                                            : `Your signature is recorded. Waiting for ${names(waitingFor) || "the other signatures"}.`}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                                        {doneInfo.executed && <button type="button" disabled={downloading} onClick={doDownload} style={mint}><LIcon name="download" size={15} stroke={2} /> Download signed copy</button>}
+                                        <button type="button" onClick={closeView} style={neutral}>Back to agreements</button>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
-            )}
+                );
+            })()}
         </div>
     );
 };

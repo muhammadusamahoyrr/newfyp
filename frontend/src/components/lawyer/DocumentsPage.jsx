@@ -71,16 +71,19 @@ export const INBOX_CSS = `[data-review-inbox]{flex:1;min-height:0;overflow-y:aut
 [data-review-inbox] .ri-wrap{max-width:1240px;margin:0 auto;padding:22px clamp(16px,3.2vw,40px) 64px;display:grid;gap:22px}
 [data-review-inbox] .ri-crumbs{font-size:13px;color:var(--muted)}
 [data-review-inbox] .ri-crumbs b{color:var(--ink);font-weight:600}
-[data-review-inbox] .ri-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+[data-review-inbox] .ri-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:20px}
+[data-review-inbox] .ri-head>div:first-child{display:contents}
+[data-review-inbox] .ri-head>:last-child{grid-column:2;grid-row:1}
+[data-review-inbox] .ri-head p{grid-column:1/-1}
 [data-review-inbox] .ri-head h1{margin:0;font:600 clamp(28px,3.4vw,38px)/1.1 "Literata",Georgia,serif;letter-spacing:-.01em}
 [data-review-inbox] .ri-accent{background:linear-gradient(90deg,var(--brand-text),var(--teal-ink));-webkit-background-clip:text;background-clip:text;color:transparent}
-[data-review-inbox] .ri-head p{margin:8px 0 0;color:var(--muted);max-width:66ch}
+[data-review-inbox] .ri-head p{margin:8px 0 0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-review-inbox] .ri-btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);font-weight:600;font-size:14px;white-space:nowrap;cursor:pointer}
 [data-review-inbox] .ri-btn:hover:not(:disabled){border-color:var(--hover-line);background:var(--hover-tint);color:var(--hover-ink)}
 [data-review-inbox] .ri-btn:disabled{opacity:.55;cursor:default}
 [data-review-inbox] .ri-btn.primary{background:var(--brand-solid);border-color:transparent;color:var(--on-brand)}
 [data-review-inbox] .ri-btn.primary:hover:not(:disabled){background:var(--brand-solid-hover);color:var(--on-brand)}
-[data-review-inbox] .ri-cta{display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 24px;border-radius:14px;border:0;background:var(--brand-solid);color:var(--on-brand);font-weight:700;font-size:15.5px;cursor:pointer;box-shadow:0 10px 24px -12px rgba(46,196,214,.8);transition:transform .15s,box-shadow .15s}
+[data-review-inbox] .ri-cta{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 18px;border-radius:12px;border:0;background:var(--brand-solid);color:var(--on-brand);font-weight:700;font-size:14.5px;cursor:pointer;box-shadow:0 10px 24px -12px rgba(46,196,214,.8);transition:transform .15s,box-shadow .15s}
 [data-review-inbox] .ri-cta:hover{background:var(--brand-solid-hover);transform:translateY(-1px);box-shadow:0 14px 28px -12px rgba(46,196,214,.9)}
 [data-review-inbox] .ri-filters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
 [data-review-inbox] .ri-f{position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ic l" "v v" "s s";column-gap:12px;align-items:center;text-align:left;padding:18px 18px 16px;border-radius:20px;border:1px solid color-mix(in srgb,var(--c) 14%,var(--line));background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--c) 13%,transparent) 0%,transparent 55%),linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,#fff 8%),var(--surface));box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 10px 24px -18px rgba(0,0,0,.65);cursor:pointer;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease}
@@ -328,12 +331,12 @@ function ScreenInbox({
                 <div className="ri-head">
                     <div>
                         <h1>Document <span className="ri-accent">review</span></h1>
-                        <p>Documents your clients sent you. Each is frozen at the version they sent — your decision binds to that exact version.</p>
+                        <p>Documents your clients sent you — your decision applies to the exact version they sent.</p>
                     </div>
                     {/* AI Generate opens the Draft Generator, where a lawyer's own
                         AI drafting lives; a review inbox has no upload. */}
                     <button type="button" className="ri-cta" onClick={() => setPage?.("doc-automation")}>
-                        <Icon d={I.sparkles} size={18} /> AI Generate
+                        <Icon d={I.wandSparkles} size={17} /> AI Generate
                     </button>
                 </div>
 

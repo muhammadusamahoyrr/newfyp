@@ -377,7 +377,7 @@ test("lawyer: a failed fetch shows an error and no way to sign", async () => {
         "the failure was silent");
     assert.equal(ui.button("Sign Agreement"), undefined,
         "signing was offered for text the user was never shown");
-    assert.equal(ui.button("I do not want to sign this"), undefined,
+    assert.equal(ui.button("Decline…"), undefined,
         "declining was offered for text the user was never shown");
 });
 
@@ -523,7 +523,9 @@ test("lawyer: changing the status filter returns to the first page", async () =>
     assert.ok((__calls("listAgreements").at(-1).args[0]?.page || 1) > 1,
         "sanity: Load more should have advanced the page");
 
-    await ui.clickText("Executed");
+    // The status filter is a folder now (V5, 2026-11-26): "Completed" asks
+    // the server for executed agreements.
+    await ui.clickText("Signed");
 
     // ASSERT ON THE RECORDED CALL, not inside the stub. A throw inside the
     // responder becomes a rejected promise that the screen's own .catch()
@@ -648,12 +650,16 @@ test("lawyer: after signing, the list shows the server's new status", async () =
     // to be selected before there is a field to type into. Driving the real
     // control is the point -- asserting on a placeholder that no longer exists
     // would only prove the test was written against the old screen.
+    // The 4-step flow (2026-11-26): start screen, "Sign here" on the paper,
+    // the signature popup, then Finish in the top bar.
+    await ui.clickButton("Sign here");
     await ui.clickButton("Type");
     await ui.type("Type your name…", "Adv Khan");
     const consent = ui.host.querySelector('input[type="checkbox"]');
     assert.ok(consent, "the signing consent checkbox is missing");
     await ui.click(consent);
-    await ui.clickButton("Sign Agreement");
+    await ui.clickButton("Use this signature");
+    await ui.clickButton("Finish");
     await act(async () => {});
 
     // COUNTED RELATIVE TO THE ACTION. Auth hydration fires its own reload
@@ -677,13 +683,14 @@ test("lawyer: after declining, the refreshed row comes from the server", async (
     await ui.openRow("Retainer");
     const before = __calls("listAgreements").length;
 
-    await ui.clickButton("I do not want to sign this");
+    await ui.click(ui.host.querySelector("[data-more-actions]"));
+    await ui.clickButton("Decline to sign");
     await ui.clickButton("Confirm decline");
     await act(async () => {});
 
     assert.ok(__calls("listAgreements").length > before,
         "no refresh after declining");
-    assert.ok(ui.text().includes("Cancelled"));
+    assert.match(ui.text(), /Declined/, "the refreshed row does not show the decline");
 });
 
 // ── paging asks the server for the next page ────────────────────────────────
@@ -713,4 +720,138 @@ test("lawyer: Load more requests page 2 and the count line moves", async () => {
     const secondCount = ui.text().match(/Showing (\d+) of 51/)?.[1];
     assert.ok(Number(secondCount) > Number(firstCount),
         `the count line did not move: ${firstCount} then ${secondCount}`);
+});
+
+/* ── lawyer V5 folders (2026-11-26) ─────────────────────────────────────── */
+
+test("lawyer: folders count from the server, and Action required shows only what needs my signature", async () => {
+    const mine = lightRow();                                                          // my signature missing
+    const theirs = lightRow({ id: "A2", _id: "A2", title: "Settlement",
+        parties: [{ user_id: ME, full_name: "Adv Khan", signed: true }, { user_id: THEM, full_name: "The Client", signed: false }] });
+    const done = lightRow({ id: "A3", _id: "A3", title: "Old retainer", status: "executed",
+        parties: [{ user_id: ME, signed: true }, { user_id: THEM, signed: true }] });
+    __respond("listAgreements", (opts = {}) => page(
+        opts.status === "pending" ? [mine, theirs] : opts.status === "executed" ? [done] : [mine, theirs, done]));
+    const ui = await mount(lawyerScreen());
+    // Client-style page (2026-11-27): a count line, status tabs, a table.
+    assert.match(ui.host.querySelector("[data-agreements-count]").textContent, /^3 agreements · 1 needs your signature$/);
+    assert.equal(ui.host.querySelector('[data-folder-count="action"]').textContent, "1");
+    assert.deepEqual([...ui.host.querySelectorAll("[data-folder]")].map(b => b.textContent.replace(/\d+$/, "")),
+        ["All", "Needs my signature", "Pending", "Signed", "Declined"]);
+    assert.equal(ui.host.querySelector('[data-folder="drafts"]'), null, "a Drafts tab for a lawyer who cannot draft");
+
+    await ui.click(ui.host.querySelector('[data-folder="action"]'));
+    await act(async () => {});
+    const rows = [...ui.host.querySelectorAll("[data-agreement-row]")].map(r => r.getAttribute("data-agreement-row"));
+    assert.deepEqual(rows, ["A1"], "Action required lists an agreement that does not need my signature");
+    assert.ok(ui.host.querySelector('[data-agreement-row="A1"]').hasAttribute("data-needs-me"));
+    assert.match(ui.host.querySelector('[data-agreement-row="A1"] button').textContent, /Review & sign/);
+    assert.ok(ui.host.querySelector(".al-table .al-th"), "no table header");
+    assert.equal(__calls("listAgreements").at(-1).args[0]?.status, "pending", "the folder did not ask the server for pending");
+    await ui.unmount?.();
+});
+
+test("lawyer flow: opens straight on the agreement with a locked Finish (2026-11-27)", async () => {
+    __respond("listAgreements", () => page([lightRow({ parties: [
+        { user_id: ME, full_name: "Adv Khan", signed: false },
+        { user_id: THEM, full_name: "The Client", signed: true, signed_at: "2026-11-26T05:42:00Z" }] })]));
+    __respond("getAgreement", () => ok(fullDoc({ parties: [
+        { user_id: ME, full_name: "Adv Khan", signed: false },
+        { user_id: THEM, full_name: "The Client", signed: true, signed_at: "2026-11-26T05:42:00Z" }] })));
+    const ui = await mount(lawyerScreen());
+    await ui.openRow("Retainer");
+    // Straight into the agreement: no start screen (user, 2026-11-27).
+    assert.equal(ui.host.querySelector("[data-sign-gate]"), null, "the start screen is back");
+    // No "fields left" / Next in the bar (user, 2026-11-27): one field, on the paper.
+    assert.equal(ui.host.querySelector("[data-fields-left]"), null);
+    assert.equal(ui.host.querySelector("[data-next-field]"), null);
+    assert.ok(ui.host.querySelector("[data-finish]").disabled, "Finish works before a signature is added");
+    const paper = ui.host.querySelector("[data-agreement-paper]");
+    assert.ok(paper.textContent.includes(BODY), "the text is not on the paper");
+    assert.deepEqual([...paper.querySelectorAll("[data-party-line]")].map(n => n.getAttribute("data-party-line")), ["you", "signed"]);
+    assert.ok(paper.querySelector("[data-sign-here]"), "no Sign here on the paper");
+    await ui.unmount?.();
+});
+
+test("lawyer flow: the signature is adopted onto the paper, Finish signs, and the window says 'You're all set' (2026-11-26)", async () => {
+    let signed = false;
+    __respond("listAgreements", () => page([lightRow(signed ? { status: "executed" } : {})]));
+    __respond("getAgreement", () => ok(fullDoc()));
+    __respond("getAgreement", () => ok(fullDoc({ eto_classification: "Typed name" })));
+    __respond("signAgreement", () => { signed = true; return ok(fullDoc({ status: "executed", eto_classification: "Signature drawn in browser" })); });
+    const ui = await mount(lawyerScreen());
+    await ui.openRow("Retainer");
+    await ui.clickButton("Sign here");
+    assert.ok(ui.host.querySelector("[data-agreement-sign]"), "no signature popup");
+    await ui.clickButton("Type");
+    await ui.type("Type your name…", "Adv Khan");
+    await ui.click(ui.host.querySelector('[data-agreement-sign] input[type="checkbox"]'));
+    await ui.clickButton("Use this signature");
+    assert.equal(__calls("signAgreement").length, 0, "adopting a signature already signed the agreement");
+    assert.ok(ui.host.querySelector("[data-adopted-signature]"), "the signature is not shown on the paper");
+    assert.equal(ui.host.querySelector("[data-finish]").disabled, false, "Finish stays locked after a signature is added");
+    await ui.clickButton("Finish");
+    await act(async () => {});
+    assert.equal(__calls("signAgreement").length, 1);
+    assert.match(ui.host.querySelector("[data-sign-done]").textContent, /You’re all set/);
+    assert.match(ui.host.querySelector("[data-agreement-topbar]").textContent, /Executed/, "the header still says Pending behind 'You're all set'");
+    assert.doesNotMatch(ui.host.querySelector("[data-agreement-topbar]").textContent, /Pending/);
+    assert.match(ui.host.querySelector("[data-agreement-subtitle]").textContent, /Signing method: Signature drawn in browser/, "the signing method kept its pre-signature value");
+    await ui.unmount?.();
+});
+
+test("lawyer: the window says where the agreement stands, not just 'Typed name' (2026-11-26)", async () => {
+    __respond("listAgreements", () => page([lightRow()]));
+    __respond("getAgreement", () => ok(fullDoc({ eto_classification: "Typed name" })));
+    const ui = await mount(lawyerScreen());
+    await ui.openRow("Retainer");
+    const sub = ui.host.querySelector("[data-agreement-subtitle]").textContent;
+    assert.match(sub, /^From The Client — waiting for your signature/, "no status in the subtitle");
+    assert.match(sub, /Signing method: Typed name$/, "the method lost its label");
+    await ui.unmount?.();
+});
+
+/* 2026-11-27: the client's agreement opens in the same window as the lawyer's —
+ * the paper, "Sign here", the signature popup, Finish in the top bar. */
+test("client flow: Sign here → Use this signature → Finish signs, and the window says 'You're all set'", async () => {
+    let signed = false;
+    __respond("listAgreements", () => page([lightRow(signed ? { status: "executed" } : {})]));
+    __respond("getAgreement", () => ok(fullDoc()));
+    __respond("signAgreement", () => { signed = true; return ok(fullDoc({ status: "executed", eto_classification: "Typed name" })); });
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    await ui.openRow("Retainer");
+    const paper = ui.host.querySelector("[data-agreement-paper]");
+    assert.ok(paper && paper.textContent.includes(BODY), "the text is not on the paper");
+    assert.equal(ui.host.querySelector("[data-finish]").disabled, true, "Finish is open before any signature");
+    await ui.clickButton("Sign here");
+    assert.ok(ui.host.querySelector("[data-agreement-sign]"), "no signature popup");
+    await ui.clickButton("Type");
+    await ui.type("Type your name…", "The Client");
+    await ui.click(ui.host.querySelector('[data-agreement-sign] input[type="checkbox"]'));
+    await ui.clickButton("Use this signature");
+    assert.equal(__calls("signAgreement").length, 0, "adopting a signature already signed the agreement");
+    assert.ok(ui.host.querySelector("[data-adopted-signature]"), "the signature is not shown on the paper");
+    await ui.clickButton("Finish");
+    await act(async () => {});
+    assert.equal(__calls("signAgreement").length, 1);
+    assert.match(ui.host.querySelector("[data-sign-done]").textContent, /You’re all set/);
+    assert.doesNotMatch(ui.host.querySelector("[data-agreement-topbar]").textContent, /Pending/);
+    await ui.unmount?.();
+});
+
+test("client flow: decline is behind the ⋯ menu and a confirm", async () => {
+    __respond("listAgreements", () => page([lightRow()]));
+    __respond("getAgreement", () => ok(fullDoc()));
+    __respond("declineAgreement", () => ok(fullDoc({ status: "cancelled" })));
+    const ui = await mount(clientScreen());
+    await ui.clickText("See all");
+    await ui.openRow("Retainer");
+    await ui.click(ui.host.querySelector("[data-more-actions]"));
+    await ui.clickButton("Decline to sign");
+    assert.equal(__calls("declineAgreement").length, 0, "one click declined");
+    await ui.clickButton("Confirm decline");
+    await act(async () => {});
+    assert.equal(__calls("declineAgreement").length, 1);
+    await ui.unmount?.();
 });

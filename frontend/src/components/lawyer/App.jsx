@@ -348,7 +348,7 @@ export default function App({ initialPage = "dashboard" }) {
                                 <ActiveCaseBanner caseId={activeCase} onClear={() => { setActiveCaseState(null); setOpenCaseId(null); }} />
                             )}
                             {/* FIX: removed key={page} — was destroying all page state on every navigation */}
-                            <main ref={mainRef} data-lenis-prevent className="page-enter lw-main" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: ["ai-legal", "cases", "clients", "doc-automation", "doc-analyzer", "documents", "vault", "onboarding"].includes(page) ? "hidden" : "auto", scrollBehavior: "smooth", padding: ["ai-legal", "cases", "clients", "doc-automation", "doc-analyzer", "documents", "vault", "onboarding", "appointments", "bail-checker", "calculators", "profile", "settings", "dashboard"].includes(page) ? 0 : 24 }}>
+                            <main ref={mainRef} data-lenis-prevent className="page-enter lw-main" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: ["ai-legal", "cases", "clients", "doc-automation", "doc-analyzer", "documents", "vault", "agreements", "onboarding"].includes(page) ? "hidden" : "auto", scrollBehavior: "smooth", padding: ["ai-legal", "cases", "clients", "doc-automation", "doc-analyzer", "documents", "vault", "agreements", "onboarding", "appointments", "bail-checker", "calculators", "profile", "settings", "dashboard"].includes(page) ? 0 : 24 }}>
                                 {page === "onboarding"
                                     ? <OnboardingPage t={t} role="lawyer" onComplete={() => {
                                         try { localStorage.setItem(ONBOARDED_KEY, "1"); } catch {}

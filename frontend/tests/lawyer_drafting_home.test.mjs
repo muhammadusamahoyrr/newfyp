@@ -177,13 +177,11 @@ test("My Drafts lists the saved drafts with working Open and Delete", async () =
     await p.unmount();
 });
 
-test("the page follows the lawyer theme, its Theme button switches it, and its CSS is scoped to it", async () => {
+test("the page follows the lawyer theme, has no Theme/account corner (user, 2026-11-26), and its CSS is scoped to it", async () => {
     const p = await mount({ t: LIGHT });
     assert.equal(p.container.querySelector("[data-drafting-home]").dataset.mode, "light");
-    const before = toggles;
-    await click(p.container.querySelector("[data-theme-toggle]"));
-    assert.equal(toggles, before + 1, "the Theme button does not switch the app theme");
-    assert.ok(p.container.querySelector("[data-account]"), "the account is not shown in the top bar");
+    assert.equal(p.container.querySelector("[data-theme-toggle]"), null, "the Theme button is back in the corner");
+    assert.equal(p.container.querySelector("[data-account]"), null, "the account pill is back in the corner");
     await p.unmount();
     const { DRAFTING_HOME_CSS } = await import("../src/components/lawyer/DraftingHome.jsx");
     for (const rule of DRAFTING_HOME_CSS.replace(/@import url\([^)]*\);/, "").replace(/@keyframes[^{]+\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, "").replace(/@media[^{]+\{([\s\S]*)\}\s*$/m, "$1").split("}")) {
