@@ -2,47 +2,52 @@
 // Case Law Research — semantic search over the LHC judgment corpus plus a
 // citator: "which judgments cite PLD 2019 SC 675?" Every result links to the
 // court's original PDF.
+//
+// 2026-11-27: the app's theme (pageShell.js), full width, and ONE search box
+// with two modes instead of two separate boxes. The search, the citator and
+// the hand-over from the AI Assistant work exactly as before.
 import { useEffect, useState } from "react";
-import { useTheme } from "./theme.js";
+import { useTheme, useCase } from "./theme.js";
 import { useToast } from "@/components/lawyer/Toast.jsx";
 import { citatorSearch, citatorCitedBy, citatorStats } from "@/lib/api.js";
+import { DRAFTING_TOKENS_CSS, draftingMode } from "./draftingTheme.js";
+import { LX_PAGE_CSS } from "./pageShell.js";
 
-function JudgmentCard({ j, t, onCiteClick }) {
+const TRY = [
+    "Specific performance of an oral agreement",
+    "Pre-arrest bail, malafide of the complainant",
+    "Ejectment for default in rent",
+];
+
+function JudgmentRow({ j, onCiteClick }) {
     return (
-        <div style={{ padding: "14px 4px", borderTop: `1px solid ${t.border}` }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+        <div data-judgment={j.id} style={{ padding: "16px 20px", borderTop: "1px solid var(--line)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 240 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: t.text, lineHeight: 1.45 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", lineHeight: 1.45 }}>
                         {j.title || j.case_no || j.id}
                     </div>
-                    <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 3 }}>
+                    <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 3 }}>
                         {[j.case_no, j.judge, j.id].filter(Boolean).join(" · ")}
-                        {typeof j.score === "number" && <span style={{ color: t.primary, fontWeight: 700 }}> · {(j.score * 100).toFixed(0)}% match</span>}
+                        {typeof j.score === "number" && <span style={{ color: "var(--brand-text)", fontWeight: 700 }}> · {(j.score * 100).toFixed(0)}% match</span>}
                     </div>
                 </div>
-                <a href={j.pdf_url} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 11, fontWeight: 700, color: t.primary, border: `1px solid ${t.primary}40`, borderRadius: 8, padding: "4px 10px", textDecoration: "none", flexShrink: 0 }}>
-                    Court PDF ↗
-                </a>
+                <a href={j.pdf_url} target="_blank" rel="noopener noreferrer" className="lx-btn teal sm">Court PDF ↗</a>
             </div>
             {(j.tag_line || j.snippet) && (
-                <div style={{ fontSize: 12, color: t.textDim, lineHeight: 1.6, marginTop: 6 }}>
+                <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.6, marginTop: 8 }}>
                     {j.tag_line || j.snippet}
                 </div>
             )}
             {j.citations_out?.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
-                    <span style={{ fontSize: 10, color: t.textFaint, fontWeight: 700, alignSelf: "center" }}>CITES:</span>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 10 }}>
+                    <span style={{ fontSize: 12, color: "var(--faint)", fontWeight: 700 }}>Cites</span>
                     {j.citations_out.slice(0, 8).map(c => (
-                        <button key={c} onClick={() => onCiteClick(c)}
-                            title={`Who else cites ${c}?`}
-                            style={{ fontSize: 10.5, fontWeight: 700, padding: "2px 8px", borderRadius: 10, cursor: "pointer", border: `1px solid ${t.border}`, background: t.cardHi, color: t.textMuted, fontFamily: "inherit" }}
-                            onMouseEnter={e => { e.currentTarget.style.color = t.primary; e.currentTarget.style.borderColor = t.primary; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = t.textMuted; e.currentTarget.style.borderColor = t.border; }}>
+                        <button key={c} type="button" className="lx-chip" onClick={() => onCiteClick(c)} title={`Who else cites ${c}?`}>
                             {c}
                         </button>
                     ))}
-                    {j.citations_out.length > 8 && <span style={{ fontSize: 10.5, color: t.textFaint, alignSelf: "center" }}>+{j.citations_out.length - 8} more</span>}
+                    {j.citations_out.length > 8 && <span style={{ fontSize: 12, color: "var(--faint)" }}>+{j.citations_out.length - 8} more</span>}
                 </div>
             )}
         </div>
@@ -51,6 +56,7 @@ function JudgmentCard({ j, t, onCiteClick }) {
 
 function CaseLawPage() {
     const { t } = useTheme();
+    const { setPage } = useCase();
     const toast = useToast();
     const [stats, setStats] = useState(null);
     const [mode, setMode] = useState("search"); // search | citedby
@@ -94,82 +100,82 @@ function CaseLawPage() {
         setCitedBy(data);
     };
 
-    const inputStyle = {
-        flex: 1, minWidth: 220, height: 42, padding: "0 14px", borderRadius: 10,
-        border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text,
-        fontSize: 13.5, outline: "none", fontFamily: "inherit",
-    };
-    const goBtn = (label, onClick, disabled) => (
-        <button onClick={onClick} disabled={disabled}
-            style={{
-                padding: "0 22px", height: 42, borderRadius: 10, border: "none",
-                background: disabled ? t.border : t.primary,
-                color: disabled ? t.textFaint : (t.mode === "dark" ? "#111B1F" : "#fff"),
-                fontSize: 13, fontWeight: 700, cursor: disabled ? "default" : "pointer", fontFamily: "inherit",
-            }}>{label}</button>
-    );
+    const searching = mode === "search";
+    const value = searching ? q : cite;
+    const go = () => (searching ? runSearch() : (cite.trim() && runCitedBy(cite.trim())));
+    const emptyLibrary = stats && stats.judgments === 0;
 
     return (
-        <div style={{ maxWidth: 860 }}>
-            <div className="fade-up" style={{ marginBottom: 16 }}>
-                <div className="serif" style={{ fontSize: 22, fontWeight: 700, color: t.text }}>Case Law Research</div>
-                <div style={{ fontSize: 13, color: t.textMuted, marginTop: 3 }}>
-                    Lahore High Court reported judgments — semantic search + citation lookups, linked to the court's own PDFs
-                    {stats && <span style={{ color: t.primary, fontWeight: 700 }}> · {stats.judgments} judgments · {stats.citation_edges} citation links</span>}
+        <div data-lx-page data-caselaw data-drafting-theme data-mode={draftingMode(t)} data-lenis-prevent>
+            <style>{`${DRAFTING_TOKENS_CSS}\n${LX_PAGE_CSS}`}</style>
+            <div className="lx-crumbs">Research / <b>Legal Library</b></div>
+            <div className="lx-head">
+                <div>
+                    <h1>Case law</h1>
+                    <p>Reported judgments of the Lahore High Court, with links to the court's own PDFs.</p>
                 </div>
-            </div>
-
-            {/* Semantic search */}
-            <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Search judgments</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && runSearch()}
-                        placeholder='e.g. "post-arrest bail in narcotics cases" or "specific performance of oral agreement"'
-                        style={inputStyle} />
-                    {goBtn(busy && mode === "search" ? "Searching…" : "Search", runSearch, !q.trim() || busy)}
-                </div>
-            </div>
-
-            {/* Citator */}
-            <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-                    Citator — who cites this precedent?
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <input value={cite} onChange={e => setCite(e.target.value)} onKeyDown={e => e.key === "Enter" && cite.trim() && runCitedBy(cite.trim())}
-                        placeholder="e.g. 1996 SCMR 1544 or PLD 2019 SC 675"
-                        style={inputStyle} className="mono" />
-                    {goBtn(busy && mode === "citedby" ? "Looking…" : "Find citing judgments", () => runCitedBy(cite.trim()), !cite.trim() || busy)}
-                </div>
-            </div>
-
-            {/* Results */}
-            {mode === "search" && results !== null && (
-                <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                        {results.length} result{results.length === 1 ? "" : "s"}
+                {stats && (
+                    <div className="lx-head-end" data-caselaw-stats>
+                        <span className="lx-pill"><b>{stats.judgments}</b> judgments</span>
+                        <span className="lx-pill"><b>{stats.citation_edges}</b> citation links</span>
                     </div>
-                    {results.length === 0 && <div style={{ fontSize: 12.5, color: t.textMuted, padding: "8px 0" }}>Nothing matched — try different wording.</div>}
-                    {results.map(j => <JudgmentCard key={j.id} j={j} t={t} onCiteClick={runCitedBy} />)}
-                </div>
-            )}
+                )}
+            </div>
 
-            {mode === "citedby" && citedBy !== null && (
-                <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16 }}>
-                    <div style={{ fontSize: 12.5, color: t.text, marginBottom: 4 }}>
-                        <span className="mono" style={{ fontWeight: 800, color: t.primary }}>{citedBy.citation}</span>
-                        <span style={{ color: t.textMuted }}> is cited by </span>
-                        <b>{citedBy.count}</b>
-                        <span style={{ color: t.textMuted }}> judgment{citedBy.count === 1 ? "" : "s"} in the corpus</span>
-                    </div>
-                    {citedBy.cited_by.length === 0 && (
-                        <div style={{ fontSize: 12.5, color: t.textMuted, padding: "8px 0" }}>
-                            No citing judgments found yet — the corpus grows with every ingest run.
-                        </div>
-                    )}
-                    {citedBy.cited_by.map(j => <JudgmentCard key={j.id} j={j} t={t} onCiteClick={runCitedBy} />)}
+            <section className="lx-card lx-pad" aria-label="Search">
+                <div role="tablist" aria-label="Search mode" className="lx-seg">
+                    <button type="button" role="tab" aria-selected={searching} onClick={() => setMode("search")}>Search judgments</button>
+                    <button type="button" role="tab" aria-selected={!searching} onClick={() => setMode("citedby")}>Who cites this?</button>
                 </div>
-            )}
+                <div style={{ display: "flex", gap: 10 }}>
+                    <label className="lx-search">
+                        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+                        <span className="lx-sr">{searching ? "Search judgments" : "Citation"}</span>
+                        <input value={value} className={searching ? undefined : "mono"}
+                            onChange={e => (searching ? setQ(e.target.value) : setCite(e.target.value))}
+                            onKeyDown={e => e.key === "Enter" && go()}
+                            placeholder={searching ? "Describe the point of law, e.g. post-arrest bail in narcotics cases" : "A citation, e.g. 1996 SCMR 1544 or PLD 2019 SC 675"} />
+                    </label>
+                    <button type="button" className="lx-btn mint" style={{ height: 38, padding: "0 16px", fontSize: 13 }} onClick={go} disabled={!value.trim() || busy}>
+                        {busy ? (searching ? "Searching…" : "Looking…") : searching ? "Search" : "Find citing judgments"}
+                    </button>
+                </div>
+                {searching && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 13, color: "var(--faint)" }}>Try</span>
+                        {TRY.map(x => <button key={x} type="button" className="lx-chip" onClick={() => { setQ(x); runSearch(x); }}>{x}</button>)}
+                    </div>
+                )}
+            </section>
+
+            <section className="lx-card lx-flush" aria-label="Results" data-caselaw-results>
+                {mode === "search" && results !== null ? (<>
+                    <div className="lx-card-head"><b>Results</b><span className="lx-count">{results.length}</span></div>
+                    {results.length === 0 && <div className="lx-empty-row"><span className="t" style={{ color: "var(--muted)" }}>Nothing matched. Try different wording.</span></div>}
+                    {results.map(j => <JudgmentRow key={j.id} j={j} onCiteClick={runCitedBy} />)}
+                </>) : mode === "citedby" && citedBy !== null ? (<>
+                    <div className="lx-card-head" style={{ flexWrap: "wrap" }}>
+                        <span className="lx-mono">{citedBy.citation}</span>
+                        <span style={{ color: "var(--muted)" }}>is cited by <b style={{ color: "var(--ink)" }}>{citedBy.count}</b> judgment{citedBy.count === 1 ? "" : "s"} in the library</span>
+                    </div>
+                    {citedBy.cited_by.length === 0 && <div className="lx-empty-row"><span style={{ color: "var(--muted)" }}>No citing judgments found yet. The library grows with every import.</span></div>}
+                    {citedBy.cited_by.map(j => <JudgmentRow key={j.id} j={j} onCiteClick={runCitedBy} />)}
+                </>) : (
+                    <div className="lx-empty" data-caselaw-empty={emptyLibrary ? "library" : "idle"}>
+                        <span className="lx-tile" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l9 5H3z" /></svg>
+                        </span>
+                        {emptyLibrary ? (<>
+                            <b>No judgments in the library yet</b>
+                            <span className="t">A search returns nothing until judgments are added. For a point of law now, ask the AI Assistant.</span>
+                            {setPage && <button type="button" className="lx-btn teal" style={{ marginTop: 6 }} onClick={() => setPage("ai-legal")}>Open AI Assistant</button>}
+                        </>) : (<>
+                            <b>Search the judgments</b>
+                            <span className="t">Describe the point of law, or switch to "Who cites this?" and enter a citation.</span>
+                        </>)}
+                    </div>
+                )}
+            </section>
         </div>
     );
 }

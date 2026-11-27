@@ -4,30 +4,35 @@
 // the full brief (eligibility, grievance, intake, jurisdiction) and downloads the
 // draft petition when one exists. No fee negotiation, engagement letter or payment —
 // that is the separate hiring flow.
+//
+// 2026-11-27: the app's theme (pageShell.js), full width, the inbox as a table.
+// What is shown and every rule about the petition are unchanged.
 import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "./theme.js";
-import { Card, Btn, Badge } from "./components.jsx";
 import { disputeLawyerInbox, disputeBrief, downloadDocumentFile } from "@/lib/api.js";
+import { DRAFTING_TOKENS_CSS, draftingMode } from "./draftingTheme.js";
+import { LX_PAGE_CSS } from "./pageShell.js";
 
 const STATE_META = {
-    ready_for_drafting: { label: "Ready to draft", type: "success" },
-    held_for_lawyer_triage: { label: "Held for your review", type: "warn" },
+    ready_for_drafting: { label: "Ready to draft", tone: "" },
+    held_for_lawyer_triage: { label: "Held for your review", tone: "gold" },
 };
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+const COLS = "minmax(0,1.6fr) minmax(0,1fr) 150px minmax(0,1.3fr) 110px";
 
-function Field({ label, value, T }) {
+function Field({ label, value }) {
     return (
-        <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>{label}</div>
-            <div style={{ fontSize: 13.5, color: T.text }}>{value || "—"}</div>
+        <div style={{ marginBottom: 12, minWidth: 140 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--faint)", marginBottom: 2 }}>{label}</div>
+            <div style={{ fontSize: 14, color: "var(--ink)" }}>{value || "—"}</div>
         </div>
     );
 }
 
-function Section({ title, children, T }) {
+function Section({ title, children }) {
     return (
-        <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.primary, marginBottom: 8, paddingBottom: 5, borderBottom: `1px solid ${T.border}` }}>{title}</div>
+        <div style={{ padding: "16px 20px", borderTop: "1px solid var(--line)" }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>{title}</div>
             {children}
         </div>
     );
@@ -80,136 +85,139 @@ export function DisputesInboxPage() {
         setBusyDoc(false);
     };
 
+    const shell = (children) => (
+        <div data-lx-page data-disputes data-drafting-theme data-mode={draftingMode(T)} data-lenis-prevent>
+            <style>{`${DRAFTING_TOKENS_CSS}\n${LX_PAGE_CSS}`}</style>
+            {children}
+            {toast && <div className="lx-toast" role="status">{toast}</div>}
+        </div>
+    );
+
     // ── Brief detail view ────────────────────────────────────────────────────
     if (brief) {
         const g = brief.grievance || {}, j = brief.jurisdiction || {}, ik = brief.intake || {}, el = brief.eligibility || {};
-        const sm = STATE_META[brief.state] || { label: brief.state, type: "gray" };
-        return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, fontFamily: "'DM Sans', system-ui, sans-serif", maxWidth: 860 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <Btn variant="ghost" size="sm" onClick={() => setBrief(null)}>← Back to inbox</Btn>
-                    <Badge type={sm.type}>{sm.label}</Badge>
-                </div>
+        const sm = STATE_META[brief.state] || { label: brief.state, tone: "muted" };
+        return shell(<>
+            <div className="lx-crumbs">Practice / Overseas disputes / <b>Case brief</b></div>
+            <div className="lx-head">
                 <div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: T.text, fontFamily: "Georgia, serif" }}>Property dispute — case brief</div>
-                    <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>
-                        From {brief.client?.name || "an overseas Pakistani client"} · sent {fmtDate(brief.assignment?.sent_at)}
-                    </div>
+                    <h1>Property dispute — case brief</h1>
+                    <p>From {brief.client?.name || "an overseas Pakistani client"} · sent {fmtDate(brief.assignment?.sent_at)}</p>
                 </div>
-
-                {(brief.hold_reasons || []).length > 0 && (
-                    <Card style={{ padding: 14, borderColor: T.warn }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: T.warn, marginBottom: 6 }}>Held for your review because:</div>
-                        <ul style={{ margin: 0, paddingLeft: 18 }}>
-                            {brief.hold_reasons.map((r, i) => <li key={i} style={{ fontSize: 12.5, color: T.textMuted, marginBottom: 4 }}>{r}</li>)}
-                        </ul>
-                    </Card>
-                )}
-
-                <Card style={{ padding: 18 }}>
-                    <Section title="Overseas-Pakistani eligibility" T={T}>
-                        <Field label="Qualifies" value={el.eligible ? "Yes" : "Not established"} T={T} />
-                        {(el.reasons || []).length > 0 && <Field label="Notes" value={el.reasons.join(" ")} T={T} />}
-                    </Section>
-
-                    <Section title="Grievance classification" T={T}>
-                        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-                            <Field label="Type" value={g.category_label || g.category} T={T} />
-                            <Field label="Confidence" value={g.confidence} T={T} />
-                            <Field label="Needs triage" value={g.needs_triage ? "Yes — ambiguous" : "No — clear"} T={T} />
-                        </div>
-                        {(g.alternatives || []).length > 0 && <Field label="Other possibilities" value={g.alternatives.join(", ")} T={T} />}
-                        {g.reasoning && <Field label="Reasoning" value={g.reasoning} T={T} />}
-                    </Section>
-
-                    <Section title="The facts (as entered)" T={T}>
-                        <Field label="Property" value={ik.property_description} T={T} />
-                        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-                            <Field label="Opposing party" value={ik.opposing_party + (ik.opposing_party_relation ? ` (${ik.opposing_party_relation})` : "")} T={T} />
-                            <Field label="Khasra / registry" value={ik.khasra_number} T={T} />
-                        </div>
-                        <Field label="Timeline" value={ik.timeline} T={T} />
-                        <Field label="Documents held" value={(ik.documents_held || []).join(", ")} T={T} />
-                        <Field label="Relief sought" value={ik.relief_wanted} T={T} />
-                    </Section>
-
-                    <Section title="Jurisdiction (Special Court, 2024 Act)" T={T}>
-                        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-                            <Field label="Province" value={j.province} T={T} />
-                            <Field label="Court status" value={j.court_status} T={T} />
-                            <Field label="Appeal window" value={j.appeal_days ? `${j.appeal_days} days` : "confirm with court"} T={T} />
-                            <Field label="Disposal" value={j.disposal_days ? `${j.disposal_days} days (from leave to defend)` : "—"} T={T} />
-                        </div>
-                    </Section>
-
-                    <Section title="Draft petition" T={T}>
-                        {brief.petition && petitionShared ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                                <Btn variant="primary" size="sm" onClick={downloadPetition} disabled={busyDoc}>
-                                    {busyDoc ? "Downloading…" : "⤓ Download draft petition (PDF)"}
-                                </Btn>
-                                <span style={{ fontSize: 11.5, color: T.textMuted }}>Drafted {fmtDate(brief.petition.drafted_at)} — a DRAFT for you to review, complete and file.</span>
-                            </div>
-                        ) : brief.petition ? (
-                            // Drafted, but the share did not go through — so the
-                            // download would be refused. Say so; offer nothing.
-                            <div data-petition-state="not-shared" style={{ fontSize: 13, color: T.textMuted }}>A petition was drafted, but it has not been shared with you, so it cannot be opened here.</div>
-                        ) : (
-                            <div style={{ fontSize: 13, color: T.textMuted }}>No petition drafted — this dispute was held for your review before drafting.</div>
-                        )}
-                    </Section>
-                </Card>
-
-                {toast && <div style={{ position: "fixed", bottom: 24, right: 24, background: T.card, border: `1px solid ${T.border}`, color: T.text, padding: "10px 16px", borderRadius: 10, fontSize: 13, zIndex: 100 }}>{toast}</div>}
+                <div className="lx-head-end">
+                    <span className={`lx-tag ${sm.tone}`}>{sm.label}</span>
+                    <button type="button" className="lx-btn fill" onClick={() => setBrief(null)}>Back to inbox</button>
+                </div>
             </div>
-        );
+
+            {(brief.hold_reasons || []).length > 0 && (
+                <section className="lx-card lx-pad" style={{ borderColor: "color-mix(in srgb, var(--gold) 45%, var(--line))" }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gold)" }}>Held for your review because:</div>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {brief.hold_reasons.map((r, i) => <li key={i} style={{ fontSize: 13.5, color: "var(--muted)", marginBottom: 4 }}>{r}</li>)}
+                    </ul>
+                </section>
+            )}
+
+            <section className="lx-card lx-flush">
+                <Section title="Overseas-Pakistani eligibility">
+                    <Field label="Qualifies" value={el.eligible ? "Yes" : "Not established"} />
+                    {(el.reasons || []).length > 0 && <Field label="Notes" value={el.reasons.join(" ")} />}
+                </Section>
+
+                <Section title="Grievance classification">
+                    <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                        <Field label="Type" value={g.category_label || g.category} />
+                        <Field label="Confidence" value={g.confidence} />
+                        <Field label="Needs triage" value={g.needs_triage ? "Yes — ambiguous" : "No — clear"} />
+                    </div>
+                    {(g.alternatives || []).length > 0 && <Field label="Other possibilities" value={g.alternatives.join(", ")} />}
+                    {g.reasoning && <Field label="Reasoning" value={g.reasoning} />}
+                </Section>
+
+                <Section title="The facts (as entered)">
+                    <Field label="Property" value={ik.property_description} />
+                    <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                        <Field label="Opposing party" value={ik.opposing_party + (ik.opposing_party_relation ? ` (${ik.opposing_party_relation})` : "")} />
+                        <Field label="Khasra / registry" value={ik.khasra_number} />
+                    </div>
+                    <Field label="Timeline" value={ik.timeline} />
+                    <Field label="Documents held" value={(ik.documents_held || []).join(", ")} />
+                    <Field label="Relief sought" value={ik.relief_wanted} />
+                </Section>
+
+                <Section title="Jurisdiction (Special Court, 2024 Act)">
+                    <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                        <Field label="Province" value={j.province} />
+                        <Field label="Court status" value={j.court_status} />
+                        <Field label="Appeal window" value={j.appeal_days ? `${j.appeal_days} days` : "confirm with court"} />
+                        <Field label="Disposal" value={j.disposal_days ? `${j.disposal_days} days (from leave to defend)` : "—"} />
+                    </div>
+                </Section>
+
+                <Section title="Draft petition">
+                    {brief.petition && petitionShared ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                            <button type="button" className="lx-btn mint" onClick={downloadPetition} disabled={busyDoc}>
+                                {busyDoc ? "Downloading…" : "⤓ Download draft petition (PDF)"}
+                            </button>
+                            <span style={{ fontSize: 13, color: "var(--muted)" }}>Drafted {fmtDate(brief.petition.drafted_at)} — a DRAFT for you to review, complete and file.</span>
+                        </div>
+                    ) : brief.petition ? (
+                        // Drafted, but the share did not go through — so the
+                        // download would be refused. Say so; offer nothing.
+                        <div data-petition-state="not-shared" style={{ fontSize: 13.5, color: "var(--muted)" }}>A petition was drafted, but it has not been shared with you, so it cannot be opened here.</div>
+                    ) : (
+                        <div style={{ fontSize: 13.5, color: "var(--muted)" }}>No petition drafted — this dispute was held for your review before drafting.</div>
+                    )}
+                </Section>
+            </section>
+        </>);
     }
 
     // ── Inbox list ───────────────────────────────────────────────────────────
-    return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 18, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    return shell(<>
+        <div className="lx-crumbs">Practice / <b>Overseas disputes</b></div>
+        <div className="lx-head">
             <div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: T.text, fontFamily: "Georgia, serif" }}>Overseas Property Disputes</div>
-                <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>
-                    Case briefs sent to you by overseas Pakistanis — open one to see the whole case in one place.
-                </div>
+                <h1>Overseas property disputes</h1>
+                <p>Case briefs that overseas Pakistanis send you. Open one to see the whole case in one place.</p>
             </div>
-
-            {loading ? (
-                <div style={{ fontSize: 13, color: T.textMuted }}>Loading…</div>
-            ) : items.length === 0 ? (
-                <Card style={{ padding: 28, textAlign: "center" }}>
-                    <div style={{ fontSize: 14, color: T.text, fontWeight: 600, marginBottom: 4 }}>No case briefs yet</div>
-                    <div style={{ fontSize: 12.5, color: T.textMuted }}>When a client sends you a property dispute, it will appear here.</div>
-                </Card>
-            ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {items.map(d => {
-                        const sm = STATE_META[d.state] || { label: d.state, type: "gray" };
-                        return (
-                            <Card key={d.dispute_id} onClick={() => openBrief(d.dispute_id)} style={{ padding: 16, cursor: "pointer" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                                    <div>
-                                        <div style={{ fontSize: 14.5, fontWeight: 600, color: T.text, marginBottom: 3 }}>{d.category_label || "Property dispute"}</div>
-                                        <div style={{ fontSize: 12, color: T.textMuted }}>
-                                            {d.province || "—"} · sent {fmtDate(d.sent_at)}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        {d.has_petition && <Badge type="info">Petition ready</Badge>}
-                                        <Badge type={sm.type}>{sm.label}</Badge>
-                                        <span style={{ fontSize: 13, color: T.primary, fontWeight: 600 }}>
-                                            {openingId === d.dispute_id ? "Opening…" : "Open →"}
-                                        </span>
-                                    </div>
-                                </div>
-                            </Card>
-                        );
-                    })}
-                </div>
-            )}
-
-            {toast && <div style={{ position: "fixed", bottom: 24, right: 24, background: T.card, border: `1px solid ${T.border}`, color: T.text, padding: "10px 16px", borderRadius: 10, fontSize: 13, zIndex: 100 }}>{toast}</div>}
         </div>
-    );
+
+        <section className="lx-card lx-flush" aria-label="Case briefs" data-disputes-list>
+            <div className="lx-cols" style={{ gridTemplateColumns: COLS }}>
+                <span>Brief</span><span>Province</span><span>Received</span><span>Status</span><span style={{ textAlign: "right" }}>Action</span>
+            </div>
+            {loading ? (
+                <div className="lx-empty-row"><span style={{ color: "var(--muted)" }}>Loading…</span></div>
+            ) : items.length === 0 ? (
+                <div className="lx-empty">
+                    <span className="lx-tile" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l9-8 9 8v10H3z" /><path d="M9 21v-6h6v6" /></svg>
+                    </span>
+                    <b>No case briefs yet</b>
+                    <span className="t">When an overseas client sends you a property dispute, it appears here with everything they shared.</span>
+                </div>
+            ) : items.map(d => {
+                const sm = STATE_META[d.state] || { label: d.state, tone: "muted" };
+                return (
+                    <div key={d.dispute_id} className="lx-row" data-dispute={d.dispute_id} style={{ gridTemplateColumns: COLS }}>
+                        <b style={{ fontSize: 14.5, minWidth: 0 }}>{d.category_label || "Property dispute"}</b>
+                        <span style={{ color: "var(--muted)" }}>{d.province || "—"}</span>
+                        <span style={{ color: "var(--muted)" }}>{fmtDate(d.sent_at)}</span>
+                        <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <span className={`lx-tag ${sm.tone}`}>{sm.label}</span>
+                            {d.has_petition && <span className="lx-tag teal">Petition ready</span>}
+                        </span>
+                        <span style={{ textAlign: "right" }}>
+                            <button type="button" className="lx-btn teal sm" onClick={() => openBrief(d.dispute_id)} disabled={openingId === d.dispute_id}>
+                                {openingId === d.dispute_id ? "Opening…" : "Open"}
+                            </button>
+                        </span>
+                    </div>
+                );
+            })}
+        </section>
+    </>);
 }

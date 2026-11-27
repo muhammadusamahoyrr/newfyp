@@ -4,6 +4,8 @@
 // schedule (and on demand) and matched listings land here + as notifications.
 import { useEffect, useState } from "react";
 import { useTheme } from "./theme.js";
+import { DRAFTING_TOKENS_CSS, draftingMode } from "./draftingTheme.js";
+import { LX_PAGE_CSS } from "./pageShell.js";
 import { Icon, I } from "./icons.jsx";
 import { useToast } from "@/components/lawyer/Toast.jsx";
 import {
@@ -92,156 +94,137 @@ function CauselistPage() {
         setPasteHits(Array.isArray(data) ? data : []);
     };
 
-    const inputStyle = {
-        height: 38, padding: "0 12px", borderRadius: 9, border: `1.5px solid ${t.border}`,
-        background: t.inputBg, color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit",
-    };
+    const listDay = (iso) => iso ? new Date(iso + "T00:00:00") : null;
+    const COLS = "120px minmax(0,1fr) minmax(0,1fr) 90px";
 
+    // 2026-11-27: the app's theme (pageShell.js), full width; listings first,
+    // watched cases in a right rail. The data and every handler are unchanged.
     return (
-        <div style={{ maxWidth: 860 }}>
-            {/* Header */}
-            <div className="fade-up" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
+        <div data-lx-page data-causelist data-drafting-theme data-mode={draftingMode(t)} data-lenis-prevent>
+            <style>{`${DRAFTING_TOKENS_CSS}\n${LX_PAGE_CSS}`}</style>
+            <div className="lx-crumbs">Practice / <b>Cause lists</b></div>
+            <div className="lx-head">
                 <div>
-                    <div className="serif" style={{ fontSize: 22, fontWeight: 700, color: t.text }}>Cause List Watcher</div>
-                    <div style={{ fontSize: 13, color: t.textMuted, marginTop: 3 }}>
-                        Lahore High Court (Principal Seat, Multan, Bahawalpur & Rawalpindi benches) — checked automatically every few hours
-                    </div>
+                    <h1>Cause lists</h1>
+                    <p>Lahore High Court benches (Principal Seat, Multan, Bahawalpur, Rawalpindi) are checked every few hours. You're told when a watched case is listed.</p>
                 </div>
-                <button onClick={checkNow} disabled={checking || !watches.length}
-                    style={{
-                        padding: "9px 18px", borderRadius: 10, border: `1.5px solid ${t.primary}50`,
-                        background: t.primaryGlow2, color: t.primary, fontSize: 12.5, fontWeight: 700,
-                        cursor: checking || !watches.length ? "not-allowed" : "pointer", fontFamily: "inherit",
-                        opacity: checking || !watches.length ? 0.55 : 1,
-                    }}>
-                    {checking ? "Checking LHC…" : "⟳ Check Now"}
-                </button>
-            </div>
-
-            {/* Add watch */}
-            <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Watch a case</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <input value={caseNo} onChange={e => setCaseNo(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && addWatch()}
-                        placeholder="Court case no. — e.g. 39043/26" style={{ ...inputStyle, width: 220 }} />
-                    <input value={titleHint} onChange={e => setTitleHint(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && addWatch()}
-                        placeholder="Label (optional) — e.g. Fayyaz bail matter" style={{ ...inputStyle, flex: 1, minWidth: 200 }} />
-                    <button onClick={addWatch} disabled={!caseNo.trim() || adding}
-                        style={{
-                            padding: "0 20px", height: 38, borderRadius: 9, border: "none",
-                            background: caseNo.trim() ? t.primary : t.border,
-                            color: caseNo.trim() ? (t.mode === "dark" ? "#111B1F" : "#fff") : t.textFaint,
-                            fontSize: 13, fontWeight: 700, cursor: caseNo.trim() ? "pointer" : "default", fontFamily: "inherit",
-                        }}>
-                        {adding ? "Adding…" : "+ Watch"}
+                <div className="lx-head-end">
+                    <button type="button" className="lx-btn teal" onClick={checkNow} disabled={checking || !watches.length}
+                        title={watches.length ? "Check the court's lists now" : "Watch a case first"}>
+                        <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
+                        {checking ? "Checking LHC…" : "Check now"}
                     </button>
                 </div>
+            </div>
 
-                {/* Watches */}
-                {watches.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+            <div className="lx-split">
+                <div className="lx-col">
+                    {/* Upcoming listings */}
+                    <section className="lx-card lx-flush" aria-label="Upcoming listings" data-listings>
+                        <div className="lx-card-head"><b>Upcoming listings</b><span className="lx-count">{entries.length}</span></div>
+                        <div className="lx-cols" style={{ gridTemplateColumns: COLS }}>
+                            <span>Date</span><span>Case</span><span>Court</span><span style={{ textAlign: "right" }}>Share</span>
+                        </div>
+                        {entries.length === 0 ? (
+                            <div className="lx-empty-row">
+                                <span className="lx-tile" aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 13 }}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>
+                                </span>
+                                <div>
+                                    <b style={{ fontSize: 14.5 }}>Nothing listed yet</b>
+                                    <div className="lx-sub">Watch a case on the right. When it appears on a cause list, it shows here and as a notification.</div>
+                                </div>
+                            </div>
+                        ) : entries.map(e => {
+                            const d = listDay(e.hearing_date);
+                            return (
+                                <div key={e.id} className="lx-row" data-listing={e.id} style={{ gridTemplateColumns: COLS }}>
+                                    <span title={fmtDate(e.hearing_date)}>
+                                        <b style={{ display: "block", fontSize: 14 }}>{d ? d.toLocaleDateString("en-PK", { weekday: "short", day: "numeric", month: "short" }) : "—"}</b>
+                                        {e.list_type && <span style={{ fontSize: 12, color: "var(--muted)" }}>{e.list_type}</span>}
+                                    </span>
+                                    <span style={{ minWidth: 0 }}>
+                                        <span className="lx-mono">{e.case_no}</span>
+                                        {e.connected && <span className="lx-tag gold" style={{ marginLeft: 8 }}>Connected matter</span>}
+                                        {e.title && <span style={{ display: "block", fontSize: 13, color: "var(--muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title}</span>}
+                                    </span>
+                                    <span style={{ fontSize: 13, color: "var(--muted)", minWidth: 0 }}>
+                                        {[e.judge, e.court_room, e.seq ? `Seq #${e.seq}` : null].filter(Boolean).join(" · ") || "—"}
+                                        {e.remarks && <span style={{ display: "block", fontSize: 12, color: "var(--faint)" }}>{e.remarks}</span>}
+                                    </span>
+                                    <span style={{ textAlign: "right" }}>
+                                        <button type="button" className="lx-btn fill sm" onClick={() => shareEntryOnWhatsApp(e)} title="Share on WhatsApp">Share</button>
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </section>
+
+                    {/* Paste fallback */}
+                    <section className="lx-card lx-pad" aria-label="Paste a cause list">
+                        <div>
+                            <div className="lx-title">Paste a district court list</div>
+                            <div className="lx-sub">Got the list on WhatsApp? Paste the text and we'll look for your watched cases in it.</div>
+                        </div>
+                        <label>
+                            <span className="lx-sr">Cause list text</span>
+                            <textarea className="lx-input" value={pasteText} onChange={e => setPasteText(e.target.value)} rows={6}
+                                placeholder="Paste the cause list text here" />
+                        </label>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            {pasteHits !== null && (
+                                <span style={{ fontSize: 13, fontWeight: 600, color: pasteHits.length ? "var(--brand-text)" : "var(--muted)" }}>
+                                    {pasteHits.length ? `${pasteHits.length} match${pasteHits.length === 1 ? "" : "es"} found` : "No watched cases in this list"}
+                                </span>
+                            )}
+                            <button type="button" className="lx-btn mint" style={{ marginLeft: "auto" }} onClick={runPasteMatch} disabled={!pasteText.trim() || matching}>
+                                {matching ? "Scanning…" : "Find my cases"}
+                            </button>
+                        </div>
+                        {pasteHits?.length > 0 && pasteHits.map((h, i) => (
+                            <div key={i} style={{ padding: "9px 12px", borderRadius: 10, background: "color-mix(in srgb, var(--brand-text) 10%, transparent)", fontSize: 13 }}>
+                                <span className="lx-mono">{h.case_no}</span>
+                                <span style={{ color: "var(--muted)" }}> — {h.line}</span>
+                            </div>
+                        ))}
+                    </section>
+                </div>
+
+                {/* Watched cases */}
+                <aside className="lx-card lx-pad" aria-label="Watched cases" data-watches>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span className="lx-title">Watched cases</span><span className="lx-count">{watches.length}</span>
+                    </div>
+                    <label className="lx-field">
+                        <span>Court case number</span>
+                        <input className="lx-input" value={caseNo} onChange={e => setCaseNo(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && addWatch()} placeholder="As printed on the list, e.g. 39043/26" />
+                    </label>
+                    <label className="lx-field">
+                        <span>Label <i>(optional)</i></span>
+                        <input className="lx-input" value={titleHint} onChange={e => setTitleHint(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && addWatch()} placeholder="e.g. Fayyaz bail matter" />
+                    </label>
+                    <button type="button" className="lx-btn mint" onClick={addWatch} disabled={!caseNo.trim() || adding}>
+                        {adding ? "Adding…" : "Watch this case"}
+                    </button>
+                    <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                        {watches.length === 0 && <span style={{ fontSize: 13.5, color: "var(--muted)" }}>No cases watched yet.</span>}
                         {watches.map(w => (
-                            <div key={w.id} style={{
-                                display: "flex", alignItems: "center", gap: 8, padding: "6px 8px 6px 12px",
-                                borderRadius: 20, border: `1.5px solid ${t.border}`, background: t.cardHi, fontSize: 12,
-                            }}>
-                                <span className="mono" style={{ fontWeight: 700, color: t.primary }}>{w.case_no}</span>
-                                {w.title_hint && <span style={{ color: t.textMuted, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.title_hint}</span>}
-                                {w.last_listed_date && <span style={{ color: t.success, fontSize: 10.5, fontWeight: 600 }}>listed {w.last_listed_date}</span>}
-                                <button onClick={() => removeWatch(w.id)} title="Stop watching"
-                                    style={{ width: 20, height: 20, borderRadius: "50%", border: "none", background: "transparent", color: t.textFaint, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                                    onMouseEnter={e => e.currentTarget.style.color = t.danger}
-                                    onMouseLeave={e => e.currentTarget.style.color = t.textFaint}>
-                                    <Icon d={I.x} size={11} />
+                            <div key={w.id} data-watch={w.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: "var(--surface-2)" }}>
+                                <div style={{ minWidth: 0, flex: 1 }}>
+                                    <span className="lx-mono">{w.case_no}</span>
+                                    {w.title_hint && <span style={{ display: "block", fontSize: 12.5, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.title_hint}</span>}
+                                    {w.last_listed_date && <span style={{ display: "block", fontSize: 12, color: "var(--brand-text)", fontWeight: 600 }}>Listed {w.last_listed_date}</span>}
+                                </div>
+                                <button type="button" className="lx-btn fill sm" onClick={() => removeWatch(w.id)} title="Stop watching" aria-label={`Stop watching ${w.case_no}`}
+                                    style={{ width: 34, padding: 0 }}>
+                                    <Icon d={I.x} size={13} />
                                 </button>
                             </div>
                         ))}
                     </div>
-                )}
-                {watches.length === 0 && (
-                    <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 10 }}>
-                        No watches yet — add the court's case number (as printed on the cause list) and we'll tell you the moment it's listed.
-                    </div>
-                )}
-            </div>
-
-            {/* Upcoming listings */}
-            <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Upcoming listings</div>
-                {entries.length === 0 ? (
-                    <div style={{ fontSize: 12.5, color: t.textMuted }}>Nothing matched yet — listings appear here (and as notifications) when a watched case shows up on the cause list.</div>
-                ) : entries.map(e => (
-                    <div key={e.id} style={{
-                        display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 4px",
-                        borderTop: `1px solid ${t.border}`,
-                    }}>
-                        <div style={{
-                            minWidth: 52, textAlign: "center", padding: "6px 4px", borderRadius: 10,
-                            background: t.primaryGlow2, border: `1px solid ${t.primary}30`,
-                        }}>
-                            <div style={{ fontSize: 16, fontWeight: 800, color: t.primary, lineHeight: 1.1 }}>
-                                {e.hearing_date ? new Date(e.hearing_date + "T00:00:00").getDate() : "?"}
-                            </div>
-                            <div style={{ fontSize: 9.5, fontWeight: 700, color: t.primary, textTransform: "uppercase" }}>
-                                {e.hearing_date ? new Date(e.hearing_date + "T00:00:00").toLocaleDateString("en", { month: "short" }) : ""}
-                            </div>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 700, color: t.text }}>
-                                <span className="mono" style={{ color: t.primary }}>{e.case_no}</span>
-                                {e.title ? ` — ${e.title}` : ""}
-                                {e.connected && <span style={{ fontSize: 10, color: t.warn, fontWeight: 700 }}> (connected matter)</span>}
-                            </div>
-                            <div style={{ fontSize: 12, color: t.textMuted, marginTop: 3 }}>
-                                {[e.judge, e.court_room, e.seq ? `Seq #${e.seq}` : null, e.list_type].filter(Boolean).join(" · ")}
-                            </div>
-                            <div style={{ fontSize: 11.5, color: t.textFaint, marginTop: 2 }}>{fmtDate(e.hearing_date)}{e.remarks ? ` · ${e.remarks}` : ""}</div>
-                        </div>
-                        <button onClick={() => shareEntryOnWhatsApp(e)} title="Share on WhatsApp"
-                            style={{
-                                display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 8,
-                                border: "1px solid #25D36650", background: "#25D36615", color: "#25D366",
-                                fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
-                            }}>
-                            Share
-                        </button>
-                    </div>
-                ))}
-            </div>
-
-            {/* Paste fallback */}
-            <div style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 14, padding: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Paste a cause list</div>
-                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 10 }}>
-                    District court list from a WhatsApp group? Paste the text — we'll scan it for your watched cases.
-                </div>
-                <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} rows={5}
-                    placeholder="Paste the cause-list text here…"
-                    style={{ ...inputStyle, width: "100%", height: "auto", padding: 12, resize: "vertical", lineHeight: 1.6, boxSizing: "border-box" }} />
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-                    <button onClick={runPasteMatch} disabled={!pasteText.trim() || matching}
-                        style={{
-                            padding: "8px 18px", borderRadius: 9, border: `1.5px solid ${t.border}`,
-                            background: t.cardHi, color: t.text, fontSize: 12.5, fontWeight: 700,
-                            cursor: pasteText.trim() ? "pointer" : "default", fontFamily: "inherit",
-                            opacity: pasteText.trim() ? 1 : 0.5,
-                        }}>
-                        {matching ? "Scanning…" : "🔍 Find my cases"}
-                    </button>
-                    {pasteHits !== null && (
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: pasteHits.length ? t.success : t.textMuted }}>
-                            {pasteHits.length ? `${pasteHits.length} match${pasteHits.length === 1 ? "" : "es"} found` : "No watched cases in this list"}
-                        </span>
-                    )}
-                </div>
-                {pasteHits?.length > 0 && pasteHits.map((h, i) => (
-                    <div key={i} style={{ marginTop: 8, padding: "8px 12px", borderRadius: 9, background: `${t.success}12`, border: `1px solid ${t.success}35`, fontSize: 12 }}>
-                        <span className="mono" style={{ fontWeight: 700, color: t.success }}>{h.case_no}</span>
-                        <span style={{ color: t.textDim }}> — {h.line}</span>
-                    </div>
-                ))}
+                </aside>
             </div>
         </div>
     );

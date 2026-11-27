@@ -59,7 +59,7 @@ async function openBrief(petition) {
     await settle();
 
     const row = [...container.querySelectorAll("*")].find(
-        el => el.textContent.trim() === "Open →");
+        el => el.tagName === "BUTTON" && el.textContent.trim() === "Open");
     assert.ok(row, "inbox row not rendered");
     await act(async () => { row.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); });
     await settle();

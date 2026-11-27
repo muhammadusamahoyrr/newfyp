@@ -1584,7 +1584,7 @@ function CreateMenu({ t, onPick }) {
         <div ref={ref} style={{ position: "relative" }}>
             {/* The page's main action: the theme's green-to-cyan gradient (2026-10-09). */}
             <PillButton ref={trigger} t={t} variant="solid" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}
-                style={{ background: "linear-gradient(90deg, #3EE0A1, #38CDE0)", color: "#0b1c22", border: "none", fontWeight: 700, boxShadow: "0 8px 18px -12px rgba(46,196,214,0.8)", height: 38, padding: "0 16px", fontSize: 13.5 }}>
+                style={{ background: "linear-gradient(135deg,#3EE0A1,#2EC4D6)", color: "#04212A", border: "none", fontWeight: 700, boxShadow: "0 8px 18px -12px rgba(46,196,214,0.8)", height: 36, padding: "0 16px", fontSize: 13.5 }}>
                 <Icon d={I.plus} size={15} /> Create <Icon d={I.chevronDown} size={14} />
             </PillButton>
             {open && (
@@ -1852,6 +1852,11 @@ const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 // The Cases stage-bar colours (2026-10-09): cyan for what is waiting now,
 // green for what is done.
 const CYAN = "#6ADDEB";
+const GOLD_SOFT = "#F2C35E";
+const BTN_MINT = { border: "none", background: "linear-gradient(135deg,#3EE0A1,#2EC4D6)", color: "#04212A", boxShadow: "none" };
+const BTN_TEAL = { border: "none", background: "linear-gradient(180deg,#8AE7F2 0%,#5BCFE2 55%,#3FBFD6 100%)", color: "#04212A", boxShadow: "none" };
+const BTN_GOLD = { border: "none", background: "#F2C35E", color: "#2A1E00", boxShadow: "none" };
+const BTN_FILL = { border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.08)", color: "#F1F5F6" };
 const GREEN = "#3ec99a";
 
 /* EACH DASHBOARD CARD IN ITS OWN ACCENT (2026-10-09). One family -- every card
@@ -1916,21 +1921,20 @@ function PendingCard({ t, total, items, now, canAccept, onReview, onAcceptAll, c
             {/* Decorative ring, behind everything. */}
             <div aria-hidden="true" style={{ position: "absolute", right: -65, top: -48, width: 205, height: 205, borderRadius: "50%", border: "29px solid rgba(106,221,235,0.06)", pointerEvents: "none" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative" }}>
-                <DashLabel t={t} color={CYAN}>Pending requests</DashLabel>
+                <DashLabel t={t} color={GOLD_SOFT}>Pending requests</DashLabel>
                 <button type="button" onClick={() => onReview()}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.16)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+                    onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.06)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.filter = "none"; }}
                     style={{
-                        height: 26, padding: "0 12px", borderRadius: 999,
-                        border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.08)",
-                        color: "#e6efff", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                        transition: "background .15s",
-                    }}>View all →</button>
+                        height: 28, padding: "0 13px", borderRadius: 999, ...BTN_TEAL,
+                        fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                        transition: "filter .15s",
+                    }}>View all</button>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 14, position: "relative" }}>
                 {/* The display serif (Cormorant Garamond, as the page headings)
                     for the figure and its headline; DM Sans for everything else. */}
-                <span data-value className="serif" style={{ fontSize: 62, lineHeight: 0.85, fontWeight: 700, color: CYAN, textShadow: "0 2px 18px rgba(106,221,235,0.35)" }}>{count}</span>
+                <span data-value className="serif" style={{ fontSize: 62, lineHeight: 0.85, fontWeight: 700, color: GOLD_SOFT, textShadow: "0 2px 18px rgba(242,195,94,0.25)" }}>{count}</span>
                 <div>
                     <div className="serif" style={{ fontSize: 25, lineHeight: 1.1, fontWeight: 700, color: t.text }}>{count === 1 ? "request waiting" : "requests waiting"}</div>
                     <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 4 }}>
@@ -1976,15 +1980,15 @@ function PendingCard({ t, total, items, now, canAccept, onReview, onAcceptAll, c
                     {step === "idle" && (<>
                         <button type="button" disabled={acceptable.length === 0} onClick={() => setStep("confirm")}
                             title={acceptable.length === 0 ? (clashN ? "Every open request clashes with your diary — accept them one by one" : "No request can be accepted: none, or their times have passed") : undefined}
-                            style={{ ...pillStyle(t), height: 33, padding: "0 14px", fontSize: 12.5, opacity: acceptable.length === 0 ? 0.5 : 1, cursor: acceptable.length === 0 ? "not-allowed" : "pointer" }}>Accept all</button>
-                        <button type="button" onClick={() => onReview()} style={{ ...pillStyle(t), height: 33, padding: "0 16px", fontSize: 12.5, border: "none", background: CYAN, color: "#0b1c22", boxShadow: "0 4px 14px rgba(106,221,235,0.28)" }}>Answer appointment requests</button>
+                            style={{ ...pillStyle(t), height: 33, padding: "0 14px", fontSize: 12.5, ...BTN_FILL, opacity: acceptable.length === 0 ? 0.5 : 1, cursor: acceptable.length === 0 ? "not-allowed" : "pointer" }}>Accept all</button>
+                        <button type="button" onClick={() => onReview()} style={{ ...pillStyle(t), height: 33, padding: "0 16px", fontSize: 12.5, ...BTN_MINT }}>Answer appointment requests</button>
                     </>)}
                     {step !== "idle" && (<>
                         <span style={{ fontSize: 12.5, color: t.textMuted }}>
                             Accept {acceptable.length} request{acceptable.length === 1 ? "" : "s"}{(passedN || clashN) ? ` (${[passedN ? `${passedN} already passed` : null, clashN ? `${clashN} clash${clashN === 1 ? "es" : ""} with your diary — accept ${clashN === 1 ? "it" : "them"} one by one` : null].filter(Boolean).join(", ")})` : ""}?
                         </span>
-                        <button type="button" disabled={step === "busy"} onClick={() => setStep("idle")} style={{ ...pillStyle(t), height: 33, padding: "0 14px", fontSize: 12.5 }}>Cancel</button>
-                        <button type="button" disabled={step === "busy"} onClick={run} style={{ ...pillStyle(t), height: 33, padding: "0 16px", fontSize: 12.5, border: "none", background: CYAN, color: "#0b1c22" }}>
+                        <button type="button" disabled={step === "busy"} onClick={() => setStep("idle")} style={{ ...pillStyle(t), height: 33, padding: "0 14px", fontSize: 12.5, ...BTN_FILL }}>Cancel</button>
+                        <button type="button" disabled={step === "busy"} onClick={run} style={{ ...pillStyle(t), height: 33, padding: "0 16px", fontSize: 12.5, ...BTN_MINT }}>
                             {step === "busy" ? "Accepting…" : "Confirm"}
                         </button>
                     </>)}
@@ -2025,7 +2029,7 @@ function TodayCard({ t, items, workMinutes, now, pendingCount }) {
                     <text x="33" y="38" textAnchor="middle" fontSize="13" fontWeight="800" fill={t.text}>{hoursText}</text>
                 </svg>
                 <div>
-                    <div data-value style={{ fontSize: 28, lineHeight: 1, fontWeight: 700, color: items.length ? TEAL : t.textMuted }}>{items.length}</div>
+                    <div data-value style={{ fontSize: 28, lineHeight: 1, fontWeight: 700, color: t.text }}>{items.length}</div>
                     <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 3 }}>{items.length === 1 ? "meeting booked" : "meetings booked"}</div>
                 </div>
             </div>
@@ -2093,7 +2097,7 @@ function CompletedCard({ t, items }) {
                 <DashLabel t={t} color={GREEN}>Completed</DashLabel>
                 <span style={{ fontSize: 13, fontWeight: 700, color: t.textMuted }}>{monthTitle(month).split(" ")[0]}</span>
             </div>
-            <div data-value style={{ fontSize: 28, lineHeight: 1.1, fontWeight: 700, color: done ? GREEN : t.textMuted }}>{done}</div>
+            <div data-value style={{ fontSize: 28, lineHeight: 1.1, fontWeight: 700, color: done ? GREEN : t.text }}>{done}</div>
             <div style={{ fontSize: 12.5, color: t.textMuted }}>
                 {done === 0 && noShows === 0 ? "No outcomes recorded yet"
                     : `consultation${done === 1 ? "" : "s"} completed this month${noShows ? ` · ${noShows} no-show${noShows === 1 ? "" : "s"}` : ""}`}
@@ -2124,7 +2128,7 @@ function HoursCard({ t, hours, onOpen }) {
                     : "Until you do, clients are told your availability is not set."}
             </div>
             <div style={{ flex: 1 }} />
-            <button type="button" onClick={onOpen} style={{ ...pillStyle(t), alignSelf: "flex-start", height: 31, padding: "0 14px", fontSize: 12.5, border: "none", background: "#f2f2ec", color: "#16262b" }}>
+            <button type="button" onClick={onOpen} style={{ ...pillStyle(t), alignSelf: "flex-start", height: 31, padding: "0 14px", fontSize: 12.5, ...BTN_GOLD }}>
                 {configured ? "Edit hours" : "Set up · 2 min"}
             </button>
         </section>
@@ -2623,6 +2627,32 @@ export const APPTS_THEME_CSS = `[data-appts-ws]{height:100%;box-sizing:border-bo
 [data-appts-ws] .jc-change{border:0;background:none;padding:0;color:var(--brand-text);font:inherit;font-weight:700;cursor:pointer}
 [data-appts-ws] .jc-change:hover{text-decoration:underline;text-underline-offset:3px}
 [data-appts-ws] .jc-join{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+/* THE LIST AS ROWS (2026-11-27): one panel, a heading per day, a compact row
+   per appointment -- time, who, what, and the next action on the right. */
+[data-appts-ws] .lc-list{gap:8px;padding:6px 14px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+[data-appts-ws] .lc-dayhead{padding:12px 4px 2px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+[data-appts-ws] .lc{position:relative;grid-template-columns:84px 40px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 16px;border-radius:14px;border:1px solid var(--line);border-left:3px solid var(--c,#38d8c4);background:var(--surface-2)}
+[data-appts-ws] .lc.case-meet{border-left:3px solid #5ab3ff;padding-left:16px}
+[data-appts-ws] .lc-time{display:flex;flex-direction:column;line-height:1.25}
+[data-appts-ws] .lc-time b{font-size:14.5px;color:var(--ink)}
+[data-appts-ws] .lc-time small{font-size:12px;color:var(--faint)}
+[data-appts-ws] .lc-time .lc-day-small{font-size:11.5px;font-weight:700;color:var(--muted)}
+[data-appts-ws] .lc-av{width:40px;height:40px;font-size:13px}
+[data-appts-ws] .lc-main{gap:4px}
+[data-appts-ws] .lc-top{gap:8px}
+[data-appts-ws] .lc-name{font-size:14.5px}
+[data-appts-ws] .lc-meta{gap:4px 14px;font-size:13px}
+[data-appts-ws] .lc-note{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-appts-ws] .lc-actions{grid-column:4;grid-row:1;padding-top:0;border-top:0;justify-content:flex-end;flex-wrap:wrap;max-width:440px}
+[data-appts-ws] .lc-actions .danger{margin-left:0}
+[data-appts-ws] .lc-newmsg{position:absolute;grid-column:auto;grid-row:auto;top:-10px;right:-10px;width:34px;height:34px;z-index:1;background:#3a1c22}
+[data-appts-ws] .lc .lc-btn{height:34px;padding:0 15px;font-size:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:var(--ink)}
+[data-appts-ws] .lc .lc-btn.primary{border:0;background:linear-gradient(135deg,#3EE0A1,#2EC4D6);color:#04212A;box-shadow:none}
+[data-appts-ws] .lc .lc-btn.primary:hover:not(:disabled){filter:brightness(1.06);color:#04212A}
+[data-appts-ws] .lc .lc-btn.go{border:0;background:linear-gradient(180deg,#8AE7F2 0%,#5BCFE2 55%,#3FBFD6 100%);color:#04212A}
+[data-appts-ws] .lc .lc-btn.go:hover:not(:disabled){filter:brightness(1.06);color:#04212A}
+[data-appts-ws] .lc .lc-btn.danger{border:1px solid rgba(255,138,128,.45);background:rgba(255,138,128,.14);color:var(--danger)}
+[data-appts-ws] .lc .lc-btn:disabled{opacity:.5;cursor:not-allowed}
 /* Pill buttons in the page's own green, like Export Excel (2026-10-12). */
 [data-appts-ws] .lc-btn,[data-appts-ws] .ld-foot .ad-btn,[data-appts-ws] .jc-copy,[data-appts-ws] .ad-actions .ad-btn{border-radius:999px}
 [data-appts-ws] .lc-btn.primary,[data-appts-ws] .ld-foot .ad-btn.primary,[data-appts-ws] .ad-actions .ad-btn.primary{border:1px solid transparent;background:linear-gradient(135deg,#12897f 0%,#1c9c66 100%);color:#fff;box-shadow:0 4px 14px rgba(28,156,102,.28);transition:filter .15s}
@@ -2671,7 +2701,7 @@ function clashText(list) {
         : (DIARY_STYLES[c.kind] || DIARY_STYLES.event).label} · ${c.title} ${hm24(c.at)}`).join(", ");
 }
 
-function LawyerApptCard({ apt, now, clashes, caseTitle, gates, on, engagement = null, thread = null }) {
+function LawyerApptCard({ apt, now, clashes, caseTitle, gates, on, engagement = null, thread = null, showDay = true }) {
     const inAppVideo = useVideoConfigured();
     const { day, span } = apptWhen(apt);
     const start = apt.at ? +apt.at : null;
@@ -2688,25 +2718,30 @@ function LawyerApptCard({ apt, now, clashes, caseTitle, gates, on, engagement = 
             ? (toClose ? `Ended ${untilLabel(now - end)} ago` : running ? "Happening now" : start ? `In ${untilLabel(start - now)}` : null)
             : null;
     const video = apt.type === "Video Call";
+    // A list row (2026-11-27): the time on the left, one line of who and what.
+    const [fromHM, toHM] = String(span || "").split("–");
     return (
         <article className={`lc${apt.caseMeeting ? " case-meet" : ""}`} data-appt-card={apt.id} data-case-meeting={apt.caseMeeting || undefined} style={{ "--c": tone }}>
+            <div className="lc-time">
+                {showDay && <small className="lc-day-small">{day}</small>}
+                <b>{fromHM || span}</b>
+                {toHM && <small>to {toHM}</small>}
+            </div>
             <div className="lc-av" aria-hidden="true">{apt.initials}</div>
             <div className="lc-main">
                 <div className="lc-top">
                     <b className="lc-name">{apt.client}</b>
-                    {toClose ? <span className="lc-needs" data-needs-outcome>Needs outcome</span> : <StatusBadge status={apt.status} />}
+                    {toClose ? <span className="lc-needs" data-needs-outcome title="Record what happened. Until you complete it, the client cannot hire you or leave a review.">Needs outcome</span> : <StatusBadge status={apt.status} />}
                     {when && <span className="lc-when">{when}</span>}
                     {apt.caseMeeting && <span className="lc-kind" data-case-meeting-chip>Case meeting{apt.caseNumber ? ` · ${apt.caseNumber}` : ""}</span>}
                 </div>
                 <div className="lc-meta">
-                    <span><Icon d={I.calendar} size={14} />{day}</span>
-                    <span><Icon d={I.clock} size={14} />{span} PKT</span>
                     <span><Icon d={MODE_ICON[apt.type] || I.calendar} size={14} />{MODE_WORD[apt.type] || apt.type}</span>
                     {apt.caseId && on.openCase && caseTitle
                         ? <button type="button" className="lc-case" onClick={() => on.openCase(apt.caseId)}><Icon d={I.fileText} size={14} />{caseTitle || "Linked case"} ↗</button>
                         : <span title={apt.caseId && !caseTitle ? "This case is the client's; you can open it once they hire you" : undefined}><Icon d={I.fileText} size={14} />{apt.caseId ? (caseTitle || "Client's case") : "General consultation"}</span>}
                 </div>
-                {apt.note && <p className="lc-note">“{apt.note}”</p>}
+                {apt.note && <p className="lc-note" title={apt.note}>“{apt.note}”</p>}
                 {/* What the client shared, on the card the lawyer decides from. */}
                 <ClientSummary apt={apt} />
                 <ClientFiles apt={apt} />
@@ -2745,9 +2780,6 @@ function LawyerApptCard({ apt, now, clashes, caseTitle, gates, on, engagement = 
                         ? <div className="lc-flag warn"><Icon d={I.alert} size={14} />Clashes with: {clashText(clashes)}</div>
                         : <div className="lc-flag ok"><Icon d={I.checkCircle} size={14} />No clash with your other appointments or hearings</div>
                 )}
-                {toClose && (
-                    <div className="lc-flag warn"><Icon d={I.alert} size={14} />Record what happened. Until you complete it, the client cannot hire you or leave a review.</div>
-                )}
             </div>
             {/* A new message from the client (2026-10-20): a chat icon with the
                 count in the card's top-right corner; hover shows the message,
@@ -2773,7 +2805,7 @@ function LawyerApptCard({ apt, now, clashes, caseTitle, gates, on, engagement = 
                     <button type="button" className="ad-btn primary lc-btn" onClick={() => on.openRequest(engagement)}>Review request</button>
                 )}
                 {apt.status === "Completed" && engagement?.status === "accepted" && engagement.case_id && on.openCase && (
-                    <button type="button" className="ad-btn lc-btn" onClick={() => on.openCase(engagement.case_id)}>Open case</button>
+                    <button type="button" className="ad-btn lc-btn go" onClick={() => on.openCase(engagement.case_id)}>Open case</button>
                 )}
                 {apt.status === "Upcoming" && (<>
                     {/* Not once it has ended: there is no call left to join.
@@ -4107,7 +4139,9 @@ function AppointmentsScreen() {
                         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                             <PillButton t={t} variant="solid" onClick={exportMonth} disabled={exporting}
                                 title={`Download ${monthTitle(calMonth)} as a CSV file that opens in Excel`}
-                                style={{ cursor: exporting ? "wait" : "pointer", height: 38, padding: "0 16px", fontSize: 13.5 }}>
+                                style={{ cursor: exporting ? "wait" : "pointer", height: 36, padding: "0 16px", fontSize: 13.5,
+                                    background: "linear-gradient(180deg,#8AE7F2 0%,#5BCFE2 55%,#3FBFD6 100%)", color: "#04212A", border: "none",
+                                    boxShadow: "0 8px 18px -12px rgba(63,191,214,0.8)" }}>
                                 <Icon d={I.download} size={15} /> {exporting ? "Exporting…" : "Export Excel"}
                             </PillButton>
                             <CreateMenu t={t} onPick={kind => openCreate(kind)} />
@@ -4223,8 +4257,13 @@ function AppointmentsScreen() {
                                     {statusF === "Needs outcome" && (
                                         <NeedsOutcome t={t} refreshKey={calVersion} renderRow={item => apptCard(mapApiAppt(item))} />
                                     )}
-                                    {appointments.filter(apt => !(statusF === "Upcoming" && apt.endAt && +apt.endAt <= now)).map(apt => (
-                                        <LawyerApptCard key={apt.id} apt={apt} now={now}
+                                    {appointments.filter(apt => !(statusF === "Upcoming" && apt.endAt && +apt.endAt <= now)).map((apt, i, arr) => {
+                                        // A day heading above the first row of each day (2026-11-27).
+                                        const dayOf = a => (a.at ? formatPkt(a.at, { weekday: "long", day: "numeric", month: "short" }) : a.date || "");
+                                        const head = i === 0 || dayOf(arr[i - 1]) !== dayOf(apt);
+                                        return (<Fragment key={apt.id}>
+                                        {head && <div className="lc-dayhead" data-day-head>{dayOf(apt)}</div>}
+                                        <LawyerApptCard apt={apt} now={now} showDay={false}
                                             clashes={apt.status === "Pending" ? requestClashes(apt) : []}
                                             caseTitle={caseTitles[apt.caseId]}
                                             engagement={engByAppt[apt.id] || null}
@@ -4236,7 +4275,8 @@ function AppointmentsScreen() {
                                                 join: setJoinModal, complete: setCloseFor, noShow: (x) => handleNoShow(x.id),
                                                 openCase, openRequest, message: openThreadOf,
                                             }} />
-                                    ))}
+                                        </Fragment>);
+                                    })}
 
                                     {loading && (
                                         <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 40, color: t.textMuted, fontSize: 14 }}>

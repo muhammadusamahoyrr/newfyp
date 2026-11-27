@@ -392,3 +392,22 @@ test("the Needs outcome tab: each row has one Record outcome that opens the same
     assert.deepEqual(radios, ["It took place", "The client didn't attend", "I couldn't attend", "It didn't take place"]);
     await ui.unmount();
 });
+
+/* 2026-11-27: the list reads like an agenda -- a heading per day, the time on
+ * the left of each row, and no second "date" in the row itself. */
+test("the list has one heading per day and the time on each row", async () => {
+    const day1 = new Date(Date.UTC(2030, 0, 8, 6, 0));   // 11:00 PKT
+    const day2 = new Date(Date.UTC(2030, 0, 9, 6, 0));
+    const iso = d => d.toISOString();
+    const ui = await mount([
+        appointment({ id: "d1a", client_name: "Ayesha Bibi", scheduled_at: iso(day1), end_at: iso(new Date(+day1 + 36e5)) }),
+        appointment({ id: "d1b", client_name: "Bilal Raza", scheduled_at: iso(new Date(+day1 + 2 * 36e5)), end_at: iso(new Date(+day1 + 3 * 36e5)) }),
+        appointment({ id: "d2a", client_name: "Sana Ali", scheduled_at: iso(day2), end_at: iso(new Date(+day2 + 36e5)) }),
+    ]);
+    const heads = [...ui.container.querySelectorAll(".lc-list [data-day-head]")].map(h => h.textContent);
+    assert.equal(heads.length, 2, `expected one heading per day, got ${JSON.stringify(heads)}`);
+    const row = ui.container.querySelector('[data-appt-card="d1a"]');
+    assert.match(row.querySelector(".lc-time").textContent, /11:00/);
+    assert.equal(row.querySelector(".lc-day-small"), null, "the row repeats the day under its heading");
+    await ui.unmount?.();
+});

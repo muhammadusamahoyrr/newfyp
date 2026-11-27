@@ -637,7 +637,7 @@ function BarMenu({ label, icon, badge, children, width = 240 }) {
     return (
         <div ref={box} style={{ position: "relative" }}>
             <button type="button" aria-haspopup="true" aria-expanded={open} onClick={() => setOpen(o => !o)}
-                style={ghostBtn(T, { height: 44, padding: "0 16px", borderRadius: 12, gap: 8, background: open ? "rgba(56,216,196,0.08)" : "transparent", borderColor: open || badge ? TEAL + "77" : T.border })}>
+                style={ghostBtn(T, { height: 40, padding: "0 16px", borderRadius: 999, gap: 8, background: open ? "rgba(56,216,196,0.14)" : "rgba(255,255,255,0.08)", borderColor: open || badge ? TEAL + "77" : "rgba(255,255,255,0.12)" })}>
                 <Icon d={icon} size={15} />
                 {label}
                 {badge ? <span style={{ minWidth: 20, height: 20, padding: "0 6px", borderRadius: 999, background: TEAL, color: "#0b1c22", fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{badge}</span> : null}
@@ -1008,6 +1008,50 @@ export const CASES_WS_CSS = `[data-cases-ws]{height:100%;color:var(--ink);font-f
 [data-cases-ws] .cw-paper{width:40px;height:50px;flex:none;border-radius:4px;background:#FBF8EF;box-shadow:0 2px 6px rgba(0,0,0,.25);display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 8px}
 [data-cases-ws] .cw-paper i{display:block;height:2px;border-radius:1px;background:rgba(40,60,70,.3)}
 [data-cases-ws] .cw-paper i:last-child{width:60%}
+/* CASE PAGE "A REFINED" (2026-11-27): header without the icon tile, actions on
+   the facts line, slim stages, pill tabs, filled buttons, one timeline. */
+[data-cases-ws] .cw-head{display:flex;flex-direction:column;gap:10px;padding:18px 22px 16px;border-radius:18px}
+[data-cases-ws] .cw-head .cw-crumbs{font-size:12.5px}
+[data-cases-ws] .cw-title{margin:0;font-size:26px!important;line-height:1.25!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-cases-ws] .cw-head .cw-meta{margin-top:0;gap:8px 14px;font-size:13.5px}
+[data-cases-ws] .cw-head .cw-pill{height:24px;font-size:12px}
+[data-cases-ws] .cw-head .cw-actions{margin-left:auto;gap:8px;flex-wrap:wrap}
+[data-cases-ws] .cw-btn{height:34px;padding:0 14px;border-radius:999px;font-size:13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08)}
+[data-cases-ws][data-mode="light"] .cw-btn{background:var(--chip-n);border-color:var(--line)}
+[data-cases-ws] .cw-btn.teal{border-color:color-mix(in srgb,var(--teal-ink) 45%,transparent);background:color-mix(in srgb,var(--teal-ink) 14%,transparent);color:var(--teal-ink)}
+[data-cases-ws] .cw-btn.xs{height:28px;padding:0 12px;font-size:12.5px}
+[data-cases-ws] .cw-btn.danger.tint{border-color:color-mix(in srgb,var(--danger) 45%,transparent);background:var(--danger-soft)}
+[data-cases-ws] .cw-cta{height:34px;padding:0 16px;border-radius:999px;font-size:13px;box-shadow:none}
+[data-cases-ws] .cw-cta.sm{height:32px;padding:0 14px}
+[data-cases-ws] .cw-form .cw-cta{height:36px;padding:0 16px;font-size:13px;margin-bottom:2px;justify-self:start}
+[data-cases-ws] .cw-form .cw-cta svg{width:14px;height:14px}
+[data-cases-ws] .cw-stages{list-style:none;margin:0;padding:10px 0 0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+[data-cases-ws] .cw-stages li{display:flex;align-items:center;gap:7px;min-width:0;font-size:12.5px;white-space:nowrap}
+[data-cases-ws] .cw-stages i{width:16px;height:16px;flex:none;margin:0;border-radius:50%;box-sizing:border-box;border:2px solid var(--line-strong);background:none;display:grid;place-items:center;color:#04212A}
+[data-cases-ws] .cw-stages .done i{border:0;background:var(--green)}
+[data-cases-ws] .cw-stages .now i{border-color:var(--teal-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--teal-ink) 22%,transparent)}
+[data-cases-ws] .cw-stages b{font-size:12.5px;font-weight:600;color:var(--muted)}
+[data-cases-ws] .cw-stages .done b{color:var(--ink)}
+[data-cases-ws] .cw-stages .now b{color:var(--teal-ink);font-weight:800}
+[data-cases-ws] .cw-stages small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+[data-cases-ws] .cw-tabs{gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--surface);width:max-content}
+[data-cases-ws] .cw-tabs button{height:34px;padding:0 16px;margin:0;border:0;border-radius:999px;color:var(--ink);font-size:13.5px;font-weight:700}
+[data-cases-ws] .cw-tabs button[aria-selected="true"]{background:#F3F2F4;color:#2A282C;border:0}
+[data-cases-ws][data-mode="light"] .cw-tabs button[aria-selected="true"]{background:var(--chip-on-bg,#1A2E35);color:var(--chip-on-ink,#EAF2F4)}
+[data-cases-ws] .cw-tabs button[aria-selected="true"] .cw-n{background:rgba(0,0,0,.1);color:inherit}
+[data-cases-ws] .cw-note.gold{border-color:color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 10%,transparent);color:var(--ink)}
+[data-cases-ws] .cw-note.teal{border-color:color-mix(in srgb,var(--teal-ink) 35%,transparent);background:color-mix(in srgb,var(--teal-ink) 8%,transparent);color:var(--ink)}
+[data-cases-ws] .cw-split{grid-template-columns:minmax(0,1fr) 340px;gap:16px}
+[data-cases-ws] .cw-card{border-radius:18px;padding:16px 18px}
+[data-cases-ws] .cw-lead{padding:18px 20px}
+[data-cases-ws] .cw-lead h2{font-size:20px}
+[data-cases-ws] .cw-card-title{font-size:15px;font-weight:700;color:var(--ink)}
+[data-cases-ws] .cw-sub-label{margin-top:12px;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+[data-cases-ws] .cw-left{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+[data-cases-ws] .cw-left-row{display:flex;align-items:center;gap:10px;min-height:42px;padding:6px 8px 6px 12px;border-radius:10px;background:var(--surface-2);font-size:13.5px;font-weight:600}
+[data-cases-ws]:not([data-mode="light"]) .cw-left-row{background:#24474F}
+[data-cases-ws] .cw-left-row>span:first-child{flex:1}
+[data-cases-ws] .cw-done-line{margin-top:10px;font-size:12.5px;color:var(--faint)}
 /* Light mode: the accent teal (#38d8c4) is too pale for TEXT on a light ground; inline text in it reads in the theme's darker brand teal. Teal-filled buttons keep it. */
 [data-cases-ws][data-mode="light"] [style*="color: rgb(56, 216, 196)"]:not([style*="background: rgb(56, 216, 196)"]):not([style*="background-color: rgb(56, 216, 196)"]),[data-cases-modal][data-mode="light"] [style*="color: rgb(56, 216, 196)"]:not([style*="background: rgb(56, 216, 196)"]):not([style*="background-color: rgb(56, 216, 196)"]){color:var(--brand-text)!important}`;
 
@@ -1074,7 +1118,7 @@ export const CASES_HOME_CSS = `[data-cases-home]{color:var(--ink);font:15px/1.5 
 [data-cases-home] .ch-hist{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:12px;border:1px dashed var(--line-strong);background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
 [data-cases-home] .ch-hist:hover,[data-cases-home] .ch-hist[aria-selected="true"]{border-color:var(--hover-line);color:var(--hover-ink);background:var(--hover-tint)}
 [data-cases-home] .ch-list{overflow:hidden}
-[data-cases-home] .ch-group{display:flex;align-items:baseline;gap:12px;padding:12px 20px 10px;border-top:1px solid var(--line);background:var(--surface-2)}
+[data-cases-home] .ch-group{display:flex;align-items:baseline;gap:12px;padding:11px 20px 10px;border-top:1px solid color-mix(in srgb,var(--gc,var(--muted)) 22%,transparent);border-bottom:1px solid color-mix(in srgb,var(--gc,var(--muted)) 22%,transparent);background:color-mix(in srgb,var(--gc,var(--muted)) 7%,transparent)}
 [data-cases-home] .ch-list > .ch-group:first-child{border-top:0}
 [data-cases-home] .ch-group .t{font-size:11.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gc,var(--muted))}
 [data-cases-home] .ch-group .h{font-size:13px;color:var(--muted)}
@@ -1127,6 +1171,42 @@ export const CASES_HOME_CSS = `[data-cases-home]{color:var(--ink);font:15px/1.5 
 [data-cases-home][data-mode="dark"] .ch-day.today{background:color-mix(in srgb,var(--brand-text) 8%,#16313A)}
 [data-cases-home][data-mode="dark"] .ch-card,[data-cases-home][data-mode="dark"] .ch-day:not(.today),[data-cases-home][data-mode="dark"] .ch-search{border:1px solid rgba(255,255,255,0.08)}
 [data-cases-home][data-mode="dark"] .ch-hear{border-top-color:rgba(255,255,255,0.08);border-right-color:rgba(255,255,255,0.08);border-bottom-color:rgba(255,255,255,0.08)}
+/* OPTION A (2026-11-27): teal Export / Open, a slim week, steps in words, the next step as a button. */
+[data-cases-home] .ch-teal{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;border-radius:999px;border:0;background:linear-gradient(180deg,#8AE7F2 0%,#5BCFE2 55%,#3FBFD6 100%);color:#04212A;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:filter .15s}
+[data-cases-home] .ch-teal:hover{filter:brightness(1.06)}
+[data-cases-home] .ch-teal.sm{height:36px;padding:0 15px;font-size:13px}
+[data-cases-home] .ch-cta{border-radius:999px;padding:0 16px;font-size:13.5px;box-shadow:0 8px 18px -12px rgba(46,196,214,.8)}
+[data-cases-home] .ch-teal{padding:0 16px;font-size:13.5px}
+[data-cases-home] .ch-search{height:40px}
+[data-cases-home] .ch-week-title{display:flex;align-items:baseline;gap:12px;min-width:0}
+[data-cases-home] .ch-week-acts{margin-left:auto;display:flex;align-items:center;gap:12px}
+[data-cases-home] .ch-week.slim{display:flex;align-items:center;gap:18px;padding:14px 18px}
+[data-cases-home] .ch-week.slim .ch-week-head{display:contents}
+[data-cases-home] .ch-week.slim .ch-week-title{flex-direction:column;gap:2px;margin-right:auto}
+[data-cases-home] .ch-week.slim .ch-week-acts{order:3;margin-left:0}
+[data-cases-home] .ch-week.slim .ch-days{order:2;display:flex;gap:6px;margin:0}
+[data-cases-home] .ch-week.slim .ch-day{width:78px;min-height:0;padding:7px 4px;gap:0;align-items:center;text-align:center;border-radius:12px}
+[data-cases-home] .ch-week.slim .ch-day-top{flex-direction:column;align-items:center;gap:1px}
+[data-cases-home] .ch-week.slim .ch-day-top span{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+[data-cases-home] .ch-week.slim .ch-day-top b{font:700 18px/1.1 "Hanken Grotesk",sans-serif}
+[data-cases-home] .ch-week.slim .ch-day .none{margin-top:1px;font-size:10.5px;white-space:nowrap}
+[data-cases-home] .ch-week.slim .ch-day.closed{opacity:.75}
+[data-cases-home] .ch-tabs{border-radius:999px}
+[data-cases-home] .ch-tab{border-radius:999px;color:var(--ink);font-size:13.5px;font-weight:700;height:34px}
+[data-cases-home] .ch-tab[aria-selected="true"]{background:#F3F2F4;color:#2A282C}
+[data-cases-home] .ch-n{font-size:11.5px;padding:1px 7px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);opacity:1}
+[data-cases-home] .ch-n.hot{color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,transparent)}
+[data-cases-home] .ch-tab[aria-selected="true"] .ch-n{background:rgba(0,0,0,.10);color:#2A282C}
+[data-cases-home] .ch-row{grid-template-columns:minmax(0,2.3fr) minmax(0,1.2fr) minmax(0,1.3fr) minmax(170px,1.1fr) minmax(200px,auto)}
+[data-cases-home] .ch-cols{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,1.2fr) minmax(0,1.3fr) minmax(170px,1.1fr) minmax(200px,auto);gap:16px;padding:12px 18px 12px 20px;background:transparent;border-bottom:1px solid var(--line);font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+[data-cases-home] .ch-list > .ch-cols + div > .ch-group:first-child{border-top:1px solid var(--line)}
+[data-cases-home] .ch-stage span b{color:var(--ink);font-weight:700}
+[data-cases-home] .ch-next{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+[data-cases-home] .ch-next .ch-setdate{margin-top:0;height:34px;padding:0 15px;border:0;background:var(--gold);color:#241a05;font-size:13px}
+[data-cases-home] .ch-next .ch-setdate:hover{filter:brightness(1.06);background:var(--gold)}
+[data-cases-home] .ch-go{width:auto;height:34px;padding:0 16px;border:0;border-radius:999px;background:linear-gradient(180deg,#8AE7F2 0%,#5BCFE2 55%,#3FBFD6 100%);color:#04212A;font:inherit;font-size:13px;font-weight:700}
+[data-cases-home] .ch-row:hover .ch-go{color:#04212A;transform:none;filter:brightness(1.06)}
+[data-cases-home] .ch-req-acts{grid-column:4 / span 2}
 @keyframes chDrop{0%,100%{transform:translateY(0)}40%{transform:translateY(3px)}}
 @keyframes chSpin{to{transform:rotate(90deg)}}
 @media (prefers-reduced-motion:reduce){[data-cases-home] *{transition:none!important;animation:none!important}}`;
@@ -1267,12 +1347,8 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
 
-    const tile = (tone) => (
-        <span className="ch-tile" style={{ "--tc": tone }} aria-hidden="true"><Icon d={SCALES} size={19} /></span>
-    );
     const titleBlock = (title, number, bits, tone) => (
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-            {tile(tone)}
             <div style={{ minWidth: 0 }}>
                 <div className="ch-title">{title}</div>
                 <div className="ch-meta">
@@ -1295,12 +1371,12 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
             <div className="ch-segs" aria-hidden="true">
                 {STAGES.map((s, i) => <i key={s} className={i < idx ? "on" : i === idx ? "now" : ""} />)}
             </div>
-            <span>{STAGES[idx]}</span>
+            <span>Step {idx + 1} of {STAGES.length} · <b>{STAGES[idx]}</b></span>
         </div>
     );
     const goBtn = (onClick, label = "Open case") => (
         <button type="button" className="ch-go" aria-label={label} onClick={e => { e.stopPropagation(); onClick(); }}>
-            <Icon d={I.chevronRight} size={16} />
+            Open
         </button>
     );
 
@@ -1330,12 +1406,18 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
                         <span>{fmtDate(c.nextHearing)}{h?.time ? ` · ${fmtTime(h.time)}` : ""}</span>
                     </>)}
                     {kind === "nohearing" && (<>
-                        <b>No hearing yet</b>
-                        <button type="button" className="ch-setdate" onClick={e => { e.stopPropagation(); onOpen(c.id); }}>Set the date</button>
+                        <b className="soon">No hearing yet</b>
+                        <span>Not filed in court yet</span>
                     </>)}
                     {kind === "history" && <span>{c.status}</span>}
                 </div>
-                {goBtn(() => onOpen(c.id))}
+                {/* The next step as a button (2026-11-27); both open the case,
+                    where the date is set and the outcome recorded. */}
+                <div className="ch-next">
+                    {kind === "nohearing" && <button type="button" className="ch-setdate" onClick={e => { e.stopPropagation(); onOpen(c.id); }}>Set the date</button>}
+                    {kind === "active" && d !== null && d < 0 && <button type="button" className="ch-setdate" data-record-outcome onClick={e => { e.stopPropagation(); onOpen(c.id); }}>Record outcome</button>}
+                    {goBtn(() => onOpen(c.id))}
+                </div>
             </div>
         );
     };
@@ -1395,7 +1477,7 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
         <div key="nf">{group("Not filed yet", "Set the first hearing date to plan the case", notFiled.length, "var(--gold)")}
             {notFiled.length ? notFiled.map(c => caseRow(c, "nohearing")) : empty("Every case has a hearing date.")}</div>);
     if (show("active") && (activeRows.length > 0 || filter === "active")) sections_.push(
-        <div key="act">{group(needs ? "Outcome due" : "Active", needs ? "Hearing date passed — record what happened" : "In court, by next hearing", activeRows.length, needs ? "var(--danger)" : "var(--brand-text)")}
+        <div key="act">{group(needs ? "Outcome due" : "Active", needs ? "Hearing date passed — record what happened" : "In court, by next hearing", activeRows.length, needs ? "var(--danger)" : "var(--teal-ink)")}
             {activeRows.length ? activeRows.map(c => caseRow(c, "active")) : empty("No upcoming hearings.")}</div>);
     if (filter === "history") sections_.push(
         <div key="hist">{group("History", "Closed and dismissed", history.length)}
@@ -1428,11 +1510,11 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
                                     ? <button type="button" className="ch-clear" aria-label="Clear search" onClick={() => { setSearch(""); searchRef.current?.focus(); }}>×</button>
                                     : <span className="ch-kbd" aria-hidden="true">Ctrl K</span>}
                             </label>
-                            <button type="button" className="ch-icon" onClick={exportCsv} title="Export cases as a CSV file that opens in Excel" aria-label="Export cases"
-                                style={{ width: 44, height: 44 }}>
-                                <Icon d={I.download} size={17} />
+                            <button type="button" className="ch-teal" onClick={exportCsv} title="Export cases as a CSV file that opens in Excel" aria-label="Export cases"
+                                style={{ height: 40 }}>
+                                <Icon d={I.download} size={16} /> Export
                             </button>
-                            <button type="button" className="ch-cta" onClick={() => setNewOpen(true)} style={{ height: 44 }}>
+                            <button type="button" className="ch-cta" onClick={() => setNewOpen(true)} style={{ height: 40 }}>
                                 <Icon d={I.plus} size={15} /> New case
                             </button>
                         </div>
@@ -1449,12 +1531,14 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
                 ))}
 
                 {/* THE WEEK IN COURT: the lawyer's first question, answered at a glance. */}
-                <section className="ch-card ch-week" aria-label="This week in court" data-court-week>
+                <section className={`ch-card ch-week${weekCount === 0 && weekOpen ? " slim" : ""}`} aria-label="This week in court" data-court-week>
                     <div className="ch-week-head">
-                        <h2>This week in court</h2>
-                        <span className="n">{weekCount ? `${weekCount} hearing${weekCount === 1 ? "" : "s"} in the next 7 days` : "No hearings in the next 7 days"}</span>
-                        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-                            <button type="button" className="ch-link" onClick={() => setPage?.("causelist")}>Open cause list →</button>
+                        <div className="ch-week-title">
+                            <h2>This week in court</h2>
+                            <span className="n">{weekCount ? `${weekCount} hearing${weekCount === 1 ? "" : "s"} in the next 7 days` : "No hearings in the next 7 days"}</span>
+                        </div>
+                        <span className="ch-week-acts">
+                            <button type="button" className="ch-teal sm" onClick={() => setPage?.("causelist")}>Open cause list →</button>
                             <button type="button" className="ch-fold" aria-expanded={weekOpen} onClick={toggleWeek}>
                                 <Icon d={I.chevronDown} size={14} />{weekOpen ? "Hide" : "Show"}
                             </button>
@@ -1479,7 +1563,7 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
                                             </button>
                                         ))}
                                         {hearings.length > 2 && <span className="ch-more">+{hearings.length - 2} more</span>}
-                                        {!hearings.length && <span className="none">{closed ? "Court closed" : "No hearings"}</span>}
+                                        {!hearings.length && <span className="none">{closed ? "Court closed" : weekCount === 0 ? "—" : "No hearings"}</span>}
                                     </div>
                                 );
                             })}
@@ -1530,6 +1614,9 @@ function CasesList({ cases, onOpen, requests = [], onRequestsChanged = () => {},
 
                 {(sections_.length > 0 || (needs && counts.needs === 0) || (filter === "all" && counts.all === 0)) && (
                     <section className="ch-card ch-list" aria-label="Cases">
+                        {sections_.length > 0 && (
+                            <div className="ch-cols" aria-hidden="true"><span>Case</span><span>Client</span><span>Stage</span><span>Next hearing</span><span style={{ textAlign: "right" }}>Next step</span></div>
+                        )}
                         {sections_}
                         {needs && counts.needs === 0 && empty("Nothing is waiting on you.")}
                         {filter === "all" && counts.all === 0 && empty(q || filterCount ? "No cases match your search or filters." : "No cases yet.")}
@@ -1906,7 +1993,6 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
         [I.user, c.client],
         court && [I.gavel, court],
         [I.map, [c.court !== "—" ? c.court : null, c.type].filter(Boolean).join(" · ")],
-        engagement?.fee_amount && [I.dollar, `Rs. ${Number(engagement.fee_amount).toLocaleString()}`],
         c.createdAt && [I.calendar, `Opened ${shortDay(c.createdAt)}`],
     ].filter(x => x && x[1]);
     const tabs = [
@@ -1919,45 +2005,40 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
 
     return (
         <div className="cw" style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", padding: "16px 30px 30px", gap: 18 }}>
-            <nav className="cw-crumbs" aria-label="Breadcrumb">
-                <button type="button" onClick={onBack}><Icon d={I.chevronLeft} size={15} />Cases</button>
-                <span aria-hidden="true">/</span>
-                <b>{c.id}</b>
-            </nav>
-
-            {/* The case at a glance: who, where, what stage. */}
+            {/* The case at a glance (2026-11-27, "A refined"): the title gets the
+                full width, the facts and the actions share one line, the stages
+                are one slim line. Messaging the client lives on the Client card. */}
             <section className="cw-head">
-                <div className="cw-head-top">
-                    <span className="cw-tile" aria-hidden="true"><Icon d={SCALES} size={24} /></span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <h1 className="serif">{c.title}</h1>
-                        <div className="cw-meta">
-                            {needsYou && <span className="cw-pill gold"><i />Needs you</span>}
-                            <span className={`cw-pill${closed ? " muted" : ""}`}><i />{c.status}</span>
-                            {c.urgent && <span className="cw-pill red"><i />Urgent</span>}
-                            {meta.map(([icon, text], i) => (
-                                <span key={i} className="cw-m"><Icon d={icon} size={15} />{text}</span>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="cw-actions">
-                        <button type="button" className="cw-btn" onClick={() => setTab("messages")}><Icon d={I.chat} size={16} />Message client</button>
-                        {canPropose && (
-                            <button type="button" className="cw-btn" data-open-propose onClick={() => setPmOpen(true)}><Icon d={I.calendar} size={16} />Propose meeting</button>
-                        )}
-                        {!closed && <button type="button" className="cw-btn" onClick={goTask}><Icon d={I.checkSquare} size={16} />Add task</button>}
-                        {!closed && <button type="button" className="cw-cta" onClick={() => openAdd()}><Icon d={I.plus} size={16} />Add hearing</button>}
-                    </div>
-                </div>
-                <div className="cw-stages" aria-label={`Stage: ${STAGES[stage]}`}>
-                    {STAGES.map((s, i) => (
-                        <div key={s} className={i < stage ? "done" : i === stage ? "now" : ""}>
-                            <i aria-hidden="true" />
-                            <b>{s}</b>
-                            <small>{stageSub(i) || " "}</small>
-                        </div>
+                <nav className="cw-crumbs" aria-label="Breadcrumb">
+                    <button type="button" onClick={onBack}><Icon d={I.chevronLeft} size={15} />Cases</button>
+                    <span aria-hidden="true">/</span>
+                    <b>{c.id}</b>
+                </nav>
+                <h1 className="serif cw-title" title={c.title}>{c.title}</h1>
+                <div className="cw-meta">
+                    {needsYou && <span className="cw-pill gold"><i />Needs you</span>}
+                    <span className={`cw-pill${closed ? " muted" : ""}`}><i />{c.status}</span>
+                    {c.urgent && <span className="cw-pill red"><i />Urgent</span>}
+                    {meta.map(([icon, text], i) => (
+                        <span key={i} className="cw-m"><Icon d={icon} size={14} />{text}</span>
                     ))}
+                    <div className="cw-actions">
+                        {!closed && <button type="button" className="cw-btn" onClick={goTask}><Icon d={I.checkSquare} size={15} />Add task</button>}
+                        {canPropose && (
+                            <button type="button" className="cw-btn" data-open-propose onClick={() => setPmOpen(true)}><Icon d={I.calendar} size={15} />Propose meeting</button>
+                        )}
+                        {!closed && <button type="button" className="cw-cta" onClick={() => openAdd()}><Icon d={I.plus} size={15} />Add hearing</button>}
+                    </div>
                 </div>
+                <ol className="cw-stages" aria-label={`Stage: ${STAGES[stage]}`}>
+                    {STAGES.map((s, i) => (
+                        <li key={s} className={i < stage ? "done" : i === stage ? "now" : ""}>
+                            <i aria-hidden="true">{i < stage && <Icon d={I.check} size={10} />}</i>
+                            <b>{s}</b>
+                            {i >= stage && stageSub(i) && <small>· {stageSub(i)}</small>}
+                        </li>
+                    ))}
+                </ol>
             </section>
 
             {closed && (
@@ -1967,7 +2048,7 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
             )}
 
             {openProposal && (
-                <div role="status" className="cw-note" data-meeting-proposal style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div role="status" className="cw-note teal" data-meeting-proposal style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                     <span style={{ flex: 1, minWidth: 240 }}>
                         <strong>Meeting proposed — waiting for {c.client}.</strong>{" "}
                         {openProposal.agenda} · {fmtTimes(openProposal)}
@@ -1976,7 +2057,7 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
                 </div>
             )}
             {missedProposal && (
-                <div role="status" className="cw-note" data-proposal-history={missedProposal.status} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div role="status" className="cw-note gold" data-proposal-history={missedProposal.status} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                     <span style={{ flex: 1, minWidth: 240 }}>
                         <strong>{missedProposal.status === "declined"
                             ? `${c.client} could not make the proposed times.`
@@ -1987,7 +2068,7 @@ function CaseWorkspace({ caseId, cases, setCases, requests = [], onRequestsChang
                         )}
                     </span>
                     {canPropose && (
-                        <button type="button" className="cw-btn" data-propose-again onClick={() => setPmOpen(true)}>Propose new times</button>
+                        <button type="button" className="cw-cta gold sm" data-propose-again onClick={() => setPmOpen(true)}>Propose new times</button>
                     )}
                 </div>
             )}
@@ -2348,7 +2429,7 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
                 <FieldInput label="Date" type="date" value={quick.date} onChange={v => setQuick(q => ({ ...q, date: v }))} />
                 <FieldInput label="Time" type="time" value={quick.time} onChange={v => setQuick(q => ({ ...q, time: v }))} />
                 <FieldInput label="Court" value={quick.court} onChange={v => { courtTouched.current = true; setQuick(q => ({ ...q, court: v })); }} placeholder="e.g. Civil Court Lahore" maxLength={200} />
-                <button type="button" className="cw-cta" disabled={saving || !quick.date || !quick.court} onClick={saveQuick}>{saving ? "Saving…" : "Save hearing"}</button>
+                <button type="button" className="cw-cta gold" disabled={saving || !quick.date || !quick.court} onClick={saveQuick}>{saving ? "Saving…" : "Save hearing"}</button>
             </div>
         </>);
     } else {
@@ -2394,19 +2475,15 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
         <div className="cw-split">
             <div className="cw-col">
                 <div className={`cw-card cw-lead${overdueHearing && !readOnly ? " red" : !nextHearing && !readOnly ? " gold" : ""}`}>{lead}</div>
-                <div className="cw-links">
-                    {links.map(([icon, text, to]) => (
-                        <button key={to} type="button" className="cw-link-card" onClick={() => goTab(to)}>
-                            <Icon d={icon} size={18} />{text}
-                        </button>
-                    ))}
-                </div>
                 <div className="cw-card" data-feed>
                     <div className="cw-card-head">
-                        <CardLabel>Coming up</CardLabel>
+                        <b className="cw-card-title">Timeline</b>
                         <button type="button" className="cw-textlink" onClick={() => goTab("schedule")}>Full schedule →</button>
                     </div>
-                    {coming.length === 0 && <div className="cw-muted" style={{ padding: "6px 0 2px" }}>Nothing scheduled yet.{readOnly ? "" : " Set the next hearing above."}</div>}
+                    {coming.length === 0 && recent.length === 0 && (
+                        <div className="cw-muted" style={{ paddingTop: 6 }}>Nothing on this case yet. Hearings, tasks and documents appear here as they happen.</div>
+                    )}
+                    {coming.length > 0 && <div className="cw-sub-label">Coming up</div>}
                     {coming.map(f => {
                         const d = daysUntil(f.date);
                         return (
@@ -2421,10 +2498,7 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
                             </div>
                         );
                     })}
-                </div>
-                <div className="cw-card">
-                    <CardLabel>Recent activity</CardLabel>
-                    {recent.length === 0 && <div className="cw-muted" style={{ paddingTop: 8 }}>Nothing yet.</div>}
+                    {recent.length > 0 && <div className="cw-sub-label">Recent</div>}
                     {recent.map(f => (
                         <div key={f.key} className="cw-tl">
                             <div className="cw-tl-when"><b>{dayMonth(f.date)}</b></div>
@@ -2439,38 +2513,16 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
             </div>
 
             <div className="cw-col">
-                <div className="cw-card">
-                    <CardLabel>Case file</CardLabel>
-                    <div className="cw-file">
-                        <svg width="68" height="68" viewBox="0 0 64 64" aria-hidden="true">
-                            <circle cx="32" cy="32" r={R} fill="none" stroke="var(--line-strong)" strokeWidth="7" />
-                            <circle cx="32" cy="32" r={R} fill="none" stroke="var(--brand-text)" strokeWidth="7" strokeLinecap="round"
-                                strokeDasharray={`${C * done / fileItems.length} ${C}`} transform="rotate(-90 32 32)" />
-                        </svg>
-                        <div>
-                            <div className="serif cw-big">{done}/{fileItems.length}</div>
-                            <div className="cw-muted">details complete</div>
-                        </div>
-                    </div>
-                    {fileItems.map(([name, ok, fix]) => (
-                        <div key={name} className="cw-check">
-                            <span className={`cw-box${ok ? " on" : ""}`} aria-hidden="true">{ok && <Icon d={I.check} size={12} />}</span>
-                            <span style={{ flex: 1, color: ok ? "var(--ink)" : "var(--muted)" }}>{name}</span>
-                            {!ok && fix && <button type="button" className="cw-textlink" onClick={fix}>Add</button>}
-                        </div>
-                    ))}
-                </div>
-                <div className="cw-card">
-                    <CardLabel>Client</CardLabel>
-                    <div className="cw-client">
-                        <Avatar name={c.client} size={44} />
+                <div className="cw-card" data-client-card>
+                    <div className="cw-client" style={{ marginTop: 0 }}>
+                        <Avatar name={c.client} size={42} />
                         <div style={{ minWidth: 0 }}>
                             <b>{c.client}</b>
                             <span>{c.walkIn ? (c.clientPhone || "Walk-in client") : `${clientCases} case${clientCases === 1 ? "" : "s"} with you · replies in app`}</span>
                         </div>
                     </div>
                     <div className="cw-row-btns" style={{ gridTemplateColumns: "1fr 1fr", display: "grid" }}>
-                        <button type="button" className="cw-btn" onClick={() => goTab("messages")}><Icon d={I.chat} size={15} />Message</button>
+                        <button type="button" className="cw-btn teal" onClick={() => goTab("messages")}><Icon d={I.chat} size={15} />Message</button>
                         <button type="button" className="cw-btn" data-client-profile onClick={() => {
                             // Clients opens with THIS client's card in view and marked.
                             try { if (c.clientId) sessionStorage.setItem("attorney:lawyer-focus-client", c.clientId); } catch { /* storage off */ }
@@ -2478,27 +2530,44 @@ function CaseOverview({ c, cases, hearings, nextHearing, past, tasks, messages, 
                         }}>Profile</button>
                     </div>
                 </div>
-                {!readOnly && c._id && !c.walkIn && <CaseConsultations caseDbId={c._id} setPage={setPage} clientName={c.client} />}
-                <div className="cw-card">
-                    <CardLabel>Key facts</CardLabel>
-                    <dl className="cw-facts">
-                        {facts.map(([k, v, mono]) => (
-                            <div key={k}><dt>{k}</dt><dd className={mono ? "mono" : ""}>{v}</dd></div>
+                <div className="cw-card" data-case-file>
+                    <div className="cw-card-head" style={{ alignItems: "baseline" }}>
+                        <b className="cw-card-title">Case file</b>
+                        <span className="cw-muted" style={{ margin: 0 }}><b style={{ color: "var(--brand-text)" }}>{done}</b>/{fileItems.length} complete</span>
+                    </div>
+                    <div className="cw-bar" style={{ height: 6, marginTop: 10 }} aria-hidden="true"><i style={{ width: `${(done / fileItems.length) * 100}%` }} /></div>
+                    <div className="cw-left">
+                        {fileItems.filter(x => !x[1]).map(([name, , fix]) => (
+                            <div key={name} className="cw-left-row" data-file-missing={name}>
+                                <span>{name}</span>
+                                {/* The first hearing is already the Next step card's
+                                    form: say so rather than offer a second Add. */}
+                                {name === "First hearing" && !hearings.length && !readOnly
+                                    ? <span className="cw-tag gold">The next step</span>
+                                    : fix && <button type="button" className="cw-btn teal xs" onClick={fix}>Add</button>}
+                            </div>
                         ))}
-                    </dl>
+                    </div>
+                    {done > 0 && (
+                        <div className="cw-done-line">Done: {fileItems.filter(x => x[1]).map(([name]) => name).join(" · ")}</div>
+                    )}
                 </div>
+                {!readOnly && c._id && !c.walkIn && <CaseConsultations caseDbId={c._id} setPage={setPage} clientName={c.client} />}
                 {engagement && (
                     <div className="cw-card">
-                        <CardLabel>Engagement</CardLabel>
-                        <div style={{ fontSize: 14, marginTop: 8 }}>
-                            {engagement.fee_amount ? `PKR ${Number(engagement.fee_amount).toLocaleString()}` : "Fee agreed"}
-                            {engagement.fee_type ? <span className="cw-muted"> · {fees || engagement.fee_type}</span> : null}
+                        <div className="cw-card-head" style={{ alignItems: "baseline" }}>
+                            <b className="cw-card-title">Engagement</b>
+                            <span style={{ fontSize: 13.5 }}>
+                                {engagement.fee_amount ? <b>Rs. {Number(engagement.fee_amount).toLocaleString()}</b> : "Fee agreed"}
+                                {engagement.fee_type ? <span className="cw-muted"> · {fees || engagement.fee_type}</span> : null}
+                            </span>
                         </div>
-                        <div className="cw-row-btns">
+                        {lastCourt && <div className="cw-muted" style={{ marginTop: 6 }}>Court: <b style={{ color: "var(--ink)" }}>{lastCourt}</b></div>}
+                        <div className="cw-row-btns" style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
                             <button type="button" className="cw-btn" disabled={eng.busy} onClick={() => eng.handleComplete(engagement)}>
                                 {engagement.completion_proposed_by === "client" ? "Confirm complete" : "Mark complete"}
                             </button>
-                            <button type="button" className="cw-btn danger" disabled={eng.busy} onClick={() => eng.handleTerminate(engagement)}>End engagement</button>
+                            <button type="button" className="cw-btn danger tint" disabled={eng.busy} onClick={() => eng.handleTerminate(engagement)}>End engagement</button>
                         </div>
                     </div>
                 )}

@@ -472,3 +472,4 @@ test("a refresh keeps the rows on screen instead of a Loading placeholder", asyn
     await ui.settle(40);
     await ui.unmount();
 });
+

@@ -343,10 +343,10 @@ test("the header buttons match the bar's height", async () => {
     const exportBtn = view.container.querySelector('button[aria-label="Export cases"]');
     const newBtn = allButtons(view.container).find(b => b.textContent.trim() === "New case");
     const sortBtn = allButtons(view.container).find(b => b.textContent.trim() === "Sort");
-    assert.equal(exportBtn.style.height, "44px");
-    assert.equal(newBtn.style.height, "44px");
+    assert.equal(exportBtn.style.height, "40px");
+    assert.equal(newBtn.style.height, "40px");
     // Sort sits in the one-line filter bar (2026-10-11), at the tab group's height.
-    assert.equal(sortBtn.style.height, "44px");
+    assert.equal(sortBtn.style.height, "40px");
     await view.unmount();
 });
 
@@ -862,5 +862,37 @@ test("with no meeting booked, the Schedule tab says how to book one", async () =
     const view = await mount({ openAt: SOON.case_number });
     await click(tab(view.container, "Schedule"));
     assert.match(view.container.querySelector("[data-case-meetings-empty]").textContent, /Propose meeting/);
+    await view.unmount();
+});
+
+/* 2026-11-27 (option A): each row says its stage in words and has its next
+ * step as a button -- Record outcome only once the hearing date has passed. */
+test("rows say 'Step N of 6' and show the next step as a button", async () => {
+    const DUE = kase(5, "in_progress", [hearing("h5", addDays(-3), "Arguments")]);
+    api.__respond("listCases", { data: { items: [SOON, NONE, DUE] }, error: null });
+    const view = await mount();
+    const row = (no) => [...view.container.querySelectorAll('[data-row="case"]')].find(r => r.textContent.includes(no));
+    assert.match(row("CIV-2026-001").textContent, /Step \d of 6 · /, "the stage is not in words");
+    assert.equal(buttonText(row("CIV-2026-003"), "Set the date") !== undefined, true, "an unfiled case has no Set the date");
+    assert.ok(row("CIV-2026-005").querySelector("[data-record-outcome]"), "a passed hearing has no Record outcome");
+    assert.equal(row("CIV-2026-001").querySelector("[data-record-outcome]"), null, "Record outcome before the hearing date");
+    assert.equal(row("CIV-2026-001").querySelector('button[aria-label="Open case"]').textContent.trim(), "Open");
+    await view.unmount();
+});
+
+/* 2026-11-27 ("A refined"): the case page shows each thing once. With no
+ * hearing yet, the Next step card holds the form and the case file marks
+ * "First hearing" as that step instead of offering a second Add. */
+test("case page: the first hearing is the next step once, and Message lives on the Client card", async () => {
+    const view = await mount({ openAt: NONE.case_number });
+    const file = view.container.querySelector("[data-case-file]");
+    assert.ok(file, "no case file card");
+    const row = file.querySelector('[data-file-missing="First hearing"]');
+    assert.ok(row, "First hearing is not listed as missing");
+    assert.match(row.textContent, /The next step/);
+    assert.equal([...row.querySelectorAll("button")].length, 0, "a second Add for the first hearing");
+    assert.equal(buttonText(view.container, "Message client"), undefined, "Message client is back in the header");
+    await click(buttonText(view.container.querySelector("[data-client-card]"), "Message"));
+    assert.equal(view.container.querySelector('[role="tab"][aria-selected="true"]').textContent.trim().startsWith("Messages"), true);
     await view.unmount();
 });
