@@ -217,3 +217,41 @@ test("an ended meeting is not upcoming, and the day is 'all done' only when noth
         await view.unmount();
     }
 });
+
+/* Colours A (2026-11-28): every brief button is filled, coloured by what it
+ * asks — gold for work waiting on the lawyer — and "Open calendar" is teal. */
+test("brief buttons are filled by meaning: waiting work is gold; an empty Next up opens the calendar in teal", async () => {
+    serve({ cases: [], submitted: 0 });
+    api.__respond("getLawyerActions", ACTIONS({ outcomes_to_record: 1, appointment_requests: 1,
+        next: { appointment_request: "apt-req", outcome: "apt-out", hire_request: null } }));
+    const view = await mount();
+    try {
+        const btn = label => [...view.container.querySelectorAll("button")].find(b => b.textContent.trim() === label);
+        for (const label of ["Record outcome", "Answer"]) {
+            assert.ok(btn(label), `no ${label} button`);
+            assert.equal(btn(label).getAttribute("data-brief-tone"), "gold", `${label} is not gold`);
+            assert.match(btn(label).className, /\bgold\b/);
+        }
+        const cal = view.container.querySelector("[data-next-open-calendar]");
+        assert.ok(cal, "an empty Next up has no Open calendar");
+        assert.match(cal.className, /\bteal\b/);
+    } finally {
+        await view.unmount();   // a failure must not leave the page's timers running
+    }
+});
+
+/* Recent cases as one-line rows (2026-11-28, option A): a case with no hearing
+ * says "Not set" (in gold) instead of a bare dash, and the row opens the case. */
+test("recent cases: one row per case; a missing hearing reads 'Not set'", async () => {
+    serve({ submitted: 0, cases: [kase(1, "in_progress", { hearing_dates: [] })] });
+    const view = await mount();
+    try {
+        const rows = view.container.querySelectorAll("[data-recent-case]");
+        assert.equal(rows.length, 1, "the case row did not render");
+        assert.ok(rows[0].querySelector("[data-hearing-unset]"), "a case with no hearing does not say 'Not set'");
+        assert.match(rows[0].querySelector("[data-hearing-unset]").textContent, /Not set/);
+        assert.equal(rows[0].querySelectorAll("button").length, 0, "a row holds its own buttons");
+    } finally {
+        await view.unmount();
+    }
+});

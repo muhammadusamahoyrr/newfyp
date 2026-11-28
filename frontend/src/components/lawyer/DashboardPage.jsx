@@ -211,6 +211,16 @@ const CSS = `[data-dash-ws]{flex:none;min-height:100%;color:var(--ink);font-fami
 [data-dash-ws] .db-btn:hover{border-color:var(--brand-text)}
 [data-dash-ws] .db-btn.pri{border:0;background:linear-gradient(135deg,#3EE0A1,#2EC4D6);color:#04212A}
 [data-dash-ws] .db-btn.sm{height:34px;padding:0 12px;font-size:13px;border-radius:10px}
+/* Colours A (2026-11-28): every button filled. Gold = waiting on you, teal =
+ * go somewhere, fill = the rest. Inner boxes are raised slate, not sunken. */
+[data-dash-ws]{--dash-raise:#24474F}
+[data-dash-ws][data-mode="light"]{--dash-raise:var(--surface-2)}
+[data-dash-ws] .db-btn.gold{border:0;background:var(--gold);color:#241a05}
+[data-dash-ws][data-mode="light"] .db-btn.gold{color:#fff}
+[data-dash-ws] .db-btn.teal{border:0;background:linear-gradient(135deg,#5FD3E3,#3BB6C9);color:#04212A}
+[data-dash-ws][data-mode="light"] .db-btn.teal{background:var(--teal);color:#fff}
+[data-dash-ws] .db-btn.fill{background:var(--dash-raise);border-color:var(--line)}
+[data-dash-ws] .db-btn.gold:hover,[data-dash-ws] .db-btn.teal:hover{filter:brightness(1.07)}
 [data-dash-ws] .db-custom{position:absolute;top:calc(100% + 8px);right:0;z-index:30;width:260px;padding:10px;border-radius:14px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:0 20px 44px -14px rgba(0,0,0,.65)}
 [data-dash-ws] .db-custom b{display:block;padding:4px 6px 8px;font-size:13px}
 [data-dash-ws] .db-tog{display:flex;align-items:center;justify-content:space-between;width:100%;height:36px;padding:0 8px;border:0;border-radius:8px;background:none;color:var(--ink);font-size:13.5px;cursor:pointer}
@@ -228,7 +238,7 @@ const CSS = `[data-dash-ws]{flex:none;min-height:100%;color:var(--ink);font-fami
 [data-dash-ws] .db-empty{padding:20px;font-size:14px;color:var(--muted);line-height:1.5}
 [data-dash-ws] .db-case{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;font-weight:700;color:var(--brand-text);padding:2px 8px;border-radius:7px;border:1px solid color-mix(in srgb,var(--brand-text) 35%,transparent);white-space:nowrap}
 [data-dash-ws] .db-setup{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px 20px 20px}
-[data-dash-ws] .db-step{display:grid;gap:6px;align-content:start;padding:16px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);text-align:left;color:var(--ink);cursor:pointer}
+[data-dash-ws] .db-step{display:grid;gap:6px;align-content:start;padding:16px;border-radius:14px;background:var(--dash-raise);border:1px solid var(--line);text-align:left;color:var(--ink);cursor:pointer}
 [data-dash-ws] .db-step:hover:not(:disabled){border-color:var(--brand-text)}
 [data-dash-ws] .db-step .n{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;border:2px solid var(--line-strong);font-weight:800;font-size:13px;color:var(--muted);margin-bottom:6px}
 [data-dash-ws] .db-step.done .n{border:0;background:#2EC4A0;color:#04212A}
@@ -247,7 +257,7 @@ const CSS = `[data-dash-ws]{flex:none;min-height:100%;color:var(--ink);font-fami
 [data-dash-ws] .db-brief p{flex:1;margin:0;font-size:15px;line-height:1.5}
 [data-dash-ws] .db-brief p b{font-weight:700}
 [data-dash-ws] .db-brief p em{font-style:normal;color:var(--muted)}
-[data-dash-ws] .db-next{display:grid;gap:10px;align-content:start;padding:20px 22px;background:var(--surface-2)}
+[data-dash-ws] .db-next{display:grid;gap:10px;align-content:start;padding:20px 22px;background:var(--surface)}
 [data-dash-ws] .db-tag{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--c,#3CCFE0)}
 [data-dash-ws] .db-tag i{width:9px;height:9px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px color-mix(in srgb,currentColor 20%,transparent)}
 [data-dash-ws] .db-next h3{margin:0;font-family:"Literata",Georgia,serif;font-size:22px;font-weight:600;line-height:1.25}
@@ -270,13 +280,28 @@ const CSS = `[data-dash-ws]{flex:none;min-height:100%;color:var(--ink);font-fami
 [data-dash-ws] .db-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 [data-dash-ws] .db-q{display:flex;align-items:center;gap:12px;min-width:0;height:72px;padding:0 14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:15px;font-weight:700;cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s}
 [data-dash-ws] .db-q .ql{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-[data-dash-ws] .db-q .qi{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--brand-text) 13%,transparent)}
+[data-dash-ws] .db-q .qi{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;background:var(--dash-raise)}
 [data-dash-ws] .db-q:hover{box-shadow:0 12px 24px -16px rgba(0,0,0,.7)}
-[data-dash-ws] .db-q svg{color:var(--brand-text);flex:none}
+[data-dash-ws] .db-q svg{color:var(--teal-ink);flex:none}
 [data-dash-ws] .db-q:hover{border-color:var(--brand-text);transform:translateY(-1px)}
 [data-dash-ws] .db-pair{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:stretch}
 [data-dash-ws] .db-pair.b{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
 [data-dash-ws] .db-pair > .db-card:only-child{grid-column:1 / -1}
+/* Recent cases as one-line rows; both cards end level (2026-11-28, option A). */
+[data-dash-ws] .db-pair.b > .db-card{display:flex;flex-direction:column}
+[data-dash-ws] .db-rc{display:grid;grid-template-columns:minmax(0,1fr) auto 120px;gap:16px;align-items:center;padding:12px 20px;border-top:1px solid var(--line);cursor:pointer}
+[data-dash-ws] .db-rc:first-child{border-top:0}
+[data-dash-ws] .db-rc:hover{background:var(--hover-tint)}
+[data-dash-ws] .db-rc-t{min-width:0}
+[data-dash-ws] .db-rc-t > b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-dash-ws] .db-rc-t > span{display:block;margin-top:3px;font-size:12.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-dash-ws] .db-rc-t .db-case{padding:0;border:0;background:none}
+[data-dash-ws] .db-rc-h small{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+[data-dash-ws] .db-rc-h b{font-size:13px}
+[data-dash-ws] .db-rc-h b.unset{color:var(--gold)}
+[data-dash-ws] .db-foot{margin-top:auto;display:block;width:100%;padding:11px 20px;border:0;border-top:1px solid var(--line);background:none;text-align:left;color:var(--brand-text);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+[data-dash-ws] .db-foot:hover{background:var(--hover-tint)}
+[data-dash-ws] .db-ch .db-new{margin-right:auto;font-size:12px;font-weight:800;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--teal-ink) 16%,transparent);color:var(--teal-ink)}
 [data-dash-ws] .db-grp{display:flex;justify-content:space-between;padding:9px 20px;background:var(--surface-2);border-top:1px solid var(--line);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 [data-dash-ws] .db-grp.over{color:#F28B80}
 [data-dash-ws] .db-grp.soon{color:#F2C35E}
@@ -321,14 +346,18 @@ const CSS = `[data-dash-ws]{flex:none;min-height:100%;color:var(--ink);font-fami
 [data-dash-ws] .db-wd li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-dash-ws] .db-wd li em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted);flex:none}
 [data-dash-ws] .db-wd .free{font-size:13px;color:var(--faint)}
-[data-dash-ws] .db-act{display:flex;gap:12px;padding:12px 20px;border-top:1px solid var(--line);cursor:pointer}
+[data-dash-ws] .db-act{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 20px;border-top:1px solid var(--line);cursor:pointer}
 [data-dash-ws] .db-act:first-of-type{border-top:0}
 [data-dash-ws] .db-act:hover{background:var(--hover-tint)}
-[data-dash-ws] .db-act .av{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--surface-2);color:var(--brand-text)}
+[data-dash-ws] .db-act .av{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--dash-raise);color:var(--muted)}
+[data-dash-ws] .db-act .av.teal{background:color-mix(in srgb,var(--teal-ink) 15%,transparent);color:var(--teal-ink)}
+[data-dash-ws] .db-act .av.mint{background:color-mix(in srgb,var(--brand-text) 14%,transparent);color:var(--brand-text)}
+[data-dash-ws] .db-act .av.gold{background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--gold)}
 [data-dash-ws] .db-act b{display:block;font-size:14px}
-[data-dash-ws] .db-act small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.45}
-[data-dash-ws] .db-act .when{font-size:12px;color:var(--faint);margin-top:3px}
-[data-dash-ws] .db-act.unread b::after{content:"";display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:#3CCFE0;vertical-align:2px}
+[data-dash-ws] .db-act small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.45}
+[data-dash-ws] .db-act .when{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--faint);margin-top:2px;white-space:nowrap}
+[data-dash-ws] .db-act .when i{width:7px;height:7px;border-radius:50%;background:#3CCFE0}
+
 [data-dash-ws] table{width:100%;border-collapse:collapse}
 [data-dash-ws] th{padding:10px 20px;text-align:left;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
 [data-dash-ws] td{padding:12px 20px;font-size:14px;border-bottom:1px solid var(--line)}
@@ -599,23 +628,23 @@ function DashboardPage() {
     const unread = notifs.filter(n => n.unread && n.type === "case_message");
     const nextHearing = hearingsWeek.find(h => +h.end > now);
     const brief = [];
-    if (overdue.length) brief.push({ c: "#F28B80", text: <><b>{overdue.length} task{overdue.length === 1 ? " is" : "s are"} overdue</b><em> — oldest: {overdue[0].title}, {whenWord(overdue[0].key, today).toLowerCase()}</em></>, act: "Open", go: () => openCase(overdue[0].case) });
+    if (overdue.length) brief.push({ tone: "gold", c: "#F28B80", text: <><b>{overdue.length} task{overdue.length === 1 ? " is" : "s are"} overdue</b><em> — oldest: {overdue[0].title}, {whenWord(overdue[0].key, today).toLowerCase()}</em></>, act: "Open", go: () => openCase(overdue[0].case) });
     if (todays.length) {
         const first = todays.find(i => +i.end > now);
         // "All done" only when nothing at all waits on the lawyer; a day whose
         // meetings are over can still leave outcomes or terms to send.
         const done = actions && actions.to_do === 0 ? " — all done" : " — today's schedule is finished";
-        brief.push({ c: "#3CCFE0", text: <><b>{todays.length} thing{todays.length === 1 ? "" : "s"} on today</b>{first ? <em> — next: {first.title}{first.timed ? ` at ${hm(first.at.toISOString())}` : ""}</em> : <em>{done}</em>}</>, act: "Schedule", go: () => setTab("today") });
+        brief.push({ tone: "teal", c: "#3CCFE0", text: <><b>{todays.length} thing{todays.length === 1 ? "" : "s"} on today</b>{first ? <em> — next: {first.title}{first.timed ? ` at ${hm(first.at.toISOString())}` : ""}</em> : <em>{done}</em>}</>, act: "Schedule", go: () => setTab("today") });
     }
-    if (nextHearing) brief.push({ c: "#B9A6F5", text: <><b>Next hearing {whenWord(nextHearing.key, today).toLowerCase()}</b><em> — {nextHearing.title}{nextHearing.hearing?.court ? `, ${nextHearing.hearing.court}` : ""}</em></>, act: "Open case", go: () => openCase(nextHearing.case) });
-    if (pendingDocs) brief.push({ c: "#F2C35E", text: <><b>{pendingDocs} document{pendingDocs === 1 ? "" : "s"} waiting for your review</b><em> — clients are waiting on your decision</em></>, act: "Review", go: () => setPage("documents") });
+    if (nextHearing) brief.push({ tone: "teal", c: "#B9A6F5", text: <><b>Next hearing {whenWord(nextHearing.key, today).toLowerCase()}</b><em> — {nextHearing.title}{nextHearing.hearing?.court ? `, ${nextHearing.hearing.court}` : ""}</em></>, act: "Open case", go: () => openCase(nextHearing.case) });
+    if (pendingDocs) brief.push({ tone: "gold", c: "#F2C35E", text: <><b>{pendingDocs} document{pendingDocs === 1 ? "" : "s"} waiting for your review</b><em> — clients are waiting on your decision</em></>, act: "Review", go: () => setPage("documents") });
     // The flow's next steps, each opening the one to do first.
     const outcomes = actions?.outcomes_to_record || 0, hires = actions?.hire_requests || 0, aptPending = actions?.appointment_requests || 0;
-    if (outcomes) brief.push({ c: "#F28B80", text: <><b>{outcomes} meeting{outcomes === 1 ? " needs" : "s need"} an outcome</b><em> — record what happened; until then the client cannot hire you</em></>, act: "Record outcome", go: () => openOutcome(actions.next?.outcome) });
-    if (hires) brief.push({ c: "#3EE0A1", text: <><b>{hires} hire request{hires === 1 ? "" : "s"} awaiting your terms</b><em> — a client asked you to take their case</em></>, act: "Send terms", go: () => openHireRequest(actions.next?.hire_request) });
-    if (aptPending) brief.push({ c: "#F2C35E", text: <><b>{aptPending} appointment request{aptPending === 1 ? "" : "s"} to answer</b><em> — accept, or suggest another time</em></>, act: "Answer", go: () => openAppointment(actions.next?.appointment_request) });
-    if (unread.length) brief.push({ c: "#8DB8FF", text: <><b>{unread.length} unread client message{unread.length === 1 ? "" : "s"}</b><em> — {unread[0].title}</em></>, act: "Read", go: () => (openNotif ? openNotif(unread[0]) : setPage("cases")) });
-    if (noDateCases.length) brief.push({ c: "#93A4A8", text: <><b>{noDateCases.length} active case{noDateCases.length === 1 ? " has" : "s have"} no next hearing</b><em> — {noDateCases[0].title}{noDateCases.length > 1 ? " and others" : ""}</em></>, act: "Set date", go: () => openCase(noDateCases[0]) });
+    if (outcomes) brief.push({ tone: "gold", c: "#F28B80", text: <><b>{outcomes} meeting{outcomes === 1 ? " needs" : "s need"} an outcome</b><em> — record what happened; until then the client cannot hire you</em></>, act: "Record outcome", go: () => openOutcome(actions.next?.outcome) });
+    if (hires) brief.push({ tone: "gold", c: "#3EE0A1", text: <><b>{hires} hire request{hires === 1 ? "" : "s"} awaiting your terms</b><em> — a client asked you to take their case</em></>, act: "Send terms", go: () => openHireRequest(actions.next?.hire_request) });
+    if (aptPending) brief.push({ tone: "gold", c: "#F2C35E", text: <><b>{aptPending} appointment request{aptPending === 1 ? "" : "s"} to answer</b><em> — accept, or suggest another time</em></>, act: "Answer", go: () => openAppointment(actions.next?.appointment_request) });
+    if (unread.length) brief.push({ tone: "teal", c: "#8DB8FF", text: <><b>{unread.length} unread client message{unread.length === 1 ? "" : "s"}</b><em> — {unread[0].title}</em></>, act: "Read", go: () => (openNotif ? openNotif(unread[0]) : setPage("cases")) });
+    if (noDateCases.length) brief.push({ tone: "fill", c: "#93A4A8", text: <><b>{noDateCases.length} active case{noDateCases.length === 1 ? " has" : "s have"} no next hearing</b><em> — {noDateCases[0].title}{noDateCases.length > 1 ? " and others" : ""}</em></>, act: "Set date", go: () => openCase(noDateCases[0]) });
 
     // Setup: shown until done, or until the lawyer hides it.
     const steps = setup ? [
@@ -640,6 +669,17 @@ function DashboardPage() {
 
     const recentCases = cases.slice(0, 5);
     const activity = notifs.slice(0, 3);
+    const newCount = notifs.filter(n => n.unread).length;
+    // An activity's icon and tint by what it is about (2026-11-28): a meeting is
+    // teal, a finished agreement mint, anything waiting on the lawyer gold.
+    const actKind = (n) => {
+        const ty = n.type || "", ti = (n.title || "").toLowerCase();
+        if (ty === "case_message") return { k: "teal", icon: P.chat };
+        if (ty.startsWith("appointment") || ti.includes("proposed times") || ti.includes("meeting")) return { k: "teal", icon: P.cal };
+        if (ti.includes("awaiting your") || ti.includes("waiting for your") || ti.includes("review")) return { k: "gold", icon: P.doc };
+        if (ti.includes("executed") || ti.includes("signed") || ti.includes("accepted") || ti.includes("hired")) return { k: "mint", icon: P.alert };
+        return { k: "plain", icon: ty.includes("document") ? P.doc : P.alert };
+    };
     const dateRow = (d, n) => (
         <div key={`${d.kind}${n}${d.key}${d.title}`} className="db-dl" onClick={() => openCase(d.case)}>
             <span className={`when ${d.key < today ? "over" : d.key < weekEnd ? "soon" : ""}`}>{whenWord(d.key, today)}</span>
@@ -723,7 +763,7 @@ function DashboardPage() {
                                         <li key={n} style={{ "--c": b.c }}>
                                             <span className="dot" />
                                             <p>{b.text}</p>
-                                            <button type="button" className="db-btn sm" onClick={b.go}>{b.act}</button>
+                                            <button type="button" className={`db-btn sm ${b.tone || "fill"}`} data-brief-tone={b.tone || "fill"} onClick={b.go}>{b.act}</button>
                                         </li>
                                     ))}
                                 </ul>
@@ -748,15 +788,15 @@ function DashboardPage() {
                                         </div>
                                     )}
                                     <div className="db-row">
-                                        {next.case && <button type="button" className="db-btn sm" onClick={() => openCase(next.case)}>Open case file</button>}
-                                        <button type="button" className="db-btn sm" onClick={() => askAI(`Prepare me for: ${next.title}`)}>Prepare with AI</button>
+                                        {next.case && <button type="button" className="db-btn sm teal" onClick={() => openCase(next.case)}>Open case file</button>}
+                                        <button type="button" className="db-btn sm fill" onClick={() => askAI(`Prepare me for: ${next.title}`)}>Prepare with AI</button>
                                     </div>
                                 </>
                             ) : (
                                 <>
                                     <h3>Nothing scheduled</h3>
                                     <div className="db-meta">The next 7 days are open. Clients can book you once your working hours are set.</div>
-                                    <div className="db-row"><button type="button" className="db-btn sm" onClick={() => setPage("appointments")}>Open calendar</button></div>
+                                    <div className="db-row"><button type="button" className="db-btn sm teal" data-next-open-calendar onClick={() => setPage("appointments")}>Open calendar</button></div>
                                 </>
                             )}
                         </section>
@@ -876,38 +916,51 @@ function DashboardPage() {
                                 <h2>Recent cases</h2>
                                 <button type="button" className="db-link" onClick={() => setPage("cases")}>All cases →</button>
                             </div>
-                            <table>
-                                <thead><tr>{["Case", "Title", "Status", "Next hearing"].map(h => <th key={h}>{h}</th>)}</tr></thead>
-                                <tbody>
-                                        {recentCases.map(c => (
-                                            <tr key={c._id || c.id} onClick={() => openCase(byId.get(c._id) || c)}>
-                                                <td><span className="db-case">{c.id}</span></td>
-                                                <td className="t" title={`${c.title} · ${c.type}`}>{c.title}<small>{c.type}{c.client && c.client !== "—" ? ` · ${c.client}` : ""}</small></td>
-                                                        <td><Badge type={CSB[c.status]}>{c.status}</Badge></td>
-                                                <td style={{ color: "var(--muted)" }}>{c.nextHearing ? fmtDate(c.nextHearing) : "—"}</td>
-                                            </tr>
-                                        ))}
-                                        {!recentCases.length && <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--muted)" }}>No cases assigned yet</td></tr>}
-                                </tbody>
-                            </table>
+                            {/* One row per case (2026-11-28, option A): the title on one line,
+                                number · type · client under it, the status, and the next hearing
+                                or "Not set" in gold. The whole row opens the case. */}
+                            <div className="db-rc-list">
+                                {recentCases.map(c => (
+                                    <div key={c._id || c.id} className="db-rc" role="button" tabIndex={0} data-recent-case={c.id}
+                                        onClick={() => openCase(byId.get(c._id) || c)}
+                                        onKeyDown={e => { if (e.key === "Enter") openCase(byId.get(c._id) || c); }}>
+                                        <span className="db-rc-t" title={`${c.title} · ${c.type}`}>
+                                            <b>{c.title}</b>
+                                            <span><span className="db-case">{c.id}</span> · {c.type}{c.client && c.client !== "—" ? ` · ${c.client}` : ""}</span>
+                                        </span>
+                                        <span><Badge type={CSB[c.status]}>{c.status}</Badge></span>
+                                        <span className="db-rc-h">
+                                            <small>Next hearing</small>
+                                            {c.nextHearing ? <b>{fmtDate(c.nextHearing)}</b> : <b className="unset" data-hearing-unset>Not set</b>}
+                                        </span>
+                                    </div>
+                                ))}
+                                {!recentCases.length && <div className="db-empty">No cases assigned yet</div>}
+                            </div>
+                            {recentCases.length > 0 && (
+                                <button type="button" className="db-foot" onClick={() => setPage("cases")}>Open all cases →</button>
+                            )}
                         </section>
                     )}
 
                     {/* Recent activity */}
                     {show("activity") && (
                         <section className="db-card" aria-label="Recent activity">
-                            <div className="db-ch"><h2>Recent activity</h2></div>
+                            <div className="db-ch"><h2>Recent activity</h2>{newCount > 0 && <span className="db-new" data-activity-new>{newCount} new</span>}</div>
                             {activity.length === 0 && <div className="db-empty">No recent activity.</div>}
-                            {activity.map(n => (
-                                <div key={n.id} className={`db-act${n.unread ? " unread" : ""}`} onClick={() => openNotif?.(n)}>
-                                    <span className="av"><Svg d={n.type === "case_message" ? P.chat : n.type?.startsWith("appointment") ? P.cal : n.type?.includes("document") || n.type?.includes("review") ? P.doc : P.alert} size={16} /></span>
-                                    <span style={{ minWidth: 0 }}>
-                                        <b>{n.title}</b>
-                                        {n.body && <small>{n.body}</small>}
-                                        <div className="when">{n.time}</div>
-                                    </span>
-                                </div>
-                            ))}
+                            {activity.map(n => {
+                                const kind = actKind(n);
+                                return (
+                                    <div key={n.id} className={`db-act${n.unread ? " unread" : ""}`} data-activity-kind={kind.k} onClick={() => openNotif?.(n)}>
+                                        <span className={`av ${kind.k}`}><Svg d={kind.icon} size={16} /></span>
+                                        <span style={{ minWidth: 0 }}>
+                                            <b>{n.title}</b>
+                                            {n.body && <small title={n.body}>{n.body}</small>}
+                                        </span>
+                                        <span className="when">{n.unread && <i aria-label="unread" />}{n.time}</span>
+                                    </div>
+                                );
+                            })}
                         </section>
                     )}
                 </div>

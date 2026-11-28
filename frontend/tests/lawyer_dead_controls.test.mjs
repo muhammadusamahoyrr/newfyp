@@ -192,9 +192,9 @@ test("3.7 Clients: no fake Add Client; Suggest a meeting opens a real dialog, no
     const pages = [];
     const view = await mountPage(ClientsPage, { notif: n => notifs.push(n), caseCtx: { setPage: p => pages.push(p) } });
     assert.ok(!buttonTexts(view.container).some(t => /Add Client/.test(t)));
-    // Filter chips, the case link, the next step and the two card actions — no inert "more".
+    // Filter chips, the case link, Open, and the row's ⋯ menu (Message, Suggest) — no inert "more".
     assert.deepEqual(buttonTexts(view.container).filter(Boolean),
-        ["All 1", "Engaged 1", "Rent dispute", "Open case", "Message", "Suggest a meeting"]);
+        ["All 1", "Engaged 1", "Rent dispute", "Open", "Message", "Suggest a meeting"]);
     const suggest = [...view.container.querySelectorAll("button")].find(b => b.textContent.includes("Suggest a meeting"));
     await act(async () => { suggest.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     assert.ok(document.querySelector("[data-propose-meeting]"), "Suggest a meeting did nothing");
@@ -208,7 +208,7 @@ test("3.7 Dashboard: case rows carry no inert overflow button", async () => {
     api.__respond("listAppointments", { data: { items: [], total: 0, pages: 0 }, error: null });
     const { DashboardPage } = await import("../src/components/lawyer/DashboardPage.jsx");
     const view = await mountPage(DashboardPage);
-    const row = [...view.container.querySelectorAll("tbody tr")].find(r => r.textContent.includes("Rent dispute"));
+    const row = [...view.container.querySelectorAll("[data-recent-case]")].find(r => r.textContent.includes("Rent dispute"));
     assert.ok(row, "the case row did not render");
     assert.equal(row.querySelectorAll("button").length, 0);
     await view.unmount();

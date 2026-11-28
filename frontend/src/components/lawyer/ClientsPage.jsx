@@ -47,51 +47,68 @@ const CLIENTS_CSS = `[data-clients-home]{color:var(--ink);font:15px/1.5 "Hanken 
 [data-clients-home] .cl-crumbs{font-size:13px;color:var(--muted)}
 [data-clients-home] .cl-crumbs b{color:var(--ink);font-weight:600}
 [data-clients-home] .cl-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
-[data-clients-home] .cl-head h1{margin:0;font:600 clamp(32px,3.6vw,42px)/1.05 "Literata",Georgia,serif;letter-spacing:-.01em}
-[data-clients-home] .cl-sum{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font-size:14px;color:var(--muted)}
+[data-clients-home] .cl-head h1{margin:2px 0 0;font:600 30px/1.1 "Literata",Georgia,serif;letter-spacing:-.01em}
+[data-clients-home] .cl-sum{margin-top:6px;font-size:13.5px;color:var(--muted)}
 [data-clients-home] .cl-sum b{color:var(--ink);font-weight:700}
 [data-clients-home] .cl-sum .warn,[data-clients-home] .cl-sum .warn b{color:var(--gold)}
-[data-clients-home] .cl-search{display:flex;align-items:center;gap:10px;width:clamp(240px,26vw,380px);height:44px;padding:0 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-rest)}
+[data-clients-home] .cl-search{display:flex;align-items:center;gap:8px;width:300px;height:38px;padding:0 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
 [data-clients-home] .cl-search:focus-within{border-color:var(--focus);box-shadow:0 0 0 3px var(--brand-soft)}
 [data-clients-home] .cl-search svg{color:var(--faint);flex:none}
 [data-clients-home] .cl-search input{flex:1;min-width:0;border:0;outline:none;background:transparent;color:var(--ink);font:inherit;font-size:14.5px}
 [data-clients-home] .cl-search input::placeholder{color:var(--faint)}
-[data-clients-home] .cl-tabs{display:flex;flex-wrap:wrap;gap:2px;padding:4px;border-radius:12px;background:var(--surface);border:1px solid var(--line);width:fit-content;max-width:100%}
-[data-clients-home] .cl-tab{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-radius:10px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+[data-clients-home] .cl-tabs{display:flex;flex-wrap:wrap;gap:2px;padding:3px;border-radius:999px;background:var(--surface);border:1px solid var(--line);width:fit-content;max-width:100%}
+[data-clients-home] .cl-tab{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 13px;border-radius:999px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 [data-clients-home] .cl-tab:hover{color:var(--hover-ink)}
-[data-clients-home] .cl-tab[aria-pressed="true"]{background:var(--brand-solid);color:var(--on-brand)}
-[data-clients-home] .cl-tab .n{font-size:14px;font-weight:600;opacity:.85}
-[data-clients-home] .cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
-[data-clients-home] .cl-card{display:flex;flex-direction:column;gap:12px;padding:18px 20px;border-radius:18px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-rest);transition:border-color .15s,transform .15s,box-shadow .3s}
-[data-clients-home] .cl-card:hover{border-color:var(--hover-line);transform:translateY(-1px)}
-[data-clients-home] .cl-card[data-focused]{border-color:var(--brand-text);box-shadow:0 0 0 2px var(--brand-text),var(--shadow-rest)}
-[data-clients-home] .cl-top{display:flex;gap:12px;align-items:center}
-[data-clients-home] .cl-av{width:44px;height:44px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#e9fffb;box-shadow:inset 0 0 0 1px var(--line-strong)}
-[data-clients-home] .cl-name{font:600 18px/1.2 "Literata",Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-[data-clients-home] .cl-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
-[data-clients-home] .cl-stage{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
-[data-clients-home] .cl-stage::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-[data-clients-home] .cl-wait{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);background:var(--chip-n)}
-[data-clients-home] .cl-facts{display:grid;gap:6px}
-[data-clients-home] .cl-fact{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-width:0}
-[data-clients-home] .cl-fact svg{flex:none;color:var(--faint)}
-[data-clients-home] .cl-fact span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-[data-clients-home] .cl-cases{display:grid;gap:4px}
-[data-clients-home] .cl-case{text-align:left;background:none;border:0;padding:0;color:var(--brand-text);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-clients-home] .cl-tab[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+[data-clients-home] .cl-tab .n{font-size:13px;font-weight:700;opacity:.85}
+[data-clients-home] .cl-av{width:36px;height:36px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;color:#e9fffb;box-shadow:inset 0 0 0 1px var(--line-strong)}
+[data-clients-home] .cl-av.sm{width:30px;height:30px;font-size:11px}
+[data-clients-home] .cl-name{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-clients-home] .cl-muted{font-size:13px;color:var(--muted);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-clients-home] .cl-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+[data-clients-home] .cl-stage{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);white-space:nowrap}
+[data-clients-home] .cl-wait{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);background:var(--chip-n);white-space:nowrap}
+[data-clients-home] .cl-b{display:inline-flex;align-items:center;justify-content:center;height:34px;padding:0 15px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+[data-clients-home] .cl-b.gold{background:var(--gold);color:#241a05}
+[data-clients-home] .cl-b.gold:hover{filter:brightness(1.06)}
+[data-clients-home][data-mode="light"] .cl-b.gold{color:#fff}
+[data-clients-home] .cl-b.teal{background:color-mix(in srgb,var(--teal-ink) 16%,transparent);border-color:color-mix(in srgb,var(--teal-ink) 38%,transparent);color:var(--teal-ink)}
+[data-clients-home] .cl-b.teal:hover{background:color-mix(in srgb,var(--teal-ink) 24%,transparent)}
+[data-clients-home] .cl-b.fill{background:var(--chip-n);border-color:var(--line);color:var(--ink)}
+[data-clients-home] .cl-b.fill:hover{border-color:var(--hover-line);color:var(--hover-ink)}
+[data-clients-home] .cl-acts{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+[data-clients-home] .cl-attn{border-radius:16px;border:1px solid color-mix(in srgb,var(--gold) 32%,transparent);background:linear-gradient(color-mix(in srgb,var(--gold) 6%,transparent),color-mix(in srgb,var(--gold) 6%,transparent)),var(--surface);box-shadow:var(--shadow-rest);padding:4px 0}
+[data-clients-home] .cl-attn-h{display:flex;align-items:center;gap:8px;padding:9px 18px;font-size:14px}
+[data-clients-home] .cl-attn-h .dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+[data-clients-home] .cl-attn-h .n{font-size:12px;font-weight:800;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold)}
+[data-clients-home] .cl-arow{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 18px;border-top:1px solid color-mix(in srgb,var(--gold) 14%,transparent)}
+[data-clients-home] .cl-who{min-width:0;display:flex;flex-direction:column;gap:2px}
+[data-clients-home] .cl-who small{font-size:13px;color:var(--muted)}
+[data-clients-home] .cl-table{border-radius:16px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-rest)}
+[data-clients-home] .cl-trow:last-child{border-radius:0 0 15px 15px}
+[data-clients-home] .cl-cols{display:grid;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted)}
+[data-clients-home] .cl-trow{display:grid;gap:14px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--line)}
+[data-clients-home] .cl-trow:last-child{border-bottom:0}
+[data-clients-home] .cl-trow:hover{background:var(--hover-tint)}
+[data-clients-home] .cl-cell-client{display:flex;align-items:center;gap:11px;min-width:0}
+[data-clients-home] .cl-cell-client small{display:block;font-size:12.5px;color:var(--muted)}
+[data-clients-home] .cl-arow[data-focused],[data-clients-home] .cl-trow[data-focused]{box-shadow:inset 3px 0 0 var(--brand-text);background:var(--hover-tint)}
+[data-clients-home] .cl-cases{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+[data-clients-home] .cl-case{max-width:100%;text-align:left;background:none;border:0;padding:0;color:var(--teal-ink);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-clients-home] .cl-case:hover{color:var(--hover-ink);text-decoration:underline;text-underline-offset:3px}
-[data-clients-home] .cl-chips{display:flex;gap:6px;flex-wrap:wrap}
-[data-clients-home] .cl-chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+[data-clients-home] .cl-more{font-size:12.5px;color:var(--muted)}
+[data-clients-home] .cl-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+[data-clients-home] .cl-chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;border:0;background:var(--chip-n);color:var(--ink);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 [data-clients-home] .cl-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--c,var(--brand-text))}
-[data-clients-home] .cl-chip:hover{border-color:var(--hover-line);background:var(--hover-tint);color:var(--hover-ink)}
-[data-clients-home] .cl-foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:grid;gap:8px}
-[data-clients-home] .cl-row{display:flex;gap:8px}
-[data-clients-home] .cl-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap}
-[data-clients-home] .cl-btn:hover{border-color:var(--hover-line);background:var(--hover-tint);color:var(--hover-ink)}
-[data-clients-home] .cl-btn.main{width:100%;height:42px;border:0;background:var(--brand-solid);color:var(--on-brand);font-size:14px}
-[data-clients-home] .cl-btn.main:hover{background:var(--brand-solid-hover);color:var(--on-brand)}
-[data-clients-home] .cl-btn.main.gold{background:var(--gold);color:#241a05}
-[data-clients-home] .cl-btn.main.gold:hover{filter:brightness(1.06);background:var(--gold);color:#241a05}
-[data-clients-home][data-mode="light"] .cl-btn.main.gold{color:#fff}
+[data-clients-home] .cl-chip:hover{color:var(--hover-ink)}
+[data-clients-home] .cl-trow .cl-b{height:30px;padding:0 14px;font-size:12.5px}
+[data-clients-home] .cl-menu{position:relative}
+[data-clients-home] .cl-menu summary{list-style:none;width:30px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:var(--chip-n);border:1px solid var(--line);color:var(--ink);font-weight:800;cursor:pointer}
+[data-clients-home] .cl-menu summary::-webkit-details-marker{display:none}
+[data-clients-home] .cl-menu[open] summary{border-color:var(--hover-line)}
+[data-clients-home] .cl-menu-list{position:absolute;right:0;top:36px;z-index:5;min-width:180px;padding:5px;border-radius:12px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:0 12px 32px rgba(0,0,0,.28);display:grid;gap:2px}
+[data-clients-home] .cl-menu-list button{height:34px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
+[data-clients-home] .cl-menu-list button:hover{background:var(--hover-tint);color:var(--hover-ink)}
 [data-clients-home] .cl-note{padding:40px 18px;border-radius:18px;border:1px solid var(--line);background:var(--surface);text-align:center;font-size:14px;color:var(--muted)}
 [data-clients-home] .cl-sent{font-size:13.5px;color:var(--brand-text);font-weight:600}`;
 const OPEN_APPT_KEY = "attorney:lawyer-open-appointment";
@@ -187,6 +204,17 @@ function ClientsPage() {
         el?.scrollIntoView?.({ behavior: "smooth", block: "center" });
     }, [focusId, state.status]);
 
+    // A row's ⋯ menu closes on a click anywhere else, and only one is open.
+    useEffect(() => {
+        const close = (e) => {
+            document.querySelectorAll("[data-clients-home] details[data-client-more][open]").forEach(d => {
+                if (!d.contains(e.target)) d.removeAttribute("open");
+            });
+        };
+        document.addEventListener("mousedown", close);
+        return () => document.removeEventListener("mousedown", close);
+    }, []);
+
     const q = search.trim().toLowerCase();
     const shown = state.items.filter(c => (stage === "All" || c.stage === stage) && (!q || c.name.toLowerCase().includes(q)));
     const total = state.items.length;
@@ -227,7 +255,52 @@ function ClientsPage() {
     // The page's one-line summary: how many, and how many need the lawyer.
     const needYou = state.items.filter(c => c.next_action && ["send_terms", "record_outcome", "answer_request"].includes(c.next_action.kind)).length;
     const waiting = state.items.filter(c => c.waiting_for_client > 0).length;
-    const primaryClass = (kind) => `cl-btn main${kind === "send_terms" ? " gold" : ""}`;
+    // Layout D (2026-11-28, as previewed): the clients whose next step is the
+    // lawyer's sit on top under "Needs you", each with the reason in words and
+    // that one step; under them the stage tabs and a quiet table of EVERY
+    // client, each row opening the client's case or appointment. Message and
+    // Suggest a meeting sit in the row's ⋯ menu. Data and handlers unchanged.
+    const NEEDS = new Set(["send_terms", "record_outcome", "answer_request"]);
+    const REASON = {
+        send_terms: "Asked to hire you — your terms haven't been sent",
+        record_outcome: "A consultation is over — its outcome isn't recorded",
+        answer_request: "Asked for an appointment — accept it or suggest other times",
+    };
+    const attn = shown.filter(c => NEEDS.has(c.next_action?.kind));
+    const initials = (name) => name.split(" ").filter(Boolean).map(n => n[0]).join("").toUpperCase().slice(0, 2) || "C";
+    const COLS = "minmax(0,1.4fr) 190px minmax(0,1.6fr) 160px 116px";
+    const avatar = (c, size) => {
+        const ini = initials(c.name);
+        return <span className={`cl-av${size ? ` ${size}` : ""}`} style={{ background: avatarBg(ini) }} aria-hidden="true">{ini}</span>;
+    };
+    const chipsFor = (c) => {
+        const chips = CHIPS.filter(([kind, key]) => (c.pending?.[key] || 0) > 0 && kind !== c.next_action?.kind);
+        if (!chips.length) return null;
+        return (
+            <span className="cl-chips" data-client-chips>
+                {chips.map(([kind, key, word]) => (
+                    <button key={kind} type="button" className="cl-chip" data-client-chip={kind}
+                        style={{ "--c": kind === "answer_request" ? "var(--teal-ink)" : "var(--gold)" }}
+                        onClick={() => go[kind](targetFor(kind, c), c)}>
+                        {plural(c.pending[key], word)}
+                    </button>
+                ))}
+            </span>
+        );
+    };
+    // A row's "Open": its next step when that is just a place to go, else the
+    // client's first case, else their latest or pending appointment.
+    const openFor = (c) => {
+        const na = c.next_action;
+        if (na && (na.kind === "open_case" || na.kind === "view_appointment")) return () => go[na.kind](na.target_id, c);
+        if (c.cases[0]) return () => openCase(c.cases[0]);
+        const appt = c.latest_appointment_id || c.targets?.pending_appointment_id;
+        return appt ? () => openAppointment(appt) : null;
+    };
+    const lastSeen = (c) => {
+        if (c.next_appointment?.at) return `Next: ${formatPkt(c.next_appointment.at, { weekday: "short", day: "numeric", month: "short" })}`;
+        return c.last_activity ? formatPkt(c.last_activity, { day: "numeric", month: "short", year: "numeric" }) : "—";
+    };
 
     return (
         <div data-clients-home data-drafting-theme data-mode={draftingMode(t)} data-lenis-prevent style={{ height: "100%", overflowY: "auto" }}>
@@ -241,26 +314,19 @@ function ClientsPage() {
                             <div className="cl-sum">
                                 {state.status === "loading" ? <span>Loading…</span> : state.status === "error" ? <span>&nbsp;</span> : (<>
                                     <span><b>{plural(total, "client")}</b> · from your appointments and cases</span>
-                                    {needYou > 0 && <span className="warn"><b>{needYou}</b> need{needYou === 1 ? "s" : ""} you</span>}
-                                    {waiting > 0 && <span><b>{waiting}</b> waiting for the client</span>}
+                                    {" · "}<span className={needYou > 0 ? "warn" : undefined}><b>{needYou}</b> need{needYou === 1 ? "s" : ""} you</span>
+                                    {" · "}<span><b>{waiting}</b> waiting for the client</span>
                                 </>)}
                             </div>
                         </div>
                         {state.status === "ready" && total > 0 && (
                             <label className="cl-search">
-                                <Icon d={I.search} size={16} />
+                                <Icon d={I.search} size={15} />
                                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search clients…" aria-label="Search clients" />
                             </label>
                         )}
                     </div>
                 </div>
-
-                {state.status === "ready" && total > 0 && (
-                    <div className="cl-tabs" role="group" aria-label="Filter by stage">
-                        {chip("All", total)}
-                        {STAGES.filter(s => state.totals[s]).map(s => chip(s, state.totals[s]))}
-                    </div>
-                )}
 
                 {sent && <div role="status" className="cl-sent">{sent}</div>}
 
@@ -269,85 +335,95 @@ function ClientsPage() {
                 ) : state.status === "error" ? (
                     <div role="alert" data-clients-error className="cl-note">
                         Could not load your clients. This is not the same as having none.
-                        <div style={{ marginTop: 12 }}><button type="button" className="cl-btn" style={{ flex: "none" }} onClick={load}>Try again</button></div>
+                        <div style={{ marginTop: 12 }}><button type="button" className="cl-b fill" onClick={load}>Try again</button></div>
                     </div>
-                ) : shown.length === 0 ? (
-                    <div className="cl-note">
-                        {total === 0 ? "No clients yet. People who request a consultation or hire you appear here." : "No clients match."}
-                    </div>
-                ) : (
-                    <div className="cl-grid">
-                        {shown.map(c => {
-                            const ini = c.name.split(" ").filter(Boolean).map(n => n[0]).join("").toUpperCase().slice(0, 2) || "C";
-                            const n = c.counts;
-                            const facts = [
-                                c.next_appointment && { ic: I.clock, v: `Next: ${formatPkt(c.next_appointment.at, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}` },
-                                c.email && { ic: I.mail, v: c.email },
-                                c.province && { ic: I.map, v: c.province.replace(/_/g, " ").replace(/\b\w/g, m => m.toUpperCase()) },
-                                { ic: I.calendar, v: [n.requests && plural(n.requests, "appointment request"), n.upcoming && `${n.upcoming} upcoming`, n.consultations && `${plural(n.consultations, "consultation")} held`].filter(Boolean).join(" · ") || "No appointments" },
-                                (n.open_cases || n.closed_cases) && { ic: I.cases, v: [n.open_cases && plural(n.open_cases, "open case"), n.closed_cases && `${n.closed_cases} closed`].filter(Boolean).join(" · ") },
-                            ].filter(Boolean);
-                            const chips = CHIPS.filter(([kind, key]) => (c.pending?.[key] || 0) > 0 && kind !== c.next_action?.kind);
-                            const acts = actionsFor(c);
-                            return (
-                                <div key={c.client_id} className="cl-card" data-client-card={c.client_id} data-stage={c.stage} data-focused={focusId === c.client_id || undefined}>
-                                    <div className="cl-top">
-                                        <span className="cl-av" style={{ background: avatarBg(ini) }} aria-hidden="true">{ini}</span>
-                                        <div style={{ minWidth: 0 }}>
-                                            <div className="cl-name">{c.name}</div>
-                                            <div className="cl-tags">
-                                                <span className="cl-stage" style={{ "--c": STAGE_TONE[c.stage] || "var(--muted)" }}>{c.stage}</span>
-                                                {c.waiting_for_client > 0 && <span className="cl-wait" data-client-waiting>Waiting for client</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="cl-facts">
-                                        {facts.map((r, i) => (
-                                            <div key={i} className="cl-fact"><Icon d={r.ic} size={14} /><span>{r.v}</span></div>
-                                        ))}
-                                    </div>
-                                    {c.cases.length > 0 && (
-                                        <div className="cl-cases">
-                                            {c.cases.slice(0, 3).map(k => (
-                                                <button key={k.id} type="button" className="cl-case" data-client-case={k.id} onClick={() => openCase(k)}>
-                                                    {k.title}{CLOSED_CASE.has(k.status) ? " (closed)" : ""}
+                ) : total === 0 ? (
+                    <div className="cl-note">No clients yet. People who request a consultation or hire you appear here.</div>
+                ) : (<>
+                    {/* 1. Needs you: the reason and the one step, per client */}
+                    {attn.length > 0 && (
+                        <section className="cl-attn" aria-label="Clients who need you" data-clients-attn>
+                            <div className="cl-attn-h"><span className="dot" aria-hidden="true" /><b>Needs you</b><span className="n">{attn.length}</span></div>
+                            {attn.map(c => {
+                                const acts = actionsFor(c).filter(x => x.primary || x.key === "message");
+                                return (
+                                    <div key={c.client_id} className="cl-arow" data-client-attn={c.client_id}>
+                                        {avatar(c)}
+                                        <span className="cl-who">
+                                            <b className="cl-name">{c.name}</b>
+                                            <small>{REASON[c.next_action.kind]}</small>
+                                            {chipsFor(c)}
+                                        </span>
+                                        <span className="cl-acts">
+                                            {acts.map(x => (
+                                                <button key={x.key} type="button" className={x.primary ? "cl-b gold" : "cl-b teal"}
+                                                    {...(x.primary ? { "data-client-primary": c.next_action.kind } : { "data-client-action": x.key })} onClick={x.run}>
+                                                    {x.label}
                                                 </button>
                                             ))}
-                                        </div>
-                                    )}
-                                    {/* Every other piece of waiting work, by type, each opening its item. */}
-                                    {chips.length > 0 && (
-                                        <div className="cl-chips" data-client-chips>
-                                            {chips.map(([kind, key, word]) => (
-                                                <button key={kind} type="button" className="cl-chip" data-client-chip={kind}
-                                                    style={{ "--c": kind === "answer_request" ? "var(--teal-ink)" : "var(--gold)" }}
-                                                    onClick={() => go[kind](targetFor(kind, c), c)}>
-                                                    {plural(c.pending[key], word)}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    <div className="cl-foot">
-                                        {acts.filter(x => x.primary).map(x => (
-                                            <button key={x.key} type="button" className={primaryClass(c.next_action?.kind)} data-client-primary={c.next_action?.kind} onClick={x.run}>
-                                                <Icon d={x.icon} size={15} /> {x.label}
-                                            </button>
-                                        ))}
-                                        {acts.some(x => !x.primary) && (
-                                            <div className="cl-row">
-                                                {acts.filter(x => !x.primary).map(x => (
-                                                    <button key={x.key} type="button" className="cl-btn" data-client-action={x.key} onClick={x.run}>
-                                                        <Icon d={x.icon} size={14} /> {x.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                                        </span>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </section>
+                    )}
+
+                    {/* 2. The stage tabs, then every client as one quiet row */}
+                    <div className="cl-tabs" role="group" aria-label="Filter by stage">
+                        {chip("All", total)}
+                        {STAGES.filter(s => state.totals[s]).map(s => chip(s, state.totals[s]))}
                     </div>
-                )}
+
+                    {shown.length === 0 ? (
+                        <div className="cl-note">No clients match.</div>
+                    ) : (
+                        <section className="cl-table" aria-label="Clients" data-clients-table>
+                            <div className="cl-cols" style={{ gridTemplateColumns: COLS }}>
+                                <span>Client</span><span>Stage</span><span>Cases</span><span>Last activity</span><span />
+                            </div>
+                            {shown.map(c => {
+                                const first = c.cases[0];
+                                const open = openFor(c);
+                                const more = actionsFor(c).filter(x => x.key === "message" || x.key === "suggest");
+                                return (
+                                    <div key={c.client_id} className="cl-trow" style={{ gridTemplateColumns: COLS }}
+                                        data-client-card={c.client_id} data-stage={c.stage} data-focused={focusId === c.client_id || undefined}>
+                                        <span className="cl-cell-client">{avatar(c, "sm")}<b className="cl-name">{c.name}</b></span>
+                                        <span className="cl-tags">
+                                            <span className="cl-stage" style={{ "--c": STAGE_TONE[c.stage] || "var(--muted)" }}>{c.stage}</span>
+                                            {c.waiting_for_client > 0 && <span className="cl-wait" data-client-waiting>Waiting for client</span>}
+                                        </span>
+                                        <span className="cl-cases">
+                                            {first ? (<>
+                                                <button type="button" className="cl-case" data-client-case={first.id} onClick={() => openCase(first)} title={first.title}>
+                                                    {first.title}{CLOSED_CASE.has(first.status) ? " (closed)" : ""}
+                                                </button>
+                                                {c.cases.length > 1 && <span className="cl-more">+{c.cases.length - 1}</span>}
+                                            </>) : <span className="cl-muted">No case yet</span>}
+                                        </span>
+                                        <span className="cl-muted">{lastSeen(c)}</span>
+                                        <span className="cl-acts">
+                                            {open && <button type="button" className="cl-b fill" data-client-open onClick={open}>Open</button>}
+                                            {more.length > 0 && (
+                                                <details className="cl-menu" data-client-more>
+                                                    <summary aria-label={`More for ${c.name}`}>⋯</summary>
+                                                    <div className="cl-menu-list" role="menu">
+                                                        {more.map(x => (
+                                                            <button key={x.key} type="button" role="menuitem" data-client-action={x.key}
+                                                                onClick={(e) => { e.currentTarget.closest("details")?.removeAttribute("open"); x.run(); }}>
+                                                                {x.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </details>
+                                            )}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </section>
+                    )}
+                </>)}
             </div>
             {eng.termsModal}
             {propose && (

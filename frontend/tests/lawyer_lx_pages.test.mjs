@@ -94,3 +94,26 @@ test("cause lists: a listing shows its case and court, and a watch can be remove
     assert.equal(api.__calls("deleteCauselistWatch")[0].args[0], "w1");
     await ui.unmount();
 });
+
+/* 2026-11-28 (layout A): the paste box is folded until asked for, and the
+ * watch bar sits first. */
+test("cause lists: the paste box opens on 'Paste a list' and then scans the text", async () => {
+    api.__reset();
+    api.__respond("listCauselistWatches", { data: [] });
+    api.__respond("listCauselistEntries", { data: [] });
+    api.__respond("matchCauselistText", { data: [{ case_no: "39043/26", line: "12. 39043/26 Fayyaz v State" }] });
+    const ui = await mount(CauselistPage);
+    const paste = ui.container.querySelector("[data-paste]");
+    assert.equal(paste.querySelector("textarea"), null, "the paste box is open before it was asked for");
+    const first = ui.container.querySelector("[data-causelist] section");
+    assert.ok(first.hasAttribute("data-watch-bar"), "the watch bar is not the first section");
+    await press(button(paste, "Paste a list ▾"));
+    const box = paste.querySelector("textarea");
+    assert.ok(box, "Paste a list did not open the box");
+    Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, "value").set.call(box, "12. 39043/26 Fayyaz v State");
+    await act(async () => { box.dispatchEvent(new dom.window.Event("input", { bubbles: true })); });
+    await press(button(paste, "Find my cases"));
+    assert.equal(api.__calls("matchCauselistText").length, 1);
+    assert.match(paste.textContent, /1 match found/);
+    await ui.unmount();
+});

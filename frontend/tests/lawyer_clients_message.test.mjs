@@ -133,7 +133,8 @@ test("combined state: Send terms is the main button; the outcome and the request
         pending: { hire_requests: 1, outcomes: 1, appointment_requests: 1 }, counts: counts({ requests: 1, consultations: 1 }),
         targets: { engagement_id: "eng-1", outcome_appointment_id: "ap-out", pending_appointment_id: "ap-req" },
         message: { kind: "appointment", target_id: "ap-out" } })]);
-    const card = v.container.querySelector('[data-client-card="ahmed"]');
+    // Layout D: the lawyer's step and the other waiting work sit in the "Needs you" row.
+    const card = v.container.querySelector('[data-client-attn="ahmed"]');
     const primary = card.querySelector("[data-client-primary]");
     assert.equal(primary.textContent.trim(), "Send terms");
     const chips = [...card.querySelectorAll("[data-client-chip]")].map(b => b.getAttribute("data-client-chip"));
@@ -162,8 +163,9 @@ test("an engaged client who owes an outcome: Record outcome leads, the stage sta
         targets: { case_id: CASE.id, outcome_appointment_id: "ap-7" } })]);
     const card = v.container.querySelector("[data-client-card]");
     assert.equal(card.getAttribute("data-stage"), "Engaged");
-    assert.equal(card.querySelector("[data-client-primary]").textContent.trim(), "Record outcome");
-    assert.equal(card.querySelector("[data-client-chips]"), null, "the primary action was repeated as a chip");
+    const row = v.container.querySelector("[data-client-attn]");
+    assert.equal(row.querySelector("[data-client-primary]").textContent.trim(), "Record outcome");
+    assert.equal(row.querySelector("[data-client-chips]"), null, "the primary action was repeated as a chip");
     await v.done();
 });
 
@@ -251,5 +253,26 @@ test("Send terms on a request no longer waiting says so instead of opening an em
     await settle(60);
     assert.equal(document.querySelector("[data-terms]"), null);
     assert.match(v.container.textContent, /no longer waiting for your terms/);
+    await v.done();
+});
+
+/* 2026-11-28 (layout D): clients whose next step is the lawyer's sit under
+ * "Needs you" with the reason in words; the table under them lists every
+ * client once, as the preview does, and a row's Open goes to the case. */
+test("layout D: 'Needs you' holds only the lawyer's steps, with the reason; the table lists every client once", async () => {
+    const v = await mount([
+        client({ client_id: "owes", name: "Owes Outcome", next_action: { kind: "record_outcome", target_id: "ap-1" },
+            targets: { outcome_appointment_id: "ap-1" }, pending: { hire_requests: 0, outcomes: 1, appointment_requests: 0 } }),
+        engaged({ client_id: "calm", name: "Calm Client" }),
+    ]);
+    const attn = v.container.querySelector("[data-clients-attn]");
+    const table = v.container.querySelector("[data-clients-table]");
+    assert.ok(attn && table, "both sections should show");
+    assert.deepEqual([...attn.querySelectorAll("[data-client-attn]")].map(e => e.getAttribute("data-client-attn")), ["owes"]);
+    assert.match(attn.textContent, /its outcome isn't recorded/);
+    assert.deepEqual([...table.querySelectorAll("[data-client-card]")].map(e => e.getAttribute("data-client-card")), ["owes", "calm"]);
+    // A row's Open goes to the client's case.
+    await act(async () => { table.querySelector('[data-client-card="calm"] [data-client-open]').dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    assert.deepEqual(v.opened, ["CIV-2026-001"]);
     await v.done();
 });

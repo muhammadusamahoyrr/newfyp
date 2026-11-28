@@ -61,4 +61,9 @@ export const LX_PAGE_CSS = `[data-lx-page]{flex:1;min-height:0;overflow-y:auto;b
 [data-lx-page] .lx-split{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
 [data-lx-page] .lx-col{display:flex;flex-direction:column;gap:18px;min-width:0}
 [data-lx-page] .lx-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[data-lx-page] .lx-btn.teal-tint{border:1px solid color-mix(in srgb,var(--teal-ink) 45%,transparent);background:color-mix(in srgb,var(--teal-ink) 14%,transparent);color:var(--teal-ink)}
+[data-lx-page] .lx-input.sm{height:40px;border-radius:10px;font-size:13.5px;padding:0 12px}
+[data-lx-page] .lx-cols.light{background:transparent;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:9px 18px}
+[data-lx-page] .lx-watch{display:flex;align-items:center;gap:10px;padding:9px 10px 9px 12px;border-radius:12px;background:var(--surface-2)}
+[data-lx-page]:not([data-mode="light"]) .lx-watch{background:#24474F}
 [data-lx-page] .lx-toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--line);color:var(--ink);padding:10px 16px;border-radius:12px;font-size:13px;z-index:100}`;
